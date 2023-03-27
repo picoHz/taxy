@@ -1,0 +1,44 @@
+[package]
+name = "taxy"
+version = "0.1.0"
+edition = "2021"
+include = ["/src", "/build.rs", "/LICENSE", "/webui/dist"]
+build = "build.rs"
+description = "A TCP reverse proxy with a user-friendly WebUI"
+authors = ["picoHz <picoHz@outlook.com>"]
+keywords = ["tcp", "proxy", "reverse-proxy"]
+categories = ["network-programming"]
+license = "MIT"
+repository = "https://github.com/picoHz/taxy"
+homepage = "https://github.com/picoHz/taxy"
+
+[dependencies]
+anyhow = "1.0.70"
+clap = { version = "4.2.2", features = ["derive", "env"] }
+directories = "5.0.0"
+futures = "0.3.28"
+hyper = { version = "1.0.0-rc.3", features = ["full"] }
+include_dir = "0.7.3"
+indexmap = { version = "1.9.3", features = ["serde"] }
+mime_guess = "2.0.4"
+multiaddr = "0.17.1"
+percent-encoding = "2.2.0"
+pin-project-lite = "0.2.9"
+serde = "1.0.160"
+serde_derive = "1.0.160"
+serde_json = "1.0.96"
+thiserror = "1.0.40"
+tokio = { version = "1.27.0", features = ["macros", "rt-multi-thread", "net", "signal", "io-util"] }
+tokio-stream = { version = "0.1.12", features = ["sync"] }
+toml = "0.7.3"
+toml_edit = { version = "0.19.8", features = ["serde"] }
+tracing = { version = "0.1.37", features = ["release_max_level_info"] }
+tracing-appender = "0.2.2"
+tracing-subscriber = { version = "0.3.16", features = ["json"] }
+warp = "0.3.4"
+
+[build-dependencies]
+built = "0.6.0"
+
+[profile.release]
+strip = true
