@@ -24,11 +24,13 @@ mime_guess = "2.0.4"
 multiaddr = "0.17.1"
 percent-encoding = "2.2.0"
 pin-project-lite = "0.2.9"
+rustls-native-certs = "0.6.2"
 serde = "1.0.160"
 serde_derive = "1.0.160"
 serde_json = "1.0.96"
 thiserror = "1.0.40"
 tokio = { version = "1.27.0", features = ["macros", "rt-multi-thread", "net", "signal", "io-util"] }
+tokio-rustls = "0.24.0"
 tokio-stream = { version = "0.1.12", features = ["sync"] }
 toml = "0.7.3"
 toml_edit = { version = "0.19.8", features = ["serde"] }
