@@ -34,7 +34,7 @@
             <div v-for="(item, i) in formData.servers" :key="i">
                 <v-row justify="end">
                     <v-col cols="12" sm="2">
-                        <v-select :label="$t('ports.config.protocol')" :items="['TCP']" model-value="TCP" variant="outlined"
+                        <v-select :label="$t('ports.config.protocol')" :items="serverProtocols" v-model="item.protocol" variant="outlined"
                             density="compact"></v-select>
                     </v-col>
 
@@ -93,8 +93,13 @@ const props = defineProps({
 const formData = reactive({
     ifs: '0.0.0.0',
     port: 8080,
-    servers: [{ host: 'example.com', port: 8080 }]
+    servers: [{ host: 'example.com', port: 8080, protocol: 'tcp' }]
 });
+
+const serverProtocols = [
+    {title: 'TCP', value: 'tcp'},
+    {title: 'TLS', value: 'tls'}
+];
 
 onMounted(() => {
     if (props.entry) {
@@ -113,7 +118,7 @@ async function submitForm(event) {
             name: formData.name,
             listen: serverToMultiaddr(formData.ifs, formData.port),
             servers: formData.servers.map(s => ({
-                addr: serverToMultiaddr(s.host, s.port),
+                addr: serverToMultiaddrWithProtocol(s.protocol, s.host, s.port),
             }))
         }
         emit('submit', entry);
@@ -128,6 +133,14 @@ function insertServer(n) {
     formData.servers.splice(n + 1, 0, { url: '' });
 }
 
+function serverToMultiaddrWithProtocol(protocol, host, port) {
+    if (protocol === 'tls') {
+        return serverToMultiaddr(host, port) + '/tls'
+    } else {
+        return serverToMultiaddr(host, port)
+    }
+}
+
 function serverToMultiaddr(host, port) {
     if (host.match(/^[0-9.]+$/)) {
         return `/ip4/${host}/tcp/${port}`
@@ -139,17 +152,29 @@ function serverToMultiaddr(host, port) {
 }
 
 function multiaddrToServer(addr) {
+    const ip4tls = addr.match(/\/ip4\/([0-9.]+)\/tcp\/([0-9]+)\/tls/)
+    if (ip4tls) {
+        return { host: ip4tls[1], port: ip4tls[2], protocol: 'tls' }
+    }
+    const ip6tls = addr.match(/\/ip6\/([0-9a-f:]+)\/tcp\/([0-9]+)\/tls/)
+    if (ip6tls) {
+        return { host: ip6tls[1], port: ip6tls[2], protocol: 'tls' }
+    }
+    const dnstls = addr.match(/\/dns(?:4|6)?\/([0-9a-z.-]+)\/tcp\/([0-9]+)\/tls/)
+    if (dnstls) {
+        return { host: dnstls[1], port: dnstls[2], protocol: 'tls' }
+    }
     const ip4tcp = addr.match(/\/ip4\/([0-9.]+)\/tcp\/([0-9]+)/)
     if (ip4tcp) {
-        return { host: ip4tcp[1], port: ip4tcp[2] }
+        return { host: ip4tcp[1], port: ip4tcp[2], protocol: 'tcp' }
     }
     const ip6tcp = addr.match(/\/ip6\/([0-9a-f:]+)\/tcp\/([0-9]+)/)
     if (ip6tcp) {
-        return { host: ip6tcp[1], port: ip6tcp[2] }
+        return { host: ip6tcp[1], port: ip6tcp[2], protocol: 'tcp' }
     }
     const dnstcp = addr.match(/\/dns(?:4|6)?\/([0-9a-z.-]+)\/tcp\/([0-9]+)/)
     if (dnstcp) {
-        return { host: dnstcp[1], port: dnstcp[2] }
+        return { host: dnstcp[1], port: dnstcp[2], protocol: 'tcp' }
     }
     return {}
 }
