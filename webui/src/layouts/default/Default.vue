@@ -3,7 +3,8 @@
     <v-layout>
       <v-navigation-drawer v-model="drawer">
         <v-list>
-          <v-list-item prepend-icon="mdi-network" title="Ports" value="ports" :to="{ path: '/ports' }"></v-list-item>
+          <v-list-item prepend-icon="mdi-network" title="Ports" :to="{ path: '/ports' }"></v-list-item>
+          <v-list-item prepend-icon="mdi-certificate" title="Certificates" :to="{ path: '/certs' }"></v-list-item>
         </v-list>
       </v-navigation-drawer>
 

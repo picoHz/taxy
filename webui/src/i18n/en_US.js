@@ -45,5 +45,14 @@ export default {
                 port_required: 'Enter a valid port number (range: 1-65535).',
             }
         }
+    },
+    certs: {
+        certs: 'Certificates',
+        certs_paths: {
+            certs_paths: 'Certificate Paths',
+            placeholder: 'Enter one path per line, e.g., /etc/letsencrypt/live.',
+            description: 'Paths for searching TLS certificates and private keys.',
+            update: 'Update',
+        }
     }
 }
