@@ -58,9 +58,7 @@ pub struct PortContext {
 impl PortContext {
     pub fn new(entry: PortEntry) -> Result<Self, Error> {
         if entry.name.is_empty() || entry.name.len() > MAX_NAME_LEN {
-            return Err(Error::InvalidName {
-                name: entry.name.clone(),
-            });
+            return Err(Error::InvalidName { name: entry.name });
         }
         let kind = PortContextKind::Tcp(TcpPortContext::new(&entry)?);
         Ok(Self { entry, kind })
@@ -76,6 +74,12 @@ impl PortContext {
 
     pub fn kind_mut(&mut self) -> &mut PortContextKind {
         &mut self.kind
+    }
+
+    pub async fn setup(&mut self) -> Result<(), Error> {
+        match &mut self.kind {
+            PortContextKind::Tcp(ctx) => ctx.setup().await,
+        }
     }
 
     pub fn apply(&mut self, new: Self) {

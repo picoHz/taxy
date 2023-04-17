@@ -23,7 +23,10 @@ pub async fn start_server(
     let ports = config.load_entries().await;
     for entry in ports {
         match PortContext::new(entry) {
-            Ok(ctx) => {
+            Ok(mut ctx) => {
+                if let Err(err) = ctx.setup().await {
+                    error!(?err, "failed to setup port");
+                }
                 table.set_port(ctx);
             }
             Err(err) => {

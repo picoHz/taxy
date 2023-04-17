@@ -74,6 +74,35 @@ impl TcpPortContext {
         })
     }
 
+    pub async fn setup(&mut self) -> Result<(), Error> {
+        let use_tls = self.servers.iter().any(|server| server.tls);
+        if self.tls_client_config.is_none() && use_tls {
+            let mut root_certs = RootCertStore::empty();
+            if let Ok(certs) =
+                tokio::task::spawn_blocking(rustls_native_certs::load_native_certs).await
+            {
+                match certs {
+                    Ok(certs) => {
+                        for certs in certs {
+                            if let Err(err) = root_certs.add(&Certificate(certs.0)) {
+                                warn!("failed to add native certs: {err}");
+                            }
+                        }
+                    }
+                    Err(err) => {
+                        warn!("failed to load native certs: {err}");
+                    }
+                }
+            }
+            let config = ClientConfig::builder()
+                .with_safe_defaults()
+                .with_root_certificates(root_certs)
+                .with_no_client_auth();
+            self.tls_client_config = Some(Arc::new(config));
+        }
+        Ok(())
+    }
+
     pub fn apply(&mut self, new: Self) {
         self.listen = new.listen;
         self.servers = new.servers;
