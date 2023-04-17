@@ -1,4 +1,4 @@
-use super::port::PortEntry;
+use super::{port::PortEntry, AppConfig};
 use crate::config::port::NamelessPortEntry;
 use indexmap::map::IndexMap;
 use std::{
@@ -18,6 +18,39 @@ impl ConfigStorage {
         Self {
             dir: dir.to_owned(),
         }
+    }
+
+    pub async fn save_app_config(&self, config: &AppConfig) {
+        let dir = &self.dir;
+        let path = dir.join("config.toml");
+        if let Err(err) = self.save_app_config_impl(&path, config).await {
+            error!(?path, "failed to save: {err}");
+        }
+    }
+
+    async fn save_app_config_impl(&self, path: &Path, config: &AppConfig) -> anyhow::Result<()> {
+        fs::create_dir_all(path.parent().unwrap()).await?;
+        info!(?path, "save config");
+        fs::write(path, toml::to_string(config)?).await?;
+        Ok(())
+    }
+
+    pub async fn load_app_config(&self) -> AppConfig {
+        let dir = &self.dir;
+        let path = dir.join("config.toml");
+        match self.load_app_config_impl(&path).await {
+            Ok(config) => config,
+            Err(err) => {
+                warn!(?path, "failed to load: {err}");
+                Default::default()
+            }
+        }
+    }
+
+    async fn load_app_config_impl(&self, path: &Path) -> anyhow::Result<AppConfig> {
+        info!(?path, "load config");
+        let content = fs::read_to_string(path).await?;
+        Ok(toml::from_str(&content)?)
     }
 
     pub async fn save_entries(&self, entries: &[PortEntry]) {

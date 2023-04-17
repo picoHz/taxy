@@ -20,6 +20,12 @@ pub async fn start_server(
     let mut pool = TcpListenerPool::new();
     let mut event_recv = event.subscribe();
 
+    let app_config = config.load_app_config().await;
+    let _ = event.send(ServerEvent::AppConfigUpdated {
+        config: app_config,
+        source: Source::File,
+    });
+
     let ports = config.load_entries().await;
     for entry in ports {
         match PortContext::new(entry) {
@@ -53,6 +59,11 @@ pub async fn start_server(
             }
             event = event_recv.recv() => {
                 match event {
+                    Ok(ServerEvent::AppConfigUpdated { config: app_config, source }) => {
+                        if source != Source::File {
+                            config.save_app_config(&app_config).await;
+                        }
+                    },
                     Ok(ServerEvent::PortTableUpdated { entries, source }) => {
                         if source != Source::File {
                             config.save_entries(&entries).await;
