@@ -1,12 +1,12 @@
 use crate::config::storage::ConfigStorage;
 use crate::config::Source;
-use crate::proxy::PortContext;
+use crate::proxy::{PortContext, PortContextKind};
 use crate::server::table::ProxyTable;
 use crate::{command::ServerCommand, event::ServerEvent};
 use listener::TcpListenerPool;
 use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::{broadcast, mpsc};
-use tracing::warn;
+use tracing::{error, warn};
 
 mod listener;
 mod table;
@@ -21,8 +21,15 @@ pub async fn start_server(
     let mut event_recv = event.subscribe();
 
     let ports = config.load_entries().await;
-    for port in &ports {
-        table.set_port(&port.name, port.clone());
+    for entry in ports {
+        match PortContext::new(entry) {
+            Ok(ctx) => {
+                table.set_port(ctx);
+            }
+            Err(err) => {
+                error!(?err, "failed to create proxy state");
+            }
+        };
     }
     update_port_statuses(&event, &mut pool, &mut table).await;
 
@@ -30,8 +37,8 @@ pub async fn start_server(
         tokio::select! {
             cmd = command.recv() => {
                 match cmd {
-                    Some(ServerCommand::SetPort { name, entry }) => {
-                        table.set_port(&name, entry);
+                    Some(ServerCommand::SetPort { ctx }) => {
+                        table.set_port(ctx);
                         update_port_statuses(&event, &mut pool, &mut table).await;
                     },
                     Some(ServerCommand::DeletePort { name }) => {
@@ -58,8 +65,8 @@ pub async fn start_server(
             sock = pool.select(), if pool.has_active_listeners() => {
                 if let Some((index, stream)) = sock {
                     let state = &mut table.contexts_mut()[index];
-                    match state {
-                        PortContext::Tcp(tcp) => {
+                    match state.kind_mut() {
+                        PortContextKind::Tcp(tcp) => {
                             tcp.start_proxy(stream);
                         }
                     }

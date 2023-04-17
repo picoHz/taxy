@@ -1,21 +1,18 @@
 use crate::{config::port::PortEntry, proxy::PortContext};
-use tracing::error;
 
 pub struct ProxyTable {
-    entries: Vec<PortEntry>,
     contexts: Vec<PortContext>,
 }
 
 impl ProxyTable {
     pub fn new() -> Self {
         Self {
-            entries: Vec::new(),
             contexts: Vec::new(),
         }
     }
 
-    pub fn entries(&self) -> &[PortEntry] {
-        &self.entries
+    pub fn entries(&self) -> Vec<PortEntry> {
+        self.contexts.iter().map(|c| c.entry().clone()).collect()
     }
 
     pub fn contexts(&self) -> &[PortContext] {
@@ -26,26 +23,20 @@ impl ProxyTable {
         &mut self.contexts
     }
 
-    pub fn set_port(&mut self, name: &str, port: PortEntry) {
-        let ctx = match PortContext::new(&port) {
-            Ok(ctx) => ctx,
-            Err(err) => {
-                error!(?err, "failed to create proxy state");
-                return;
-            }
-        };
-        if let Some(index) = self.entries.iter().position(|p| p.name == name) {
-            self.entries[index] = port;
+    pub fn set_port(&mut self, ctx: PortContext) {
+        if let Some(index) = self
+            .contexts
+            .iter()
+            .position(|p| p.entry().name == ctx.entry().name)
+        {
             self.contexts[index].apply(ctx);
         } else {
-            self.entries.push(port);
             self.contexts.push(ctx);
         }
     }
 
     pub fn delete_port(&mut self, name: &str) {
-        if let Some(index) = self.entries.iter().position(|p| p.name == *name) {
-            self.entries.remove(index);
+        if let Some(index) = self.contexts.iter().position(|p| p.entry().name == *name) {
             self.contexts.remove(index);
         }
     }

@@ -1,7 +1,7 @@
-use crate::config::port::PortEntry;
+use crate::proxy::PortContext;
 
 #[derive(Debug)]
 pub enum ServerCommand {
-    SetPort { name: String, entry: PortEntry },
+    SetPort { ctx: PortContext },
     DeletePort { name: String },
 }

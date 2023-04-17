@@ -1,4 +1,4 @@
-use crate::proxy::{PortContext, PortContextEvent, SocketState};
+use crate::proxy::{PortContext, PortContextEvent, PortContextKind, SocketState};
 use futures::{Stream, StreamExt};
 use std::collections::HashMap;
 use std::io;
@@ -36,8 +36,8 @@ impl TcpListenerPool {
             })
             .collect();
 
-        for (index, port) in ports.iter_mut().enumerate() {
-            let PortContext::Tcp(state) = port;
+        for (index, ctx) in ports.iter_mut().enumerate() {
+            let PortContextKind::Tcp(state) = ctx.kind();
             let (listener, state) = if let Some(listener) = listeners.remove(&state.listen) {
                 (Some(listener), SocketState::Listening)
             } else {
@@ -67,7 +67,7 @@ impl TcpListenerPool {
                 sock.index = index;
                 self.listeners.push(sock);
             }
-            port.event(PortContextEvent::SokcetStateUpadted(state));
+            ctx.event(PortContextEvent::SokcetStateUpadted(state));
         }
     }
 

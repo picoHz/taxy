@@ -50,35 +50,55 @@ pub enum PortContextEvent {
 }
 
 #[derive(Debug)]
-pub enum PortContext {
-    Tcp(TcpPortContext),
+pub struct PortContext {
+    entry: PortEntry,
+    kind: PortContextKind,
 }
 
 impl PortContext {
-    pub fn new(port: &PortEntry) -> Result<Self, Error> {
-        if port.name.is_empty() || port.name.len() > MAX_NAME_LEN {
+    pub fn new(entry: PortEntry) -> Result<Self, Error> {
+        if entry.name.is_empty() || entry.name.len() > MAX_NAME_LEN {
             return Err(Error::InvalidName {
-                name: port.name.clone(),
+                name: entry.name.clone(),
             });
         }
-        Ok(Self::Tcp(TcpPortContext::new(port)?))
+        let kind = PortContextKind::Tcp(TcpPortContext::new(&entry)?);
+        Ok(Self { entry, kind })
+    }
+
+    pub fn entry(&self) -> &PortEntry {
+        &self.entry
+    }
+
+    pub fn kind(&self) -> &PortContextKind {
+        &self.kind
+    }
+
+    pub fn kind_mut(&mut self) -> &mut PortContextKind {
+        &mut self.kind
     }
 
     pub fn apply(&mut self, new: Self) {
-        match (self, new) {
-            (Self::Tcp(old), Self::Tcp(new)) => old.apply(new),
+        match (&mut self.kind, new.kind) {
+            (PortContextKind::Tcp(old), PortContextKind::Tcp(new)) => old.apply(new),
         }
+        self.entry = new.entry;
     }
 
     pub fn event(&mut self, event: PortContextEvent) {
-        match self {
-            Self::Tcp(ctx) => ctx.event(event),
+        match &mut self.kind {
+            PortContextKind::Tcp(ctx) => ctx.event(event),
         }
     }
 
     pub fn status(&self) -> &PortStatus {
-        match self {
-            Self::Tcp(ctx) => ctx.status(),
+        match &self.kind {
+            PortContextKind::Tcp(ctx) => ctx.status(),
         }
     }
+}
+
+#[derive(Debug)]
+pub enum PortContextKind {
+    Tcp(TcpPortContext),
 }
