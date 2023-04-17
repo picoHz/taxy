@@ -62,6 +62,20 @@ const routes = [
           }
         ]
       },
+      {
+        path: 'certs',
+        name: 'Certificates',
+        component: () => import(/* webpackChunkName: "certs" */ '@/views/Certificates.vue'),
+        meta: {
+          breadcrumb() {
+            return [{
+              trName: 'certs.certs',
+              disabled: false,
+              to: { path: '/certs' }
+            }]
+          }
+        }
+      }
     ],
   },
 ]
