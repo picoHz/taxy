@@ -1,6 +1,8 @@
 use multiaddr::Multiaddr;
 use serde_derive::{Deserialize, Serialize};
 
+use super::tls::TlsTermination;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BackendServer {
     pub addr: Multiaddr,
@@ -11,6 +13,8 @@ pub struct PortEntry {
     pub name: String,
     pub listen: Multiaddr,
     pub servers: Vec<BackendServer>,
+    #[serde(flatten, default)]
+    pub opts: PortOptions,
 }
 
 impl From<(String, NamelessPortEntry)> for PortEntry {
@@ -19,6 +23,7 @@ impl From<(String, NamelessPortEntry)> for PortEntry {
             name,
             listen: entry.listen,
             servers: entry.servers,
+            opts: entry.opts,
         }
     }
 }
@@ -27,6 +32,8 @@ impl From<(String, NamelessPortEntry)> for PortEntry {
 pub struct NamelessPortEntry {
     pub listen: Multiaddr,
     pub servers: Vec<BackendServer>,
+    #[serde(flatten, default)]
+    pub opts: PortOptions,
 }
 
 impl From<PortEntry> for (String, NamelessPortEntry) {
@@ -36,7 +43,14 @@ impl From<PortEntry> for (String, NamelessPortEntry) {
             NamelessPortEntry {
                 listen: entry.listen,
                 servers: entry.servers,
+                opts: entry.opts,
             },
         )
     }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PortOptions {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tls_termination: Option<TlsTermination>,
 }

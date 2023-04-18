@@ -4,6 +4,7 @@ use serde_derive::{Deserialize, Serialize};
 pub mod certs;
 pub mod port;
 pub mod storage;
+pub mod tls;
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AppConfig {

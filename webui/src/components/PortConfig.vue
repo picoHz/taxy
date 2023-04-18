@@ -9,8 +9,8 @@
             </v-row>
             <v-row>
                 <v-col cols="12" sm="2">
-                    <v-select :label="$t('ports.config.protocol')" :items="['TCP']" model-value="TCP" variant="outlined"
-                        density="compact"></v-select>
+                    <v-select :label="$t('ports.config.protocol')" :items="protocols" v-model="formData.protocol"
+                        variant="outlined" density="compact"></v-select>
                 </v-col>
 
                 <v-col cols="24" sm="6">
@@ -24,6 +24,23 @@
                 </v-col>
             </v-row>
         </v-container>
+        <div v-if="formData.protocol === 'tls'">
+            <v-toolbar color="transparent" density="compact">
+                <v-toolbar-title>
+                    {{ $t('ports.config.tls_term.tls_term') }}
+                </v-toolbar-title>
+            </v-toolbar>
+            <v-divider></v-divider>
+            <v-container>
+                <v-row>
+                    <v-col cols="12" sm="12">
+                        <v-text-field :label="$t('ports.config.tls_term.server_names.server_names')" variant="outlined"
+                            :hint="$t('ports.config.tls_term.server_names.hint')" v-model="formData.tls_term.server_names"
+                            density="compact" :rules="tlsServerNamesRules" persistent-hint></v-text-field>
+                    </v-col>
+                </v-row>
+            </v-container>
+        </div>
         <v-toolbar color="transparent" density="compact">
             <v-toolbar-title>
                 {{ $t('ports.config.servers') }}
@@ -34,8 +51,8 @@
             <div v-for="(item, i) in formData.servers" :key="i">
                 <v-row justify="end">
                     <v-col cols="12" sm="2">
-                        <v-select :label="$t('ports.config.protocol')" :items="serverProtocols" v-model="item.protocol" variant="outlined"
-                            density="compact"></v-select>
+                        <v-select :label="$t('ports.config.protocol')" :items="protocols" v-model="item.protocol"
+                            variant="outlined" density="compact"></v-select>
                     </v-col>
 
                     <v-col cols="12" sm="5">
@@ -93,21 +110,28 @@ const props = defineProps({
 const formData = reactive({
     ifs: '0.0.0.0',
     port: 8080,
-    servers: [{ host: 'example.com', port: 8080, protocol: 'tcp' }]
+    protocol: 'tcp',
+    servers: [{ host: 'example.com', port: 8080, protocol: 'tcp' }],
+    tls_term: { server_names: '' }
 });
 
-const serverProtocols = [
-    {title: 'TCP', value: 'tcp'},
-    {title: 'TLS', value: 'tls'}
+const protocols = [
+    { title: 'TCP', value: 'tcp' },
+    { title: 'TLS', value: 'tls' }
 ];
 
 onMounted(() => {
     if (props.entry) {
-        const { host, port } = multiaddrToServer(props.entry.listen)
+        const { host, port, protocol } = multiaddrToServer(props.entry.listen)
         formData.ifs = host
         formData.port = port
+        formData.protocol = protocol
         formData.name = props.entry.name
         formData.servers = props.entry.servers.map(s => multiaddrToServer(s.addr))
+        const { tls_termination } = props.entry
+        if (tls_termination) {
+            formData.tls_term.server_names = tls_termination.server_names.join(', ')
+        }
     }
 })
 
@@ -116,10 +140,15 @@ async function submitForm(event) {
     if (valid) {
         const entry = {
             name: formData.name,
-            listen: serverToMultiaddr(formData.ifs, formData.port),
+            listen: serverToMultiaddrWithProtocol(formData.protocol, formData.ifs, formData.port),
             servers: formData.servers.map(s => ({
                 addr: serverToMultiaddrWithProtocol(s.protocol, s.host, s.port),
             }))
+        }
+        if (formData.protocol === 'tls') {
+            entry.tls_termination = {
+                server_names: parseTlsServerNames(formData.tls_term.server_names)
+            }
         }
         emit('submit', entry);
     }
@@ -179,6 +208,26 @@ function multiaddrToServer(addr) {
     return {}
 }
 
+function parseTlsServerNames(names) {
+    const list = names.split(',').map(n => n.trim())
+    if (list.some(n => !isValidTlsServerName(n))) return []
+    return list
+}
+
+function isValidTlsServerName(name) {
+    const nameWithoutAsterisk = name.replace(/^\*\./, '')
+    if (isValidHostname(nameWithoutAsterisk)) return true
+    try {
+        new Address4(name)
+        return true
+    } catch (_) { }
+    try {
+        new Address6(name)
+        return true
+    } catch (_) { }
+    return false
+}
+
 const nameRules = [
     value => {
         if (value) return true
@@ -220,6 +269,14 @@ const portRules = [
         const number = parseInt(value, 10)
         if (1 <= number && number <= 65535) return true
         return t('ports.config.rule.port_required')
+    },
+]
+
+const tlsServerNamesRules = [
+    value => {
+        const list = parseTlsServerNames(value)
+        if (list.length > 0) return true
+        return t('ports.config.tls_term.server_names.rule')
     },
 ]
 

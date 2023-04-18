@@ -193,10 +193,10 @@ pub async fn start(
 fn multiaddr_to_tcp(addr: &Multiaddr) -> Result<SocketAddr, Error> {
     let stack = addr.iter().collect::<Vec<_>>();
     match &stack[..] {
-        [Protocol::Ip4(addr), Protocol::Tcp(port)] if *port > 0 => {
+        [Protocol::Ip4(addr), Protocol::Tcp(port), ..] if *port > 0 => {
             Ok(SocketAddr::new(std::net::IpAddr::V4(*addr), *port))
         }
-        [Protocol::Ip6(addr), Protocol::Tcp(port)] if *port > 0 => {
+        [Protocol::Ip6(addr), Protocol::Tcp(port), ..] if *port > 0 => {
             Ok(SocketAddr::new(std::net::IpAddr::V6(*addr), *port))
         }
         _ => Err(Error::InvalidListeningAddress { addr: addr.clone() }),

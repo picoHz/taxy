@@ -43,6 +43,14 @@ export default {
                 interface_required: 'Enter a valid IPv4 or IPv6 address.',
                 hostname_required: 'Provide a valid hostname or IPv4/IPv6 address.',
                 port_required: 'Enter a valid port number (range: 1-65535).',
+            },
+            tls_term: {
+                tls_term: "TLS Termination",
+                server_names: {
+                    server_names: "Server Names",
+                    hint: "You can use commas to list multiple names, e.g, example.com, *.test.examle.com.",
+                    rule: "Enter valid server names.",
+                }
             }
         }
     },
