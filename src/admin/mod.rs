@@ -1,3 +1,4 @@
+use crate::config::AppConfig;
 use crate::proxy::PortStatus;
 use crate::{command::ServerCommand, config::port::PortEntry, error::Error, event::ServerEvent};
 use hyper::StatusCode;
@@ -12,6 +13,7 @@ use warp::filters::body::BodyDeserializeError;
 use warp::{sse::Event, Filter, Rejection, Reply};
 
 mod app_info;
+mod config;
 mod port;
 mod static_file;
 
@@ -30,6 +32,9 @@ pub async fn start_admin(
     tokio::spawn(async move {
         loop {
             match event_recv.recv().await {
+                Ok(ServerEvent::AppConfigUpdated { config, .. }) => {
+                    data.lock().await.config = config;
+                }
                 Ok(ServerEvent::PortTableUpdated { entries: ports, .. }) => {
                     data.lock().await.entries = ports;
                 }
@@ -44,6 +49,16 @@ pub async fn start_admin(
             }
         }
     });
+
+    let api_config_get = warp::get()
+        .and(warp::path::end())
+        .and(with_state(app_state.clone()).and_then(config::get));
+
+    let api_config_put = warp::put().and(warp::path::end()).and(
+        with_state(app_state.clone())
+            .and(warp::body::json())
+            .and_then(config::put),
+    );
 
     let api_ports_list = warp::get()
         .and(warp::path::end())
@@ -112,6 +127,8 @@ pub async fn start_admin(
         .and(warp::path::end())
         .and_then(app_info::get);
 
+    let config = warp::path("config").and(api_config_get.or(api_config_put));
+
     let port = warp::path("ports").and(
         api_ports_delete
             .or(api_ports_put)
@@ -123,7 +140,14 @@ pub async fn start_admin(
     let not_found = warp::get().and_then(handle_not_found);
 
     let api = warp::path("api")
-        .and(options.or(app_info).or(port).or(api_events).or(not_found))
+        .and(
+            options
+                .or(app_info)
+                .or(config)
+                .or(port)
+                .or(api_events)
+                .or(not_found),
+        )
         .with(warp::reply::with::header(
             "Access-Control-Allow-Headers",
             "content-type",
@@ -171,6 +195,7 @@ pub struct AppState {
 
 #[derive(Default)]
 struct Data {
+    config: AppConfig,
     entries: Vec<PortEntry>,
     status: HashMap<String, PortStatus>,
 }
