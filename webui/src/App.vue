@@ -5,9 +5,11 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { usePortsStore } from '@/stores/ports';
+import { useConfigStore } from '@/stores/config';
 import axious from 'axios';
 
 const portsStore = usePortsStore();
+const configStore = useConfigStore();
 const message = ref('');
 let eventSource = null;
 
@@ -26,6 +28,8 @@ onMounted(async () => {
         portsStore.updateTable(json.entries);
       case 'port_status_updated':
         portsStore.updateStatus(json.name, json.status);
+      case 'app_config_updated':
+        configStore.update(json.config);
     }
     message.value = event.data;
   };
@@ -33,6 +37,9 @@ onMounted(async () => {
   eventSource.onerror = (error) => {
     console.error('EventSource error:', error);
   };
+
+  const { data: config } = await axious.get(`${endpoint}/config`);
+  configStore.update(config);
 
   const { data } = await axious.get(`${endpoint}/ports`);
   portsStore.updateTable(data);
