@@ -16,7 +16,7 @@
                         <td>{{ config.listen }}</td>
                     </tr>
                     <tr>
-                        <td>Sta{{ $t('ports.status.state') }}te</td>
+                        <td>{{ $t('ports.status.state') }}</td>
                         <td>{{ $t(`socket.${status.socket}`) }}</td>
                     </tr>
                     <tr>
