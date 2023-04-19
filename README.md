@@ -58,3 +58,11 @@ cargo run
 cd webui
 npm install
 npm run dev
+```
+
+## FAQ
+
+### Why don't changes to the configuration take effect immediately?
+
+Updating the configuration solely impacts new connections. 
+When browsers maintain active TCP streams, subsequent requests will continue to follow the prior configuration.
