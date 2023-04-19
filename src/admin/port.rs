@@ -43,19 +43,13 @@ pub async fn delete(state: AppState, name: String) -> Result<impl Reply, Rejecti
 }
 
 pub async fn post(state: AppState, entry: PortEntry) -> Result<impl Reply, Rejection> {
+    let data = state.data.lock().await;
     let name = entry.name.clone();
-    if state
-        .data
-        .lock()
-        .await
-        .entries
-        .iter()
-        .any(|e| e.name == name)
-    {
+    if data.entries.iter().any(|e| e.name == name) {
         return Err(warp::reject::custom(Error::NameAlreadyExists { name }));
     }
     let mut ctx = PortContext::new(entry)?;
-    ctx.setup().await?;
+    ctx.setup(&data.config).await?;
     let _ = state.sender.send(ServerCommand::SetPort { ctx }).await;
     Ok(warp::reply::reply())
 }
@@ -75,8 +69,9 @@ pub async fn put(state: AppState, entry: PortEntry, name: String) -> Result<impl
             name: entry.name,
         }));
     }
+    let data = state.data.lock().await;
     let mut ctx = PortContext::new(entry)?;
-    ctx.setup().await?;
+    ctx.setup(&data.config).await?;
     let _ = state.sender.send(ServerCommand::SetPort { ctx }).await;
     Ok(warp::reply::reply())
 }

@@ -7,7 +7,6 @@ export const useConfigStore = defineStore('config', {
             this.app = config
         },
         setCertSearchPaths(paths) {
-            console.log(JSON.stringify(this.app));
             this.app.certs.search_paths = paths
         }
     },

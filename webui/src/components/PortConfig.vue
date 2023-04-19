@@ -282,7 +282,7 @@ const tlsServerNamesRules = [
 
 function isValidHostname(hostname) {
     const validHostnameRegex = /^(?!\-)[A-Za-z0-9\-]{1,63}(?<!\.)\.((?!\-)[A-Za-z0-9\-]{1,63}(?<!\-)\.?)+$/;
-    return validHostnameRegex.test(hostname) && hostname.length <= 253;
+    return hostname === 'localhost' || (validHostnameRegex.test(hostname) && hostname.length <= 253);
 }
 </script>
   

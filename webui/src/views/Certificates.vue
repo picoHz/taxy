@@ -55,6 +55,7 @@ const error = ref(null);
 const endpoint = import.meta.env.VITE_API_ENDPOINT;
 
 onMounted(() => {
+  const configStore = useConfigStore();
   certPaths.value = configStore.app.certs.search_paths.join("\n");
 })
 

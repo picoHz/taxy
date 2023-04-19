@@ -22,7 +22,7 @@ pub async fn start_server(
 
     let app_config = config.load_app_config().await;
     let _ = event.send(ServerEvent::AppConfigUpdated {
-        config: app_config,
+        config: app_config.clone(),
         source: Source::File,
     });
 
@@ -30,7 +30,7 @@ pub async fn start_server(
     for entry in ports {
         match PortContext::new(entry) {
             Ok(mut ctx) => {
-                if let Err(err) = ctx.setup().await {
+                if let Err(err) = ctx.setup(&app_config).await {
                     error!(?err, "failed to setup port");
                 }
                 table.set_port(ctx);

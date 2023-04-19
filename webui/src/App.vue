@@ -8,12 +8,13 @@ import { usePortsStore } from '@/stores/ports';
 import { useConfigStore } from '@/stores/config';
 import axious from 'axios';
 
-const portsStore = usePortsStore();
-const configStore = useConfigStore();
 const message = ref('');
 let eventSource = null;
 
 onMounted(async () => {
+  const portsStore = usePortsStore();
+  const configStore = useConfigStore();
+
   const endpoint = import.meta.env.VITE_API_ENDPOINT;
   eventSource = new EventSource(`${endpoint}/events`);
 
@@ -26,10 +27,13 @@ onMounted(async () => {
     switch (json.event) {
       case 'port_table_updated':
         portsStore.updateTable(json.entries);
+        break;
       case 'port_status_updated':
         portsStore.updateStatus(json.name, json.status);
+        break;
       case 'app_config_updated':
         configStore.update(json.config);
+        break;
     }
     message.value = event.data;
   };

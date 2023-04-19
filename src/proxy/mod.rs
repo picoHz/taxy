@@ -1,9 +1,14 @@
-pub mod tcp;
+use self::tcp::TcpPortContext;
+use crate::{
+    config::{port::PortEntry, AppConfig},
+    error::Error,
+};
+use serde_derive::Serialize;
 use std::time::SystemTime;
 
-use self::tcp::TcpPortContext;
-use crate::{config::port::PortEntry, error::Error};
-use serde_derive::Serialize;
+pub mod certs;
+pub mod tcp;
+pub mod tls;
 
 const MAX_NAME_LEN: usize = 32;
 
@@ -76,9 +81,9 @@ impl PortContext {
         &mut self.kind
     }
 
-    pub async fn setup(&mut self) -> Result<(), Error> {
+    pub async fn setup(&mut self, config: &AppConfig) -> Result<(), Error> {
         match &mut self.kind {
-            PortContextKind::Tcp(ctx) => ctx.setup().await,
+            PortContextKind::Tcp(ctx) => ctx.setup(config).await,
         }
     }
 

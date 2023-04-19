@@ -15,6 +15,18 @@ pub enum Error {
     #[error("invalid server address: {addr}")]
     InvalidServerAddress { addr: Multiaddr },
 
+    #[error("invalid subject name: {name}")]
+    InvalidSubjectName { name: String },
+
+    #[error("missing TLS termination config")]
+    TlsTerminationConfigMissing,
+
+    #[error("TLS server configuration failed")]
+    TlsServerConfigrationFailed,
+
+    #[error("valid TLS certificates not found")]
+    ValidTlsCertificatesNotFound,
+
     #[error("no backend servers")]
     EmptyBackendServers,
 

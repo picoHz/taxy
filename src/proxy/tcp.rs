@@ -1,15 +1,19 @@
-use super::{PortContextEvent, PortStatus, SocketState};
-use crate::{config::port::PortEntry, error::Error};
+use super::{tls::TlsTermination, PortContextEvent, PortStatus, SocketState};
+use crate::{
+    config::{port::PortEntry, AppConfig},
+    error::Error,
+};
 use multiaddr::{Multiaddr, Protocol};
 use std::{
     net::{IpAddr, SocketAddr},
     sync::Arc,
     time::SystemTime,
 };
+use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::{self, TcpSocket, TcpStream};
 use tokio_rustls::{
     rustls::{client::ServerName, Certificate, ClientConfig, RootCertStore},
-    TlsConnector,
+    TlsAcceptor, TlsConnector,
 };
 use tracing::{debug, error, info, span, warn, Instrument, Level, Span};
 
@@ -19,6 +23,7 @@ pub struct TcpPortContext {
     servers: Vec<Connection>,
     status: PortStatus,
     span: Span,
+    tls_termination: Option<TlsTermination>,
     tls_client_config: Option<Arc<ClientConfig>>,
     round_robin_counter: usize,
 }
@@ -64,17 +69,26 @@ impl TcpPortContext {
             tls_client_config = Some(Arc::new(config));
         }
 
+        let tls_termination = if let Some(tls) = &port.opts.tls_termination {
+            Some(TlsTermination::new(tls)?)
+        } else if port.listen.iter().any(|p| p == Protocol::Tls) {
+            return Err(Error::TlsTerminationConfigMissing);
+        } else {
+            None
+        };
+
         Ok(Self {
             listen,
             servers,
             status: Default::default(),
             span,
+            tls_termination,
             tls_client_config,
             round_robin_counter: 0,
         })
     }
 
-    pub async fn setup(&mut self) -> Result<(), Error> {
+    pub async fn setup(&mut self, config: &AppConfig) -> Result<(), Error> {
         let use_tls = self.servers.iter().any(|server| server.tls);
         if self.tls_client_config.is_none() && use_tls {
             let mut root_certs = RootCertStore::empty();
@@ -100,14 +114,18 @@ impl TcpPortContext {
                 .with_no_client_auth();
             self.tls_client_config = Some(Arc::new(config));
         }
+
+        if let Some(tls) = &mut self.tls_termination {
+            tls.setup(config).await?;
+        }
         Ok(())
     }
 
     pub fn apply(&mut self, new: Self) {
-        self.listen = new.listen;
-        self.servers = new.servers;
-        self.span = new.span;
-        self.tls_client_config = new.tls_client_config;
+        *self = Self {
+            round_robin_counter: self.round_robin_counter,
+            ..new
+        };
     }
 
     pub fn event(&mut self, event: PortContextEvent) {
@@ -137,9 +155,14 @@ impl TcpPortContext {
             .as_ref()
             .filter(|_| conn.tls)
             .cloned();
+        let tls_acceptor = self
+            .tls_termination
+            .as_ref()
+            .and_then(|tls| tls.acceptor.clone());
+
         tokio::spawn(
             async move {
-                if let Err(err) = start(stream, conn, tls_client_config).await {
+                if let Err(err) = start(stream, conn, tls_client_config, tls_acceptor).await {
                     error!("{err}");
                 }
             }
@@ -150,9 +173,10 @@ impl TcpPortContext {
 }
 
 pub async fn start(
-    mut stream: TcpStream,
+    stream: TcpStream,
     conn: Connection,
     tls_client_config: Option<Arc<ClientConfig>>,
+    tls_acceptor: Option<TlsAcceptor>,
 ) -> anyhow::Result<()> {
     let remote = stream.peer_addr()?;
     let local = stream.local_addr()?;
@@ -174,18 +198,23 @@ pub async fn start(
 
     info!(target: "taxy::access_log", remote = %remote, %local, %resolved);
 
-    let mut out = sock.connect(resolved).await?;
+    let out = sock.connect(resolved).await?;
     debug!(%resolved, "connected");
 
-    if let Some(config) = tls_client_config {
-        debug!(%resolved, "tls handshake");
-        let tls = TlsConnector::from(config);
-        let mut out = tls.connect(conn.name, out).await?;
-        tokio::io::copy_bidirectional(&mut stream, &mut out).await?;
-    } else {
-        tokio::io::copy_bidirectional(&mut stream, &mut out).await?;
+    let mut stream: Box<dyn IoStream> = Box::new(stream);
+    if let Some(acceptor) = tls_acceptor {
+        debug!(%remote, "server: tls handshake");
+        stream = Box::new(acceptor.accept(stream).await?);
     }
 
+    let mut out: Box<dyn IoStream> = Box::new(out);
+    if let Some(config) = tls_client_config {
+        debug!(%resolved, "client: tls handshake");
+        let tls = TlsConnector::from(config);
+        out = Box::new(tls.connect(conn.name, out).await?);
+    }
+
+    tokio::io::copy_bidirectional(&mut stream, &mut out).await?;
     debug!(%resolved, "eof");
     Ok(())
 }
@@ -226,6 +255,10 @@ fn multiaddr_to_host(addr: &Multiaddr) -> Result<Connection, Error> {
         _ => Err(Error::InvalidServerAddress { addr: addr.clone() }),
     }
 }
+
+trait IoStream: AsyncRead + AsyncWrite + Unpin + Send {}
+
+impl<S> IoStream for S where S: AsyncRead + AsyncWrite + Unpin + Send {}
 
 #[derive(Debug, Clone)]
 pub struct Connection {

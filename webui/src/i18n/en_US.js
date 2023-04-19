@@ -1,6 +1,7 @@
 export default {
     error: {
-        name_already_exists: 'Name already exists: {name}'
+        name_already_exists: 'Name already exists: {name}',
+        valid_tls_certificates_not_found: 'Unable to find valid TLS certificates'
     },
     socket: {
         listening: 'Listening',

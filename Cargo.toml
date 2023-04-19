@@ -17,6 +17,7 @@ anyhow = "1.0.70"
 clap = { version = "4.2.2", features = ["derive", "env"] }
 directories = "5.0.0"
 futures = "0.3.28"
+globwalk = "0.8.1"
 hyper = { version = "1.0.0-rc.3", features = ["full"] }
 include_dir = "0.7.3"
 indexmap = { version = "1.9.3", features = ["serde"] }
@@ -25,7 +26,8 @@ multiaddr = "0.17.1"
 percent-encoding = "2.2.0"
 pin-project-lite = "0.2.9"
 rustls-native-certs = "0.6.2"
-serde = "1.0.160"
+rustls-pemfile = "1.0.2"
+serde = {version = "1.0.160", features = ["rc"]}
 serde_derive = "1.0.160"
 serde_json = "1.0.96"
 thiserror = "1.0.40"
@@ -38,6 +40,7 @@ tracing = { version = "0.1.37", features = ["release_max_level_info"] }
 tracing-appender = "0.2.2"
 tracing-subscriber = { version = "0.3.16", features = ["json"] }
 warp = "0.3.4"
+x509-parser = "0.15.0"
 
 [build-dependencies]
 built = "0.6.0"
