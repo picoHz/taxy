@@ -18,18 +18,22 @@ clap = { version = "4.2.2", features = ["derive", "env"] }
 directories = "5.0.0"
 futures = "0.3.28"
 globwalk = "0.8.1"
+hex = "0.4.3"
 hyper = { version = "1.0.0-rc.3", features = ["full"] }
 include_dir = "0.7.3"
 indexmap = { version = "1.9.3", features = ["serde"] }
 mime_guess = "2.0.4"
 multiaddr = "0.17.1"
+nanoid = "0.4.0"
 percent-encoding = "2.2.0"
 pin-project-lite = "0.2.9"
+rcgen = "0.10.0"
 rustls-native-certs = "0.6.2"
 rustls-pemfile = "1.0.2"
 serde = {version = "1.0.160", features = ["rc"]}
 serde_derive = "1.0.160"
 serde_json = "1.0.96"
+sha2 = "0.10.6"
 thiserror = "1.0.40"
 tokio = { version = "1.27.0", features = ["macros", "rt-multi-thread", "net", "signal", "io-util"] }
 tokio-rustls = "0.24.0"

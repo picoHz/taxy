@@ -13,6 +13,7 @@ use warp::filters::body::BodyDeserializeError;
 use warp::{sse::Event, Filter, Rejection, Reply};
 
 mod app_info;
+mod certs;
 mod config;
 mod port;
 mod static_file;
@@ -93,6 +94,20 @@ pub async fn start_admin(
             .and_then(port::post),
     );
 
+    let api_certs_self_signed = warp::post().and(warp::path("self_signed")).and(
+        with_state(app_state.clone())
+            .and(warp::body::json())
+            .and(warp::path::end())
+            .and_then(certs::self_signed),
+    );
+
+    let api_certs_upload = warp::post().and(warp::path("upload")).and(
+        with_state(app_state.clone())
+            .and(warp::multipart::form())
+            .and(warp::path::end())
+            .and_then(certs::upload),
+    );
+
     let static_file = warp::get()
         .and(warp::path::full())
         .and_then(static_file::get);
@@ -136,6 +151,8 @@ pub async fn start_admin(
             .or(api_ports_list)
             .or(api_ports_post),
     );
+    let certs = warp::path("certs").and(api_certs_self_signed.or(api_certs_upload));
+
     let options = warp::options().map(warp::reply);
     let not_found = warp::get().and_then(handle_not_found);
 
@@ -145,6 +162,7 @@ pub async fn start_admin(
                 .or(app_info)
                 .or(config)
                 .or(port)
+                .or(certs)
                 .or(api_events)
                 .or(not_found),
         )

@@ -11,6 +11,7 @@ use tracing_subscriber::prelude::*;
 
 mod admin;
 mod args;
+mod certs;
 mod command;
 mod config;
 mod error;

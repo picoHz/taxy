@@ -6,7 +6,6 @@ use crate::{
 use serde_derive::Serialize;
 use std::time::SystemTime;
 
-pub mod certs;
 pub mod tcp;
 pub mod tls;
 

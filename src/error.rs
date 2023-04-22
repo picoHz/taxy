@@ -27,6 +27,15 @@ pub enum Error {
     #[error("valid TLS certificates not found")]
     ValidTlsCertificatesNotFound,
 
+    #[error("failed to generate self-signed certificate")]
+    FailedToGerateSelfSignedCertificate,
+
+    #[error("failed to read certificate")]
+    FailedToReadCertificate,
+
+    #[error("failed to read private key")]
+    FailedToReadPrivateKey,
+
     #[error("no backend servers")]
     EmptyBackendServers,
 
