@@ -8,4 +8,5 @@ pub enum ServerCommand {
     SetPort { ctx: PortContext },
     DeletePort { name: String },
     AddCert { cert: Cert },
+    DeleteCert { id: String },
 }

@@ -130,4 +130,12 @@ impl ConfigStorage {
         fs::write(path.join("key.pem"), &cert.raw_key).await?;
         Ok(())
     }
+
+    pub async fn delete_cert(&self, id: &str) {
+        let dir = &self.dir;
+        let path = dir.join("certs").join(id);
+        if let Err(err) = fs::remove_dir_all(&path).await {
+            error!(?path, "failed to delete: {err}");
+        }
+    }
 }

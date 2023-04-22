@@ -108,6 +108,13 @@ pub async fn start_admin(
             .and_then(certs::upload),
     );
 
+    let api_certs_delete = warp::delete().and(
+        with_state(app_state.clone())
+            .and(warp::path::param())
+            .and(warp::path::end())
+            .and_then(certs::delete),
+    );
+
     let static_file = warp::get()
         .and(warp::path::full())
         .and_then(static_file::get);
@@ -151,7 +158,11 @@ pub async fn start_admin(
             .or(api_ports_list)
             .or(api_ports_post),
     );
-    let certs = warp::path("certs").and(api_certs_self_signed.or(api_certs_upload));
+    let certs = warp::path("certs").and(
+        api_certs_delete
+            .or(api_certs_self_signed)
+            .or(api_certs_upload),
+    );
 
     let options = warp::options().map(warp::reply);
     let not_found = warp::get().and_then(handle_not_found);
