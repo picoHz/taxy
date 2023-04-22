@@ -1,5 +1,5 @@
 use super::{port::PortEntry, AppConfig};
-use crate::config::port::NamelessPortEntry;
+use crate::{certs::Cert, config::port::NamelessPortEntry};
 use indexmap::map::IndexMap;
 use std::{
     collections::HashSet,
@@ -113,5 +113,21 @@ impl ConfigStorage {
         let content = fs::read_to_string(path).await?;
         let table: IndexMap<String, NamelessPortEntry> = toml::from_str(&content)?;
         Ok(table.into_iter().map(|entry| entry.into()).collect())
+    }
+
+    pub async fn save_cert(&self, cert: &Cert) {
+        let dir = &self.dir;
+        let path = dir.join("certs").join(&cert.info.id);
+        if let Err(err) = self.save_cert_impl(&path, cert).await {
+            error!(?path, "failed to save: {err}");
+        }
+    }
+
+    async fn save_cert_impl(&self, path: &Path, cert: &Cert) -> anyhow::Result<()> {
+        fs::create_dir_all(path).await?;
+        info!(?path, "save cert");
+        fs::write(path.join("cert.pem"), &cert.raw_chain).await?;
+        fs::write(path.join("key.pem"), &cert.raw_key).await?;
+        Ok(())
     }
 }

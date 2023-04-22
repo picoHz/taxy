@@ -60,6 +60,9 @@ pub async fn start_server(
                         table.delete_port(&name);
                         update_port_statuses(&event, &mut pool, &mut table).await;
                     },
+                    Some(ServerCommand::AddCert { cert }) => {
+                        config.save_cert(&cert).await;
+                    }
                     _ => (),
                 }
             }
