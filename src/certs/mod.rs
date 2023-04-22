@@ -27,7 +27,7 @@ const MINIMUM_EXPIRY: Duration = Duration::from_secs(60 * 60 * 24);
 const CERT_FILE_PATTERN: &str = "*.{pem,crt,cer}";
 const KEY_FILE_PATTERN: &str = "*.key";
 const MAX_SEARCH_DEPTH: usize = 4;
-const CERT_ID_LENGTH: usize = 12;
+const CERT_ID_LENGTH: usize = 20;
 
 pub fn load_single_file(base: &Path) -> anyhow::Result<(Vec<Certificate>, PrivateKey)> {
     let walker =
@@ -132,7 +132,7 @@ pub struct SelfSignedCertRequest {
 }
 
 impl CertInfo {
-    fn new(id: String, der: &[u8]) -> Result<Self, X509Error> {
+    fn new(der: &[u8]) -> Result<Self, X509Error> {
         let mut hasher = Sha256::new();
         hasher.update(der);
         let fingerprint = hex::encode(hasher.finalize());
@@ -148,7 +148,7 @@ impl CertInfo {
             })
             .collect();
         Ok(CertInfo {
-            id,
+            id: fingerprint[..CERT_ID_LENGTH].to_string(),
             fingerprint,
             san,
         })
@@ -156,13 +156,12 @@ impl CertInfo {
 }
 
 impl Cert {
-    pub fn new(id: Option<String>, raw_chain: Vec<u8>, raw_key: Vec<u8>) -> Result<Self, Error> {
+    pub fn new(raw_chain: Vec<u8>, raw_key: Vec<u8>) -> Result<Self, Error> {
         let mut chain = raw_chain.as_slice();
         let mut key = raw_key.as_slice();
-        let id = id.unwrap_or_else(|| nanoid::nanoid!(CERT_ID_LENGTH));
         let chain =
             rustls_pemfile::certs(&mut chain).map_err(|_| Error::FailedToReadCertificate)?;
-        let info = CertInfo::new(id, chain.last().ok_or(Error::FailedToReadCertificate)?)
+        let info = CertInfo::new(chain.last().ok_or(Error::FailedToReadCertificate)?)
             .map_err(|_| Error::FailedToReadCertificate)?;
         let chain = chain.into_iter().map(Certificate).collect();
 
@@ -220,8 +219,7 @@ impl Cert {
             .serialize_der()
             .map_err(|_| Error::FailedToGerateSelfSignedCertificate)?;
 
-        let id = nanoid::nanoid!(CERT_ID_LENGTH);
-        let info = CertInfo::new(id, &der).map_err(|_| Error::FailedToReadCertificate)?;
+        let info = CertInfo::new(&der).map_err(|_| Error::FailedToReadCertificate)?;
 
         let chain = vec![Certificate(der)];
         let key = PrivateKey(cert.serialize_private_key_der());

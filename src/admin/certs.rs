@@ -39,7 +39,7 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
         }
     }
 
-    let cert = Cert::new(None, chain, key)?;
+    let cert = Cert::new(chain, key)?;
     let reply = warp::reply::json(&cert.info);
     let _ = state.sender.send(ServerCommand::AddCert { cert }).await;
     Ok(reply)
