@@ -63,6 +63,9 @@ pub async fn start_server(
                     Some(ServerCommand::AddCert { cert }) => {
                         config.save_cert(&cert).await;
                     }
+                    Some(ServerCommand::DeleteCert { id }) => {
+                        config.delete_cert(&id).await;
+                    }
                     _ => (),
                 }
             }

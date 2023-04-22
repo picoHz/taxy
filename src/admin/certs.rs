@@ -44,3 +44,8 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
     let _ = state.sender.send(ServerCommand::AddCert { cert }).await;
     Ok(reply)
 }
+
+pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {
+    let _ = state.sender.send(ServerCommand::DeleteCert { id }).await;
+    Ok(warp::reply::reply())
+}
