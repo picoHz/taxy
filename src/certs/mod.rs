@@ -4,7 +4,7 @@ use serde_derive::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
     fs,
-    io::{BufRead, BufReader},
+    io::BufReader,
     path::{Path, PathBuf},
     str::FromStr,
     time::Duration,
@@ -115,6 +115,8 @@ pub struct Cert {
     pub info: CertInfo,
     pub chain: Vec<Certificate>,
     pub key: PrivateKey,
+    pub raw_chain: Vec<u8>,
+    pub raw_key: Vec<u8>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -154,20 +156,19 @@ impl CertInfo {
 }
 
 impl Cert {
-    pub fn new(
-        id: Option<String>,
-        chain: &mut dyn BufRead,
-        key: &mut dyn BufRead,
-    ) -> Result<Self, Error> {
+    pub fn new(id: Option<String>, raw_chain: Vec<u8>, raw_key: Vec<u8>) -> Result<Self, Error> {
+        let mut chain = raw_chain.as_slice();
+        let mut key = raw_key.as_slice();
         let id = id.unwrap_or_else(|| nanoid::nanoid!(CERT_ID_LENGTH));
-        let chain = rustls_pemfile::certs(chain).map_err(|_| Error::FailedToReadCertificate)?;
+        let chain =
+            rustls_pemfile::certs(&mut chain).map_err(|_| Error::FailedToReadCertificate)?;
         let info = CertInfo::new(id, chain.last().ok_or(Error::FailedToReadCertificate)?)
             .map_err(|_| Error::FailedToReadCertificate)?;
         let chain = chain.into_iter().map(Certificate).collect();
 
         let mut privkey = None;
         while let Some(key) =
-            rustls_pemfile::read_one(key).map_err(|_| Error::FailedToReadPrivateKey)?
+            rustls_pemfile::read_one(&mut key).map_err(|_| Error::FailedToReadPrivateKey)?
         {
             match key {
                 Item::RSAKey(key) | Item::PKCS8Key(key) | Item::ECKey(key) => {
@@ -180,7 +181,13 @@ impl Cert {
         }
 
         let key = privkey.ok_or(Error::FailedToReadPrivateKey)?;
-        Ok(Cert { info, chain, key })
+        Ok(Cert {
+            info,
+            chain,
+            key,
+            raw_chain,
+            raw_key,
+        })
     }
 
     pub fn new_self_signed(req: &SelfSignedCertRequest) -> Result<Self, Error> {
@@ -218,7 +225,20 @@ impl Cert {
 
         let chain = vec![Certificate(der)];
         let key = PrivateKey(cert.serialize_private_key_der());
-        Ok(Self { info, chain, key })
+
+        let raw_chain = cert
+            .serialize_pem()
+            .map_err(|_| Error::FailedToGerateSelfSignedCertificate)?
+            .into_bytes();
+        let raw_key = cert.serialize_private_key_pem().into_bytes();
+
+        Ok(Self {
+            info,
+            chain,
+            key,
+            raw_chain,
+            raw_key,
+        })
     }
 }
 
