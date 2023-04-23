@@ -8,6 +8,11 @@ use std::io::Read;
 use tokio_stream::StreamExt;
 use warp::{multipart::FormData, Buf, Rejection, Reply};
 
+pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
+    let data = state.data.lock().await;
+    Ok(warp::reply::json(&data.certs))
+}
+
 pub async fn self_signed(
     state: AppState,
     request: SelfSignedCertRequest,
