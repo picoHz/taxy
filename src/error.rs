@@ -36,6 +36,12 @@ pub enum Error {
     #[error("failed to read private key")]
     FailedToReadPrivateKey,
 
+    #[error("certificate already exists: {id}")]
+    CertAlreadyExists { id: String },
+
+    #[error("certificate not found: {id}")]
+    CertNotFound { id: String },
+
     #[error("no backend servers")]
     EmptyBackendServers,
 

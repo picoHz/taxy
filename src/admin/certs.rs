@@ -45,12 +45,27 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
     }
 
     let cert = Cert::new(chain, key)?;
+    if state
+        .data
+        .lock()
+        .await
+        .certs
+        .iter()
+        .any(|c| c.id == cert.info.id)
+    {
+        return Err(warp::reject::custom(Error::CertAlreadyExists {
+            id: cert.info.id,
+        }));
+    }
     let reply = warp::reply::json(&cert.info);
     let _ = state.sender.send(ServerCommand::AddCert { cert }).await;
     Ok(reply)
 }
 
 pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {
+    if !state.data.lock().await.certs.iter().any(|c| c.id == id) {
+        return Err(warp::reject::custom(Error::CertNotFound { id }));
+    }
     let _ = state.sender.send(ServerCommand::DeleteCert { id }).await;
     Ok(warp::reply::reply())
 }
