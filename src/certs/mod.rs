@@ -122,6 +122,7 @@ pub struct Cert {
     pub san: Vec<SubjectName>,
     pub not_after: ASN1Time,
     pub not_before: ASN1Time,
+    pub is_self_signed: bool,
 }
 
 impl Cert {
@@ -136,6 +137,7 @@ impl Cert {
             san: self.san.clone(),
             not_after: self.not_after.timestamp(),
             not_before: self.not_before.timestamp(),
+            is_self_signed: self.is_self_signed,
         }
     }
 }
@@ -147,6 +149,7 @@ pub struct CertInfo {
     pub san: Vec<SubjectName>,
     pub not_after: i64,
     pub not_before: i64,
+    pub is_self_signed: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -176,9 +179,10 @@ impl Cert {
             }
         }
 
+        let is_self_signed = is_self_signed(&chain)?;
+
         let key = privkey.ok_or(Error::FailedToReadPrivateKey)?;
         let der = &chain.last().ok_or(Error::FailedToReadCertificate)?.0;
-
         let mut hasher = Sha256::new();
         hasher.update(der);
         let fingerprint = hex::encode(hasher.finalize());
@@ -207,6 +211,7 @@ impl Cert {
             san,
             not_after,
             not_before,
+            is_self_signed,
         })
     }
 
@@ -244,6 +249,17 @@ impl Cert {
 
         Self::new(raw_chain, raw_key)
     }
+}
+
+fn is_self_signed(chain: &[Certificate]) -> Result<bool, Error> {
+    for data in chain {
+        let (_, cert) =
+            parse_x509_certificate(&data.0).map_err(|_| Error::FailedToReadCertificate)?;
+        if cert.subject() == cert.issuer() {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 #[cfg(test)]
