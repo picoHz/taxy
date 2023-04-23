@@ -1,11 +1,29 @@
 <template>
   <v-card max-width="800" class="mx-auto">
+    <v-toolbar color="transparent" density="compact">
+      <template v-slot:append>
+        <v-btn prepend-icon="mdi-plus">
+          {{ $t('certs.add_cert') }}
+          <v-menu activator="parent">
+            <v-list>
+              <v-list-item>
+                <v-list-item-title>{{ $t('certs.upload') }}</v-list-item-title>
+              </v-list-item>
+              <v-list-item>
+                <v-list-item-title>{{ $t('certs.self_signed') }}</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </v-btn>
+      </template>
+    </v-toolbar>
+    <v-divider></v-divider>
     <v-list>
       <v-list-item v-if="certsStore.list.length === 0" disabled>
         <v-list-item-title class="text-center">{{ $t('certs.no_certs') }}</v-list-item-title>
       </v-list-item>
       <v-list-item v-for="item in certsStore.list" :key="item.id" :title="item.san.join(', ')" :subtitle="item.id"
-        :value="item.listen" :to="{ path: `/ports/${encodeURIComponent(item.name)}` }">
+        :value="item.listen" :to="{ path: `/certs/${item.id}` }">
       </v-list-item>
     </v-list>
     <v-toolbar color="transparent" density="compact">

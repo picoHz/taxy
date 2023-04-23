@@ -64,6 +64,9 @@ export default {
             placeholder: 'Enter one path per line, e.g., /etc/letsencrypt/live.',
             description: 'Paths for searching TLS certificates and private keys.',
             update: 'Update',
-        }
+        },
+        add_cert: "Add Certificate",
+        self_signed: "Self-signed",
+        upload: "Upload",
     }
 }
