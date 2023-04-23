@@ -121,7 +121,7 @@ impl ConfigStorage {
 
     pub async fn save_cert(&self, cert: &Cert) {
         let dir = &self.dir;
-        let path = dir.join("certs").join(&cert.info.id);
+        let path = dir.join("certs").join(cert.id());
         if let Err(err) = self.save_cert_impl(&path, cert).await {
             error!(?path, "failed to save: {err}");
         }
