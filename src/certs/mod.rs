@@ -11,7 +11,7 @@ use std::{
 };
 use tokio_rustls::rustls::{Certificate, PrivateKey};
 use tracing::{debug, error};
-use x509_parser::extensions::GeneralName;
+use x509_parser::{extensions::GeneralName, time::ASN1Time};
 use x509_parser::{
     parse_x509_certificate,
     pem::parse_x509_pem,
@@ -120,6 +120,8 @@ pub struct Cert {
     pub raw_key: Vec<u8>,
     pub fingerprint: String,
     pub san: Vec<SubjectName>,
+    pub not_after: ASN1Time,
+    pub not_before: ASN1Time,
 }
 
 impl Cert {
@@ -132,6 +134,8 @@ impl Cert {
             id: self.id.clone(),
             fingerprint: self.fingerprint.clone(),
             san: self.san.clone(),
+            not_after: self.not_after.timestamp(),
+            not_before: self.not_before.timestamp(),
         }
     }
 }
@@ -141,6 +145,8 @@ pub struct CertInfo {
     pub id: String,
     pub fingerprint: String,
     pub san: Vec<SubjectName>,
+    pub not_after: i64,
+    pub not_before: i64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -188,6 +194,9 @@ impl Cert {
             })
             .collect();
 
+        let not_after = x509.validity().not_after;
+        let not_before = x509.validity().not_before;
+
         Ok(Cert {
             id: fingerprint[..CERT_ID_LENGTH].to_string(),
             fingerprint,
@@ -196,6 +205,8 @@ impl Cert {
             raw_chain,
             raw_key,
             san,
+            not_after,
+            not_before,
         })
     }
 
