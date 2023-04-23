@@ -11,7 +11,7 @@ use std::{
 };
 use tokio_rustls::rustls::{Certificate, PrivateKey};
 use tracing::{debug, error};
-use x509_parser::{extensions::GeneralName, prelude::X509Error};
+use x509_parser::extensions::GeneralName;
 use x509_parser::{
     parse_x509_certificate,
     pem::parse_x509_pem,
@@ -113,11 +113,27 @@ fn has_subject_name(cert: &X509Certificate, names: &[SubjectName]) -> bool {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Cert {
-    pub info: CertInfo,
+    pub id: String,
     pub chain: Vec<Certificate>,
     pub key: PrivateKey,
     pub raw_chain: Vec<u8>,
     pub raw_key: Vec<u8>,
+    pub fingerprint: String,
+    pub san: Vec<SubjectName>,
+}
+
+impl Cert {
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    pub fn info(&self) -> CertInfo {
+        CertInfo {
+            id: self.id.clone(),
+            fingerprint: self.fingerprint.clone(),
+            san: self.san.clone(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -132,39 +148,13 @@ pub struct SelfSignedCertRequest {
     pub san: Vec<SubjectName>,
 }
 
-impl CertInfo {
-    fn new(der: &[u8]) -> Result<Self, X509Error> {
-        let mut hasher = Sha256::new();
-        hasher.update(der);
-        let fingerprint = hex::encode(hasher.finalize());
-        let (_, x509) = parse_x509_certificate(der)?;
-        let san = x509
-            .subject_alternative_name()
-            .into_iter()
-            .flatten()
-            .flat_map(|name| &name.value.general_names)
-            .filter_map(|name| match name {
-                GeneralName::DNSName(name) => SubjectName::from_str(name).ok(),
-                _ => None,
-            })
-            .collect();
-        Ok(CertInfo {
-            id: fingerprint[..CERT_ID_LENGTH].to_string(),
-            fingerprint,
-            san,
-        })
-    }
-}
-
 impl Cert {
     pub fn new(raw_chain: Vec<u8>, raw_key: Vec<u8>) -> Result<Self, Error> {
         let mut chain = raw_chain.as_slice();
         let mut key = raw_key.as_slice();
         let chain =
             rustls_pemfile::certs(&mut chain).map_err(|_| Error::FailedToReadCertificate)?;
-        let info = CertInfo::new(chain.last().ok_or(Error::FailedToReadCertificate)?)
-            .map_err(|_| Error::FailedToReadCertificate)?;
-        let chain = chain.into_iter().map(Certificate).collect();
+        let chain = chain.into_iter().map(Certificate).collect::<Vec<_>>();
 
         let mut privkey = None;
         while let Some(key) =
@@ -181,12 +171,31 @@ impl Cert {
         }
 
         let key = privkey.ok_or(Error::FailedToReadPrivateKey)?;
+        let der = &chain.last().ok_or(Error::FailedToReadCertificate)?.0;
+
+        let mut hasher = Sha256::new();
+        hasher.update(der);
+        let fingerprint = hex::encode(hasher.finalize());
+        let (_, x509) = parse_x509_certificate(der).map_err(|_| Error::FailedToReadCertificate)?;
+        let san = x509
+            .subject_alternative_name()
+            .into_iter()
+            .flatten()
+            .flat_map(|name| &name.value.general_names)
+            .filter_map(|name| match name {
+                GeneralName::DNSName(name) => SubjectName::from_str(name).ok(),
+                _ => None,
+            })
+            .collect();
+
         Ok(Cert {
-            info,
+            id: fingerprint[..CERT_ID_LENGTH].to_string(),
+            fingerprint,
             chain,
             key,
             raw_chain,
             raw_key,
+            san,
         })
     }
 
@@ -216,28 +225,13 @@ impl Cert {
             }
         };
 
-        let der = cert
-            .serialize_der()
-            .map_err(|_| Error::FailedToGerateSelfSignedCertificate)?;
-
-        let info = CertInfo::new(&der).map_err(|_| Error::FailedToReadCertificate)?;
-
-        let chain = vec![Certificate(der)];
-        let key = PrivateKey(cert.serialize_private_key_der());
-
         let raw_chain = cert
             .serialize_pem()
             .map_err(|_| Error::FailedToGerateSelfSignedCertificate)?
             .into_bytes();
         let raw_key = cert.serialize_private_key_pem().into_bytes();
 
-        Ok(Self {
-            info,
-            chain,
-            key,
-            raw_chain,
-            raw_key,
-        })
+        Self::new(raw_chain, raw_key)
     }
 }
 
@@ -251,6 +245,6 @@ mod test {
             san: vec![SubjectName::from_str("localhost").unwrap()],
         };
         let cert = Cert::new_self_signed(&req).unwrap();
-        assert_eq!(cert.info.san, req.san);
+        assert_eq!(cert.san, req.san);
     }
 }

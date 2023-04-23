@@ -14,13 +14,13 @@ impl CertStore {
         Self {
             certs: iter
                 .into_iter()
-                .map(|cert| (cert.info.id.clone(), cert))
+                .map(|cert| (cert.id().to_string(), cert))
                 .collect(),
         }
     }
 
     pub fn add(&mut self, cert: Cert) {
-        self.certs.insert(cert.info.id.clone(), cert);
+        self.certs.insert(cert.id().to_string(), cert);
     }
 
     pub fn delete(&mut self, id: &str) {
@@ -28,6 +28,6 @@ impl CertStore {
     }
 
     pub fn list(&self) -> Vec<CertInfo> {
-        self.certs.values().map(|cert| cert.info.clone()).collect()
+        self.certs.values().map(|cert| cert.info()).collect()
     }
 }

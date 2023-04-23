@@ -18,9 +18,8 @@ pub async fn self_signed(
     request: SelfSignedCertRequest,
 ) -> Result<impl Reply, Rejection> {
     let cert = Cert::new_self_signed(&request)?;
-    let reply = warp::reply::json(&cert.info);
     let _ = state.sender.send(ServerCommand::AddCert { cert }).await;
-    Ok(reply)
+    Ok(warp::reply::reply())
 }
 
 pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, Rejection> {
@@ -51,15 +50,14 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
         .await
         .certs
         .iter()
-        .any(|c| c.id == cert.info.id)
+        .any(|c| c.id == cert.id())
     {
         return Err(warp::reject::custom(Error::CertAlreadyExists {
-            id: cert.info.id,
+            id: cert.id().to_string(),
         }));
     }
-    let reply = warp::reply::json(&cert.info);
     let _ = state.sender.send(ServerCommand::AddCert { cert }).await;
-    Ok(reply)
+    Ok(warp::reply::reply())
 }
 
 pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {
