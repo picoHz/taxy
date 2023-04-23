@@ -1,6 +1,6 @@
 use crate::{
     config::{port::PortEntry, AppConfig, Source},
-    proxy::PortStatus,
+    proxy::PortStatus, certs::CertInfo,
 };
 use serde_derive::Serialize;
 
@@ -18,6 +18,9 @@ pub enum ServerEvent {
     PortStatusUpdated {
         name: String,
         status: PortStatus,
+    },
+    CertListUpdated {
+        certs: Vec<CertInfo>
     },
     Shutdown,
 }

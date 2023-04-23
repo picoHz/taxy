@@ -1,11 +1,15 @@
 use super::{port::PortEntry, AppConfig};
-use crate::{certs::Cert, config::port::NamelessPortEntry};
+use crate::{
+    certs::{store::CertStore, Cert},
+    config::port::NamelessPortEntry,
+};
 use indexmap::map::IndexMap;
 use std::{
     collections::HashSet,
     path::{Path, PathBuf},
 };
 use tokio::fs;
+use tokio::io::AsyncReadExt;
 use toml_edit::Document;
 use tracing::{error, info, warn};
 
@@ -137,5 +141,59 @@ impl ConfigStorage {
         if let Err(err) = fs::remove_dir_all(&path).await {
             error!(?path, "failed to delete: {err}");
         }
+    }
+
+    pub async fn load_certs(&self) -> CertStore {
+        let dir = &self.dir;
+        let path = dir.join("certs");
+        match self.load_certs_impl(&path).await {
+            Ok(store) => store,
+            Err(err) => {
+                warn!(?path, "failed to load certs: {err}");
+                Default::default()
+            }
+        }
+    }
+
+    pub async fn load_certs_impl(&self, path: &Path) -> anyhow::Result<CertStore> {
+        let walker = globwalk::GlobWalkerBuilder::from_patterns(path, &["*/cert.pem"])
+            .build()?
+            .filter_map(Result::ok);
+
+        let mut certs = Vec::new();
+        for pem in walker {
+            let chain = pem.path();
+            let key = pem.path().parent().unwrap().join("key.pem");
+            let mut chain_data = Vec::new();
+            let mut key_data = Vec::new();
+
+            match fs::File::open(&chain).await {
+                Ok(mut file) => {
+                    if let Err(err) = file.read_to_end(&mut chain_data).await {
+                        error!(path = ?chain, "failed to load: {err}");
+                    }
+                }
+                Err(err) => {
+                    error!(path = ?chain, "failed to load: {err}");
+                }
+            }
+
+            match fs::File::open(&key).await {
+                Ok(mut file) => {
+                    if let Err(err) = file.read_to_end(&mut key_data).await {
+                        error!(path = ?key, "failed to load: {err}");
+                    }
+                }
+                Err(err) => {
+                    error!(path = ?key, "failed to load: {err}");
+                }
+            }
+
+            match Cert::new(chain_data, key_data) {
+                Ok(cert) => certs.push(cert),
+                Err(err) => error!(?path, "failed to load: {err}"),
+            }
+        }
+        Ok(CertStore::new(certs))
     }
 }

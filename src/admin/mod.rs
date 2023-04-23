@@ -1,3 +1,4 @@
+use crate::certs::CertInfo;
 use crate::config::AppConfig;
 use crate::proxy::PortStatus;
 use crate::{command::ServerCommand, config::port::PortEntry, error::Error, event::ServerEvent};
@@ -41,6 +42,9 @@ pub async fn start_admin(
                 }
                 Ok(ServerEvent::PortStatusUpdated { name, status }) => {
                     data.lock().await.status.insert(name, status);
+                }
+                Ok(ServerEvent::CertListUpdated { certs }) => {
+                    data.lock().await.certs = certs;
                 }
                 Ok(ServerEvent::Shutdown) => break,
                 Err(RecvError::Lagged(n)) => {
@@ -93,6 +97,10 @@ pub async fn start_admin(
             .and(warp::path::end())
             .and_then(port::post),
     );
+
+    let api_certs_list = warp::get()
+        .and(warp::path::end())
+        .and(with_state(app_state.clone()).and_then(certs::list));
 
     let api_certs_self_signed = warp::post().and(warp::path("self_signed")).and(
         with_state(app_state.clone())
@@ -158,10 +166,12 @@ pub async fn start_admin(
             .or(api_ports_list)
             .or(api_ports_post),
     );
+
     let certs = warp::path("certs").and(
         api_certs_delete
             .or(api_certs_self_signed)
-            .or(api_certs_upload),
+            .or(api_certs_upload)
+            .or(api_certs_list),
     );
 
     let options = warp::options().map(warp::reply);
@@ -227,6 +237,7 @@ struct Data {
     config: AppConfig,
     entries: Vec<PortEntry>,
     status: HashMap<String, PortStatus>,
+    certs: Vec<CertInfo>,
 }
 
 fn with_state(

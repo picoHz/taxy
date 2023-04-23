@@ -26,6 +26,11 @@ pub async fn start_server(
         source: Source::File,
     });
 
+    let mut certs = config.load_certs().await;
+    let _ = event.send(ServerEvent::CertListUpdated {
+        certs: certs.list(),
+    });
+
     let ports = config.load_entries().await;
     for entry in ports {
         match PortContext::new(entry) {
@@ -62,9 +67,13 @@ pub async fn start_server(
                     },
                     Some(ServerCommand::AddCert { cert }) => {
                         config.save_cert(&cert).await;
+                        certs.add(cert);
+                        let _ = event.send(ServerEvent::CertListUpdated { certs: certs.list() } );
                     }
                     Some(ServerCommand::DeleteCert { id }) => {
                         config.delete_cert(&id).await;
+                        certs.delete(&id);
+                        let _ = event.send(ServerEvent::CertListUpdated { certs: certs.list() } );
                     }
                     _ => (),
                 }

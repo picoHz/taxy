@@ -18,6 +18,7 @@ use x509_parser::{
     prelude::{ParsedExtension, X509Certificate},
 };
 
+pub mod store;
 mod subject_name;
 pub use subject_name::*;
 
