@@ -65,8 +65,22 @@ export default {
             description: 'Paths for searching TLS certificates and private keys.',
             update: 'Update',
         },
+        info: {
+            san: 'SAN',
+            fingerprint: 'Fingerprint',
+            issuer: 'Issuer',
+            root_cert: 'Root Certificate',
+            not_before: 'Not Before',
+            not_after: 'Not After',
+        },
         add_cert: "Add Certificate",
         self_sign: "Self-sign",
         upload: "Upload",
+        delete_cert: {
+            delete_cert: "Delete Certificate",
+            confirm: "Are you sure to delete {name}?",
+            delete: "Delete",
+            cancel: "Cancel"
+        }
     }
 }
