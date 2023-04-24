@@ -94,6 +94,7 @@
 import { reactive, defineEmits, onMounted } from 'vue';
 import { Address6, Address4 } from 'ip-address';
 import { useI18n } from 'vue-i18n'
+import { isValidHostname, parseTlsServerNames } from '@/utils/validators'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -208,26 +209,6 @@ function multiaddrToServer(addr) {
     return {}
 }
 
-function parseTlsServerNames(names) {
-    const list = names.split(',').map(n => n.trim())
-    if (list.some(n => !isValidTlsServerName(n))) return []
-    return list
-}
-
-function isValidTlsServerName(name) {
-    const nameWithoutAsterisk = name.replace(/^\*\./, '')
-    if (isValidHostname(nameWithoutAsterisk)) return true
-    try {
-        new Address4(name)
-        return true
-    } catch (_) { }
-    try {
-        new Address6(name)
-        return true
-    } catch (_) { }
-    return false
-}
-
 const nameRules = [
     value => {
         if (value) return true
@@ -280,9 +261,5 @@ const tlsServerNamesRules = [
     },
 ]
 
-function isValidHostname(hostname) {
-    const validHostnameRegex = /^(?!\-)[A-Za-z0-9\-]{1,63}(?<!\.)\.((?!\-)[A-Za-z0-9\-]{1,63}(?<!\-)\.?)+$/;
-    return hostname === 'localhost' || (validHostnameRegex.test(hostname) && hostname.length <= 253);
-}
 </script>
   

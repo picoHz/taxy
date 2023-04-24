@@ -6,10 +6,10 @@
           {{ $t('certs.add_cert') }}
           <v-menu activator="parent">
             <v-list>
-              <v-list-item>
+              <v-list-item @click="uploadDialog = true">
                 <v-list-item-title>{{ $t('certs.upload') }}</v-list-item-title>
               </v-list-item>
-              <v-list-item>
+              <v-list-item @click="selfSignedDialog = true">
                 <v-list-item-title>{{ $t('certs.self_signed') }}</v-list-item-title>
               </v-list-item>
             </v-list>
@@ -56,6 +56,64 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <v-dialog :width="600" v-model="uploadDialog" width="auto">
+      <v-form validate-on="submitUploadForm" @submit.prevent="submitUploadForm">
+        <v-card>
+          <v-card-title>
+            Upload Certificate
+          </v-card-title>
+          <v-card-text>
+            <v-container>
+              <v-row>
+                <v-col cols="12" sm="12">
+                  <v-file-input v-model="chainFile" :rules="chainFileRules" label="Certificate Chain" variant="outlined"
+                    density="compact" prepend-icon="mdi-certificate" hint="Only PEM file format is supported."
+                    persistent-hint></v-file-input>
+                </v-col>
+                <v-col cols="12" sm="12">
+                  <v-file-input v-model="keyFile" :rules="keyFileRules" required label="Private Key" variant="outlined"
+                    density="compact" prepend-icon="mdi-key" hint="Only PEM file format is supported."
+                    persistent-hint></v-file-input>
+                </v-col>
+              </v-row>
+            </v-container>
+          </v-card-text>
+
+          <v-card-actions class="justify-end">
+            <v-btn @click="uploadDialog = false">Cancel</v-btn>
+            <v-btn :loading="loading" type="submit" color="primary">Upload</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-form>
+    </v-dialog>
+
+    <v-dialog :width="600" v-model="selfSignedDialog" width="auto">
+      <v-form validate-on="submitSelfSignedForm" @submit.prevent="submitSelfSignedForm">
+        <v-card>
+          <v-card-title>
+            New Self-signed Certificate
+          </v-card-title>
+          <v-card-text>
+            <v-container>
+              <v-row>
+                <v-col cols="12" sm="12">
+                  <v-text-field :label="$t('ports.config.tls_term.server_names.server_names')" variant="outlined"
+                    v-model="selfSignedRequest.san" :hint="$t('ports.config.tls_term.server_names.hint')"
+                    :rules="tlsServerNamesRules" density="compact" persistent-hint></v-text-field>
+                </v-col>
+              </v-row>
+            </v-container>
+          </v-card-text>
+
+          <v-card-actions class="justify-end">
+            <v-btn @click="selfSignedDialog = false">Cancel</v-btn>
+            <v-btn :loading="loading" type="submit" color="primary">Create</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-form>
+    </v-dialog>
+
     <v-snackbar v-model="snackbar" :timeout="3000">
       {{ $t('certs.successfully_updated') }}
       <template v-slot:actions>
@@ -69,13 +127,24 @@
 
 <script setup>
 import axios from 'axios';
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useConfigStore } from '@/stores/config';
 import { useCertsStore } from '@/stores/certs';
+import { useI18n } from 'vue-i18n'
+import { parseTlsServerNames } from '@/utils/validators'
+
+const { t } = useI18n({ useScope: 'global' })
 
 const configStore = useConfigStore();
 const certsStore = useCertsStore();
 const certPaths = ref("");
+const uploadDialog = ref(false);
+const chainFile = ref([]);
+const keyFile = ref([]);
+const selfSignedDialog = ref(false);
+const selfSignedRequest = reactive({
+  san: ""
+});
 const loading = ref(false);
 const snackbar = ref(false);
 const error = ref(null);
@@ -86,6 +155,48 @@ onMounted(() => {
   const configStore = useConfigStore();
   certPaths.value = configStore.app.certs.search_paths.join("\n");
 })
+
+async function submitUploadForm(event) {
+  let { valid } = await event;
+  if (!valid) return;
+
+  loading.value = true;
+
+  const formData = new FormData();
+  formData.append('chain', chainFile.value[0]);
+  formData.append('key', keyFile.value[0]);
+  console.log(formData)
+
+  try {
+    await axios.post(`${endpoint}/certs/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+  } catch (err) {
+    let { response: { data } } = err;
+    error.value = data
+  }
+  loading.value = false;
+  uploadDialog.value = false;
+}
+
+async function submitSelfSignedForm(event) {
+  let { valid } = await event;
+  if (!valid) return;
+
+  loading.value = true;
+  try {
+    await axios.post(`${endpoint}/certs/self_signed`, {
+      san: parseTlsServerNames(selfSignedRequest.san)
+    })
+  } catch (err) {
+    let { response: { data } } = err;
+    error.value = data
+  }
+  loading.value = false;
+  selfSignedDialog.value = false;
+}
 
 async function submitForm(event) {
   let { valid } = await event;
@@ -105,4 +216,27 @@ async function submitForm(event) {
     loading.value = false;
   }
 }
+
+const chainFileRules = [
+  value => {
+    if (value.length > 0) return true
+    return t('ports.config.tls_term.server_names.rule')
+  },
+]
+
+const keyFileRules = [
+  value => {
+    if (value.length > 0) return true
+    return t('ports.config.tls_term.server_names.rule')
+  },
+]
+
+const tlsServerNamesRules = [
+  value => {
+    const list = parseTlsServerNames(value)
+    if (list.length > 0) return true
+    return t('ports.config.tls_term.server_names.rule')
+  },
+]
+
 </script>

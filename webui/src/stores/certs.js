@@ -7,4 +7,9 @@ export const useCertsStore = defineStore('certs', {
             this.list = certs
         },
     },
+    getters: {
+        getStatusbyId: (state) => {
+            return (id) => state.list.find((item) => item.id === id)
+        },
+    }
 })
