@@ -1,88 +1,17 @@
-// Composables
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from "vue-router";
+import defaultLayoutRoutes from "./defaultLayoutRoutes";
 
 const routes = [
   {
-    path: '/',
-    component: () => import('@/layouts/default/Default.vue'),
-    children: [
-      {
-        path: 'ports',
-        name: 'Ports',
-        alias: '/',
-        component: () => import(/* webpackChunkName: "ports" */ '@/views/Ports.vue'),
-        children: [
-          {
-            path: '',
-            name: 'List',
-            component: () => import(/* webpackChunkName: "portsx" */ '@/views/PortList.vue'),
-            meta: {
-              breadcrumb() {
-                return [{
-                  trName: 'ports.ports',
-                  disabled: false,
-                  to: { path: '/' }
-                }]
-              }
-            }
-          },
-          {
-            path: 'new',
-            name: 'New Port',
-            component: () => import(/* webpackChunkName: "new-port" */ '@/views/NewPort.vue'),
-            meta: {
-              breadcrumb() {
-                return [{
-                  trName: 'ports.ports',
-                  disabled: false,
-                  to: { path: '/' }
-                }, {
-                  trName: 'ports.new_port',
-                  disabled: true
-                }]
-              }
-            }
-          },
-          {
-            path: ':name',
-            name: 'Port Status',
-            component: () => import(/* webpackChunkName: "portsn" */ '@/views/PortStatus.vue'),
-            meta: {
-              breadcrumb(route) {
-                return [{
-                  trName: 'ports.ports',
-                  disabled: false,
-                  to: { path: '/' }
-                }, {
-                  title: route.params.name,
-                  disabled: true
-                }]
-              }
-            }
-          }
-        ]
-      },
-      {
-        path: 'certs',
-        name: 'Certificates',
-        component: () => import(/* webpackChunkName: "certs" */ '@/views/Certificates.vue'),
-        meta: {
-          breadcrumb() {
-            return [{
-              trName: 'certs.certs',
-              disabled: false,
-              to: { path: '/certs' }
-            }]
-          }
-        }
-      }
-    ],
+    path: "/",
+    component: () => import("@/layouts/default/Default.vue"),
+    children: defaultLayoutRoutes,
   },
-]
+];
 
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
   routes,
-})
+});
 
-export default router
+export default router;

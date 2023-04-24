@@ -6,6 +6,7 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { usePortsStore } from '@/stores/ports';
 import { useConfigStore } from '@/stores/config';
+import { useCertsStore } from '@/stores/certs';
 import axious from 'axios';
 
 const message = ref('');
@@ -14,6 +15,7 @@ let eventSource = null;
 onMounted(async () => {
   const portsStore = usePortsStore();
   const configStore = useConfigStore();
+  const certsStore = useCertsStore();
 
   const endpoint = import.meta.env.VITE_API_ENDPOINT;
   eventSource = new EventSource(`${endpoint}/events`);
@@ -34,6 +36,9 @@ onMounted(async () => {
       case 'app_config_updated':
         configStore.update(json.config);
         break;
+      case 'cert_list_updated':
+        certsStore.update(json.certs);
+        break;
     }
     message.value = event.data;
   };
@@ -44,6 +49,9 @@ onMounted(async () => {
 
   const { data: config } = await axious.get(`${endpoint}/config`);
   configStore.update(config);
+
+  const { data: certs } = await axious.get(`${endpoint}/certs`);
+  certsStore.update(certs);
 
   const { data } = await axious.get(`${endpoint}/ports`);
   portsStore.updateTable(data);
