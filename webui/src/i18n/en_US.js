@@ -1,7 +1,10 @@
 export default {
     error: {
         name_already_exists: 'Name already exists: {name}',
-        valid_tls_certificates_not_found: 'Unable to find valid TLS certificates'
+        valid_tls_certificates_not_found: 'Unable to find valid TLS certificates',
+        cert_already_exists: 'Certificate already exists: {id}',
+        failed_to_read_cert: 'Failed to read certificate',
+        failed_to_read_private_key: 'Failed to read private key',
     },
     socket: {
         listening: 'Listening',
@@ -74,8 +77,25 @@ export default {
             not_after: 'Not After',
         },
         add_cert: "Add Certificate",
-        self_sign: "Self-sign",
-        upload: "Upload",
+        self_sign: {
+            self_sign: "Self-sign",
+            title: "New Self-sign Certificate",
+            subject_alternative_names: "Subject Alternative Names",
+            hint: "You can use commas to list multiple names, e.g, example.com, *.test.examle.com.",
+            rule: "Enter valid subject alternative names.",
+            create: "Create",
+            cancel: "Cancel"
+        },
+        upload: {
+            upload: "Upload",
+            title: "Upload Certificate",
+            chain: "Certificate Chain",
+            key: "Private Key",
+            hint: "Only PEM format is supported.",
+            rule_chain: "Select valid certificate chain.",
+            rule_key: "Select valid private key.",
+            cancel: "Cancel"
+        },
         delete_cert: {
             delete_cert: "Delete Certificate",
             confirm: "Are you sure to delete {name}?",

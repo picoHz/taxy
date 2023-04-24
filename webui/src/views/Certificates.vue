@@ -6,11 +6,11 @@
           {{ $t('certs.add_cert') }}
           <v-menu activator="parent">
             <v-list>
-              <v-list-item @click="uploadDialog = true">
-                <v-list-item-title>{{ $t('certs.upload') }}</v-list-item-title>
+              <v-list-item prepend-icon="mdi-upload" @click="uploadDialog = true">
+                <v-list-item-title>{{ $t('certs.upload.upload') }}</v-list-item-title>
               </v-list-item>
-              <v-list-item @click="selfSignedDialog = true">
-                <v-list-item-title>{{ $t('certs.self_sign') }}</v-list-item-title>
+              <v-list-item prepend-icon="mdi-file-sign" @click="selfSignedDialog = true">
+                <v-list-item-title>{{ $t('certs.self_sign.self_sign') }}</v-list-item-title>
               </v-list-item>
             </v-list>
           </v-menu>
@@ -22,8 +22,8 @@
       <v-list-item v-if="certsStore.list.length === 0" disabled>
         <v-list-item-title class="text-center">{{ $t('certs.no_certs') }}</v-list-item-title>
       </v-list-item>
-      <v-list-item v-for="item in certsStore.list" :key="item.id" :title="item.san.join(', ')" :subtitle="item.id"
-        :value="item.listen" :to="{ path: `/certs/${item.id}` }">
+      <v-list-item prepend-icon="mdi-file-certificate" v-for="item in certsStore.list" :key="item.id"
+        :title="item.san.join(', ')" :subtitle="item.id" :value="item.listen" :to="{ path: `/certs/${item.id}` }">
       </v-list-item>
     </v-list>
     <v-toolbar color="transparent" density="compact">
@@ -61,19 +61,19 @@
       <v-form validate-on="submitUploadForm" @submit.prevent="submitUploadForm">
         <v-card>
           <v-card-title>
-            Upload Certificate
+            {{ $t('certs.upload.title') }}
           </v-card-title>
           <v-card-text>
             <v-container>
               <v-row>
                 <v-col cols="12" sm="12">
-                  <v-file-input v-model="chainFile" :rules="chainFileRules" label="Certificate Chain" variant="outlined"
-                    density="compact" prepend-icon="mdi-certificate" hint="Only PEM file format is supported."
+                  <v-file-input v-model="chainFile" :rules="chainFileRules" :label="$t('certs.upload.chain')"
+                    variant="outlined" density="compact" prepend-icon="mdi-certificate" :hint="$t('certs.upload.hint')"
                     persistent-hint></v-file-input>
                 </v-col>
                 <v-col cols="12" sm="12">
-                  <v-file-input v-model="keyFile" :rules="keyFileRules" required label="Private Key" variant="outlined"
-                    density="compact" prepend-icon="mdi-key" hint="Only PEM file format is supported."
+                  <v-file-input v-model="keyFile" :rules="keyFileRules" required :label="$t('certs.upload.key')"
+                    variant="outlined" density="compact" prepend-icon="mdi-key" :hint="$t('certs.upload.hint')"
                     persistent-hint></v-file-input>
                 </v-col>
               </v-row>
@@ -81,8 +81,8 @@
           </v-card-text>
 
           <v-card-actions class="justify-end">
-            <v-btn @click="uploadDialog = false">Cancel</v-btn>
-            <v-btn :loading="loading" type="submit" color="primary">Upload</v-btn>
+            <v-btn @click="uploadDialog = false">{{ $t('certs.upload.cancel') }}</v-btn>
+            <v-btn :loading="loading" type="submit" color="primary">{{ $t('certs.upload.upload') }}</v-btn>
           </v-card-actions>
         </v-card>
       </v-form>
@@ -92,23 +92,23 @@
       <v-form validate-on="submitSelfSignedForm" @submit.prevent="submitSelfSignedForm">
         <v-card>
           <v-card-title>
-            New Self-signed Certificate
+            {{ $t('certs.self_sign.title') }}
           </v-card-title>
           <v-card-text>
             <v-container>
               <v-row>
                 <v-col cols="12" sm="12">
-                  <v-text-field :label="$t('ports.config.tls_term.server_names.server_names')" variant="outlined"
-                    v-model="selfSignedRequest.san" :hint="$t('ports.config.tls_term.server_names.hint')"
-                    :rules="tlsServerNamesRules" density="compact" persistent-hint></v-text-field>
+                  <v-text-field :label="$t('certs.self_sign.subject_alternative_names')" variant="outlined"
+                    v-model="selfSignedRequest.san" :hint="$t('certs.self_sign.hint')" :rules="tlsServerNamesRules"
+                    density="compact" persistent-hint></v-text-field>
                 </v-col>
               </v-row>
             </v-container>
           </v-card-text>
 
           <v-card-actions class="justify-end">
-            <v-btn @click="selfSignedDialog = false">Cancel</v-btn>
-            <v-btn :loading="loading" type="submit" color="primary">Create</v-btn>
+            <v-btn @click="selfSignedDialog = false">{{ $t('certs.self_sign.cancel') }}</v-btn>
+            <v-btn :loading="loading" type="submit" color="primary">{{ $t('certs.self_sign.create') }}</v-btn>
           </v-card-actions>
         </v-card>
       </v-form>
@@ -220,14 +220,14 @@ async function submitForm(event) {
 const chainFileRules = [
   value => {
     if (value.length > 0) return true
-    return t('ports.config.tls_term.server_names.rule')
+    return t('certs.upload.rule_chain')
   },
 ]
 
 const keyFileRules = [
   value => {
     if (value.length > 0) return true
-    return t('ports.config.tls_term.server_names.rule')
+    return t('certs.upload.rule_key')
   },
 ]
 
@@ -235,7 +235,7 @@ const tlsServerNamesRules = [
   value => {
     const list = parseTlsServerNames(value)
     if (list.length > 0) return true
-    return t('ports.config.tls_term.server_names.rule')
+    return t('certs.self_sign.rule')
   },
 ]
 
