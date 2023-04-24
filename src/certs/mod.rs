@@ -119,6 +119,8 @@ pub struct Cert {
     pub raw_chain: Vec<u8>,
     pub raw_key: Vec<u8>,
     pub fingerprint: String,
+    pub issuer: String,
+    pub root_cert: Option<String>,
     pub san: Vec<SubjectName>,
     pub not_after: ASN1Time,
     pub not_before: ASN1Time,
@@ -134,6 +136,8 @@ impl Cert {
         CertInfo {
             id: self.id.clone(),
             fingerprint: self.fingerprint.clone(),
+            issuer: self.issuer.clone(),
+            root_cert: self.root_cert.clone(),
             san: self.san.clone(),
             not_after: self.not_after.timestamp(),
             not_before: self.not_before.timestamp(),
@@ -146,6 +150,8 @@ impl Cert {
 pub struct CertInfo {
     pub id: String,
     pub fingerprint: String,
+    pub issuer: String,
+    pub root_cert: Option<String>,
     pub san: Vec<SubjectName>,
     pub not_after: i64,
     pub not_before: i64,
@@ -179,14 +185,18 @@ impl Cert {
             }
         }
 
-        let is_self_signed = is_self_signed(&chain)?;
-
         let key = privkey.ok_or(Error::FailedToReadPrivateKey)?;
         let der = &chain.first().ok_or(Error::FailedToReadCertificate)?.0;
         let mut hasher = Sha256::new();
         hasher.update(der);
         let fingerprint = hex::encode(hasher.finalize());
-        let (_, x509) = parse_x509_certificate(der).map_err(|_| Error::FailedToReadCertificate)?;
+
+        let parsed_chain = parse_chain(&chain)?;
+        let is_self_signed = parsed_chain
+            .iter()
+            .any(|cert| cert.issuer() == cert.subject());
+
+        let x509 = parsed_chain.first().ok_or(Error::FailedToReadCertificate)?;
         let san = x509
             .subject_alternative_name()
             .into_iter()
@@ -201,6 +211,12 @@ impl Cert {
         let not_after = x509.validity().not_after;
         let not_before = x509.validity().not_before;
 
+        let issuer = x509.issuer().to_string();
+        let root_cert = parsed_chain
+            .last()
+            .filter(|_| chain.len() > 1)
+            .map(|cert| cert.subject().to_string());
+
         Ok(Cert {
             id: fingerprint[..CERT_ID_LENGTH].to_string(),
             fingerprint,
@@ -208,6 +224,8 @@ impl Cert {
             key,
             raw_chain,
             raw_key,
+            issuer,
+            root_cert,
             san,
             not_after,
             not_before,
@@ -251,15 +269,14 @@ impl Cert {
     }
 }
 
-fn is_self_signed(chain: &[Certificate]) -> Result<bool, Error> {
+fn parse_chain(chain: &[Certificate]) -> Result<Vec<X509Certificate>, Error> {
+    let mut certs = Vec::new();
     for data in chain {
         let (_, cert) =
             parse_x509_certificate(&data.0).map_err(|_| Error::FailedToReadCertificate)?;
-        if cert.subject() == cert.issuer() {
-            return Ok(true);
-        }
+        certs.push(cert);
     }
-    Ok(false)
+    Ok(certs)
 }
 
 #[cfg(test)]
