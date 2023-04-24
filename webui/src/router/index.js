@@ -10,7 +10,7 @@ const routes = [
         path: 'ports',
         name: 'Ports',
         alias: '/',
-        component: () => import(/* webpackChunkName: "ports" */ '@/views/Ports.vue'),
+        component: () => import(/* webpackChunkName: "ports" */ '@/layouts/default/View.vue'),
         children: [
           {
             path: '',
@@ -65,7 +65,7 @@ const routes = [
       {
         path: 'certs',
         name: 'Certificates',
-        component: () => import(/* webpackChunkName: "ports" */ '@/views/Ports.vue'),
+        component: () => import(/* webpackChunkName: "ports" */ '@/layouts/default/View.vue'),
         children: [
           {
             path: '',
