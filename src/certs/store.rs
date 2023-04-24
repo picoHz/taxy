@@ -28,6 +28,12 @@ impl CertStore {
     }
 
     pub fn list(&self) -> Vec<CertInfo> {
-        self.certs.values().map(|cert| cert.info()).collect()
+        let mut list = self
+            .certs
+            .values()
+            .map(|cert| cert.info())
+            .collect::<Vec<_>>();
+        list.sort_unstable_by_key(|cert| cert.id.clone());
+        list
     }
 }
