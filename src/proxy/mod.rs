@@ -1,5 +1,6 @@
 use self::tcp::TcpPortContext;
 use crate::{
+    certs::store::CertStore,
     config::{port::PortEntry, AppConfig},
     error::Error,
 };
@@ -80,9 +81,15 @@ impl PortContext {
         &mut self.kind
     }
 
-    pub async fn setup(&mut self, config: &AppConfig) -> Result<(), Error> {
+    pub async fn prepare(&mut self, config: &AppConfig) -> Result<(), Error> {
         match &mut self.kind {
-            PortContextKind::Tcp(ctx) => ctx.setup(config).await,
+            PortContextKind::Tcp(ctx) => ctx.prepare(config).await,
+        }
+    }
+
+    pub async fn setup(&mut self, certs: &CertStore) -> Result<(), Error> {
+        match &mut self.kind {
+            PortContextKind::Tcp(ctx) => ctx.setup(certs).await,
         }
     }
 
