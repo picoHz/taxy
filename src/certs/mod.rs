@@ -182,7 +182,7 @@ impl Cert {
         let is_self_signed = is_self_signed(&chain)?;
 
         let key = privkey.ok_or(Error::FailedToReadPrivateKey)?;
-        let der = &chain.last().ok_or(Error::FailedToReadCertificate)?.0;
+        let der = &chain.first().ok_or(Error::FailedToReadCertificate)?.0;
         let mut hasher = Sha256::new();
         hasher.update(der);
         let fingerprint = hex::encode(hasher.finalize());
