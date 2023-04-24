@@ -60,14 +60,6 @@ export default {
     },
     certs: {
         certs: 'Certificates',
-        successfully_updated: 'Successfully updated',
-        snackbar_close: 'Close',
-        certs_paths: {
-            certs_paths: 'Certificate Paths',
-            placeholder: 'Enter one path per line, e.g., /etc/letsencrypt/live.',
-            description: 'Paths for searching TLS certificates and private keys.',
-            update: 'Update',
-        },
         info: {
             san: 'SAN',
             fingerprint: 'Fingerprint',

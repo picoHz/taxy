@@ -26,23 +26,6 @@
         :title="item.san.join(', ')" :subtitle="item.id" :value="item.listen" :to="{ path: `/certs/${item.id}` }">
       </v-list-item>
     </v-list>
-    <v-toolbar color="transparent" density="compact">
-      <v-toolbar-title>{{ $t('certs.certs_paths.certs_paths') }}</v-toolbar-title>
-    </v-toolbar>
-    <v-divider></v-divider>
-    <v-container>
-      <v-form validate-on="submitForm" @submit.prevent="submitForm">
-        <p class="mb-4">{{ $t('certs.certs_paths.description') }}</p>
-        <v-textarea v-model="certPaths" :label="$t('certs.certs_paths.certs_paths')" variant="outlined" density="compact"
-          :placeholder="$t('certs.certs_paths.placeholder')">
-        </v-textarea>
-        <div class="d-flex justify-end">
-          <v-btn :loading="loading" type="submit" color="primary">
-            {{ $t('certs.certs_paths.update') }}
-          </v-btn>
-        </div>
-      </v-form>
-    </v-container>
     <v-dialog v-model="error" width="auto">
       <v-card title="Error">
         <v-card-text v-if="error.error">
@@ -127,17 +110,14 @@
 
 <script setup>
 import axios from 'axios';
-import { ref, reactive, onMounted } from 'vue'
-import { useConfigStore } from '@/stores/config';
+import { ref, reactive } from 'vue'
 import { useCertsStore } from '@/stores/certs';
 import { useI18n } from 'vue-i18n'
 import { parseTlsServerNames } from '@/utils/validators'
 
 const { t } = useI18n({ useScope: 'global' })
 
-const configStore = useConfigStore();
 const certsStore = useCertsStore();
-const certPaths = ref("");
 const uploadDialog = ref(false);
 const chainFile = ref([]);
 const keyFile = ref([]);
@@ -150,11 +130,6 @@ const snackbar = ref(false);
 const error = ref(null);
 
 const endpoint = import.meta.env.VITE_API_ENDPOINT;
-
-onMounted(() => {
-  const configStore = useConfigStore();
-  certPaths.value = configStore.app.certs.search_paths.join("\n");
-})
 
 async function submitUploadForm(event) {
   let { valid } = await event;
@@ -196,25 +171,6 @@ async function submitSelfSignedForm(event) {
   }
   loading.value = false;
   selfSignedDialog.value = false;
-}
-
-async function submitForm(event) {
-  let { valid } = await event;
-  if (valid) {
-    const paths = certPaths.value.split("\n")
-      .map((path) => path.trim())
-      .filter((path) => path.length);
-    configStore.setCertSearchPaths(paths);
-    loading.value = true;
-    try {
-      await axios.put(`${endpoint}/config`, configStore.app)
-      snackbar.value = true
-    } catch (err) {
-      let { response: { data } } = err;
-      error.value = data
-    }
-    loading.value = false;
-  }
 }
 
 const chainFileRules = [

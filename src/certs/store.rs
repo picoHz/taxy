@@ -22,7 +22,7 @@ impl CertStore {
     pub fn find(&self, names: &[SubjectName]) -> Option<&Cert> {
         for cert in self.certs.values() {
             if names.iter().all(|name| cert.san.contains(name)) {
-                return Some(&cert);
+                return Some(cert);
             }
         }
         None
