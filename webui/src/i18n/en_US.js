@@ -66,7 +66,7 @@ export default {
             update: 'Update',
         },
         add_cert: "Add Certificate",
-        self_signed: "Self-signed",
+        self_sign: "Self-sign",
         upload: "Upload",
     }
 }

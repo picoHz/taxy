@@ -10,7 +10,7 @@
                 <v-list-item-title>{{ $t('certs.upload') }}</v-list-item-title>
               </v-list-item>
               <v-list-item @click="selfSignedDialog = true">
-                <v-list-item-title>{{ $t('certs.self_signed') }}</v-list-item-title>
+                <v-list-item-title>{{ $t('certs.self_sign') }}</v-list-item-title>
               </v-list-item>
             </v-list>
           </v-menu>
