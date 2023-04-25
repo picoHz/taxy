@@ -54,6 +54,22 @@ impl Cert {
         let now = ASN1Time::now();
         self.not_before <= now && now <= self.not_after
     }
+
+    pub fn has_subject_name(&self, name: &SubjectName) -> bool {
+        for san in &self.san {
+            if match (san, name) {
+                (SubjectName::WildcardDnsName(c), SubjectName::DnsName(n)) => {
+                    c == n.trim_start_matches(|c| c != '.').trim_start_matches('.')
+                }
+                (SubjectName::WildcardDnsName(c), SubjectName::WildcardDnsName(n)) => c == n,
+                (SubjectName::IPAddress(c), SubjectName::IPAddress(n)) => c == n,
+                _ => false,
+            } {
+                return true;
+            }
+        }
+        false
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
