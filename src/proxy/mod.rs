@@ -1,5 +1,6 @@
-use self::tcp::TcpPortContext;
+use self::{tcp::TcpPortContext, tls::TlsState};
 use crate::{
+    certs::store::CertStore,
     config::{port::PortEntry, AppConfig},
     error::Error,
 };
@@ -23,11 +24,17 @@ pub enum SocketState {
     Unknown,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize)]
 pub struct PortStatus {
-    pub socket: SocketState,
+    pub state: PortState,
     #[serde(serialize_with = "serialize_started_at")]
     pub started_at: Option<SystemTime>,
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct PortState {
+    pub socket: SocketState,
+    pub tls: Option<TlsState>,
 }
 
 fn serialize_started_at<S>(
@@ -80,9 +87,15 @@ impl PortContext {
         &mut self.kind
     }
 
-    pub async fn setup(&mut self, config: &AppConfig) -> Result<(), Error> {
+    pub async fn prepare(&mut self, config: &AppConfig) -> Result<(), Error> {
         match &mut self.kind {
-            PortContextKind::Tcp(ctx) => ctx.setup(config).await,
+            PortContextKind::Tcp(ctx) => ctx.prepare(config).await,
+        }
+    }
+
+    pub async fn setup(&mut self, certs: &CertStore) -> Result<(), Error> {
+        match &mut self.kind {
+            PortContextKind::Tcp(ctx) => ctx.setup(certs).await,
         }
     }
 

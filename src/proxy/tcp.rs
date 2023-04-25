@@ -1,5 +1,6 @@
 use super::{tls::TlsTermination, PortContextEvent, PortStatus, SocketState};
 use crate::{
+    certs::store::CertStore,
     config::{port::PortEntry, AppConfig},
     error::Error,
 };
@@ -88,7 +89,7 @@ impl TcpPortContext {
         })
     }
 
-    pub async fn setup(&mut self, config: &AppConfig) -> Result<(), Error> {
+    pub async fn prepare(&mut self, _config: &AppConfig) -> Result<(), Error> {
         let use_tls = self.servers.iter().any(|server| server.tls);
         if self.tls_client_config.is_none() && use_tls {
             let mut root_certs = RootCertStore::empty();
@@ -115,8 +116,12 @@ impl TcpPortContext {
             self.tls_client_config = Some(Arc::new(config));
         }
 
+        Ok(())
+    }
+
+    pub async fn setup(&mut self, certs: &CertStore) -> Result<(), Error> {
         if let Some(tls) = &mut self.tls_termination {
-            tls.setup(config).await?;
+            self.status.state.tls = Some(tls.setup(certs).await);
         }
         Ok(())
     }
@@ -131,14 +136,14 @@ impl TcpPortContext {
     pub fn event(&mut self, event: PortContextEvent) {
         match event {
             PortContextEvent::SokcetStateUpadted(state) => {
-                if self.status.socket != state {
+                if self.status.state.socket != state {
                     self.status.started_at = if state == SocketState::Listening {
                         Some(SystemTime::now())
                     } else {
                         None
                     };
                 }
-                self.status.socket = state;
+                self.status.state.socket = state;
             }
         }
     }

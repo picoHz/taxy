@@ -6,8 +6,5 @@ export const useConfigStore = defineStore('config', {
         update(config) {
             this.app = config
         },
-        setCertSearchPaths(paths) {
-            this.app.certs.search_paths = paths
-        }
     },
 })
