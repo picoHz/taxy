@@ -1,13 +1,21 @@
-use crate::certs::{load_single_file, search_cert_from_name, SubjectName};
-use crate::config::AppConfig;
+use crate::certs::store::CertStore;
+use crate::certs::SubjectName;
 use crate::{config, error::Error};
+use serde_derive::Serialize;
 use std::fmt;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio_rustls::rustls::ServerConfig;
 use tokio_rustls::TlsAcceptor;
-use tracing::{debug, error};
+use tracing::error;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TlsState {
+    Active,
+    NoValidCertificate,
+    ConfigurationFailed,
+}
 pub struct TlsTermination {
     pub server_names: Vec<SubjectName>,
     pub acceptor: Option<TlsAcceptor>,
@@ -34,42 +42,34 @@ impl TlsTermination {
         })
     }
 
-    pub async fn setup(&mut self, config: &AppConfig) -> Result<(), Error> {
+    pub async fn setup(&mut self, certs: &CertStore) -> TlsState {
         let server_names = self.server_names.clone();
-        let search_paths = config.certs.search_paths.clone();
-        let (certs, key) = tokio::task::spawn_blocking(move || {
-            for path in search_paths {
-                debug!(?path, server_names = ?server_names, "searching certificates");
-                if let Some(certs) = search_cert_from_name(&path, &server_names) {
-                    match load_single_file(certs.parent().unwrap()) {
-                        Ok(result) => return Ok(result),
-                        Err(err) => {
-                            error!(?err);
-                        }
-                    }
-                }
-            }
-            Err(Error::ValidTlsCertificatesNotFound)
-        })
-        .await
-        .unwrap()?;
+
+        let cert = if let Some(cert) = certs.find(&server_names) {
+            cert
+        } else {
+            return TlsState::NoValidCertificate;
+        };
+
+        let chain = cert.chain.clone();
+        let key = cert.key.clone();
 
         let server_config = ServerConfig::builder()
             .with_safe_defaults()
             .with_no_client_auth()
-            .with_single_cert(certs, key);
+            .with_single_cert(chain, key);
 
         let server_config = match server_config {
             Ok(config) => config,
             Err(err) => {
                 error!(?err, server_names = ?self.server_names);
-                return Err(Error::TlsServerConfigrationFailed);
+                return TlsState::ConfigurationFailed;
             }
         };
 
         let server_config = Arc::new(server_config);
         self.acceptor = Some(TlsAcceptor::from(server_config));
 
-        Ok(())
+        TlsState::Active
     }
 }

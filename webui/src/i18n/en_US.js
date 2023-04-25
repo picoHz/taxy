@@ -6,14 +6,6 @@ export default {
         failed_to_read_cert: 'Failed to read certificate',
         failed_to_read_private_key: 'Failed to read private key',
     },
-    socket: {
-        listening: 'Listening',
-        port_already_in_use: 'Port already in use',
-        permission_denied: 'Permission denied',
-        address_not_available: 'Address not available',
-        error: 'Error',
-        unknown: 'Unknown',
-    },
     ports: {
         ports: 'Ports',
         no_ports: 'No port configurations found.',
@@ -22,6 +14,16 @@ export default {
         delete_port_confirm: 'Are you sure to delete {name}?',
         successfully_updated: 'Successfully updated',
         snackbar_close: 'Close',
+        state: {
+            listening: 'Listening',
+            port_already_in_use: 'Port already in use',
+            permission_denied: 'Permission denied',
+            address_not_available: 'Address not available',
+            no_valid_certificate: 'No valid certificate',
+            configuration_failed: 'Configuration failed',
+            error: 'Error',
+            unknown: 'Unknown',
+        },
         tab: {
             status: 'Status',
             settings: 'Settings',
@@ -60,14 +62,6 @@ export default {
     },
     certs: {
         certs: 'Certificates',
-        successfully_updated: 'Successfully updated',
-        snackbar_close: 'Close',
-        certs_paths: {
-            certs_paths: 'Certificate Paths',
-            placeholder: 'Enter one path per line, e.g., /etc/letsencrypt/live.',
-            description: 'Paths for searching TLS certificates and private keys.',
-            update: 'Update',
-        },
         info: {
             san: 'SAN',
             fingerprint: 'Fingerprint',

@@ -21,12 +21,6 @@ pub enum Error {
     #[error("missing TLS termination config")]
     TlsTerminationConfigMissing,
 
-    #[error("TLS server configuration failed")]
-    TlsServerConfigrationFailed,
-
-    #[error("valid TLS certificates not found")]
-    ValidTlsCertificatesNotFound,
-
     #[error("failed to generate self-signed certificate")]
     FailedToGerateSelfSignedCertificate,
 

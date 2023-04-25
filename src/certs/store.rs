@@ -1,4 +1,4 @@
-use super::{Cert, CertInfo};
+use super::{Cert, CertInfo, SubjectName};
 use std::collections::HashMap;
 
 #[derive(Debug, Default)]
@@ -17,6 +17,16 @@ impl CertStore {
                 .map(|cert| (cert.id().to_string(), cert))
                 .collect(),
         }
+    }
+
+    pub fn find(&self, names: &[SubjectName]) -> Option<&Cert> {
+        let mut certs = self
+            .certs
+            .values()
+            .filter(|cert| cert.is_valid() && names.iter().all(|name| cert.has_subject_name(name)))
+            .collect::<Vec<_>>();
+        certs.sort_by_key(|cert| cert.not_after);
+        certs.first().copied()
     }
 
     pub fn add(&mut self, cert: Cert) {

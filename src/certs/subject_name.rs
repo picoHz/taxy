@@ -2,7 +2,6 @@ use crate::error::Error;
 use serde::{Deserialize, Serialize};
 use std::{net::IpAddr, str::FromStr};
 use tokio_rustls::rustls::ServerName;
-use x509_parser::prelude::GeneralName;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SubjectName {
@@ -27,35 +26,6 @@ impl<'de> Deserialize<'de> for SubjectName {
     {
         let s = String::deserialize(deserializer)?;
         Self::from_str(&s).map_err(serde::de::Error::custom)
-    }
-}
-
-impl SubjectName {
-    pub fn test(&self, name: &GeneralName) -> bool {
-        match (self, name) {
-            (Self::DnsName(s), GeneralName::DNSName(n)) => {
-                if n.starts_with("*.") {
-                    s.trim_end_matches(n.trim_start_matches('*'))
-                        .chars()
-                        .all(|c| c == '-' || c.is_ascii_alphanumeric())
-                } else {
-                    s == n
-                }
-            }
-            (Self::WildcardDnsName(s), GeneralName::DNSName(n)) => {
-                n.starts_with("*.") && n.trim_start_matches("*.") == s
-            }
-            (Self::IPAddress(s), GeneralName::IPAddress(n)) => match **n {
-                [a, b, c, d] => {
-                    IpAddr::from([a, b, c, d]) == *s
-                }
-                [a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p] => {
-                    IpAddr::from([a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p]) == *s
-                }
-                _ => false,
-            },
-            _ => false,
-        }
     }
 }
 
@@ -108,21 +78,5 @@ mod test {
             SubjectName::from_str("127.0.0.1").unwrap(),
             SubjectName::IPAddress(IpAddr::V4([127, 0, 0, 1].into()))
         )
-    }
-
-    #[test]
-    fn test_subject_name_test() {
-        let name = SubjectName::from_str("*.example.com").unwrap();
-        assert!(name.test(&GeneralName::DNSName("*.example.com")));
-        assert!(!name.test(&GeneralName::DNSName("example.com")));
-        assert!(!name.test(&GeneralName::DNSName("www.example.org")));
-        assert!(!name.test(&GeneralName::IPAddress(&[127, 0, 0, 1])));
-
-        let name = SubjectName::from_str("app.app.example.com").unwrap();
-        assert!(name.test(&GeneralName::DNSName("*.app.example.com")));
-        assert!(!name.test(&GeneralName::DNSName("*.example.com")));
-        assert!(!name.test(&GeneralName::DNSName("example.com")));
-        assert!(!name.test(&GeneralName::DNSName("www.example.org")));
-        assert!(!name.test(&GeneralName::IPAddress(&[127, 0, 0, 1])));
     }
 }

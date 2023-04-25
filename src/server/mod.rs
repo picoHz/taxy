@@ -35,7 +35,10 @@ pub async fn start_server(
     for entry in ports {
         match PortContext::new(entry) {
             Ok(mut ctx) => {
-                if let Err(err) = ctx.setup(&app_config).await {
+                if let Err(err) = ctx.prepare(&app_config).await {
+                    error!(?err, "failed to prepare port");
+                }
+                if let Err(err) = ctx.setup(&certs).await {
                     error!(?err, "failed to setup port");
                 }
                 table.set_port(ctx);
@@ -57,7 +60,10 @@ pub async fn start_server(
                             source: Source::Api,
                         });
                     },
-                    Some(ServerCommand::SetPort { ctx }) => {
+                    Some(ServerCommand::SetPort { mut ctx }) => {
+                        if let Err(err) = ctx.setup(&certs).await {
+                            error!(?err, "failed to setup port");
+                        }
                         table.set_port(ctx);
                         update_port_statuses(&event, &mut pool, &mut table).await;
                     },
@@ -126,7 +132,7 @@ async fn update_port_statuses(
     for (entry, ctx) in table.entries().iter().zip(table.contexts()) {
         let _ = event.send(ServerEvent::PortStatusUpdated {
             name: entry.name.clone(),
-            status: ctx.status().clone(),
+            status: *ctx.status(),
         });
     }
 }

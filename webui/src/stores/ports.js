@@ -11,7 +11,17 @@ export const usePortsStore = defineStore('ports', {
     },
   },
   getters: {
-    getStatusbyName: (state) => {
+    getStateByName: (state) => {
+      return (name) => {
+        const status = state.status[name]
+        if (!status) return 'unknown';
+        const { socket, tls } = status.state;
+        if (socket !== 'listening') return socket;
+        if (tls && tls !== 'active') return tls;
+        return socket;
+      }
+    },
+    getStatusByName: (state) => {
       return (name) => state.status[name] || {}
     },
   }

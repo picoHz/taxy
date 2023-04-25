@@ -49,7 +49,7 @@ pub async fn post(state: AppState, entry: PortEntry) -> Result<impl Reply, Rejec
         return Err(warp::reject::custom(Error::NameAlreadyExists { name }));
     }
     let mut ctx = PortContext::new(entry)?;
-    ctx.setup(&data.config).await?;
+    ctx.prepare(&data.config).await?;
     let _ = state.sender.send(ServerCommand::SetPort { ctx }).await;
     Ok(warp::reply::reply())
 }
@@ -71,7 +71,7 @@ pub async fn put(state: AppState, entry: PortEntry, name: String) -> Result<impl
     }
     let data = state.data.lock().await;
     let mut ctx = PortContext::new(entry)?;
-    ctx.setup(&data.config).await?;
+    ctx.prepare(&data.config).await?;
     let _ = state.sender.send(ServerCommand::SetPort { ctx }).await;
     Ok(warp::reply::reply())
 }
