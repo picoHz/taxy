@@ -20,12 +20,13 @@ impl CertStore {
     }
 
     pub fn find(&self, names: &[SubjectName]) -> Option<&Cert> {
-        for cert in self.certs.values() {
-            if names.iter().all(|name| cert.san.contains(name)) {
-                return Some(cert);
-            }
-        }
-        None
+        let mut certs = self
+            .certs
+            .values()
+            .filter(|cert| cert.is_valid() && names.iter().all(|name| cert.san.contains(name)))
+            .collect::<Vec<_>>();
+        certs.sort_by_key(|cert| cert.not_after);
+        certs.first().copied()
     }
 
     pub fn add(&mut self, cert: Cert) {

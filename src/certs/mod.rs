@@ -49,6 +49,11 @@ impl Cert {
             is_self_signed: self.is_self_signed,
         }
     }
+
+    pub fn is_valid(&self) -> bool {
+        let now = ASN1Time::now();
+        self.not_before <= now && now <= self.not_after
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
