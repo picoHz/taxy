@@ -132,7 +132,7 @@ async fn update_port_statuses(
     for (entry, ctx) in table.entries().iter().zip(table.contexts()) {
         let _ = event.send(ServerEvent::PortStatusUpdated {
             name: entry.name.clone(),
-            status: ctx.status().clone(),
+            status: *ctx.status(),
         });
     }
 }
