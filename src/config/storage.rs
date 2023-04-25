@@ -7,6 +7,7 @@ use indexmap::map::IndexMap;
 use std::{
     collections::HashSet,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 use tokio::fs;
 use tokio::io::AsyncReadExt;
@@ -190,7 +191,7 @@ impl ConfigStorage {
             }
 
             match Cert::new(chain_data, key_data) {
-                Ok(cert) => certs.push(cert),
+                Ok(cert) => certs.push(Arc::new(cert)),
                 Err(err) => error!(?path, "failed to load: {err}"),
             }
         }

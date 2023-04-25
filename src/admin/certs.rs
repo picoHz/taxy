@@ -4,7 +4,7 @@ use crate::{
     command::ServerCommand,
     error::Error,
 };
-use std::io::Read;
+use std::{io::Read, sync::Arc};
 use tokio_stream::StreamExt;
 use warp::{multipart::FormData, Buf, Rejection, Reply};
 
@@ -17,7 +17,7 @@ pub async fn self_signed(
     state: AppState,
     request: SelfSignedCertRequest,
 ) -> Result<impl Reply, Rejection> {
-    let cert = Cert::new_self_signed(&request)?;
+    let cert = Arc::new(Cert::new_self_signed(&request)?);
     let _ = state.sender.send(ServerCommand::AddCert { cert }).await;
     Ok(warp::reply::reply())
 }
@@ -43,7 +43,7 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
         }
     }
 
-    let cert = Cert::new(chain, key)?;
+    let cert = Arc::new(Cert::new(chain, key)?);
     if state
         .data
         .lock()
