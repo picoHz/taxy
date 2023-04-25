@@ -16,7 +16,7 @@
         :value="item.listen" :to="{ path: `/ports/${encodeURIComponent(item.name)}` }">
 
         <template v-slot:prepend>
-          <v-icon v-if="getStatusbyName(item.name).state.socket === 'listening'" icon="$success" color="green"></v-icon>
+          <v-icon v-if="getStateByName(item.name) === 'listening'" icon="$success" color="green"></v-icon>
           <v-icon v-else icon="$error" color="error"></v-icon>
         </template>
       </v-list-item>
@@ -29,5 +29,5 @@ import { storeToRefs } from 'pinia'
 import { usePortsStore } from '@/stores/ports';
 
 const portsStore = usePortsStore();
-const { getStatusbyName } = storeToRefs(portsStore);
+const { getStateByName } = storeToRefs(portsStore);
 </script>

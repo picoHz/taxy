@@ -17,7 +17,7 @@
                     </tr>
                     <tr>
                         <td>{{ $t('ports.status.state') }}</td>
-                        <td>{{ $t(`socket.${status.state.socket}`) }}</td>
+                        <td>{{ $t(`ports.state.${state}`) }}</td>
                     </tr>
                     <tr>
                         <td>{{ $t('ports.status.uptime') }}</td>
@@ -93,9 +93,11 @@ setInterval(() => {
     now.value = Date.now()
 }, 1000)
 
-const status = computed(() => portsStore.getStatusbyName(route.params.name));
+const state = computed(() => portsStore.getStateByName(route.params.name));
+const status = computed(() => portsStore.getStatusByName(route.params.name));
 const config = computed(() => portsStore.table.find(({ name }) => route.params.name === name) || {});
-const uptime = computed(() => status.value.started_at ? formatDuration(now.value - status.value.started_at * 1000) : 'n/a');
+const startedAt = computed(() => status.value.started_at);
+const uptime = computed(() => startedAt.value ? formatDuration(now.value - startedAt.value * 1000) : 'n/a');
 
 const endpoint = import.meta.env.VITE_API_ENDPOINT;
 
