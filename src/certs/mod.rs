@@ -58,6 +58,7 @@ impl Cert {
     pub fn has_subject_name(&self, name: &SubjectName) -> bool {
         for san in &self.san {
             if match (san, name) {
+                (SubjectName::DnsName(c), SubjectName::DnsName(n)) => c == n,
                 (SubjectName::WildcardDnsName(c), SubjectName::DnsName(n)) => {
                     c == n.trim_start_matches(|c| c != '.').trim_start_matches('.')
                 }
