@@ -1,15 +1,15 @@
 use super::{Cert, CertInfo, SubjectName};
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 #[derive(Debug, Default)]
 pub struct CertStore {
-    certs: HashMap<String, Cert>,
+    certs: HashMap<String, Arc<Cert>>,
 }
 
 impl CertStore {
     pub fn new<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = Cert>,
+        I: IntoIterator<Item = Arc<Cert>>,
     {
         Self {
             certs: iter
@@ -19,7 +19,7 @@ impl CertStore {
         }
     }
 
-    pub fn find(&self, names: &[SubjectName]) -> Option<&Cert> {
+    pub fn find(&self, names: &[SubjectName]) -> Option<&Arc<Cert>> {
         let mut certs = self
             .certs
             .values()
@@ -29,7 +29,7 @@ impl CertStore {
         certs.first().copied()
     }
 
-    pub fn add(&mut self, cert: Cert) {
+    pub fn add(&mut self, cert: Arc<Cert>) {
         self.certs.insert(cert.id().to_string(), cert);
     }
 
