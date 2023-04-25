@@ -10,6 +10,7 @@ A TCP reverse proxy with a user-friendly WebUI.
 - Written in Rust for performance and safety
 - Intuitive and user-friendly WebUI for easy configuration
 - Live configuration updates without restarting the service
+- Import TLS certificates from GUI or generate a self-signed certificate
 
 ## Installation
 
