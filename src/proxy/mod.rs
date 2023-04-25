@@ -1,4 +1,4 @@
-use self::tcp::TcpPortContext;
+use self::{tcp::TcpPortContext, tls::TlsState};
 use crate::{
     certs::store::CertStore,
     config::{port::PortEntry, AppConfig},
@@ -24,11 +24,17 @@ pub enum SocketState {
     Unknown,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize)]
 pub struct PortStatus {
-    pub socket: SocketState,
+    pub state: PortState,
     #[serde(serialize_with = "serialize_started_at")]
     pub started_at: Option<SystemTime>,
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct PortState {
+    pub socket: SocketState,
+    pub tls: Option<TlsState>,
 }
 
 fn serialize_started_at<S>(

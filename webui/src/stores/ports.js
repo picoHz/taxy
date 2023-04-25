@@ -12,7 +12,7 @@ export const usePortsStore = defineStore('ports', {
   },
   getters: {
     getStatusbyName: (state) => {
-      return (name) => state.status[name] || {}
+      return (name) => state.status[name] || { state: {} }
     },
   }
 })

@@ -17,7 +17,7 @@
                     </tr>
                     <tr>
                         <td>{{ $t('ports.status.state') }}</td>
-                        <td>{{ $t(`socket.${status.socket}`) }}</td>
+                        <td>{{ $t(`socket.${status.state.socket}`) }}</td>
                     </tr>
                     <tr>
                         <td>{{ $t('ports.status.uptime') }}</td>
@@ -93,7 +93,7 @@ setInterval(() => {
     now.value = Date.now()
 }, 1000)
 
-const status = computed(() => portsStore.getStatusbyName(route.params.name) || {});
+const status = computed(() => portsStore.getStatusbyName(route.params.name));
 const config = computed(() => portsStore.table.find(({ name }) => route.params.name === name) || {});
 const uptime = computed(() => status.value.started_at ? formatDuration(now.value - status.value.started_at * 1000) : 'n/a');
 

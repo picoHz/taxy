@@ -1,6 +1,7 @@
 use crate::certs::store::CertStore;
 use crate::certs::SubjectName;
 use crate::{config, error::Error};
+use serde_derive::Serialize;
 use std::fmt;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -8,6 +9,13 @@ use tokio_rustls::rustls::ServerConfig;
 use tokio_rustls::TlsAcceptor;
 use tracing::error;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TlsState {
+    Active,
+    NoValidCertificate,
+    ConfigurationFailed,
+}
 pub struct TlsTermination {
     pub server_names: Vec<SubjectName>,
     pub acceptor: Option<TlsAcceptor>,
@@ -34,12 +42,14 @@ impl TlsTermination {
         })
     }
 
-    pub async fn setup(&mut self, certs: &CertStore) -> Result<(), Error> {
+    pub async fn setup(&mut self, certs: &CertStore) -> TlsState {
         let server_names = self.server_names.clone();
 
-        let cert = certs
-            .find(&server_names)
-            .ok_or(Error::ValidTlsCertificatesNotFound)?;
+        let cert = if let Some(cert) = certs.find(&server_names) {
+            cert
+        } else {
+            return TlsState::NoValidCertificate;
+        };
 
         let chain = cert.chain.clone();
         let key = cert.key.clone();
@@ -53,13 +63,13 @@ impl TlsTermination {
             Ok(config) => config,
             Err(err) => {
                 error!(?err, server_names = ?self.server_names);
-                return Err(Error::TlsServerConfigrationFailed);
+                return TlsState::ConfigurationFailed;
             }
         };
 
         let server_config = Arc::new(server_config);
         self.acceptor = Some(TlsAcceptor::from(server_config));
 
-        Ok(())
+        TlsState::Active
     }
 }

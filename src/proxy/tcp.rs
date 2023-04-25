@@ -121,7 +121,7 @@ impl TcpPortContext {
 
     pub async fn setup(&mut self, certs: &CertStore) -> Result<(), Error> {
         if let Some(tls) = &mut self.tls_termination {
-            tls.setup(certs).await?;
+            self.status.state.tls = Some(tls.setup(certs).await);
         }
         Ok(())
     }
@@ -136,14 +136,14 @@ impl TcpPortContext {
     pub fn event(&mut self, event: PortContextEvent) {
         match event {
             PortContextEvent::SokcetStateUpadted(state) => {
-                if self.status.socket != state {
+                if self.status.state.socket != state {
                     self.status.started_at = if state == SocketState::Listening {
                         Some(SystemTime::now())
                     } else {
                         None
                     };
                 }
-                self.status.socket = state;
+                self.status.state.socket = state;
             }
         }
     }

@@ -16,7 +16,7 @@
         :value="item.listen" :to="{ path: `/ports/${encodeURIComponent(item.name)}` }">
 
         <template v-slot:prepend>
-          <v-icon v-if="getStatusbyName(item.name).socket === 'listening'" icon="$success" color="green"></v-icon>
+          <v-icon v-if="getStatusbyName(item.name).state.socket === 'listening'" icon="$success" color="green"></v-icon>
           <v-icon v-else icon="$error" color="error"></v-icon>
         </template>
       </v-list-item>
