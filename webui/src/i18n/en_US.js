@@ -73,7 +73,7 @@ export default {
         add_cert: "Add Certificate",
         self_sign: {
             self_sign: "Self-sign",
-            title: "New Self-sign Certificate",
+            title: "New Self-signed Certificate",
             subject_alternative_names: "Subject Alternative Names",
             hint: "You can use commas to list multiple names, e.g, example.com, *.test.examle.com.",
             rule: "Enter valid subject alternative names.",
