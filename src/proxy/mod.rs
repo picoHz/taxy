@@ -1,8 +1,8 @@
 use self::{tcp::TcpPortContext, tls::TlsState};
 use crate::{
-    certs::store::CertStore,
     config::{port::PortEntry, AppConfig},
     error::Error,
+    keyring::Keyring,
 };
 use serde_derive::Serialize;
 use std::time::SystemTime;
@@ -93,7 +93,7 @@ impl PortContext {
         }
     }
 
-    pub async fn setup(&mut self, certs: &CertStore) -> Result<(), Error> {
+    pub async fn setup(&mut self, certs: &Keyring) -> Result<(), Error> {
         match &mut self.kind {
             PortContextKind::Tcp(ctx) => ctx.setup(certs).await,
         }

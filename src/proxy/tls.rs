@@ -1,5 +1,5 @@
-use crate::certs::store::CertStore;
-use crate::certs::SubjectName;
+use crate::keyring::subject_name::SubjectName;
+use crate::keyring::Keyring;
 use crate::{config, error::Error};
 use serde_derive::Serialize;
 use std::fmt;
@@ -42,10 +42,10 @@ impl TlsTermination {
         })
     }
 
-    pub async fn setup(&mut self, certs: &CertStore) -> TlsState {
+    pub async fn setup(&mut self, certs: &Keyring) -> TlsState {
         let server_names = self.server_names.clone();
 
-        let cert = if let Some(cert) = certs.find(&server_names) {
+        let cert = if let Some(cert) = certs.find_server_cert(&server_names) {
             cert
         } else {
             return TlsState::NoValidCertificate;

@@ -11,11 +11,11 @@ use tracing_subscriber::prelude::*;
 
 mod admin;
 mod args;
-mod certs;
 mod command;
 mod config;
 mod error;
 mod event;
+mod keyring;
 mod log;
 mod proxy;
 mod server;

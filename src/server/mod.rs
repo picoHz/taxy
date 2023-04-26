@@ -1,5 +1,6 @@
 use crate::config::storage::ConfigStorage;
 use crate::config::Source;
+use crate::keyring::KeyringItem;
 use crate::proxy::{PortContext, PortContextKind};
 use crate::server::table::ProxyTable;
 use crate::{command::ServerCommand, event::ServerEvent};
@@ -27,8 +28,8 @@ pub async fn start_server(
     });
 
     let mut certs = config.load_certs().await;
-    let _ = event.send(ServerEvent::CertListUpdated {
-        certs: certs.list(),
+    let _ = event.send(ServerEvent::KeyringUpdated {
+        items: certs.list(),
     });
 
     let ports = config.load_entries().await;
@@ -71,15 +72,16 @@ pub async fn start_server(
                         table.delete_port(&name);
                         update_port_statuses(&event, &mut pool, &mut table).await;
                     },
-                    Some(ServerCommand::AddCert { cert }) => {
-                        config.save_cert(&cert).await;
-                        certs.add(cert);
-                        let _ = event.send(ServerEvent::CertListUpdated { certs: certs.list() } );
+                    Some(ServerCommand::AddKeyringItem { item }) => {
+                        let KeyringItem::ServerCert (cert) = &item;
+                        config.save_cert(cert).await;
+                        certs.add(item);
+                        let _ = event.send(ServerEvent::KeyringUpdated { items: certs.list() } );
                     }
-                    Some(ServerCommand::DeleteCert { id }) => {
+                    Some(ServerCommand::DeleteKeyringItem { id }) => {
                         config.delete_cert(&id).await;
                         certs.delete(&id);
-                        let _ = event.send(ServerEvent::CertListUpdated { certs: certs.list() } );
+                        let _ = event.send(ServerEvent::KeyringUpdated { items: certs.list() } );
                     }
                     _ => (),
                 }

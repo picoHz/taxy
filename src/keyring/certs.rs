@@ -1,18 +1,16 @@
+use std::str::FromStr;
+
+use crate::error::Error;
 use rcgen::{CertificateParams, DistinguishedName, DnType, SanType};
 use rustls_pemfile::Item;
 use serde_derive::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::str::FromStr;
 use tokio_rustls::rustls::{Certificate, PrivateKey};
 use tracing::error;
 use x509_parser::{extensions::GeneralName, time::ASN1Time};
 use x509_parser::{parse_x509_certificate, prelude::X509Certificate};
 
-pub mod store;
-mod subject_name;
-pub use subject_name::*;
-
-use crate::error::Error;
+use super::SubjectName;
 
 const CERT_ID_LENGTH: usize = 20;
 

@@ -1,8 +1,11 @@
 use super::AppState;
 use crate::{
-    certs::{Cert, SelfSignedCertRequest},
     command::ServerCommand,
     error::Error,
+    keyring::{
+        certs::{Cert, SelfSignedCertRequest},
+        KeyringItem,
+    },
 };
 use std::{io::Read, sync::Arc};
 use tokio_stream::StreamExt;
@@ -10,15 +13,18 @@ use warp::{multipart::FormData, Buf, Rejection, Reply};
 
 pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
     let data = state.data.lock().await;
-    Ok(warp::reply::json(&data.certs))
+    Ok(warp::reply::json(&data.keyring_items))
 }
 
 pub async fn self_signed(
     state: AppState,
     request: SelfSignedCertRequest,
 ) -> Result<impl Reply, Rejection> {
-    let cert = Arc::new(Cert::new_self_signed(&request)?);
-    let _ = state.sender.send(ServerCommand::AddCert { cert }).await;
+    let item = KeyringItem::ServerCert(Arc::new(Cert::new_self_signed(&request)?));
+    let _ = state
+        .sender
+        .send(ServerCommand::AddKeyringItem { item })
+        .await;
     Ok(warp::reply::reply())
 }
 
@@ -43,27 +49,40 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
         }
     }
 
-    let cert = Arc::new(Cert::new(chain, key)?);
+    let item = KeyringItem::ServerCert(Arc::new(Cert::new(chain, key)?));
     if state
         .data
         .lock()
         .await
-        .certs
+        .keyring_items
         .iter()
-        .any(|c| c.id == cert.id())
+        .any(|c| c.id() == item.id())
     {
         return Err(warp::reject::custom(Error::CertAlreadyExists {
-            id: cert.id().to_string(),
+            id: item.id().to_string(),
         }));
     }
-    let _ = state.sender.send(ServerCommand::AddCert { cert }).await;
+    let _ = state
+        .sender
+        .send(ServerCommand::AddKeyringItem { item })
+        .await;
     Ok(warp::reply::reply())
 }
 
 pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {
-    if !state.data.lock().await.certs.iter().any(|c| c.id == id) {
+    if !state
+        .data
+        .lock()
+        .await
+        .keyring_items
+        .iter()
+        .any(|c| c.id() == id)
+    {
         return Err(warp::reject::custom(Error::CertNotFound { id }));
     }
-    let _ = state.sender.send(ServerCommand::DeleteCert { id }).await;
+    let _ = state
+        .sender
+        .send(ServerCommand::DeleteKeyringItem { id })
+        .await;
     Ok(warp::reply::reply())
 }
