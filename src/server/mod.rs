@@ -85,8 +85,9 @@ pub async fn start_server(
                         update_port_statuses(&event, &mut pool, &mut table).await;
                     },
                     Some(ServerCommand::AddKeyringItem { item }) => {
-                        let KeyringItem::ServerCert (cert) = &item;
-                        config.save_cert(cert).await;
+                        if let KeyringItem::ServerCert (cert) = &item {
+                            config.save_cert(cert).await;
+                        }
                         certs.add(item);
                         let _ = event.send(ServerEvent::KeyringUpdated { items: certs.list() } );
                     }
