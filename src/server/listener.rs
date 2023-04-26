@@ -10,13 +10,19 @@ use tracing::{error, info};
 #[derive(Debug)]
 pub struct TcpListenerPool {
     listeners: Vec<TcpListenerStream>,
+    reserved_port: Option<u16>,
 }
 
 impl TcpListenerPool {
     pub fn new() -> Self {
         Self {
             listeners: Vec::new(),
+            reserved_port: None,
         }
+    }
+
+    pub fn set_reserved_port(&mut self, port: Option<u16>) {
+        self.reserved_port = port;
     }
 
     pub fn has_active_listeners(&self) -> bool {
@@ -45,12 +51,23 @@ impl TcpListenerPool {
             .filter(|(addr, _)| used_addrs.contains(addr))
             .collect();
 
+        if let Some(reserved) = self.reserved_port {
+            let _ipv4_port_used = ports.iter().any(|ctx| {
+                let PortContextKind::Tcp(state) = ctx.kind();
+                state.listen.port() == reserved && state.listen.is_ipv4()
+            });
+            let _ipv6_port_used = ports.iter().any(|ctx| {
+                let PortContextKind::Tcp(state) = ctx.kind();
+                state.listen.port() == reserved && state.listen.is_ipv6()
+            });
+        }
+
         for (index, ctx) in ports.iter_mut().enumerate() {
             let PortContextKind::Tcp(state) = ctx.kind();
-            let (listener, state) = if let Some(listener) = listeners.remove(&state.listen) {
+            let bind = state.listen;
+            let (listener, state) = if let Some(listener) = listeners.remove(&bind) {
                 (Some(listener), SocketState::Listening)
             } else {
-                let bind = state.listen;
                 info!(%bind, "listening on tcp port");
                 match TcpListener::bind(bind).await {
                     Ok(sock) => (
