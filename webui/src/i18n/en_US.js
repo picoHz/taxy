@@ -90,6 +90,14 @@ export default {
             rule_key: "Select valid private key.",
             cancel: "Cancel"
         },
+        acme: {
+            acme: "ACME",
+            title: "New ACME Request",
+            provider: "Provider",
+            challenge: "Challenge",
+            email: "Email",
+            domain: "Domain Name",
+        },
         delete_cert: {
             delete_cert: "Delete Certificate",
             confirm: "Are you sure to delete {name}?",

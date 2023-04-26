@@ -12,6 +12,9 @@
               <v-list-item prepend-icon="mdi-file-sign" @click="selfSignedDialog = true">
                 <v-list-item-title>{{ $t('certs.self_sign.self_sign') }}</v-list-item-title>
               </v-list-item>
+              <v-list-item prepend-icon="mdi-cloud-lock" @click="acmeDialog = true">
+                <v-list-item-title>{{ $t('certs.acme.acme') }}</v-list-item-title>
+              </v-list-item>
             </v-list>
           </v-menu>
         </v-btn>
@@ -97,6 +100,32 @@
       </v-form>
     </v-dialog>
 
+    <v-dialog :width="600" v-model="acmeDialog" width="auto">
+      <v-form validate-on="submitSelfSignedForm" @submit.prevent="submitSelfSignedForm">
+        <v-card>
+          <v-card-title>
+            {{ $t('certs.acme.title') }}
+          </v-card-title>
+          <v-card-text>
+            <v-container>
+              <v-row>
+                <v-col cols="12" sm="12">
+                  <v-select :label="$t('certs.acme.provider')" :items="acmeProviders" v-model="acmeProvider"
+                    variant="outlined" density="compact"></v-select>
+                </v-col>
+              </v-row>
+            </v-container>
+            <LetsEncrypt></LetsEncrypt>
+          </v-card-text>
+
+          <v-card-actions class="justify-end">
+            <v-btn @click="acmeDialog = false">{{ $t('certs.self_sign.cancel') }}</v-btn>
+            <v-btn :loading="loading" type="submit" color="primary">{{ $t('certs.self_sign.create') }}</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-form>
+    </v-dialog>
+
     <v-snackbar v-model="snackbar" :timeout="3000">
       {{ $t('certs.successfully_updated') }}
       <template v-slot:actions>
@@ -114,6 +143,7 @@ import { ref, reactive } from 'vue'
 import { useCertsStore } from '@/stores/certs';
 import { useI18n } from 'vue-i18n'
 import { parseTlsServerNames } from '@/utils/validators'
+import LetsEncrypt from '@/acme/LetsEncrypt.vue';
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -122,12 +152,20 @@ const uploadDialog = ref(false);
 const chainFile = ref([]);
 const keyFile = ref([]);
 const selfSignedDialog = ref(false);
+const acmeDialog = ref(false);
 const selfSignedRequest = reactive({
   san: ""
 });
 const loading = ref(false);
 const snackbar = ref(false);
 const error = ref(null);
+
+const acmeProvider = ref('letsencrypt');
+
+const acmeProviders = [
+  { title: "Let's Encrypt", value: 'letsencrypt' },
+  { title: "Let's Encrypt (Staging)", value: 'letsencrypt-staging' }
+];
 
 const endpoint = import.meta.env.VITE_API_ENDPOINT;
 
