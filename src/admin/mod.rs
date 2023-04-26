@@ -1,5 +1,5 @@
-use crate::certs::CertInfo;
 use crate::config::AppConfig;
+use crate::keyring::KeyringInfo;
 use crate::proxy::PortStatus;
 use crate::{command::ServerCommand, config::port::PortEntry, error::Error, event::ServerEvent};
 use hyper::StatusCode;
@@ -43,8 +43,8 @@ pub async fn start_admin(
                 Ok(ServerEvent::PortStatusUpdated { name, status }) => {
                     data.lock().await.status.insert(name, status);
                 }
-                Ok(ServerEvent::CertListUpdated { certs }) => {
-                    data.lock().await.certs = certs;
+                Ok(ServerEvent::KeyringUpdated { items }) => {
+                    data.lock().await.keyring_items = items;
                 }
                 Ok(ServerEvent::Shutdown) => break,
                 Err(RecvError::Lagged(n)) => {
@@ -237,7 +237,7 @@ struct Data {
     config: AppConfig,
     entries: Vec<PortEntry>,
     status: HashMap<String, PortStatus>,
-    certs: Vec<CertInfo>,
+    keyring_items: Vec<KeyringInfo>,
 }
 
 fn with_state(

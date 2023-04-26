@@ -1,8 +1,8 @@
 use super::{tls::TlsTermination, PortContextEvent, PortStatus, SocketState};
 use crate::{
-    certs::store::CertStore,
     config::{port::PortEntry, AppConfig},
     error::Error,
+    keyring::Keyring,
 };
 use multiaddr::{Multiaddr, Protocol};
 use std::{
@@ -119,7 +119,7 @@ impl TcpPortContext {
         Ok(())
     }
 
-    pub async fn setup(&mut self, certs: &CertStore) -> Result<(), Error> {
+    pub async fn setup(&mut self, certs: &Keyring) -> Result<(), Error> {
         if let Some(tls) = &mut self.tls_termination {
             self.status.state.tls = Some(tls.setup(certs).await);
         }

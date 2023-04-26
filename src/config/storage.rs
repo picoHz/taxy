@@ -1,7 +1,10 @@
 use super::{port::PortEntry, AppConfig};
 use crate::{
-    certs::{store::CertStore, Cert},
     config::port::NamelessPortEntry,
+    keyring::{
+        certs::Cert,
+        {Keyring, KeyringItem},
+    },
 };
 use indexmap::map::IndexMap;
 use std::{
@@ -144,7 +147,7 @@ impl ConfigStorage {
         }
     }
 
-    pub async fn load_certs(&self) -> CertStore {
+    pub async fn load_certs(&self) -> Keyring {
         let dir = &self.dir;
         let path = dir.join("certs");
         match self.load_certs_impl(&path).await {
@@ -156,7 +159,7 @@ impl ConfigStorage {
         }
     }
 
-    pub async fn load_certs_impl(&self, path: &Path) -> anyhow::Result<CertStore> {
+    pub async fn load_certs_impl(&self, path: &Path) -> anyhow::Result<Keyring> {
         let walker = globwalk::GlobWalkerBuilder::from_patterns(path, &["*/cert.pem"])
             .build()?
             .filter_map(Result::ok);
@@ -191,10 +194,10 @@ impl ConfigStorage {
             }
 
             match Cert::new(chain_data, key_data) {
-                Ok(cert) => certs.push(Arc::new(cert)),
+                Ok(cert) => certs.push(KeyringItem::ServerCert(Arc::new(cert))),
                 Err(err) => error!(?path, "failed to load: {err}"),
             }
         }
-        Ok(CertStore::new(certs))
+        Ok(Keyring::new(certs))
     }
 }
