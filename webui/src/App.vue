@@ -36,8 +36,8 @@ onMounted(async () => {
       case 'app_config_updated':
         configStore.update(json.config);
         break;
-      case 'cert_list_updated':
-        certsStore.update(json.certs);
+      case 'keyring_updated':
+        certsStore.update(json.items);
         break;
     }
     message.value = event.data;
