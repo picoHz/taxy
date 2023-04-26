@@ -62,6 +62,7 @@ export default {
     },
     certs: {
         certs: 'Certificates',
+        no_certs: 'No certificates found.',
         info: {
             san: 'SAN',
             fingerprint: 'Fingerprint',
