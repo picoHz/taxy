@@ -12,6 +12,10 @@ A TCP reverse proxy with a user-friendly WebUI.
 - Live configuration updates without restarting the service
 - Import TLS certificates from GUI or generate a self-signed certificate
 
+## Web UI Demo
+
+Visit https://taxy.onrender.com/.
+
 ## Installation
 
 To build the Taxy binary, ensure that you have the Rust toolchain installed.
