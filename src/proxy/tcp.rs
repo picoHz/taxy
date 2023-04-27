@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
     time::SystemTime,
 };
-use tokio::io::{AsyncRead, AsyncWrite};
+use tokio::io::{AsyncRead, AsyncWrite, BufStream};
 use tokio::net::{self, TcpSocket, TcpStream};
 use tokio_rustls::{
     rustls::{client::ServerName, Certificate, ClientConfig, RootCertStore},
@@ -152,7 +152,7 @@ impl TcpPortContext {
         &self.status
     }
 
-    pub fn start_proxy(&mut self, stream: TcpStream) {
+    pub fn start_proxy(&mut self, stream: BufStream<TcpStream>) {
         let span = self.span.clone();
         let conn = self.servers[self.round_robin_counter % self.servers.len()].clone();
         let tls_client_config = self
@@ -178,13 +178,13 @@ impl TcpPortContext {
 }
 
 pub async fn start(
-    stream: TcpStream,
+    stream: BufStream<TcpStream>,
     conn: Connection,
     tls_client_config: Option<Arc<ClientConfig>>,
     tls_acceptor: Option<TlsAcceptor>,
 ) -> anyhow::Result<()> {
-    let remote = stream.peer_addr()?;
-    let local = stream.local_addr()?;
+    let remote = stream.get_ref().peer_addr()?;
+    let local = stream.get_ref().local_addr()?;
 
     let host = match conn.name.clone() {
         ServerName::DnsName(name) => format!("{}:{}", name.as_ref(), conn.port),
