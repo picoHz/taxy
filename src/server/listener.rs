@@ -1,3 +1,4 @@
+use crate::config::port::{BackendServer, PortEntry};
 use crate::proxy::{PortContext, PortContextEvent, PortContextKind, SocketState};
 use futures::{Stream, StreamExt};
 use std::collections::{HashMap, HashSet};
@@ -7,22 +8,24 @@ use std::task::{Context, Poll};
 use tokio::net::{TcpListener, TcpStream};
 use tracing::{error, info};
 
+const RESERVED_PORT: u16 = 8012;
+
 #[derive(Debug)]
 pub struct TcpListenerPool {
     listeners: Vec<TcpListenerStream>,
-    reserved_port: Option<u16>,
+    http_challenges: HashMap<String, String>,
 }
 
 impl TcpListenerPool {
     pub fn new() -> Self {
         Self {
             listeners: Vec::new(),
-            reserved_port: None,
+            http_challenges: HashMap::new(),
         }
     }
 
-    pub fn set_reserved_port(&mut self, port: Option<u16>) {
-        self.reserved_port = port;
+    pub fn set_http_challenges(&mut self, challenges: HashMap<String, String>) {
+        self.http_challenges = challenges;
     }
 
     pub fn has_active_listeners(&self) -> bool {
@@ -51,18 +54,32 @@ impl TcpListenerPool {
             .filter(|(addr, _)| used_addrs.contains(addr))
             .collect();
 
-        if let Some(reserved) = self.reserved_port {
-            let _ipv4_port_used = ports.iter().any(|ctx| {
+        let mut reserved_ports = Vec::new();
+        if !self.http_challenges.is_empty() {
+            let port_used = ports.iter().any(|ctx| {
                 let PortContextKind::Tcp(state) = ctx.kind();
-                state.listen.port() == reserved && state.listen.is_ipv4()
+                state.listen.port() == RESERVED_PORT
             });
-            let _ipv6_port_used = ports.iter().any(|ctx| {
-                let PortContextKind::Tcp(state) = ctx.kind();
-                state.listen.port() == reserved && state.listen.is_ipv6()
-            });
+            if !port_used {
+                let entry = PortEntry {
+                    name: "_http_challenge".into(),
+                    listen: "/ip4/0.0.0.0/tcp/8012".parse().unwrap(),
+                    servers: vec![BackendServer {
+                        addr: "/ip4/127.0.0.1/tcp/9999".parse().unwrap(),
+                    }],
+                    opts: Default::default(),
+                };
+                reserved_ports.push(PortContext::new(entry).unwrap());
+            }
         }
 
-        for (index, ctx) in ports.iter_mut().enumerate() {
+        println!("{:?}", reserved_ports);
+
+        for (index, ctx) in ports
+            .iter_mut()
+            .chain(reserved_ports.iter_mut())
+            .enumerate()
+        {
             let PortContextKind::Tcp(state) = ctx.kind();
             let bind = state.listen;
             let (listener, state) = if let Some(listener) = listeners.remove(&bind) {

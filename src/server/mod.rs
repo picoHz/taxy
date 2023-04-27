@@ -5,6 +5,8 @@ use crate::proxy::{PortContext, PortContextKind};
 use crate::server::table::ProxyTable;
 use crate::{command::ServerCommand, event::ServerEvent};
 use listener::TcpListenerPool;
+use tokio::io::{AsyncBufReadExt, BufStream};
+use tokio::net::TcpStream;
 use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::{broadcast, mpsc};
 use tracing::{error, warn};
@@ -20,6 +22,8 @@ pub async fn start_server(
     let mut table = ProxyTable::new();
     let mut pool = TcpListenerPool::new();
     let mut event_recv = event.subscribe();
+
+    pool.set_http_challenges([("aaa".into(), "bbb".into())].into_iter().collect());
 
     let app_config = config.load_app_config().await;
     let _ = event.send(ServerEvent::AppConfigUpdated {
@@ -107,10 +111,16 @@ pub async fn start_server(
             }
             sock = pool.select(), if pool.has_active_listeners() => {
                 if let Some((index, stream)) = sock {
-                    let state = &mut table.contexts_mut()[index];
-                    match state.kind_mut() {
-                        PortContextKind::Tcp(tcp) => {
-                            tcp.start_proxy(stream);
+                    println!("new connection on port {}", index);
+                    let mut stream = BufStream::new(stream);
+                    println!("{:?}", check_http_challenge(&mut stream).await);
+
+                    if index < table.contexts().len() {
+                        let state = &mut table.contexts_mut()[index];
+                        match state.kind_mut() {
+                            PortContextKind::Tcp(tcp) => {
+                                tcp.start_proxy(stream);
+                            }
                         }
                     }
                 }
@@ -119,6 +129,15 @@ pub async fn start_server(
     }
 
     Ok(())
+}
+
+async fn check_http_challenge(stream: &mut BufStream<TcpStream>) -> bool {
+    const HTTP_CHALLENGE_HEADER: &[u8] = b"GET /.well-known/acme-challenge/";
+    if let Ok(buf) = stream.fill_buf().await {
+        return buf.starts_with(HTTP_CHALLENGE_HEADER);
+    } else {
+        false
+    }
 }
 
 async fn update_port_statuses(
