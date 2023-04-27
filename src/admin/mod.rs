@@ -177,16 +177,18 @@ pub async fn start_admin(
     let options = warp::options().map(warp::reply);
     let not_found = warp::get().and_then(handle_not_found);
 
-    let api = warp::path("api")
-        .and(
-            options
-                .or(app_info)
-                .or(config)
-                .or(port)
-                .or(certs)
-                .or(api_events)
-                .or(not_found),
-        )
+    let api = warp::path("api").and(
+        options
+            .or(app_info)
+            .or(config)
+            .or(port)
+            .or(certs)
+            .or(api_events)
+            .or(not_found),
+    );
+
+    #[cfg(debug_assertions)]
+    let api = api
         .with(warp::reply::with::header(
             "Access-Control-Allow-Headers",
             "content-type",
@@ -293,10 +295,13 @@ async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible> {
     let json = warp::reply::json(&ErrorMessage { message, error });
 
     let reply = warp::reply::with_status(json, code);
+
+    #[cfg(debug_assertions)]
     let reply = warp::reply::with_header(
         reply,
         "Access-Control-Allow-Origin",
         "http://localhost:3000",
     );
+
     Ok(reply)
 }
