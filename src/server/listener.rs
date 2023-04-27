@@ -1,6 +1,6 @@
 use crate::proxy::{PortContext, PortContextEvent, PortContextKind, SocketState};
 use futures::{Stream, StreamExt};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -24,6 +24,14 @@ impl TcpListenerPool {
     }
 
     pub async fn update(&mut self, ports: &mut [PortContext]) {
+        let used_addrs = ports
+            .iter()
+            .map(|ctx| {
+                let PortContextKind::Tcp(state) = ctx.kind();
+                state.listen
+            })
+            .collect::<HashSet<_>>();
+
         let mut listeners: HashMap<_, _> = self
             .listeners
             .drain(..)
@@ -34,6 +42,7 @@ impl TcpListenerPool {
                     .ok()
                     .map(|addr| (addr, listener))
             })
+            .filter(|(addr, _)| used_addrs.contains(addr))
             .collect();
 
         for (index, ctx) in ports.iter_mut().enumerate() {
