@@ -19,6 +19,7 @@ directories = "5.0.0"
 futures = "0.3.28"
 globwalk = "0.8.1"
 hex = "0.4.3"
+http-body-util = "0.1.0-rc.2"
 hyper = { version = "1.0.0-rc.3", features = ["full"] }
 include_dir = "0.7.3"
 indexmap = { version = "1.9.3", features = ["serde"] }

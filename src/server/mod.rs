@@ -4,12 +4,19 @@ use crate::keyring::KeyringItem;
 use crate::proxy::{PortContext, PortContextKind};
 use crate::server::table::ProxyTable;
 use crate::{command::ServerCommand, event::ServerEvent};
+use http_body_util::Full;
+use hyper::body::{Bytes, Incoming};
+use hyper::server::conn::http1;
+use hyper::service::service_fn;
 use listener::TcpListenerPool;
+use std::collections::HashMap;
+use std::convert::Infallible;
 use tokio::io::{AsyncBufReadExt, BufStream};
 use tokio::net::TcpStream;
 use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::{broadcast, mpsc};
 use tracing::{error, warn};
+use warp::http::{Request, Response};
 
 mod listener;
 mod table;
@@ -111,11 +118,23 @@ pub async fn start_server(
             }
             sock = pool.select(), if pool.has_active_listeners() => {
                 if let Some((index, stream)) = sock {
-                    println!("new connection on port {}", index);
                     let mut stream = BufStream::new(stream);
-                    println!("{:?}", check_http_challenge(&mut stream).await);
 
-                    if index < table.contexts().len() {
+                    let map = [("aaa".into(), "bbb".into())].into_iter().collect();
+                    if let Some(body) = handle_http_challenge(&mut stream, &map).await {
+                        tokio::task::spawn(async move {
+                            if let Err(err) = http1::Builder::new()
+                                .serve_connection(stream, service_fn(|_: Request<Incoming>| {
+                                    let body = body.clone();
+                                    async move { Ok::<_, Infallible>(Response::new(Full::new(Bytes::from(body)))) }
+                                }))
+                                .await
+                            {
+                                error!("Error serving connection: {:?}", err);
+                            }
+                        });
+
+                    } else if index < table.contexts().len() {
                         let state = &mut table.contexts_mut()[index];
                         match state.kind_mut() {
                             PortContextKind::Tcp(tcp) => {
@@ -131,13 +150,23 @@ pub async fn start_server(
     Ok(())
 }
 
-async fn check_http_challenge(stream: &mut BufStream<TcpStream>) -> bool {
+async fn handle_http_challenge(
+    stream: &mut BufStream<TcpStream>,
+    challenges: &HashMap<String, String>,
+) -> Option<String> {
     const HTTP_CHALLENGE_HEADER: &[u8] = b"GET /.well-known/acme-challenge/";
     if let Ok(buf) = stream.fill_buf().await {
-        return buf.starts_with(HTTP_CHALLENGE_HEADER);
-    } else {
-        false
+        if buf.starts_with(HTTP_CHALLENGE_HEADER) {
+            return buf[HTTP_CHALLENGE_HEADER.len()..]
+                .split(|&b| b == b' ')
+                .next()
+                .and_then(|line| {
+                    let key = std::str::from_utf8(line).unwrap_or("");
+                    challenges.get(key).cloned()
+                });
+        }
     }
+    None
 }
 
 async fn update_port_statuses(
