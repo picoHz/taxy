@@ -8,12 +8,13 @@ use multiaddr::Multiaddr;
 use once_cell::sync::OnceCell;
 use serde_derive::Serialize;
 use std::time::SystemTime;
+use utoipa::ToSchema;
 
 pub mod tcp;
 pub mod tls;
 
 const MAX_NAME_LEN: usize = 32;
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum SocketState {
     Listening,
@@ -25,14 +26,15 @@ pub enum SocketState {
     Unknown,
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
 pub struct PortStatus {
     pub state: PortState,
     #[serde(serialize_with = "serialize_started_at")]
+    #[schema(value_type = Option<u64>)]
     pub started_at: Option<SystemTime>,
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
 pub struct PortState {
     pub socket: SocketState,
     pub tls: Option<TlsState>,

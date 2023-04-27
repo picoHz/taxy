@@ -7,6 +7,16 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(&data.entries))
 }
 
+#[utoipa::path(
+    get,
+    path = "/api/ports/{name}/status",
+    params(
+        ("name" = String, Path, description = "Port configuration name")
+    ),
+    responses(
+        (status = 200, body = PortStatus)
+    )
+)]
 pub async fn status(state: AppState, name: String) -> Result<impl Reply, Rejection> {
     let name = percent_encoding::percent_decode_str(&name).decode_utf8_lossy();
     let data = state.data.lock().await;
