@@ -4,6 +4,8 @@ use crate::{
     error::Error,
     keyring::Keyring,
 };
+use multiaddr::Multiaddr;
+use once_cell::sync::OnceCell;
 use serde_derive::Serialize;
 use std::time::SystemTime;
 
@@ -11,7 +13,6 @@ pub mod tcp;
 pub mod tls;
 
 const MAX_NAME_LEN: usize = 32;
-
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SocketState {
@@ -75,6 +76,18 @@ impl PortContext {
         Ok(Self { entry, kind })
     }
 
+    pub fn reserved() -> Self {
+        Self {
+            entry: PortEntry {
+                name: String::new(),
+                listen: Multiaddr::empty(),
+                servers: vec![],
+                opts: Default::default(),
+            },
+            kind: PortContextKind::Reserved,
+        }
+    }
+
     pub fn entry(&self) -> &PortEntry {
         &self.entry
     }
@@ -90,18 +103,21 @@ impl PortContext {
     pub async fn prepare(&mut self, config: &AppConfig) -> Result<(), Error> {
         match &mut self.kind {
             PortContextKind::Tcp(ctx) => ctx.prepare(config).await,
+            PortContextKind::Reserved => Ok(()),
         }
     }
 
     pub async fn setup(&mut self, certs: &Keyring) -> Result<(), Error> {
         match &mut self.kind {
             PortContextKind::Tcp(ctx) => ctx.setup(certs).await,
+            PortContextKind::Reserved => Ok(()),
         }
     }
 
     pub fn apply(&mut self, new: Self) {
         match (&mut self.kind, new.kind) {
             (PortContextKind::Tcp(old), PortContextKind::Tcp(new)) => old.apply(new),
+            (old, new) => *old = new,
         }
         self.entry = new.entry;
     }
@@ -109,12 +125,17 @@ impl PortContext {
     pub fn event(&mut self, event: PortContextEvent) {
         match &mut self.kind {
             PortContextKind::Tcp(ctx) => ctx.event(event),
+            PortContextKind::Reserved => (),
         }
     }
 
     pub fn status(&self) -> &PortStatus {
         match &self.kind {
             PortContextKind::Tcp(ctx) => ctx.status(),
+            PortContextKind::Reserved => {
+                static STATUS: OnceCell<PortStatus> = OnceCell::new();
+                STATUS.get_or_init(PortStatus::default)
+            }
         }
     }
 }
@@ -122,4 +143,5 @@ impl PortContext {
 #[derive(Debug)]
 pub enum PortContextKind {
     Tcp(TcpPortContext),
+    Reserved,
 }

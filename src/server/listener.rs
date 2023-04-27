@@ -2,21 +2,30 @@ use crate::proxy::{PortContext, PortContextEvent, PortContextKind, SocketState};
 use futures::{Stream, StreamExt};
 use std::collections::{HashMap, HashSet};
 use std::io;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use tokio::net::{TcpListener, TcpStream};
 use tracing::{error, info};
 
+const RESERVED_ADDR: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 8012);
+
 #[derive(Debug)]
 pub struct TcpListenerPool {
     listeners: Vec<TcpListenerStream>,
+    http_challenges: bool,
 }
 
 impl TcpListenerPool {
     pub fn new() -> Self {
         Self {
             listeners: Vec::new(),
+            http_challenges: false,
         }
+    }
+
+    pub fn set_http_challenges(&mut self, enabled: bool) {
+        self.http_challenges = enabled;
     }
 
     pub fn has_active_listeners(&self) -> bool {
@@ -24,11 +33,29 @@ impl TcpListenerPool {
     }
 
     pub async fn update(&mut self, ports: &mut [PortContext]) {
+        let mut reserved_ports = Vec::new();
+        if self.http_challenges {
+            let port_used = ports.iter().any(|ctx| {
+                if let PortContextKind::Tcp(state) = ctx.kind() {
+                    state.listen.port() == RESERVED_ADDR.port()
+                } else {
+                    false
+                }
+            });
+            if !port_used {
+                reserved_ports.push(PortContext::reserved());
+            }
+        }
+
         let used_addrs = ports
             .iter()
-            .map(|ctx| {
-                let PortContextKind::Tcp(state) = ctx.kind();
-                state.listen
+            .chain(&reserved_ports)
+            .filter_map(|ctx| {
+                if let PortContextKind::Tcp(state) = ctx.kind() {
+                    Some(state.listen)
+                } else {
+                    None
+                }
             })
             .collect::<HashSet<_>>();
 
@@ -45,12 +72,18 @@ impl TcpListenerPool {
             .filter(|(addr, _)| used_addrs.contains(addr))
             .collect();
 
-        for (index, ctx) in ports.iter_mut().enumerate() {
-            let PortContextKind::Tcp(state) = ctx.kind();
-            let (listener, state) = if let Some(listener) = listeners.remove(&state.listen) {
+        for (index, ctx) in ports
+            .iter_mut()
+            .chain(reserved_ports.iter_mut())
+            .enumerate()
+        {
+            let bind = match ctx.kind() {
+                PortContextKind::Tcp(state) => state.listen,
+                _ => RESERVED_ADDR,
+            };
+            let (listener, state) = if let Some(listener) = listeners.remove(&bind) {
                 (Some(listener), SocketState::Listening)
             } else {
-                let bind = state.listen;
                 info!(%bind, "listening on tcp port");
                 match TcpListener::bind(bind).await {
                     Ok(sock) => (

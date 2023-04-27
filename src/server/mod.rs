@@ -4,10 +4,19 @@ use crate::keyring::KeyringItem;
 use crate::proxy::{PortContext, PortContextKind};
 use crate::server::table::ProxyTable;
 use crate::{command::ServerCommand, event::ServerEvent};
+use http_body_util::Full;
+use hyper::body::{Bytes, Incoming};
+use hyper::server::conn::http1;
+use hyper::service::service_fn;
 use listener::TcpListenerPool;
+use std::collections::HashMap;
+use std::convert::Infallible;
+use tokio::io::{AsyncBufReadExt, BufStream};
+use tokio::net::TcpStream;
 use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::{broadcast, mpsc};
 use tracing::{error, warn};
+use warp::http::{Request, Response};
 
 mod listener;
 mod table;
@@ -20,6 +29,9 @@ pub async fn start_server(
     let mut table = ProxyTable::new();
     let mut pool = TcpListenerPool::new();
     let mut event_recv = event.subscribe();
+
+    let http_challenges = HashMap::<String, String>::new();
+    pool.set_http_challenges(!http_challenges.is_empty());
 
     let app_config = config.load_app_config().await;
     let _ = event.send(ServerEvent::AppConfigUpdated {
@@ -107,9 +119,28 @@ pub async fn start_server(
             }
             sock = pool.select(), if pool.has_active_listeners() => {
                 if let Some((index, stream)) = sock {
-                    let state = &mut table.contexts_mut()[index];
-                    match state.kind_mut() {
-                        PortContextKind::Tcp(tcp) => {
+                    let mut stream = BufStream::new(stream);
+
+                    if !http_challenges.is_empty() {
+                        if let Some(body) = handle_http_challenge(&mut stream, &http_challenges).await {
+                            tokio::task::spawn(async move {
+                                if let Err(err) = http1::Builder::new()
+                                    .serve_connection(stream, service_fn(|_: Request<Incoming>| {
+                                        let body = body.clone();
+                                        async move { Ok::<_, Infallible>(Response::new(Full::new(Bytes::from(body)))) }
+                                    }))
+                                    .await
+                                {
+                                    error!("Error serving connection: {:?}", err);
+                                }
+                            });
+                            continue;
+                        }
+                    }
+
+                    if index < table.contexts().len() {
+                        let state = &mut table.contexts_mut()[index];
+                        if let PortContextKind::Tcp(tcp) = state.kind_mut() {
                             tcp.start_proxy(stream);
                         }
                     }
@@ -119,6 +150,25 @@ pub async fn start_server(
     }
 
     Ok(())
+}
+
+async fn handle_http_challenge(
+    stream: &mut BufStream<TcpStream>,
+    challenges: &HashMap<String, String>,
+) -> Option<String> {
+    const HTTP_CHALLENGE_HEADER: &[u8] = b"GET /.well-known/acme-challenge/";
+    if let Ok(buf) = stream.fill_buf().await {
+        if buf.starts_with(HTTP_CHALLENGE_HEADER) {
+            return buf[HTTP_CHALLENGE_HEADER.len()..]
+                .split(|&b| b == b' ')
+                .next()
+                .and_then(|line| {
+                    let key = std::str::from_utf8(line).unwrap_or("");
+                    challenges.get(key).cloned()
+                });
+        }
+    }
+    None
 }
 
 async fn update_port_statuses(
