@@ -25,7 +25,8 @@ mod table;
 
 pub async fn start_server(
     config: ConfigStorage,
-    mut command: mpsc::Receiver<ServerCommand>,
+    command_send: mpsc::Sender<ServerCommand>,
+    mut command_recv: mpsc::Receiver<ServerCommand>,
     event: broadcast::Sender<ServerEvent>,
 ) -> anyhow::Result<()> {
     let mut table = ProxyTable::new();
@@ -74,11 +75,18 @@ pub async fn start_server(
     }
     update_port_statuses(&event, &mut pool, &mut table).await;
 
-    start_http_challenges(&mut pool, &mut table, &certs, &mut http_challenges).await;
+    start_http_challenges(
+        command_send,
+        &mut pool,
+        &mut table,
+        &certs,
+        &mut http_challenges,
+    )
+    .await;
 
     loop {
         tokio::select! {
-            cmd = command.recv() => {
+            cmd = command_recv.recv() => {
                 match cmd {
                     Some(ServerCommand::SetAppConfig { config }) => {
                         let _ = event.send(ServerEvent::AppConfigUpdated {
@@ -98,6 +106,7 @@ pub async fn start_server(
                         update_port_statuses(&event, &mut pool, &mut table).await;
                     },
                     Some(ServerCommand::AddKeyringItem { item }) => {
+                        println!("* cert: {:?}", item);
                         if let KeyringItem::ServerCert (cert) = &item {
                             config.save_cert(cert).await;
                         }
@@ -191,6 +200,7 @@ async fn handle_http_challenge(
 }
 
 async fn start_http_challenges(
+    command: mpsc::Sender<ServerCommand>,
     pool: &mut TcpListenerPool,
     table: &mut ProxyTable,
     certs: &Keyring,
@@ -209,8 +219,20 @@ async fn start_http_challenges(
 
     tokio::task::spawn(async move {
         for mut req in requests {
-            req.start_challenge().await;
+            match req.start_challenge().await {
+                Ok(cert) => {
+                    let _ = command
+                        .send(ServerCommand::AddKeyringItem {
+                            item: KeyringItem::ServerCert(Arc::new(cert)),
+                        })
+                        .await;
+                }
+                Err(err) => {
+                    error!(?err, "failed to start challenge");
+                }
+            }
         }
+        let _ = command.send(ServerCommand::StopHttpChallenges).await;
     });
 }
 

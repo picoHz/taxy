@@ -22,7 +22,8 @@
       <v-list-item v-if="certsStore.list.length === 0" disabled>
         <v-list-item-title class="text-center">{{ $t('certs.no_certs') }}</v-list-item-title>
       </v-list-item>
-      <v-list-item prepend-icon="mdi-file-certificate" v-for="item in certsStore.list" :key="item.id"
+      <v-list-item prepend-icon="mdi-file-certificate"
+        v-for="item in certsStore.list.filter(item => item.type === 'server_cert')" :key="item.id"
         :title="item.san.join(', ')" :subtitle="item.id" :value="item.listen" :to="{ path: `/certs/${item.id}` }">
       </v-list-item>
     </v-list>

@@ -1,3 +1,5 @@
+use crate::keyring::certs::Cert;
+use anyhow::bail;
 use instant_acme::{
     Account, AccountCredentials, AuthorizationStatus, ChallengeType, Identifier, NewAccount,
     NewOrder, Order, OrderStatus,
@@ -5,9 +7,7 @@ use instant_acme::{
 use rcgen::{Certificate, CertificateParams, DistinguishedName};
 use serde_derive::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt, time::Duration};
-use tracing::{error, info};
-
-use crate::keyring::certs::Cert;
+use tracing::info;
 
 #[derive(Serialize, Deserialize)]
 pub struct AcmeEntry {
@@ -124,16 +124,16 @@ pub struct AcmeRequest {
 }
 
 impl AcmeRequest {
-    pub async fn start_challenge(&mut self) {
+    pub async fn start_challenge(&mut self) -> anyhow::Result<Cert> {
         for (_, url) in &self.challenges {
-            self.order.set_challenge_ready(url).await.unwrap();
+            self.order.set_challenge_ready(url).await?;
         }
 
         let mut tries = 1u8;
         let mut delay = Duration::from_millis(250);
         let state = loop {
             tokio::time::sleep(delay).await;
-            let state = self.order.refresh().await.unwrap();
+            let state = self.order.refresh().await?;
             if let OrderStatus::Ready | OrderStatus::Invalid = state.status {
                 info!("order state: {:#?}", state);
                 break state;
@@ -144,25 +144,24 @@ impl AcmeRequest {
             match tries < 50 {
                 true => info!("order is not ready, waiting {delay:?} {state:?} {tries}"),
                 false => {
-                    error!("order is not ready {state:?} {tries}");
-                    return;
+                    bail!("order is not ready {state:?} {tries}");
                 }
             }
         };
 
         println!("order state: {:#?}", state);
         if state.status == OrderStatus::Invalid {
-            return;
+            bail!("order is invalid");
         }
 
         let mut params = CertificateParams::new(vec![self.identifier.clone()]);
         params.distinguished_name = DistinguishedName::new();
-        let cert = Certificate::from_params(params).unwrap();
-        let csr = cert.serialize_request_der().unwrap();
+        let cert = Certificate::from_params(params)?;
+        let csr = cert.serialize_request_der()?;
 
-        self.order.finalize(&csr).await.unwrap();
+        self.order.finalize(&csr).await?;
         let cert_chain_pem = loop {
-            match self.order.certificate().await.unwrap() {
+            match self.order.certificate().await? {
                 Some(cert_chain_pem) => break cert_chain_pem,
                 None => tokio::time::sleep(Duration::from_secs(1)).await,
             }
@@ -172,7 +171,8 @@ impl AcmeRequest {
             cert_chain_pem.into_bytes(),
             cert.serialize_private_key_pem().into_bytes(),
         );
-        println!("cert: {:#?}", cert);
+
+        Ok(cert?)
     }
 }
 
