@@ -49,7 +49,7 @@ pub async fn start_server(
         AcmeEntry::new(
             "Let's Encrypt",
             "https://acme-staging-v02.api.letsencrypt.org/directory",
-            "test1.pawprint.dev",
+            "5de4-115-39-175-81.ngrok-free.app",
         )
         .await
         .unwrap(),
@@ -198,14 +198,20 @@ async fn start_http_challenges(
 ) {
     let requests = certs.request_challenges().await;
     let challenges = requests
-        .into_iter()
-        .map(|req| req.http_challenges.into_iter())
+        .iter()
+        .map(|req| req.http_challenges.clone())
         .flatten()
         .collect();
     println!("challenges: {:?}", challenges);
     *http_challenges = challenges;
     pool.set_http_challenges(true);
     pool.update(table.contexts_mut()).await;
+
+    tokio::task::spawn(async move {
+        for mut req in requests {
+            req.start_challenge().await;
+        }
+    });
 }
 
 async fn update_port_statuses(
