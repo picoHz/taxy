@@ -60,7 +60,7 @@ where
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PortContextEvent {
-    SokcetStateUpadted(SocketState),
+    SocketStateUpadted(SocketState),
 }
 
 #[derive(Debug)]
