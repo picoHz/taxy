@@ -30,8 +30,7 @@ pub async fn start_server(
     let mut pool = TcpListenerPool::new();
     let mut event_recv = event.subscribe();
 
-    let http_challenges = HashMap::<String, String>::new();
-    pool.set_http_challenges(!http_challenges.is_empty());
+    let mut http_challenges = HashMap::<String, String>::new();
 
     let app_config = config.load_app_config().await;
     let _ = event.send(ServerEvent::AppConfigUpdated {
@@ -95,6 +94,10 @@ pub async fn start_server(
                         config.delete_cert(&id).await;
                         certs.delete(&id);
                         let _ = event.send(ServerEvent::KeyringUpdated { items: certs.list() } );
+                    }
+                    Some(ServerCommand::SetHttpChallenges { challenges }) => {
+                        pool.set_http_challenges(!challenges.is_empty());
+                        http_challenges = challenges;
                     }
                     _ => (),
                 }
