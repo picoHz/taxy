@@ -5,6 +5,8 @@
         <v-list>
           <v-list-item prepend-icon="mdi-network" title="Ports" :to="{ path: '/ports' }"></v-list-item>
           <v-list-item prepend-icon="mdi-certificate" title="Certificates" :to="{ path: '/certs' }"></v-list-item>
+          <v-list-item prepend-icon="mdi-code-json" append-icon="mdi-open-in-new" title="Swagger" href="/swagger-ui"
+            target="_blank"></v-list-item>
         </v-list>
       </v-navigation-drawer>
 

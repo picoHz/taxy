@@ -1,6 +1,7 @@
 use self::certs::{Cert, CertInfo};
 use serde_derive::Serialize;
 use std::{collections::HashMap, sync::Arc};
+use utoipa::ToSchema;
 
 pub mod certs;
 pub mod store;
@@ -32,7 +33,7 @@ impl KeyringItem {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, ToSchema)]
 #[serde(rename_all = "snake_case", tag = "type")]
 pub enum KeyringInfo {
     ServerCert(CertInfo),

@@ -2,11 +2,31 @@ use super::AppState;
 use crate::{command::ServerCommand, config::port::PortEntry, error::Error, proxy::PortContext};
 use warp::{Rejection, Reply};
 
+/// Get the list of port configurations.
+#[utoipa::path(
+    get,
+    path = "/api/ports",
+    responses(
+        (status = 200, body = [PortEntry])
+    )
+)]
 pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
     let data = state.data.lock().await;
     Ok(warp::reply::json(&data.entries))
 }
 
+/// Get the status of a port.
+#[utoipa::path(
+    get,
+    path = "/api/ports/{name}/status",
+    params(
+        ("name" = String, Path, description = "Port configuration name")
+    ),
+    responses(
+        (status = 200, body = PortStatus),
+        (status = 404)
+    )
+)]
 pub async fn status(state: AppState, name: String) -> Result<impl Reply, Rejection> {
     let name = percent_encoding::percent_decode_str(&name).decode_utf8_lossy();
     let data = state.data.lock().await;
@@ -19,6 +39,18 @@ pub async fn status(state: AppState, name: String) -> Result<impl Reply, Rejecti
     }
 }
 
+/// Delete a port configuration.
+#[utoipa::path(
+    delete,
+    path = "/api/ports/{name}",
+    params(
+        ("name" = String, Path, description = "Port configuration name")
+    ),
+    responses(
+        (status = 200),
+        (status = 404),
+    )
+)]
 pub async fn delete(state: AppState, name: String) -> Result<impl Reply, Rejection> {
     let name = percent_encoding::percent_decode_str(&name).decode_utf8_lossy();
     if state
@@ -42,6 +74,16 @@ pub async fn delete(state: AppState, name: String) -> Result<impl Reply, Rejecti
     Ok(warp::reply::reply())
 }
 
+/// Create a new port configuration.
+#[utoipa::path(
+    post,
+    path = "/api/ports",
+    request_body = PortEntry,
+    responses(
+        (status = 200),
+        (status = 400, body = Error),
+    )
+)]
 pub async fn post(state: AppState, entry: PortEntry) -> Result<impl Reply, Rejection> {
     let data = state.data.lock().await;
     let name = entry.name.clone();
@@ -54,6 +96,20 @@ pub async fn post(state: AppState, entry: PortEntry) -> Result<impl Reply, Rejec
     Ok(warp::reply::reply())
 }
 
+/// Update or rename a port configuration.
+#[utoipa::path(
+    put,
+    path = "/api/ports/{name}",
+    params(
+        ("name" = String, Path, description = "Port configuration name")
+    ),
+    request_body = PortEntry,
+    responses(
+        (status = 200),
+        (status = 404),
+        (status = 400, body = Error),
+    )
+)]
 pub async fn put(state: AppState, entry: PortEntry, name: String) -> Result<impl Reply, Rejection> {
     let name = percent_encoding::percent_decode_str(&name).decode_utf8_lossy();
     if entry.name != name

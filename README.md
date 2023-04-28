@@ -16,6 +16,8 @@ A TCP reverse proxy with a user-friendly WebUI.
 
 Visit https://taxy.onrender.com/.
 
+You can access the REST API documentation on https://taxy.onrender.com/swagger-ui.
+
 ## Installation
 
 To build the Taxy binary, ensure that you have the Rust toolchain installed.

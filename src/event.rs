@@ -4,8 +4,9 @@ use crate::{
     proxy::PortStatus,
 };
 use serde_derive::Serialize;
+use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, ToSchema)]
 #[serde(rename_all = "snake_case", tag = "event")]
 pub enum ServerEvent {
     AppConfigUpdated {

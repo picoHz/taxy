@@ -10,6 +10,8 @@ use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::{broadcast, mpsc, Mutex};
 use tokio_stream::{wrappers::BroadcastStream, StreamExt};
 use tracing::{error, info, trace, warn};
+use utoipa::OpenApi;
+use utoipa_swagger_ui::Config;
 use warp::filters::body::BodyDeserializeError;
 use warp::{sse::Event, Filter, Rejection, Reply};
 
@@ -18,6 +20,7 @@ mod certs;
 mod config;
 mod port;
 mod static_file;
+mod swagger;
 
 pub async fn start_admin(
     addr: SocketAddr,
@@ -177,6 +180,19 @@ pub async fn start_admin(
     let options = warp::options().map(warp::reply);
     let not_found = warp::get().and_then(handle_not_found);
 
+    let api_doc = warp::path("api-doc.json")
+        .and(warp::get())
+        .map(|| warp::reply::json(&swagger::ApiDoc::openapi()));
+
+    let api_config = Arc::new(Config::from("/api/api-doc.json"));
+
+    let swagger_ui = warp::path("swagger-ui")
+        .and(warp::get())
+        .and(warp::path::full())
+        .and(warp::path::tail())
+        .and(warp::any().map(move || api_config.clone()))
+        .and_then(swagger::serve_swagger);
+
     let api = warp::path("api").and(
         options
             .or(app_info)
@@ -184,6 +200,7 @@ pub async fn start_admin(
             .or(port)
             .or(certs)
             .or(api_events)
+            .or(api_doc)
             .or(not_found),
     );
 
@@ -202,7 +219,7 @@ pub async fn start_admin(
             "http://localhost:3000",
         ));
 
-    let (_, server) = warp::serve(api.or(static_file).recover(handle_rejection))
+    let (_, server) = warp::serve(api.or(swagger_ui).or(static_file).recover(handle_rejection))
         .try_bind_with_graceful_shutdown(addr, async move {
             loop {
                 let event = event_recv.recv().await;
