@@ -9,13 +9,32 @@ use crate::{
 };
 use std::{io::Read, sync::Arc};
 use tokio_stream::StreamExt;
+use utoipa::ToSchema;
 use warp::{multipart::FormData, Buf, Rejection, Reply};
 
+/// List all certificates.
+#[utoipa::path(
+    get,
+    path = "/api/certs",
+    responses(
+        (status = 200, body = [KeyringInfo])
+    )
+)]
 pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
     let data = state.data.lock().await;
     Ok(warp::reply::json(&data.keyring_items))
 }
 
+/// Generate a self-signed certificate.
+#[utoipa::path(
+    post,
+    path = "/api/certs/self_signed",
+    request_body = SelfSignedCertRequest,
+    responses(
+        (status = 200),
+        (status = 400, body = Error),
+    )
+)]
 pub async fn self_signed(
     state: AppState,
     request: SelfSignedCertRequest,
@@ -28,6 +47,25 @@ pub async fn self_signed(
     Ok(warp::reply::reply())
 }
 
+#[derive(ToSchema)]
+#[allow(dead_code)]
+pub struct CertPostBody {
+    #[schema(format = Binary)]
+    chain: String,
+    #[schema(format = Binary)]
+    key: String,
+}
+
+/// Upload a certificate and key pair.
+#[utoipa::path(
+    post,
+    path = "/api/certs/upload",
+    request_body(content = CertPostBody, content_type = "multipart/form-data"),
+    responses(
+        (status = 200),
+        (status = 400, body = Error),
+    ),
+)]
 pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, Rejection> {
     let mut chain = Vec::new();
     let mut key = Vec::new();
@@ -69,6 +107,18 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
     Ok(warp::reply::reply())
 }
 
+/// Delete a certificate.
+#[utoipa::path(
+    delete,
+    path = "/api/certs/{id}",
+    params(
+        ("id" = String, Path, description = "Certification ID")
+    ),
+    responses(
+        (status = 200),
+        (status = 404),
+    )
+)]
 pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {
     if !state
         .data

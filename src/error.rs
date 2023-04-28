@@ -1,19 +1,26 @@
 use multiaddr::Multiaddr;
 use serde_derive::Serialize;
 use thiserror::Error;
+use utoipa::ToSchema;
 use warp::reject::Reject;
 
-#[derive(Debug, Clone, Error, Serialize)]
+#[derive(Debug, Clone, Error, Serialize, ToSchema)]
 #[serde(rename_all = "snake_case", tag = "message")]
 pub enum Error {
     #[error("invalid name: {name}")]
     InvalidName { name: String },
 
     #[error("invalid listening address: {addr}")]
-    InvalidListeningAddress { addr: Multiaddr },
+    InvalidListeningAddress {
+        #[schema(value_type = [String])]
+        addr: Multiaddr,
+    },
 
     #[error("invalid server address: {addr}")]
-    InvalidServerAddress { addr: Multiaddr },
+    InvalidServerAddress {
+        #[schema(value_type = [String])]
+        addr: Multiaddr,
+    },
 
     #[error("invalid subject name: {name}")]
     InvalidSubjectName { name: String },

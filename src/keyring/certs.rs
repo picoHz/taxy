@@ -7,6 +7,7 @@ use serde_derive::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tokio_rustls::rustls::{Certificate, PrivateKey};
 use tracing::error;
+use utoipa::ToSchema;
 use x509_parser::{extensions::GeneralName, time::ASN1Time};
 use x509_parser::{parse_x509_certificate, prelude::X509Certificate};
 
@@ -71,20 +72,28 @@ impl Cert {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, ToSchema)]
 pub struct CertInfo {
+    #[schema(example = "a13e1ecc080e42cfcdd5")]
     pub id: String,
+    #[schema(example = "a13e1ecc080e42cfcdd5b77fec8450c777554aa7269c029b242a7c548d0d73da")]
     pub fingerprint: String,
+    #[schema(example = "CN=taxy self signed cert")]
     pub issuer: String,
     pub root_cert: Option<String>,
+    #[schema(value_type = [String], example = json!(["localhost"]))]
     pub san: Vec<SubjectName>,
+    #[schema(example = "67090118400")]
     pub not_after: i64,
+    #[schema(example = "157766400")]
     pub not_before: i64,
+    #[schema(example = "true")]
     pub is_self_signed: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, ToSchema)]
 pub struct SelfSignedCertRequest {
+    #[schema(value_type = [String], example = json!(["localhost"]))]
     pub san: Vec<SubjectName>,
 }
 
