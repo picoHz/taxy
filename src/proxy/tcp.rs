@@ -135,7 +135,7 @@ impl TcpPortContext {
 
     pub fn event(&mut self, event: PortContextEvent) {
         match event {
-            PortContextEvent::SokcetStateUpadted(state) => {
+            PortContextEvent::SocketStateUpadted(state) => {
                 if self.status.state.socket != state {
                     self.status.started_at = if state == SocketState::Listening {
                         Some(SystemTime::now())

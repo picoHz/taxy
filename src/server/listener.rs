@@ -109,7 +109,7 @@ impl TcpListenerPool {
                 sock.index = index;
                 self.listeners.push(sock);
             }
-            ctx.event(PortContextEvent::SokcetStateUpadted(state));
+            ctx.event(PortContextEvent::SocketStateUpadted(state));
         }
     }
 
