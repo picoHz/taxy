@@ -1,10 +1,9 @@
 use instant_acme::{
     Account, AccountCredentials, AuthorizationStatus, ChallengeType, Identifier, NewAccount,
-    NewOrder, OrderStatus,
+    NewOrder,
 };
 use serde_derive::{Deserialize, Serialize};
-use std::{fmt, time::Duration};
-use tracing::{error, info};
+use std::{collections::HashMap, fmt};
 
 #[derive(Serialize, Deserialize)]
 pub struct AcmeEntry {
@@ -50,7 +49,7 @@ impl AcmeEntry {
         })
     }
 
-    pub async fn update(&mut self) -> Result<(), instant_acme::Error> {
+    pub async fn request_challenge(&self) -> Result<AcmeRequest, instant_acme::Error> {
         let identifier = Identifier::Dns(self.identifier.clone());
         let mut order = self
             .account
@@ -62,8 +61,9 @@ impl AcmeEntry {
         let state = order.state();
         println!("order state: {:#?}", state);
 
+        let mut request = AcmeRequest::default();
         let authorizations = order.authorizations().await.unwrap();
-        let mut challenges = Vec::with_capacity(authorizations.len());
+
         for authz in &authorizations {
             match authz.status {
                 AuthorizationStatus::Pending => {}
@@ -71,57 +71,24 @@ impl AcmeEntry {
                 _ => todo!(),
             }
 
-            // We'll use the DNS challenges for this example, but you could
-            // pick something else to use here.
-
             let challenge = authz
                 .challenges
                 .iter()
-                .find(|c| c.r#type == ChallengeType::Dns01)
-                .ok_or_else(|| anyhow::anyhow!("no dns01 challenge found"))
+                .find(|c| c.r#type == ChallengeType::Http01)
+                .ok_or_else(|| anyhow::anyhow!("no http01 challenge found"))
                 .unwrap();
 
             let Identifier::Dns(identifier) = &authz.identifier;
 
-            println!("Please set the following DNS record then press any key:");
-            println!(
-                "_acme-challenge.{} IN TXT {}",
-                identifier,
-                order.key_authorization(challenge).dns_value()
+            request.http_challenges.insert(
+                challenge.token.to_string(),
+                order.key_authorization(challenge).as_str().to_string(),
             );
-            // io::stdin().read_line(&mut String::new()).unwrap();
-
-            challenges.push((identifier, &challenge.url));
+            request
+                .challenges
+                .push((identifier.to_string(), challenge.url.to_string()));
         }
-
-        for (_, url) in &challenges {
-            order.set_challenge_ready(url).await.unwrap();
-        }
-
-        let mut tries = 1u8;
-        let mut delay = Duration::from_millis(250);
-        loop {
-            tokio::time::sleep(delay).await;
-            let state = order.refresh().await.unwrap();
-            if let OrderStatus::Ready | OrderStatus::Invalid = state.status {
-                info!("order state: {:#?}", state);
-                break;
-            }
-
-            delay *= 2;
-            tries += 1;
-            match tries < 5 {
-                true => info!(?state, tries, "order is not ready, waiting {delay:?}"),
-                false => {
-                    error!(?state, tries, "order is not ready");
-                }
-            }
-        }
-
-        let state = order.state();
-        println!("order state: {:#?}", state);
-
-        Ok(())
+        Ok(request)
     }
 
     pub fn id(&self) -> &str {
@@ -138,6 +105,12 @@ impl AcmeEntry {
 #[derive(Debug, Clone, Serialize)]
 pub struct AcmeInfo {
     pub id: String,
+}
+
+#[derive(Debug, Default)]
+pub struct AcmeRequest {
+    pub http_challenges: HashMap<String, String>,
+    pub challenges: Vec<(String, String)>,
 }
 
 fn serialize_account<S>(account: &Account, serializer: S) -> Result<S::Ok, S::Error>

@@ -1,11 +1,9 @@
 #![forbid(unsafe_code)]
 
 use crate::config::storage::ConfigStorage;
-use crate::keyring::acme::AcmeEntry;
 use clap::Parser;
 use directories::ProjectDirs;
 use std::fs;
-use std::time::Duration;
 use tokio::sync::{broadcast, mpsc};
 use tracing::{error, info};
 use tracing_subscriber::filter::{self, FilterExt};
@@ -25,19 +23,6 @@ mod server;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args = args::Args::parse();
-
-    let mut acme = AcmeEntry::new(
-        "Let's Encrypt",
-        "https://acme-staging-v02.api.letsencrypt.org/directory",
-        "test1.pawprint.dev",
-    )
-    .await
-    .unwrap();
-    acme.update().await.unwrap();
-
-    tokio::time::sleep(Duration::from_secs(5)).await;
-
-    acme.update().await.unwrap();
 
     if let Some(path) = args.log.as_ref().and_then(|path| path.parent()) {
         fs::create_dir_all(path)?;

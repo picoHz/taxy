@@ -1,6 +1,7 @@
 use crate::config::storage::ConfigStorage;
 use crate::config::Source;
-use crate::keyring::KeyringItem;
+use crate::keyring::acme::AcmeEntry;
+use crate::keyring::{Keyring, KeyringItem};
 use crate::proxy::{PortContext, PortContextKind};
 use crate::server::table::ProxyTable;
 use crate::{command::ServerCommand, event::ServerEvent};
@@ -11,6 +12,7 @@ use hyper::service::service_fn;
 use listener::TcpListenerPool;
 use std::collections::HashMap;
 use std::convert::Infallible;
+use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, BufStream};
 use tokio::net::TcpStream;
 use tokio::sync::broadcast::error::RecvError;
@@ -43,6 +45,16 @@ pub async fn start_server(
         items: certs.list(),
     });
 
+    certs.add(KeyringItem::Acme(Arc::new(
+        AcmeEntry::new(
+            "Let's Encrypt",
+            "https://acme-staging-v02.api.letsencrypt.org/directory",
+            "test1.pawprint.dev",
+        )
+        .await
+        .unwrap(),
+    )));
+
     let ports = config.load_entries().await;
     for entry in ports {
         match PortContext::new(entry) {
@@ -61,6 +73,8 @@ pub async fn start_server(
         };
     }
     update_port_statuses(&event, &mut pool, &mut table).await;
+
+    start_http_challenges(&mut pool, &mut table, &certs, &mut http_challenges).await;
 
     loop {
         tokio::select! {
@@ -95,9 +109,10 @@ pub async fn start_server(
                         certs.delete(&id);
                         let _ = event.send(ServerEvent::KeyringUpdated { items: certs.list() } );
                     }
-                    Some(ServerCommand::SetHttpChallenges { challenges }) => {
-                        pool.set_http_challenges(!challenges.is_empty());
-                        http_challenges = challenges;
+                    Some(ServerCommand::StopHttpChallenges) => {
+                        pool.set_http_challenges(false);
+                        http_challenges.clear();
+                        pool.update(table.contexts_mut()).await;
                     }
                     _ => (),
                 }
@@ -173,6 +188,24 @@ async fn handle_http_challenge(
         }
     }
     None
+}
+
+async fn start_http_challenges(
+    pool: &mut TcpListenerPool,
+    table: &mut ProxyTable,
+    certs: &Keyring,
+    http_challenges: &mut HashMap<String, String>,
+) {
+    let requests = certs.request_challenges().await;
+    let challenges = requests
+        .into_iter()
+        .map(|req| req.http_challenges.into_iter())
+        .flatten()
+        .collect();
+    println!("challenges: {:?}", challenges);
+    *http_challenges = challenges;
+    pool.set_http_challenges(true);
+    pool.update(table.contexts_mut()).await;
 }
 
 async fn update_port_statuses(
