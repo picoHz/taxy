@@ -14,6 +14,7 @@ homepage = "https://github.com/picoHz/taxy"
 
 [dependencies]
 anyhow = "1.0.70"
+backoff = { version = "0.4.0", features = ["tokio"] }
 clap = { version = "4.2.2", features = ["derive", "env"] }
 cuid2 = "0.1.0"
 directories = "5.0.0"

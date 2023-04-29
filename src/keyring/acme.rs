@@ -1,5 +1,6 @@
 use crate::keyring::certs::Cert;
 use anyhow::bail;
+use backoff::{backoff::Backoff, ExponentialBackoff};
 use instant_acme::{
     Account, AccountCredentials, AuthorizationStatus, ChallengeType, Identifier, NewAccount,
     NewOrder, Order, OrderStatus,
@@ -7,7 +8,6 @@ use instant_acme::{
 use rcgen::{Certificate, CertificateParams, DistinguishedName};
 use serde_derive::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt, time::Duration};
-use tracing::info;
 
 #[derive(Serialize, Deserialize)]
 pub struct AcmeEntry {
@@ -127,29 +127,21 @@ impl AcmeRequest {
             self.order.set_challenge_ready(url).await?;
         }
 
-        let mut tries = 1u8;
-        let mut delay = Duration::from_millis(250);
-        let state = loop {
-            tokio::time::sleep(delay).await;
+        let mut backoff = ExponentialBackoff::default();
+        loop {
             let state = self.order.refresh().await?;
-            if let OrderStatus::Ready | OrderStatus::Invalid = state.status {
-                info!("order state: {:#?}", state);
-                break state;
-            }
-
-            delay *= 2;
-            tries += 1;
-            match tries < 50 {
-                true => info!("order is not ready, waiting {delay:?} {state:?} {tries}"),
-                false => {
-                    bail!("order is not ready {state:?} {tries}");
+            match state.status {
+                OrderStatus::Ready => break,
+                OrderStatus::Invalid => {
+                    bail!("order is invalid");
                 }
+                _ => (),
             }
-        };
-
-        println!("order state: {:#?}", state);
-        if state.status == OrderStatus::Invalid {
-            bail!("order is invalid");
+            if let Some(next) = backoff.next_backoff() {
+                tokio::time::sleep(next).await;
+            } else {
+                bail!("order is timed-out");
+            }
         }
 
         let mut params = CertificateParams::new(vec![self.identifier.clone()]);
