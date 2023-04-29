@@ -18,7 +18,7 @@ use tokio::io::{AsyncBufReadExt, BufStream};
 use tokio::net::TcpStream;
 use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::{broadcast, mpsc};
-use tracing::{error, warn};
+use tracing::{debug, error, warn};
 use warp::http::{Request, Response};
 
 mod listener;
@@ -259,7 +259,7 @@ async fn start_http_challenges(
         for (mut req, mut entry) in requests {
             match req.start_challenge().await {
                 Ok(cert) => {
-                    println!("cert: {:?}", cert);
+                    debug!(id = cert.id(), "acme request completed");
                     let _ = command
                         .send(ServerCommand::AddKeyringItem {
                             item: KeyringItem::ServerCert(Arc::new(cert)),
