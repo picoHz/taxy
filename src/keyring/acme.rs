@@ -24,6 +24,7 @@ pub struct AcmeRequest {
     pub server_url: String,
     #[schema(value_type = [String], example = json!(["example.com"]))]
     pub identifiers: Vec<SubjectName>,
+    #[schema(value_type = String, example = "http-01")]
     pub challenge_type: ChallengeType,
 }
 

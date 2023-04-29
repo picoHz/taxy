@@ -108,6 +108,7 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
     Ok(warp::reply::reply())
 }
 
+/// Register an ACME configuration.
 #[utoipa::path(
     post,
     path = "/api/certs/acme",
