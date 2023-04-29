@@ -88,7 +88,7 @@ impl Keyring {
         let mut requests = Vec::new();
         for item in self.certs.values() {
             if let KeyringItem::Acme(acme) = item {
-                match acme.request_challenge().await {
+                match acme.request().await {
                     Ok(request) => requests.push(request),
                     Err(err) => error!("failed to request challenge: {}", err),
                 }

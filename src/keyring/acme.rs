@@ -53,51 +53,8 @@ impl AcmeEntry {
         })
     }
 
-    pub async fn request_challenge(&self) -> Result<AcmeRequest, instant_acme::Error> {
-        let identifier = Identifier::Dns(self.identifier.clone());
-        let mut order = self
-            .account
-            .new_order(&NewOrder {
-                identifiers: &[identifier],
-            })
-            .await
-            .unwrap();
-        let state = order.state();
-        println!("order state: {:#?}", state);
-
-        let authorizations = order.authorizations().await.unwrap();
-
-        let mut http_challenges = HashMap::new();
-        let mut challenges = Vec::new();
-
-        for authz in &authorizations {
-            match authz.status {
-                AuthorizationStatus::Pending => {}
-                AuthorizationStatus::Valid => continue,
-                _ => todo!(),
-            }
-
-            let challenge = authz
-                .challenges
-                .iter()
-                .find(|c| c.r#type == ChallengeType::Http01)
-                .ok_or_else(|| anyhow::anyhow!("no http01 challenge found"))
-                .unwrap();
-
-            let Identifier::Dns(identifier) = &authz.identifier;
-
-            http_challenges.insert(
-                challenge.token.to_string(),
-                order.key_authorization(challenge).as_str().to_string(),
-            );
-            challenges.push((identifier.to_string(), challenge.url.to_string()));
-        }
-        Ok(AcmeRequest {
-            identifier: self.identifier.clone(),
-            http_challenges,
-            challenges,
-            order,
-        })
+    pub async fn request(&self) -> anyhow::Result<AcmeRequest> {
+        AcmeRequest::new(&self.account, &self.identifier).await
     }
 
     pub fn id(&self) -> &str {
@@ -124,6 +81,50 @@ pub struct AcmeRequest {
 }
 
 impl AcmeRequest {
+    pub async fn new(account: &Account, name: &str) -> anyhow::Result<Self> {
+        let identifier = Identifier::Dns(name.to_string());
+        let mut order = account
+            .new_order(&NewOrder {
+                identifiers: &[identifier],
+            })
+            .await?;
+        let state = order.state();
+        println!("order state: {:#?}", state);
+
+        let authorizations = order.authorizations().await?;
+
+        let mut http_challenges = HashMap::new();
+        let mut challenges = Vec::new();
+
+        for authz in &authorizations {
+            match authz.status {
+                AuthorizationStatus::Pending => {}
+                AuthorizationStatus::Valid => continue,
+                _ => todo!(),
+            }
+
+            let challenge = authz
+                .challenges
+                .iter()
+                .find(|c| c.r#type == ChallengeType::Http01)
+                .ok_or_else(|| anyhow::anyhow!("no http01 challenge found"))?;
+
+            let Identifier::Dns(identifier) = &authz.identifier;
+
+            http_challenges.insert(
+                challenge.token.to_string(),
+                order.key_authorization(challenge).as_str().to_string(),
+            );
+            challenges.push((identifier.to_string(), challenge.url.to_string()));
+        }
+        Ok(Self {
+            identifier: name.to_string(),
+            http_challenges,
+            challenges,
+            order,
+        })
+    }
+
     pub async fn start_challenge(&mut self) -> anyhow::Result<Cert> {
         for (_, url) in &self.challenges {
             self.order.set_challenge_ready(url).await?;
