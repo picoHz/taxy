@@ -123,7 +123,7 @@ pub async fn start_admin(
         with_state(app_state.clone())
             .and(warp::body::json())
             .and(warp::path::end())
-            .and_then(certs::self_signed),
+            .and_then(certs::acme),
     );
 
     let api_certs_delete = warp::delete().and(

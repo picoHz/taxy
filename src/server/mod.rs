@@ -47,23 +47,6 @@ pub async fn start_server(
         items: certs.list(),
     });
 
-    /*
-    command_send
-        .send(ServerCommand::AddKeyringItem {
-            item: KeyringItem::Acme(Arc::new(
-                AcmeEntry::new(
-                    "Let's Encrypt",
-                    "https://acme-staging-v02.api.letsencrypt.org/directory",
-                    "7e14-115-39-175-81.ngrok-free.app",
-                )
-                .await
-                .unwrap(),
-            )),
-        })
-        .await
-        .unwrap();
-    */
-
     let ports = config.load_entries().await;
     for entry in ports {
         match PortContext::new(entry) {
