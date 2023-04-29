@@ -23,6 +23,7 @@ pub struct AcmeRequest {
     pub server_url: String,
     #[schema(value_type = [String], example = json!(["example.com"]))]
     pub identifiers: Vec<SubjectName>,
+    pub challenge_type: ChallengeType,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -30,6 +31,9 @@ pub struct AcmeEntry {
     pub id: String,
     pub provider: String,
     pub identifiers: Vec<String>,
+
+    #[serde(serialize_with = "serialize_challenge_type")]
+    pub challenge_type: ChallengeType,
 
     #[serde(
         serialize_with = "serialize_system_time",
@@ -42,6 +46,20 @@ pub struct AcmeEntry {
         deserialize_with = "deserialize_account"
     )]
     pub account: Account,
+}
+
+fn serialize_challenge_type<S>(
+    challenge_type: &ChallengeType,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    serializer.serialize_str(match challenge_type {
+        ChallengeType::Http01 => "http-01",
+        ChallengeType::Dns01 => "dns-01",
+        ChallengeType::TlsAlpn01 => "tls-alpn-01",
+    })
 }
 
 fn serialize_system_time<S>(time: &SystemTime, serializer: S) -> Result<S::Ok, S::Error>
@@ -90,6 +108,7 @@ impl AcmeEntry {
             last_updated: SystemTime::UNIX_EPOCH,
             identifiers: req.identifiers.into_iter().map(|i| i.to_string()).collect(),
             account,
+            challenge_type: req.challenge_type,
         })
     }
 
@@ -106,6 +125,7 @@ impl AcmeEntry {
             id: self.id.to_string(),
             provider: self.provider.to_string(),
             identifiers: self.identifiers.clone(),
+            challenge_type: self.challenge_type,
         }
     }
 }
@@ -115,9 +135,12 @@ pub struct AcmeInfo {
     pub id: String,
     pub provider: String,
     pub identifiers: Vec<String>,
+    #[serde(serialize_with = "serialize_challenge_type")]
+    pub challenge_type: ChallengeType,
 }
 
 pub struct AcmeOrder {
+    pub challenge_type: ChallengeType,
     pub identifiers: Vec<Identifier>,
     pub http_challenges: HashMap<String, String>,
     pub challenges: Vec<(String, String)>,
@@ -165,6 +188,7 @@ impl AcmeOrder {
             challenges.push((identifier.to_string(), challenge.url.to_string()));
         }
         Ok(Self {
+            challenge_type: entry.challenge_type,
             identifiers,
             http_challenges,
             challenges,
