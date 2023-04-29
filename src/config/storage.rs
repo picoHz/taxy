@@ -174,10 +174,10 @@ impl ConfigStorage {
         }
 
         let path = self.dir.join("acme");
-        match self.load_acme_impl(&path).await {
+        match self.load_acmes_impl(&path).await {
             Ok(mut certs) => items.append(&mut certs),
             Err(err) => {
-                warn!(?path, "failed to load certs: {err}");
+                warn!(?path, "failed to load acme config: {err}");
             }
         }
 
