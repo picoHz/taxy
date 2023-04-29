@@ -258,7 +258,13 @@ async fn start_http_challenges(
                             item: KeyringItem::ServerCert(Arc::new(cert)),
                         })
                         .await;
-                    Arc::make_mut(&mut entry).last_updated = SystemTime::now();
+                    let entry_mut = Arc::make_mut(&mut entry);
+                    entry_mut.last_updated = SystemTime::now();
+                    let _ = command
+                        .send(ServerCommand::AddKeyringItem {
+                            item: KeyringItem::Acme(entry),
+                        })
+                        .await;
                 }
                 Err(err) => {
                     error!(?err, "failed to start challenge");
