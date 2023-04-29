@@ -85,8 +85,8 @@ impl AcmeEntry {
         })
     }
 
-    pub async fn request(&self) -> anyhow::Result<AcmeRequest> {
-        AcmeRequest::new(&self.account, &self.identifiers).await
+    pub async fn request(&self) -> anyhow::Result<AcmeOrder> {
+        AcmeOrder::new(&self.account, &self.identifiers).await
     }
 
     pub fn id(&self) -> &str {
@@ -105,14 +105,14 @@ pub struct AcmeInfo {
     pub id: String,
 }
 
-pub struct AcmeRequest {
+pub struct AcmeOrder {
     pub identifiers: Vec<Identifier>,
     pub http_challenges: HashMap<String, String>,
     pub challenges: Vec<(String, String)>,
     pub order: Order,
 }
 
-impl AcmeRequest {
+impl AcmeOrder {
     pub async fn new(account: &Account, identifiers: &[String]) -> anyhow::Result<Self> {
         let identifiers = identifiers
             .iter()
