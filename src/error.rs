@@ -52,6 +52,9 @@ pub enum Error {
 
     #[error("port name already exists: {name}")]
     NameAlreadyExists { name: String },
+
+    #[error("acme account creation failed")]
+    AcmeAccountCreationFailed,
 }
 
 impl Reject for Error {}

@@ -1,5 +1,5 @@
 use super::subject_name::SubjectName;
-use crate::keyring::certs::Cert;
+use crate::{error::Error, keyring::certs::Cert};
 use anyhow::bail;
 use backoff::{backoff::Backoff, ExponentialBackoff};
 use instant_acme::{
@@ -13,6 +13,7 @@ use std::{
     fmt,
     time::{Duration, SystemTime},
 };
+use tracing::error;
 use utoipa::ToSchema;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, ToSchema)]
@@ -92,7 +93,7 @@ impl fmt::Debug for AcmeEntry {
 }
 
 impl AcmeEntry {
-    pub async fn new(req: AcmeRequest) -> Result<Self, instant_acme::Error> {
+    pub async fn new(req: AcmeRequest) -> Result<Self, Error> {
         let account = Account::create(
             &NewAccount {
                 contact: &[],
@@ -101,7 +102,16 @@ impl AcmeEntry {
             },
             &req.server_url,
         )
-        .await?;
+        .await;
+
+        let account = match account {
+            Ok(account) => account,
+            Err(e) => {
+                error!("failed to create account: {}", e);
+                return Err(Error::AcmeAccountCreationFailed);
+            }
+        };
+
         Ok(Self {
             id: cuid2::create_id(),
             provider: req.provider,

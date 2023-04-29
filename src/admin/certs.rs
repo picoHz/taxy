@@ -3,6 +3,7 @@ use crate::{
     command::ServerCommand,
     error::Error,
     keyring::{
+        acme::{AcmeEntry, AcmeRequest},
         certs::{Cert, SelfSignedCertRequest},
         KeyringItem,
     },
@@ -100,6 +101,24 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
             id: item.id().to_string(),
         }));
     }
+    let _ = state
+        .sender
+        .send(ServerCommand::AddKeyringItem { item })
+        .await;
+    Ok(warp::reply::reply())
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/certs/acme",
+    request_body = AcmeRequest,
+    responses(
+        (status = 200),
+        (status = 400, body = Error),
+    )
+)]
+pub async fn acme(state: AppState, request: AcmeRequest) -> Result<impl Reply, Rejection> {
+    let item = KeyringItem::Acme(Arc::new(AcmeEntry::new(request).await?));
     let _ = state
         .sender
         .send(ServerCommand::AddKeyringItem { item })
