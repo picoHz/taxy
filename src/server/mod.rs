@@ -244,12 +244,11 @@ async fn start_http_challenges(
     }
     let challenges = requests
         .iter()
-        .map(
+        .flat_map(
             |(req, _): &(crate::keyring::acme::AcmeRequest, Arc<AcmeEntry>)| {
                 req.http_challenges.clone()
             },
         )
-        .flatten()
         .collect();
 
     *http_challenges = challenges;
