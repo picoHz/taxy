@@ -66,20 +66,17 @@ pub async fn start_server(
     }
     update_port_statuses(&event, &mut pool, &mut table).await;
 
-    let mut to = tokio::time::interval(Duration::from_secs(2));
+    start_http_challenges(
+        command_send.clone(),
+        &mut pool,
+        &mut table,
+        &certs,
+        &mut http_challenges,
+    )
+    .await;
 
     loop {
         tokio::select! {
-            _ = to.tick() => {
-                start_http_challenges(
-                    command_send.clone(),
-                    &mut pool,
-                    &mut table,
-                    &certs,
-                    &mut http_challenges,
-                )
-                .await;
-            }
             cmd = command_recv.recv() => {
                 match cmd {
                     Some(ServerCommand::SetAppConfig { config }) => {
