@@ -46,6 +46,7 @@ pub async fn start_server(
     let _ = event.send(ServerEvent::KeyringUpdated {
         items: certs.list(),
     });
+
     /*
     command_send
         .send(ServerCommand::AddKeyringItem {
@@ -53,7 +54,7 @@ pub async fn start_server(
                 AcmeEntry::new(
                     "Let's Encrypt",
                     "https://acme-staging-v02.api.letsencrypt.org/directory",
-                    "d142-115-39-175-81.ngrok-free.app",
+                    "7e14-115-39-175-81.ngrok-free.app",
                 )
                 .await
                 .unwrap(),
