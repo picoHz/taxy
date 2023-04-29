@@ -1,3 +1,4 @@
+use hyper::StatusCode;
 use multiaddr::Multiaddr;
 use serde_derive::Serialize;
 use thiserror::Error;
@@ -54,3 +55,12 @@ pub enum Error {
 }
 
 impl Reject for Error {}
+
+impl Error {
+    pub fn status_code(&self) -> StatusCode {
+        match self {
+            Self::CertNotFound { .. } | Self::NameNotFound { .. } => StatusCode::NOT_FOUND,
+            _ => StatusCode::BAD_REQUEST,
+        }
+    }
+}

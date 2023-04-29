@@ -298,7 +298,7 @@ async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible> {
         code = StatusCode::BAD_REQUEST;
     } else if let Some(err) = err.find::<Error>() {
         message = err.to_string();
-        code = StatusCode::BAD_REQUEST;
+        code = err.status_code();
         error = Some(err.clone());
     } else if err.find::<warp::reject::MethodNotAllowed>().is_some() {
         code = StatusCode::METHOD_NOT_ALLOWED;
