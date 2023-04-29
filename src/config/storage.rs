@@ -2,6 +2,7 @@ use super::{port::PortEntry, AppConfig};
 use crate::{
     config::port::NamelessPortEntry,
     keyring::{
+        acme::AcmeEntry,
         certs::Cert,
         {Keyring, KeyringItem},
     },
@@ -136,6 +137,20 @@ impl ConfigStorage {
         info!(?path, "save cert");
         fs::write(path.join("cert.pem"), &cert.raw_chain).await?;
         fs::write(path.join("key.pem"), &cert.raw_key).await?;
+        Ok(())
+    }
+
+    pub async fn save_acme(&self, acme: &AcmeEntry) {
+        let path = self.dir.join("acme").join(format!("{}.toml", acme.id));
+        if let Err(err) = self.save_acme_impl(&path, acme).await {
+            error!(?path, "failed to save: {err}");
+        }
+    }
+
+    async fn save_acme_impl(&self, path: &Path, acme: &AcmeEntry) -> anyhow::Result<()> {
+        fs::create_dir_all(path.parent().unwrap()).await?;
+        info!(?path, "save acme");
+        fs::write(path, toml::to_string(acme)?).await?;
         Ok(())
     }
 

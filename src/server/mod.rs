@@ -46,15 +46,20 @@ pub async fn start_server(
         items: certs.list(),
     });
 
-    certs.add(KeyringItem::Acme(Arc::new(
-        AcmeEntry::new(
-            "Let's Encrypt",
-            "https://acme-staging-v02.api.letsencrypt.org/directory",
-            "5de4-115-39-175-81.ngrok-free.app",
-        )
+    command_send
+        .send(ServerCommand::AddKeyringItem {
+            item: KeyringItem::Acme(Arc::new(
+                AcmeEntry::new(
+                    "Let's Encrypt",
+                    "https://acme-staging-v02.api.letsencrypt.org/directory",
+                    "5de4-115-39-175-81.ngrok-free.app",
+                )
+                .await
+                .unwrap(),
+            )),
+        })
         .await
-        .unwrap(),
-    )));
+        .unwrap();
 
     let ports = config.load_entries().await;
     for entry in ports {
@@ -106,9 +111,13 @@ pub async fn start_server(
                         update_port_statuses(&event, &mut pool, &mut table).await;
                     },
                     Some(ServerCommand::AddKeyringItem { item }) => {
-                        println!("* cert: {:?}", item);
-                        if let KeyringItem::ServerCert (cert) = &item {
-                            config.save_cert(cert).await;
+                        match &item {
+                            KeyringItem::Acme (entry) => {
+                                config.save_acme(entry).await;
+                            }
+                            KeyringItem::ServerCert (cert) => {
+                                config.save_cert(cert).await;
+                            }
                         }
                         certs.add(item);
                         let _ = event.send(ServerEvent::KeyringUpdated { items: certs.list() } );
