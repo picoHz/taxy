@@ -13,7 +13,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct AcmeEntry {
     pub id: String,
     pub provider: String,

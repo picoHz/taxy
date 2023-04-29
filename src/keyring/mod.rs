@@ -9,7 +9,6 @@ use utoipa::ToSchema;
 
 pub mod acme;
 pub mod certs;
-pub mod store;
 pub mod subject_name;
 
 use subject_name::SubjectName;
@@ -68,6 +67,10 @@ impl Keyring {
                 .map(|cert| (cert.id().to_string(), cert))
                 .collect(),
         }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &KeyringItem> {
+        self.certs.values()
     }
 
     pub fn find_server_cert(&self, names: &[SubjectName]) -> Option<&Arc<Cert>> {

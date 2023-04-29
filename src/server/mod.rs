@@ -13,6 +13,7 @@ use listener::TcpListenerPool;
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::sync::Arc;
+use std::time::SystemTime;
 use tokio::io::{AsyncBufReadExt, BufStream};
 use tokio::net::TcpStream;
 use tokio::sync::broadcast::error::RecvError;
@@ -46,13 +47,14 @@ pub async fn start_server(
         items: certs.list(),
     });
 
+    /*
     command_send
         .send(ServerCommand::AddKeyringItem {
             item: KeyringItem::Acme(Arc::new(
                 AcmeEntry::new(
                     "Let's Encrypt",
                     "https://acme-staging-v02.api.letsencrypt.org/directory",
-                    "5de4-115-39-175-81.ngrok-free.app",
+                    "d142-115-39-175-81.ngrok-free.app",
                 )
                 .await
                 .unwrap(),
@@ -60,6 +62,7 @@ pub async fn start_server(
         })
         .await
         .unwrap();
+    */
 
     let ports = config.load_entries().await;
     for entry in ports {
@@ -215,26 +218,47 @@ async fn start_http_challenges(
     certs: &Keyring,
     http_challenges: &mut HashMap<String, String>,
 ) {
-    let requests = certs.request_challenges().await;
+    let entries = certs
+        .iter()
+        .filter_map(|item| match item {
+            KeyringItem::Acme(entry) => Some(entry.clone()),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    let mut requests = Vec::new();
+    for acme in entries {
+        match acme.request().await {
+            Ok(request) => requests.push((request, acme)),
+            Err(err) => error!("failed to request challenge: {}", err),
+        }
+    }
     let challenges = requests
         .iter()
-        .map(|req| req.http_challenges.clone())
+        .map(
+            |(req, _): &(crate::keyring::acme::AcmeRequest, Arc<AcmeEntry>)| {
+                req.http_challenges.clone()
+            },
+        )
         .flatten()
         .collect();
+
     println!("challenges: {:?}", challenges);
+
     *http_challenges = challenges;
     pool.set_http_challenges(true);
     pool.update(table.contexts_mut()).await;
 
     tokio::task::spawn(async move {
-        for mut req in requests {
+        for (mut req, mut entry) in requests {
             match req.start_challenge().await {
                 Ok(cert) => {
+                    println!("cert: {:?}", cert);
                     let _ = command
                         .send(ServerCommand::AddKeyringItem {
                             item: KeyringItem::ServerCert(Arc::new(cert)),
                         })
                         .await;
+                    Arc::make_mut(&mut entry).last_updated = SystemTime::now();
                 }
                 Err(err) => {
                     error!(?err, "failed to start challenge");
