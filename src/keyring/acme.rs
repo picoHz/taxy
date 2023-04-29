@@ -94,7 +94,7 @@ impl AcmeEntry {
     }
 
     pub async fn request(&self) -> anyhow::Result<AcmeOrder> {
-        AcmeOrder::new(&self.account, &self.identifiers).await
+        AcmeOrder::new(self).await
     }
 
     pub fn id(&self) -> &str {
@@ -125,13 +125,15 @@ pub struct AcmeOrder {
 }
 
 impl AcmeOrder {
-    pub async fn new(account: &Account, identifiers: &[String]) -> anyhow::Result<Self> {
-        let identifiers = identifiers
+    pub async fn new(entry: &AcmeEntry) -> anyhow::Result<Self> {
+        let identifiers = entry
+            .identifiers
             .iter()
             .cloned()
             .map(Identifier::Dns)
             .collect::<Vec<_>>();
-        let mut order = account
+        let mut order = entry
+            .account
             .new_order(&NewOrder {
                 identifiers: &identifiers,
             })
