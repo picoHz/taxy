@@ -1,10 +1,9 @@
 use self::{
-    acme::{AcmeEntry, AcmeInfo, AcmeRequest},
+    acme::{AcmeEntry, AcmeInfo},
     certs::{Cert, CertInfo},
 };
 use serde_derive::Serialize;
 use std::{collections::HashMap, sync::Arc};
-use tracing::error;
 use utoipa::ToSchema;
 
 pub mod acme;
@@ -85,19 +84,6 @@ impl Keyring {
             .collect::<Vec<_>>();
         certs.sort();
         certs.first().copied()
-    }
-
-    pub async fn request_challenges(&self) -> Vec<AcmeRequest> {
-        let mut requests = Vec::new();
-        for item in self.certs.values() {
-            if let KeyringItem::Acme(acme) = item {
-                match acme.request().await {
-                    Ok(request) => requests.push(request),
-                    Err(err) => error!("failed to request challenge: {}", err),
-                }
-            }
-        }
-        requests
     }
 
     pub fn add(&mut self, item: KeyringItem) {

@@ -13,7 +13,7 @@ use listener::TcpListenerPool;
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::sync::Arc;
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 use tokio::io::{AsyncBufReadExt, BufStream};
 use tokio::net::TcpStream;
 use tokio::sync::broadcast::error::RecvError;
@@ -46,7 +46,6 @@ pub async fn start_server(
     let _ = event.send(ServerEvent::KeyringUpdated {
         items: certs.list(),
     });
-
     /*
     command_send
         .send(ServerCommand::AddKeyringItem {
@@ -83,17 +82,20 @@ pub async fn start_server(
     }
     update_port_statuses(&event, &mut pool, &mut table).await;
 
-    start_http_challenges(
-        command_send,
-        &mut pool,
-        &mut table,
-        &certs,
-        &mut http_challenges,
-    )
-    .await;
+    let mut to = tokio::time::interval(Duration::from_secs(2));
 
     loop {
         tokio::select! {
+            _ = to.tick() => {
+                start_http_challenges(
+                    command_send.clone(),
+                    &mut pool,
+                    &mut table,
+                    &certs,
+                    &mut http_challenges,
+                )
+                .await;
+            }
             cmd = command_recv.recv() => {
                 match cmd {
                     Some(ServerCommand::SetAppConfig { config }) => {
@@ -224,7 +226,15 @@ async fn start_http_challenges(
             KeyringItem::Acme(entry) => Some(entry.clone()),
             _ => None,
         })
+        .filter(|entry| {
+            entry.last_updated.elapsed().unwrap_or_default() > Duration::from_secs(60 * 60 * 24)
+        })
         .collect::<Vec<_>>();
+
+    if entries.is_empty() {
+        return;
+    }
+
     let mut requests = Vec::new();
     for acme in entries {
         match acme.request().await {
@@ -241,8 +251,6 @@ async fn start_http_challenges(
         )
         .flatten()
         .collect();
-
-    println!("challenges: {:?}", challenges);
 
     *http_challenges = challenges;
     pool.set_http_challenges(true);
