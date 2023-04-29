@@ -7,18 +7,49 @@ use instant_acme::{
 };
 use rcgen::{Certificate, CertificateParams, DistinguishedName};
 use serde_derive::{Deserialize, Serialize};
-use std::{collections::HashMap, fmt, time::Duration};
+use std::{
+    collections::HashMap,
+    fmt,
+    time::{Duration, SystemTime},
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct AcmeEntry {
     pub id: String,
     pub provider: String,
     pub identifier: String,
+
+    #[serde(
+        serialize_with = "serialize_system_time",
+        deserialize_with = "deserialize_system_time"
+    )]
+    pub last_updated: SystemTime,
+
     #[serde(
         serialize_with = "serialize_account",
         deserialize_with = "deserialize_account"
     )]
     pub account: Account,
+}
+
+fn serialize_system_time<S>(time: &SystemTime, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    serializer.serialize_i64(
+        time.duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64,
+    )
+}
+
+fn deserialize_system_time<'de, D>(deserializer: D) -> Result<SystemTime, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::Deserialize;
+    let secs = i64::deserialize(deserializer)?;
+    Ok(SystemTime::UNIX_EPOCH + Duration::from_secs(secs as u64))
 }
 
 impl fmt::Debug for AcmeEntry {
@@ -48,6 +79,7 @@ impl AcmeEntry {
         Ok(Self {
             id: cuid2::create_id(),
             provider: provider.to_string(),
+            last_updated: SystemTime::UNIX_EPOCH,
             identifier: identifier.to_string(),
             account,
         })
