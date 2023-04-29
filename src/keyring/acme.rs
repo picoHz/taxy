@@ -17,7 +17,7 @@ use std::{
 pub struct AcmeEntry {
     pub id: String,
     pub provider: String,
-    pub identifier: String,
+    pub identifiers: Vec<String>,
 
     #[serde(
         serialize_with = "serialize_system_time",
@@ -56,7 +56,7 @@ impl fmt::Debug for AcmeEntry {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("AcmeEntry")
             .field("provider", &self.provider)
-            .field("identifier", &self.identifier)
+            .field("identifiers", &self.identifiers)
             .finish()
     }
 }
@@ -80,13 +80,13 @@ impl AcmeEntry {
             id: cuid2::create_id(),
             provider: provider.to_string(),
             last_updated: SystemTime::UNIX_EPOCH,
-            identifier: identifier.to_string(),
+            identifiers: vec![identifier.to_string()],
             account,
         })
     }
 
     pub async fn request(&self) -> anyhow::Result<AcmeRequest> {
-        AcmeRequest::new(&self.account, &self.identifier).await
+        AcmeRequest::new(&self.account, &self.identifiers).await
     }
 
     pub fn id(&self) -> &str {
@@ -106,18 +106,22 @@ pub struct AcmeInfo {
 }
 
 pub struct AcmeRequest {
-    pub identifier: String,
+    pub identifiers: Vec<Identifier>,
     pub http_challenges: HashMap<String, String>,
     pub challenges: Vec<(String, String)>,
     pub order: Order,
 }
 
 impl AcmeRequest {
-    pub async fn new(account: &Account, name: &str) -> anyhow::Result<Self> {
-        let identifier = Identifier::Dns(name.to_string());
+    pub async fn new(account: &Account, identifiers: &[String]) -> anyhow::Result<Self> {
+        let identifiers = identifiers
+            .iter()
+            .cloned()
+            .map(Identifier::Dns)
+            .collect::<Vec<_>>();
         let mut order = account
             .new_order(&NewOrder {
-                identifiers: &[identifier],
+                identifiers: &identifiers,
             })
             .await?;
         let authorizations = order.authorizations().await?;
@@ -147,7 +151,7 @@ impl AcmeRequest {
             challenges.push((identifier.to_string(), challenge.url.to_string()));
         }
         Ok(Self {
-            identifier: name.to_string(),
+            identifiers,
             http_challenges,
             challenges,
             order,
@@ -176,7 +180,16 @@ impl AcmeRequest {
             }
         }
 
-        let mut params = CertificateParams::new(vec![self.identifier.clone()]);
+        let san = self
+            .identifiers
+            .iter()
+            .map(|id| {
+                let Identifier::Dns(domain) = id;
+                domain.clone()
+            })
+            .collect::<Vec<_>>();
+
+        let mut params = CertificateParams::new(san);
         params.distinguished_name = DistinguishedName::new();
         let cert = Certificate::from_params(params)?;
         let csr = cert.serialize_request_der()?;
