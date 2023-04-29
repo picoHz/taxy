@@ -88,9 +88,6 @@ impl AcmeRequest {
                 identifiers: &[identifier],
             })
             .await?;
-        let state = order.state();
-        println!("order state: {:#?}", state);
-
         let authorizations = order.authorizations().await?;
 
         let mut http_challenges = HashMap::new();
@@ -100,7 +97,7 @@ impl AcmeRequest {
             match authz.status {
                 AuthorizationStatus::Pending => {}
                 AuthorizationStatus::Valid => continue,
-                _ => todo!(),
+                _ => bail!("authorization status is not valid"),
             }
 
             let challenge = authz
