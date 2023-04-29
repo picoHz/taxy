@@ -1,17 +1,15 @@
-use std::str::FromStr;
-
+use super::SubjectName;
 use crate::error::Error;
 use rcgen::{CertificateParams, DistinguishedName, DnType, SanType};
 use rustls_pemfile::Item;
 use serde_derive::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::str::FromStr;
 use tokio_rustls::rustls::{Certificate, PrivateKey};
 use tracing::error;
 use utoipa::ToSchema;
 use x509_parser::{extensions::GeneralName, time::ASN1Time};
 use x509_parser::{parse_x509_certificate, prelude::X509Certificate};
-
-use super::SubjectName;
 
 const CERT_ID_LENGTH: usize = 20;
 
@@ -29,6 +27,24 @@ pub struct Cert {
     pub not_after: ASN1Time,
     pub not_before: ASN1Time,
     pub is_self_signed: bool,
+}
+
+impl PartialOrd for Cert {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(
+            self.is_self_signed
+                .cmp(&other.is_self_signed)
+                .then_with(|| other.not_before.partial_cmp(&self.not_before).unwrap())
+                .then_with(|| self.not_after.partial_cmp(&other.not_after).unwrap())
+                .then_with(|| self.fingerprint.cmp(&other.fingerprint)),
+        )
+    }
+}
+
+impl Ord for Cert {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.partial_cmp(other).unwrap()
+    }
 }
 
 impl Cert {

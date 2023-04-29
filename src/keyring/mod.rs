@@ -69,7 +69,7 @@ impl Keyring {
             })
             .filter(|cert| cert.is_valid() && names.iter().all(|name| cert.has_subject_name(name)))
             .collect::<Vec<_>>();
-        certs.sort_by_key(|cert| cert.not_after);
+        certs.sort();
         certs.first().copied()
     }
 
