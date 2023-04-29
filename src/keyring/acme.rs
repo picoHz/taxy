@@ -1,3 +1,4 @@
+use super::subject_name::SubjectName;
 use crate::keyring::certs::Cert;
 use anyhow::bail;
 use backoff::{backoff::Backoff, ExponentialBackoff};
@@ -12,6 +13,17 @@ use std::{
     fmt,
     time::{Duration, SystemTime},
 };
+use utoipa::ToSchema;
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, ToSchema)]
+pub struct AcmeRequest {
+    #[schema(example = "Let's Encrypt")]
+    pub provider: String,
+    #[schema(example = "https://acme-staging-v02.api.letsencrypt.org/directory")]
+    pub server_url: String,
+    #[schema(value_type = [String], example = json!(["example.com"]))]
+    pub identifiers: Vec<SubjectName>,
+}
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct AcmeEntry {
@@ -62,25 +74,21 @@ impl fmt::Debug for AcmeEntry {
 }
 
 impl AcmeEntry {
-    pub async fn new(
-        provider: &str,
-        server_url: &str,
-        identifier: &str,
-    ) -> Result<Self, instant_acme::Error> {
+    pub async fn new(req: AcmeRequest) -> Result<Self, instant_acme::Error> {
         let account = Account::create(
             &NewAccount {
                 contact: &[],
                 terms_of_service_agreed: true,
                 only_return_existing: false,
             },
-            server_url,
+            &req.server_url,
         )
         .await?;
         Ok(Self {
             id: cuid2::create_id(),
-            provider: provider.to_string(),
+            provider: req.provider,
             last_updated: SystemTime::UNIX_EPOCH,
-            identifiers: vec![identifier.to_string()],
+            identifiers: req.identifiers.into_iter().map(|i| i.to_string()).collect(),
             account,
         })
     }
@@ -96,6 +104,8 @@ impl AcmeEntry {
     pub fn info(&self) -> AcmeInfo {
         AcmeInfo {
             id: self.id.to_string(),
+            provider: self.provider.to_string(),
+            identifiers: self.identifiers.clone(),
         }
     }
 }
@@ -103,6 +113,8 @@ impl AcmeEntry {
 #[derive(Debug, Clone, Serialize)]
 pub struct AcmeInfo {
     pub id: String,
+    pub provider: String,
+    pub identifiers: Vec<String>,
 }
 
 pub struct AcmeOrder {
