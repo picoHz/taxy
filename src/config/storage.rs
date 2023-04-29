@@ -147,19 +147,29 @@ impl ConfigStorage {
         }
     }
 
-    pub async fn load_certs(&self) -> Keyring {
-        let dir = &self.dir;
-        let path = dir.join("certs");
+    pub async fn load_keychain(&self) -> Keyring {
+        let mut items = Vec::new();
+
+        let path = self.dir.join("certs");
         match self.load_certs_impl(&path).await {
-            Ok(store) => store,
+            Ok(mut certs) => items.append(&mut certs),
             Err(err) => {
                 warn!(?path, "failed to load certs: {err}");
-                Default::default()
             }
         }
+
+        let path = self.dir.join("acme");
+        match self.load_acme_impl(&path).await {
+            Ok(mut certs) => items.append(&mut certs),
+            Err(err) => {
+                warn!(?path, "failed to load certs: {err}");
+            }
+        }
+
+        Keyring::new(items)
     }
 
-    pub async fn load_certs_impl(&self, path: &Path) -> anyhow::Result<Keyring> {
+    pub async fn load_certs_impl(&self, path: &Path) -> anyhow::Result<Vec<KeyringItem>> {
         let walker = globwalk::GlobWalkerBuilder::from_patterns(path, &["*/cert.pem"])
             .build()?
             .filter_map(Result::ok);
@@ -198,6 +208,20 @@ impl ConfigStorage {
                 Err(err) => error!(?path, "failed to load: {err}"),
             }
         }
-        Ok(Keyring::new(certs))
+        Ok(certs)
+    }
+
+    pub async fn load_acmes_impl(&self, path: &Path) -> anyhow::Result<Vec<KeyringItem>> {
+        let walker = globwalk::GlobWalkerBuilder::from_patterns(path, &["*.toml"])
+            .build()?
+            .filter_map(Result::ok);
+        let mut entries = Vec::new();
+        for acme in walker {
+            let path = acme.path();
+            info!(?path, "load acme config");
+            let content = fs::read_to_string(path).await?;
+            entries.push(KeyringItem::Acme(toml::from_str(&content)?));
+        }
+        Ok(entries)
     }
 }

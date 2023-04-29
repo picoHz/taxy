@@ -41,7 +41,7 @@ pub async fn start_server(
         source: Source::File,
     });
 
-    let mut certs = config.load_certs().await;
+    let mut certs = config.load_keychain().await;
     let _ = event.send(ServerEvent::KeyringUpdated {
         items: certs.list(),
     });
