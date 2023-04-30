@@ -1,6 +1,7 @@
 // Plugins
 import vue from '@vitejs/plugin-vue'
 import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
+import viteCompression from 'vite-plugin-compression';
 
 // Utilities
 import path from 'node:path'
@@ -24,6 +25,12 @@ export default defineConfig({
     VueI18nPlugin({
       include: path.resolve(__dirname, './src/i18n/**'),
     }),
+    viteCompression({
+      threshold: 0,
+      deleteOriginFile: true,
+      algorithm: 'brotliCompress',
+      filter: () => true,
+    })
   ],
   define: { 'process.env': {} },
   build: {

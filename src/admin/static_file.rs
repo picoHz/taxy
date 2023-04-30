@@ -1,6 +1,6 @@
 use include_dir::{include_dir, Dir};
-use warp::{path::FullPath, Rejection, Reply};
 use std::path::Path;
+use warp::{path::FullPath, Rejection, Reply};
 
 static STATIC_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/webui/dist");
 
@@ -18,16 +18,16 @@ pub async fn get(path: FullPath) -> Result<impl Reply, Rejection> {
     } else {
         path.trim_start_matches('/')
     };
-    let path = Path::new("webui").join(path);
+    let path = Path::new("webui").join(format!("{path}.br"));
     if let Some(file) = STATIC_DIR.get_file(path) {
         let ext = file
             .path()
-            .extension()
+            .file_stem()
             .and_then(|x| x.to_str())
             .unwrap_or_default();
-        let mime = mime_guess::from_ext(ext).first_or_octet_stream();
+        let mime = mime_guess::from_path(ext).first_or_octet_stream();
         Ok(warp::reply::with_header(
-            file.contents(),
+            warp::reply::with_header(file.contents(), "Content-Encoding", "br"),
             "Content-Type",
             mime.to_string(),
         ))
