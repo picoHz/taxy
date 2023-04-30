@@ -5,8 +5,8 @@ use crate::config::tls::TlsTermination;
 use crate::config::{AppConfig, Source};
 use crate::error::Error;
 use crate::event::ServerEvent;
-use crate::keyring::acme::AcmeRequest;
-use crate::keyring::certs::{CertInfo, SelfSignedCertRequest};
+use crate::keyring::acme::{AcmeInfo, AcmeRequest};
+use crate::keyring::certs::{CertInfo, CertMetadata, SelfSignedCertRequest};
 use crate::keyring::KeyringInfo;
 use crate::proxy::tls::TlsState;
 use crate::proxy::{PortState, PortStatus, SocketState};
@@ -46,6 +46,8 @@ use warp::{Rejection, Reply};
         TlsState,
         KeyringInfo,
         CertInfo,
+        CertMetadata,
+        AcmeInfo,
         SelfSignedCertRequest,
         AcmeRequest,
         CertPostBody,

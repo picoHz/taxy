@@ -4,7 +4,9 @@ use rcgen::{CertificateParams, DistinguishedName, DnType, SanType};
 use rustls_pemfile::Item;
 use serde_derive::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::io::{BufRead, BufReader};
 use std::str::FromStr;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio_rustls::rustls::{Certificate, PrivateKey};
 use tracing::error;
 use utoipa::ToSchema;
@@ -27,6 +29,7 @@ pub struct Cert {
     pub not_after: ASN1Time,
     pub not_before: ASN1Time,
     pub is_self_signed: bool,
+    pub metadata: Option<CertMetadata>,
 }
 
 impl PartialOrd for Cert {
@@ -62,6 +65,7 @@ impl Cert {
             not_after: self.not_after.timestamp(),
             not_before: self.not_before.timestamp(),
             is_self_signed: self.is_self_signed,
+            metadata: self.metadata.clone(),
         }
     }
 
@@ -105,6 +109,7 @@ pub struct CertInfo {
     pub not_before: i64,
     #[schema(example = "true")]
     pub is_self_signed: bool,
+    pub metadata: Option<CertMetadata>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, ToSchema)]
@@ -115,6 +120,20 @@ pub struct SelfSignedCertRequest {
 
 impl Cert {
     pub fn new(raw_chain: Vec<u8>, raw_key: Vec<u8>) -> Result<Self, Error> {
+        let chain_meta = raw_chain.as_slice();
+        let mut meta_read = BufReader::new(chain_meta);
+        let mut comment = String::new();
+        meta_read
+            .read_line(&mut comment)
+            .map_err(|_| Error::FailedToReadCertificate)?;
+
+        let metadata: Option<CertMetadata> = serde_qs::from_str(
+            comment
+                .trim_start_matches(|c: char| c == '#' || c.is_whitespace())
+                .trim_end(),
+        )
+        .ok();
+
         let mut chain = raw_chain.as_slice();
         let mut key = raw_key.as_slice();
         let chain =
@@ -180,6 +199,7 @@ impl Cert {
             not_after,
             not_before,
             is_self_signed,
+            metadata,
         })
     }
 
@@ -227,6 +247,36 @@ fn parse_chain(chain: &[Certificate]) -> Result<Vec<X509Certificate>, Error> {
         certs.push(cert);
     }
     Ok(certs)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, ToSchema)]
+pub struct CertMetadata {
+    pub acme_id: String,
+    #[serde(
+        serialize_with = "serialize_created_at",
+        deserialize_with = "deserialize_created_at"
+    )]
+    #[schema(value_type = u64)]
+    pub created_at: SystemTime,
+}
+
+fn serialize_created_at<S>(time: &SystemTime, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    let timestamp = time
+        .duration_since(UNIX_EPOCH)
+        .map_err(|_| serde::ser::Error::custom("invalid timestamp"))?;
+    serializer.serialize_u64(timestamp.as_secs())
+}
+
+fn deserialize_created_at<'de, D>(deserializer: D) -> Result<SystemTime, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::Deserialize;
+    let timestamp = u64::deserialize(deserializer)?;
+    Ok(UNIX_EPOCH + Duration::from_secs(timestamp))
 }
 
 #[cfg(test)]
