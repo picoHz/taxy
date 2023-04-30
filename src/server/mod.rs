@@ -1,6 +1,7 @@
 use crate::config::storage::ConfigStorage;
 use crate::config::Source;
-use crate::keyring::KeyringItem;
+use crate::keyring::acme::AcmeEntry;
+use crate::keyring::{Keyring, KeyringItem};
 use crate::proxy::{PortContext, PortContextKind};
 use crate::server::table::ProxyTable;
 use crate::{command::ServerCommand, event::ServerEvent};
@@ -11,11 +12,13 @@ use hyper::service::service_fn;
 use listener::TcpListenerPool;
 use std::collections::HashMap;
 use std::convert::Infallible;
+use std::sync::Arc;
+use std::time::{Duration, SystemTime};
 use tokio::io::{AsyncBufReadExt, BufStream};
 use tokio::net::TcpStream;
 use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::{broadcast, mpsc};
-use tracing::{error, warn};
+use tracing::{debug, error, warn};
 use warp::http::{Request, Response};
 
 mod listener;
@@ -23,15 +26,15 @@ mod table;
 
 pub async fn start_server(
     config: ConfigStorage,
-    mut command: mpsc::Receiver<ServerCommand>,
+    command_send: mpsc::Sender<ServerCommand>,
+    mut command_recv: mpsc::Receiver<ServerCommand>,
     event: broadcast::Sender<ServerEvent>,
 ) -> anyhow::Result<()> {
     let mut table = ProxyTable::new();
     let mut pool = TcpListenerPool::new();
     let mut event_recv = event.subscribe();
 
-    let http_challenges = HashMap::<String, String>::new();
-    pool.set_http_challenges(!http_challenges.is_empty());
+    let mut http_challenges = HashMap::<String, String>::new();
 
     let app_config = config.load_app_config().await;
     let _ = event.send(ServerEvent::AppConfigUpdated {
@@ -39,7 +42,7 @@ pub async fn start_server(
         source: Source::File,
     });
 
-    let mut certs = config.load_certs().await;
+    let mut certs = config.load_keychain().await;
     let _ = event.send(ServerEvent::KeyringUpdated {
         items: certs.list(),
     });
@@ -63,9 +66,18 @@ pub async fn start_server(
     }
     update_port_statuses(&event, &mut pool, &mut table).await;
 
+    start_http_challenges(
+        command_send.clone(),
+        &mut pool,
+        &mut table,
+        &certs,
+        &mut http_challenges,
+    )
+    .await;
+
     loop {
         tokio::select! {
-            cmd = command.recv() => {
+            cmd = command_recv.recv() => {
                 match cmd {
                     Some(ServerCommand::SetAppConfig { config }) => {
                         let _ = event.send(ServerEvent::AppConfigUpdated {
@@ -85,8 +97,14 @@ pub async fn start_server(
                         update_port_statuses(&event, &mut pool, &mut table).await;
                     },
                     Some(ServerCommand::AddKeyringItem { item }) => {
-                        let KeyringItem::ServerCert (cert) = &item;
-                        config.save_cert(cert).await;
+                        match &item {
+                            KeyringItem::Acme (entry) => {
+                                config.save_acme(entry).await;
+                            }
+                            KeyringItem::ServerCert (cert) => {
+                                config.save_cert(cert).await;
+                            }
+                        }
                         certs.add(item);
                         let _ = event.send(ServerEvent::KeyringUpdated { items: certs.list() } );
                     }
@@ -94,6 +112,11 @@ pub async fn start_server(
                         config.delete_cert(&id).await;
                         certs.delete(&id);
                         let _ = event.send(ServerEvent::KeyringUpdated { items: certs.list() } );
+                    }
+                    Some(ServerCommand::StopHttpChallenges) => {
+                        pool.set_http_challenges(false);
+                        http_challenges.clear();
+                        pool.update(table.contexts_mut()).await;
                     }
                     _ => (),
                 }
@@ -169,6 +192,75 @@ async fn handle_http_challenge(
         }
     }
     None
+}
+
+async fn start_http_challenges(
+    command: mpsc::Sender<ServerCommand>,
+    pool: &mut TcpListenerPool,
+    table: &mut ProxyTable,
+    certs: &Keyring,
+    http_challenges: &mut HashMap<String, String>,
+) {
+    let entries = certs
+        .iter()
+        .filter_map(|item| match item {
+            KeyringItem::Acme(entry) => Some(entry.clone()),
+            _ => None,
+        })
+        .filter(|entry| {
+            entry.last_updated.elapsed().unwrap_or_default() > Duration::from_secs(60 * 60 * 24)
+        })
+        .collect::<Vec<_>>();
+
+    if entries.is_empty() {
+        return;
+    }
+
+    let mut requests = Vec::new();
+    for acme in entries {
+        match acme.request().await {
+            Ok(request) => requests.push((request, acme)),
+            Err(err) => error!("failed to request challenge: {}", err),
+        }
+    }
+    let challenges = requests
+        .iter()
+        .flat_map(
+            |(req, _): &(crate::keyring::acme::AcmeOrder, Arc<AcmeEntry>)| {
+                req.http_challenges.clone()
+            },
+        )
+        .collect();
+
+    *http_challenges = challenges;
+    pool.set_http_challenges(true);
+    pool.update(table.contexts_mut()).await;
+
+    tokio::task::spawn(async move {
+        for (mut req, mut entry) in requests {
+            match req.start_challenge().await {
+                Ok(cert) => {
+                    debug!(id = cert.id(), "acme request completed");
+                    let _ = command
+                        .send(ServerCommand::AddKeyringItem {
+                            item: KeyringItem::ServerCert(Arc::new(cert)),
+                        })
+                        .await;
+                    let entry_mut = Arc::make_mut(&mut entry);
+                    entry_mut.last_updated = SystemTime::now();
+                    let _ = command
+                        .send(ServerCommand::AddKeyringItem {
+                            item: KeyringItem::Acme(entry),
+                        })
+                        .await;
+                }
+                Err(err) => {
+                    error!(?err, "failed to start challenge");
+                }
+            }
+        }
+        let _ = command.send(ServerCommand::StopHttpChallenges).await;
+    });
 }
 
 async fn update_port_statuses(

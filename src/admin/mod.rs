@@ -119,6 +119,13 @@ pub async fn start_admin(
             .and_then(certs::upload),
     );
 
+    let api_certs_acme = warp::post().and(warp::path("acme")).and(
+        with_state(app_state.clone())
+            .and(warp::body::json())
+            .and(warp::path::end())
+            .and_then(certs::acme),
+    );
+
     let api_certs_delete = warp::delete().and(
         with_state(app_state.clone())
             .and(warp::path::param())
@@ -174,6 +181,7 @@ pub async fn start_admin(
         api_certs_delete
             .or(api_certs_self_signed)
             .or(api_certs_upload)
+            .or(api_certs_acme)
             .or(api_certs_list),
     );
 

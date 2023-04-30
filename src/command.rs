@@ -9,4 +9,5 @@ pub enum ServerCommand {
     DeletePort { name: String },
     AddKeyringItem { item: KeyringItem },
     DeleteKeyringItem { id: String },
+    StopHttpChallenges,
 }

@@ -5,6 +5,7 @@ use crate::config::tls::TlsTermination;
 use crate::config::{AppConfig, Source};
 use crate::error::Error;
 use crate::event::ServerEvent;
+use crate::keyring::acme::AcmeRequest;
 use crate::keyring::certs::{CertInfo, SelfSignedCertRequest};
 use crate::keyring::KeyringInfo;
 use crate::proxy::tls::TlsState;
@@ -29,6 +30,7 @@ use warp::{Rejection, Reply};
         certs::delete,
         certs::self_signed,
         certs::upload,
+        certs::acme,
         app_info::get,
     ),
     components(schemas(
@@ -45,6 +47,7 @@ use warp::{Rejection, Reply};
         KeyringInfo,
         CertInfo,
         SelfSignedCertRequest,
+        AcmeRequest,
         CertPostBody,
         Error,
         ServerEvent,
