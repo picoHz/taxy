@@ -34,7 +34,7 @@ WORKDIR /usr/src/app
 RUN cargo build --release
 
 # Prepare the final image
-FROM debian:buster-slim as runtime
+FROM debian:bookworm-slim as runtime
 
 # Install dependencies for the Rust binary
 RUN apt-get update && \
