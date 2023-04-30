@@ -1,4 +1,4 @@
-use super::subject_name::SubjectName;
+use super::{certs::CertMetadata, subject_name::SubjectName};
 use crate::{error::Error, keyring::certs::Cert};
 use anyhow::bail;
 use backoff::{backoff::Backoff, ExponentialBackoff};
@@ -141,16 +141,20 @@ impl AcmeEntry {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct AcmeInfo {
     pub id: String,
+    #[schema(example = "Let's Encrypt")]
     pub provider: String,
+    #[schema(example = json!(["example.com"]))]
     pub identifiers: Vec<String>,
     #[serde(serialize_with = "serialize_challenge_type")]
+    #[schema(value_type = String, example = "http-01")]
     pub challenge_type: ChallengeType,
 }
 
 pub struct AcmeOrder {
+    pub id: String,
     pub challenge_type: ChallengeType,
     pub identifiers: Vec<Identifier>,
     pub http_challenges: HashMap<String, String>,
@@ -199,6 +203,7 @@ impl AcmeOrder {
             challenges.push((identifier.to_string(), challenge.url.to_string()));
         }
         Ok(Self {
+            id: entry.id.clone(),
             challenge_type: entry.challenge_type,
             identifiers,
             http_challenges,
@@ -250,6 +255,13 @@ impl AcmeOrder {
                 None => tokio::time::sleep(Duration::from_secs(1)).await,
             }
         };
+
+        let metadata = CertMetadata {
+            acme_id: self.id.clone(),
+            created_at: SystemTime::now(),
+        };
+        let metadata = serde_qs::to_string(&metadata).unwrap_or_default();
+        let cert_chain_pem = format!("# {}\r\n\r\n{}", metadata, cert_chain_pem);
 
         let cert = Cert::new(
             cert_chain_pem.into_bytes(),
