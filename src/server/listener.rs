@@ -1,5 +1,6 @@
 use crate::proxy::{PortContext, PortContextEvent, PortContextKind, SocketState};
 use futures::{Stream, StreamExt};
+use once_cell::sync::Lazy;
 use std::collections::{HashMap, HashSet};
 use std::io;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -8,7 +9,8 @@ use std::task::{Context, Poll};
 use tokio::net::{TcpListener, TcpStream};
 use tracing::{error, info};
 
-const RESERVED_ADDR: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 80);
+static RESERVED_ADDR: Lazy<SocketAddr> =
+    Lazy::new(|| SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 80));
 
 #[derive(Debug)]
 pub struct TcpListenerPool {
@@ -79,7 +81,7 @@ impl TcpListenerPool {
         {
             let bind = match ctx.kind() {
                 PortContextKind::Tcp(state) => state.listen,
-                _ => RESERVED_ADDR,
+                _ => RESERVED_ADDR.clone(),
             };
             let (listener, state) = if let Some(listener) = listeners.remove(&bind) {
                 (Some(listener), SocketState::Listening)
