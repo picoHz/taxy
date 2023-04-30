@@ -81,7 +81,7 @@ impl TcpListenerPool {
         {
             let bind = match ctx.kind() {
                 PortContextKind::Tcp(state) => state.listen,
-                _ => RESERVED_ADDR.clone(),
+                _ => *RESERVED_ADDR,
             };
             let (listener, state) = if let Some(listener) = listeners.remove(&bind) {
                 (Some(listener), SocketState::Listening)
