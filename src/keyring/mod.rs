@@ -1,10 +1,13 @@
-use self::certs::{Cert, CertInfo};
+use self::{
+    acme::{AcmeEntry, AcmeInfo},
+    certs::{Cert, CertInfo},
+};
 use serde_derive::Serialize;
 use std::{collections::HashMap, sync::Arc};
 use utoipa::ToSchema;
 
+pub mod acme;
 pub mod certs;
-pub mod store;
 pub mod subject_name;
 
 use subject_name::SubjectName;
@@ -17,18 +20,21 @@ pub struct Keyring {
 #[derive(Debug)]
 pub enum KeyringItem {
     ServerCert(Arc<Cert>),
+    Acme(Arc<AcmeEntry>),
 }
 
 impl KeyringItem {
     pub fn id(&self) -> &str {
         match self {
             Self::ServerCert(cert) => cert.id(),
+            Self::Acme(acme) => acme.id(),
         }
     }
 
     pub fn info(&self) -> KeyringInfo {
         match self {
             Self::ServerCert(cert) => KeyringInfo::ServerCert(cert.info()),
+            Self::Acme(acme) => KeyringInfo::Acme(acme.info()),
         }
     }
 }
@@ -37,12 +43,14 @@ impl KeyringItem {
 #[serde(rename_all = "snake_case", tag = "type")]
 pub enum KeyringInfo {
     ServerCert(CertInfo),
+    Acme(AcmeInfo),
 }
 
 impl KeyringInfo {
     pub fn id(&self) -> &str {
         match self {
             Self::ServerCert(cert) => &cert.id,
+            Self::Acme(acme) => &acme.id,
         }
     }
 }
@@ -60,12 +68,17 @@ impl Keyring {
         }
     }
 
+    pub fn iter(&self) -> impl Iterator<Item = &KeyringItem> {
+        self.certs.values()
+    }
+
     pub fn find_server_cert(&self, names: &[SubjectName]) -> Option<&Arc<Cert>> {
         let mut certs = self
             .certs
             .values()
-            .map(|item| match item {
-                KeyringItem::ServerCert(cert) => cert,
+            .filter_map(|item| match item {
+                KeyringItem::ServerCert(cert) => Some(cert),
+                _ => None,
             })
             .filter(|cert| cert.is_valid() && names.iter().all(|name| cert.has_subject_name(name)))
             .collect::<Vec<_>>();

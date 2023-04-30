@@ -62,6 +62,7 @@ async fn main() -> anyhow::Result<()> {
     let (command_send, command_recv) = mpsc::channel(1);
     let server_task = tokio::spawn(server::start_server(
         config,
+        command_send.clone(),
         command_recv,
         event_send.clone(),
     ));
