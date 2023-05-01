@@ -90,8 +90,8 @@ impl Keyring {
         self.certs.insert(item.id().to_string(), item);
     }
 
-    pub fn delete(&mut self, id: &str) {
-        self.certs.remove(id);
+    pub fn delete(&mut self, id: &str) -> Option<KeyringItem> {
+        self.certs.remove(id)
     }
 
     pub fn list(&self) -> Vec<KeyringInfo> {

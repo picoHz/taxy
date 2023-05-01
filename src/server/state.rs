@@ -120,8 +120,15 @@ impl ServerState {
                 });
             }
             ServerCommand::DeleteKeyringItem { id } => {
-                self.config.delete_cert(&id).await;
-                self.certs.delete(&id);
+                match self.certs.delete(&id) {
+                    Some(KeyringItem::Acme(_)) => {
+                        self.config.delete_acme(&id).await;
+                    }
+                    Some(KeyringItem::ServerCert(_)) => {
+                        self.config.delete_cert(&id).await;
+                    }
+                    _ => (),
+                }
                 let _ = self.br_sender.send(ServerEvent::KeyringUpdated {
                     items: self.certs.list(),
                 });
