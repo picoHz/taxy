@@ -254,7 +254,7 @@ impl ServerState {
                     .unwrap_or(SystemTime::UNIX_EPOCH)
                     .elapsed()
                     .unwrap_or_default()
-                    > Duration::from_secs(60 * 60 * 24 * 30)
+                    > Duration::from_secs(60 * 60 * 24 * entry.renewal_days)
             })
             .collect::<Vec<_>>();
 

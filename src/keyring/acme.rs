@@ -26,6 +26,8 @@ pub struct AcmeRequest {
     pub identifiers: Vec<SubjectName>,
     #[schema(value_type = String, example = "http-01")]
     pub challenge_type: ChallengeType,
+    #[schema(example = "60")]
+    pub renewal_days: u64,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -33,6 +35,9 @@ pub struct AcmeEntry {
     pub id: String,
     pub provider: String,
     pub identifiers: Vec<String>,
+
+    #[serde(default = "default_renewal_days")]
+    pub renewal_days: u64,
 
     #[serde(serialize_with = "serialize_challenge_type")]
     pub challenge_type: ChallengeType,
@@ -42,6 +47,10 @@ pub struct AcmeEntry {
         deserialize_with = "deserialize_account"
     )]
     pub account: Account,
+}
+
+fn default_renewal_days() -> u64 {
+    60
 }
 
 fn serialize_challenge_type<S>(
@@ -93,6 +102,7 @@ impl AcmeEntry {
             identifiers: req.identifiers.into_iter().map(|i| i.to_string()).collect(),
             account,
             challenge_type: req.challenge_type,
+            renewal_days: req.renewal_days,
         })
     }
 
@@ -127,6 +137,9 @@ pub struct IdlessAcmeEntry {
         deserialize_with = "deserialize_account"
     )]
     pub account: Account,
+
+    #[serde(default = "default_renewal_days")]
+    pub renewal_days: u64,
 }
 
 impl From<AcmeEntry> for (String, IdlessAcmeEntry) {
@@ -138,6 +151,7 @@ impl From<AcmeEntry> for (String, IdlessAcmeEntry) {
                 identifiers: entry.identifiers,
                 challenge_type: entry.challenge_type,
                 account: entry.account,
+                renewal_days: entry.renewal_days,
             },
         )
     }
@@ -151,6 +165,7 @@ impl From<(String, IdlessAcmeEntry)> for AcmeEntry {
             identifiers: entry.identifiers,
             challenge_type: entry.challenge_type,
             account: entry.account,
+            renewal_days: entry.renewal_days,
         }
     }
 }
