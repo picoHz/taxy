@@ -8,9 +8,6 @@ use warp::reject::Reject;
 #[derive(Debug, Clone, Error, Serialize, ToSchema)]
 #[serde(rename_all = "snake_case", tag = "message")]
 pub enum Error {
-    #[error("invalid name: {name}")]
-    InvalidName { name: String },
-
     #[error("invalid listening address: {addr}")]
     InvalidListeningAddress {
         #[schema(value_type = [String])]
@@ -47,11 +44,8 @@ pub enum Error {
     #[error("no backend servers")]
     EmptyBackendServers,
 
-    #[error("port name not found: {name}")]
-    NameNotFound { name: String },
-
-    #[error("port name already exists: {name}")]
-    NameAlreadyExists { name: String },
+    #[error("port id not found: {id}")]
+    IdNotFound { id: String },
 
     #[error("acme account creation failed")]
     AcmeAccountCreationFailed,
@@ -62,7 +56,7 @@ impl Reject for Error {}
 impl Error {
     pub fn status_code(&self) -> StatusCode {
         match self {
-            Self::CertNotFound { .. } | Self::NameNotFound { .. } => StatusCode::NOT_FOUND,
+            Self::CertNotFound { .. } | Self::IdNotFound { .. } => StatusCode::NOT_FOUND,
             _ => StatusCode::BAD_REQUEST,
         }
     }

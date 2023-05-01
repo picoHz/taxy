@@ -1,6 +1,6 @@
 use super::{port::PortEntry, AppConfig};
 use crate::{
-    config::port::NamelessPortEntry,
+    config::port::IdlessPortEntry,
     keyring::{
         acme::AcmeEntry,
         certs::Cert,
@@ -87,9 +87,9 @@ impl ConfigStorage {
             .map(|(key, _)| key.to_string())
             .collect::<HashSet<_>>();
         for port in ports {
-            let (name, entry): (String, NamelessPortEntry) = port.clone().into();
-            doc[&name] = toml_edit::ser::to_document(&entry)?.as_item().clone();
-            unused.remove(&name);
+            let (id, entry): (String, IdlessPortEntry) = port.clone().into();
+            doc[&id] = toml_edit::ser::to_document(&entry)?.as_item().clone();
+            unused.remove(&id);
         }
         for key in unused {
             doc.remove(&key);
@@ -120,7 +120,7 @@ impl ConfigStorage {
     async fn load_entries_impl(&self, path: &Path) -> anyhow::Result<Vec<PortEntry>> {
         info!(?path, "load config");
         let content = fs::read_to_string(path).await?;
-        let table: IndexMap<String, NamelessPortEntry> = toml::from_str(&content)?;
+        let table: IndexMap<String, IdlessPortEntry> = toml::from_str(&content)?;
         Ok(table.into_iter().map(|entry| entry.into()).collect())
     }
 

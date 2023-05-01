@@ -1,12 +1,12 @@
 <template>
     <v-form validate-on="submitForm" @submit.prevent="submitForm">
+        <v-toolbar color="transparent" density="compact">
+            <v-toolbar-title>
+                {{ $t('ports.config.listener') }}
+            </v-toolbar-title>
+        </v-toolbar>
+        <v-divider></v-divider>
         <v-container>
-            <v-row>
-                <v-col cols="12" sm="12">
-                    <v-text-field :label="$t('ports.config.name')" variant="outlined" v-model="formData.name"
-                        density="compact" :rules="nameRules" persistent-hint></v-text-field>
-                </v-col>
-            </v-row>
             <v-row>
                 <v-col cols="12" sm="2">
                     <v-select :label="$t('ports.config.protocol')" :items="protocols" v-model="formData.protocol"
@@ -127,7 +127,6 @@ onMounted(() => {
         formData.ifs = host
         formData.port = port
         formData.protocol = protocol
-        formData.name = props.entry.name
         formData.servers = props.entry.servers.map(s => multiaddrToServer(s.addr))
         const { tls_termination } = props.entry
         if (tls_termination) {
@@ -140,7 +139,6 @@ async function submitForm(event) {
     let { valid } = await event;
     if (valid) {
         const entry = {
-            name: formData.name,
             listen: serverToMultiaddrWithProtocol(formData.protocol, formData.ifs, formData.port),
             servers: formData.servers.map(s => ({
                 addr: serverToMultiaddrWithProtocol(s.protocol, s.host, s.port),

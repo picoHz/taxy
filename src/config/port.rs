@@ -12,7 +12,7 @@ pub struct BackendServer {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct PortEntry {
-    pub name: String,
+    pub id: String,
     #[schema(value_type = String, example = "/ip4/127.0.0.1/tcp/8080")]
     pub listen: Multiaddr,
     pub servers: Vec<BackendServer>,
@@ -20,10 +20,30 @@ pub struct PortEntry {
     pub opts: PortOptions,
 }
 
-impl From<(String, NamelessPortEntry)> for PortEntry {
-    fn from((name, entry): (String, NamelessPortEntry)) -> Self {
+impl From<PortEntryRequest> for PortEntry {
+    fn from(req: PortEntryRequest) -> Self {
         Self {
-            name,
+            id: cuid2::cuid(),
+            listen: req.listen,
+            servers: req.servers,
+            opts: req.opts,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, ToSchema)]
+pub struct PortEntryRequest {
+    #[schema(value_type = String, example = "/ip4/127.0.0.1/tcp/8080")]
+    pub listen: Multiaddr,
+    pub servers: Vec<BackendServer>,
+    #[serde(flatten, default)]
+    pub opts: PortOptions,
+}
+
+impl From<(String, IdlessPortEntry)> for PortEntry {
+    fn from((id, entry): (String, IdlessPortEntry)) -> Self {
+        Self {
+            id,
             listen: entry.listen,
             servers: entry.servers,
             opts: entry.opts,
@@ -32,18 +52,18 @@ impl From<(String, NamelessPortEntry)> for PortEntry {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct NamelessPortEntry {
+pub struct IdlessPortEntry {
     pub listen: Multiaddr,
     pub servers: Vec<BackendServer>,
     #[serde(flatten, default)]
     pub opts: PortOptions,
 }
 
-impl From<PortEntry> for (String, NamelessPortEntry) {
+impl From<PortEntry> for (String, IdlessPortEntry) {
     fn from(entry: PortEntry) -> Self {
         (
-            entry.name,
-            NamelessPortEntry {
+            entry.id,
+            IdlessPortEntry {
                 listen: entry.listen,
                 servers: entry.servers,
                 opts: entry.opts,

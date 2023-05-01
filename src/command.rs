@@ -6,7 +6,7 @@ use crate::proxy::PortContext;
 pub enum ServerCommand {
     SetAppConfig { config: AppConfig },
     SetPort { ctx: PortContext },
-    DeletePort { name: String },
+    DeletePort { id: String },
     AddKeyringItem { item: KeyringItem },
     DeleteKeyringItem { id: String },
     StopHttpChallenges,

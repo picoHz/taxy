@@ -6,14 +6,14 @@ export const usePortsStore = defineStore('ports', {
     updateTable(table) {
       this.table = table
     },
-    updateStatus(name, status) {
-      this.status[name] = status
+    updateStatus(id, status) {
+      this.status[id] = status
     },
   },
   getters: {
     getStateByName: (state) => {
-      return (name) => {
-        const status = state.status[name]
+      return (id) => {
+        const status = state.status[id]
         if (!status) return 'unknown';
         const { socket, tls } = status.state;
         if (socket !== 'listening') return socket;
@@ -22,7 +22,7 @@ export const usePortsStore = defineStore('ports', {
       }
     },
     getStatusByName: (state) => {
-      return (name) => state.status[name] || {}
+      return (id) => state.status[id] || {}
     },
   }
 })
