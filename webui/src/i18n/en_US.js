@@ -91,11 +91,37 @@ export default {
             rule_key: "Select valid private key.",
             cancel: "Cancel"
         },
+        acme: {
+            acme: "ACME",
+            title: "New ACME Request",
+            provider: "Provider",
+            challenge: "Challenge",
+            email: "Email",
+            domain: "Domain Name",
+            create: "Create",
+            cancel: "Cancel",
+            rule: {
+                hostname_required: 'Provide a valid hostname.',
+            }
+        },
         delete_cert: {
             delete_cert: "Delete Certificate",
             confirm: "Are you sure to delete {name}?",
             delete: "Delete",
             cancel: "Cancel"
+        },
+        delete_acme: {
+            delete_acme: "Delete ACME",
+            confirm: "Are you sure to delete {name}?",
+            cancel: "Cancel",
+            delete: "Delete"
+        }
+    },
+    acme: {
+        info: {
+            provider: "Provider",
+            identifiers: "Identifiers",
+            challenge_type: "Challenge Type",
         }
     }
 }

@@ -91,7 +91,7 @@
 </template>
   
 <script setup>
-import { reactive, defineEmits, onMounted } from 'vue';
+import { reactive, defineEmits, defineProps, onMounted } from 'vue';
 import { Address6, Address4 } from 'ip-address';
 import { useI18n } from 'vue-i18n'
 import { isValidHostname, parseTlsServerNames } from '@/utils/validators'

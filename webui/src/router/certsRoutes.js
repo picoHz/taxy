@@ -35,6 +35,26 @@ const certsRoutes = [
             },
         },
     },
+    {
+        path: "acme/:id",
+        name: "ACME Info",
+        component: () => import(/* webpackChunkName: "acme_info" */ "@/views/AcmeInfo.vue"),
+        meta: {
+            breadcrumb(route) {
+                return [
+                    {
+                        trName: 'certs.certs',
+                        disabled: false,
+                        to: { path: '/certs' },
+                    },
+                    {
+                        title: route.params.id,
+                        disabled: true,
+                    },
+                ];
+            },
+        },
+    },
 ];
 
 export default certsRoutes;
