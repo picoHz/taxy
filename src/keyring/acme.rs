@@ -38,12 +38,6 @@ pub struct AcmeEntry {
     pub challenge_type: ChallengeType,
 
     #[serde(
-        serialize_with = "serialize_system_time",
-        deserialize_with = "deserialize_system_time"
-    )]
-    pub last_updated: SystemTime,
-
-    #[serde(
         serialize_with = "serialize_account",
         deserialize_with = "deserialize_account"
     )]
@@ -62,26 +56,6 @@ where
         ChallengeType::Dns01 => "dns-01",
         ChallengeType::TlsAlpn01 => "tls-alpn-01",
     })
-}
-
-fn serialize_system_time<S>(time: &SystemTime, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: serde::Serializer,
-{
-    serializer.serialize_i64(
-        time.duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_secs() as i64,
-    )
-}
-
-fn deserialize_system_time<'de, D>(deserializer: D) -> Result<SystemTime, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    use serde::Deserialize;
-    let secs = i64::deserialize(deserializer)?;
-    Ok(SystemTime::UNIX_EPOCH + Duration::from_secs(secs as u64))
 }
 
 impl fmt::Debug for AcmeEntry {
@@ -116,7 +90,6 @@ impl AcmeEntry {
         Ok(Self {
             id: cuid2::create_id(),
             provider: req.provider,
-            last_updated: SystemTime::UNIX_EPOCH,
             identifiers: req.identifiers.into_iter().map(|i| i.to_string()).collect(),
             account,
             challenge_type: req.challenge_type,
@@ -150,12 +123,6 @@ pub struct IdlessAcmeEntry {
     pub challenge_type: ChallengeType,
 
     #[serde(
-        serialize_with = "serialize_system_time",
-        deserialize_with = "deserialize_system_time"
-    )]
-    pub last_updated: SystemTime,
-
-    #[serde(
         serialize_with = "serialize_account",
         deserialize_with = "deserialize_account"
     )]
@@ -170,7 +137,6 @@ impl From<AcmeEntry> for (String, IdlessAcmeEntry) {
                 provider: entry.provider,
                 identifiers: entry.identifiers,
                 challenge_type: entry.challenge_type,
-                last_updated: entry.last_updated,
                 account: entry.account,
             },
         )
@@ -184,7 +150,6 @@ impl From<(String, IdlessAcmeEntry)> for AcmeEntry {
             provider: entry.provider,
             identifiers: entry.identifiers,
             challenge_type: entry.challenge_type,
-            last_updated: entry.last_updated,
             account: entry.account,
         }
     }
