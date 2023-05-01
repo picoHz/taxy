@@ -12,11 +12,11 @@
       <v-list-item v-if="portsStore.table.length === 0" disabled>
         <v-list-item-title class="text-center">{{ $t('ports.no_ports') }}</v-list-item-title>
       </v-list-item>
-      <v-list-item v-for="item in portsStore.table" :key="item.listen" :title="item.name" :subtitle="item.listen"
-        :value="item.listen" :to="{ path: `/ports/${encodeURIComponent(item.name)}` }">
+      <v-list-item v-for="item in portsStore.table" :key="item.listen" :title="item.listen" :value="item.listen"
+        :to="{ path: `/ports/${item.id}` }">
 
         <template v-slot:prepend>
-          <v-icon v-if="getStateByName(item.name) === 'listening'" icon="$success" color="green"></v-icon>
+          <v-icon v-if="getStateByName(item.id) === 'listening'" icon="$success" color="green"></v-icon>
           <v-icon v-else icon="$error" color="error"></v-icon>
         </template>
       </v-list-item>

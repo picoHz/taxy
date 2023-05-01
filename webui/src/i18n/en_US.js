@@ -1,6 +1,5 @@
 export default {
     error: {
-        name_already_exists: 'Name already exists: {name}',
         valid_tls_certificates_not_found: 'Unable to find valid TLS certificates',
         cert_already_exists: 'Certificate already exists: {id}',
         failed_to_read_cert: 'Failed to read certificate',
@@ -11,7 +10,7 @@ export default {
         no_ports: 'No port configurations found.',
         new_port: 'New Port',
         delete_port: 'Delete Port',
-        delete_port_confirm: 'Are you sure to delete {name}?',
+        delete_port_confirm: 'Are you sure to delete {id}?',
         successfully_updated: 'Successfully updated',
         snackbar_close: 'Close',
         state: {
@@ -29,13 +28,12 @@ export default {
             settings: 'Settings',
         },
         status: {
-            name: 'Name',
             interface: 'Interface',
             state: 'State',
             uptime: 'Uptime',
         },
         config: {
-            name: 'Name',
+            listener: 'Listener',
             protocol: 'Protocol',
             interface: 'Interface',
             port: 'Port',
@@ -45,7 +43,6 @@ export default {
             update: 'Update',
             create: 'Create',
             rule: {
-                name_required: 'A name is required.',
                 interface_required: 'Enter a valid IPv4 or IPv6 address.',
                 hostname_required: 'Provide a valid hostname or IPv4/IPv6 address.',
                 port_required: 'Enter a valid port number (range: 1-65535).',
@@ -106,13 +103,13 @@ export default {
         },
         delete_cert: {
             delete_cert: "Delete Certificate",
-            confirm: "Are you sure to delete {name}?",
+            confirm: "Are you sure to delete {id}?",
             delete: "Delete",
             cancel: "Cancel"
         },
         delete_acme: {
             delete_acme: "Delete ACME",
-            confirm: "Are you sure to delete {name}?",
+            confirm: "Are you sure to delete {id}?",
             cancel: "Cancel",
             delete: "Delete"
         }

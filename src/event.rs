@@ -18,7 +18,7 @@ pub enum ServerEvent {
         source: Source,
     },
     PortStatusUpdated {
-        name: String,
+        id: String,
         status: PortStatus,
     },
     KeyringUpdated {

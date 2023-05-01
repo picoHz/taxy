@@ -1,6 +1,6 @@
 use super::app_info::AppInfo;
 use super::{app_info, certs, certs::CertPostBody, config, port};
-use crate::config::port::{BackendServer, PortEntry, PortOptions};
+use crate::config::port::{BackendServer, PortEntry, PortEntryRequest, PortOptions};
 use crate::config::tls::TlsTermination;
 use crate::config::{AppConfig, Source};
 use crate::error::Error;
@@ -48,6 +48,7 @@ use warp::{Rejection, Reply};
         CertInfo,
         CertMetadata,
         AcmeInfo,
+        PortEntryRequest,
         SelfSignedCertRequest,
         AcmeRequest,
         CertPostBody,

@@ -36,7 +36,7 @@ const portsRoutes = [
         },
     },
     {
-        path: ":name",
+        path: ":id",
         name: "Port Status",
         component: () => import(/* webpackChunkName: "portsn" */ "@/views/PortStatus.vue"),
         meta: {
@@ -48,7 +48,7 @@ const portsRoutes = [
                         to: { path: "/" },
                     },
                     {
-                        title: route.params.name,
+                        title: route.params.id,
                         disabled: true,
                     },
                 ];

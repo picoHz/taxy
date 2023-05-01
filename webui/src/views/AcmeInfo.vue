@@ -24,7 +24,7 @@
     <v-dialog v-model="deleteDialog" width="auto">
         <v-card :title="$t('certs.delete_acme.delete_acme')">
             <v-card-text>
-                {{ $t('certs.delete_acme.confirm', { name: route.params.id }) }}
+                {{ $t('certs.delete_acme.confirm', { id: route.params.id }) }}
             </v-card-text>
             <v-card-actions class="justify-end">
                 <v-btn @click="deleteDialog = false">{{ $t('certs.delete_acme.cancel') }}</v-btn>
@@ -59,4 +59,5 @@ async function deleteCert() {
         error.value = data
     }
 }
+
 </script>

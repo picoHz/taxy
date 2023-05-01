@@ -101,8 +101,8 @@ impl ServerState {
                 self.table.set_port(ctx);
                 self.update_port_statuses().await;
             }
-            ServerCommand::DeletePort { name } => {
-                self.table.delete_port(&name);
+            ServerCommand::DeletePort { id } => {
+                self.table.delete_port(&id);
                 self.update_port_statuses().await;
             }
             ServerCommand::AddKeyringItem { item } => {
@@ -202,7 +202,7 @@ impl ServerState {
         });
         for (entry, ctx) in self.table.entries().iter().zip(self.table.contexts()) {
             let _ = self.br_sender.send(ServerEvent::PortStatusUpdated {
-                name: entry.name.clone(),
+                id: entry.id.clone(),
                 status: *ctx.status(),
             });
         }

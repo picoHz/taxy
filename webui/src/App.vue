@@ -31,7 +31,7 @@ onMounted(async () => {
         portsStore.updateTable(json.entries);
         break;
       case 'port_status_updated':
-        portsStore.updateStatus(json.name, json.status);
+        portsStore.updateStatus(json.id, json.status);
         break;
       case 'app_config_updated':
         configStore.update(json.config);
@@ -57,8 +57,8 @@ onMounted(async () => {
   portsStore.updateTable(data);
 
   for (const port of data) {
-    axious.get(`${endpoint}/ports/${encodeURIComponent(port.name)}/status`).then(({ data }) => {
-      portsStore.updateStatus(port.name, data);
+    axious.get(`${endpoint}/ports/${port.id}/status`).then(({ data }) => {
+      portsStore.updateStatus(port.id, data);
     });
   }
 });

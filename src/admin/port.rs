@@ -1,5 +1,10 @@
 use super::AppState;
-use crate::{command::ServerCommand, config::port::PortEntry, error::Error, proxy::PortContext};
+use crate::{
+    command::ServerCommand,
+    config::port::{PortEntry, PortEntryRequest},
+    error::Error,
+    proxy::PortContext,
+};
 use warp::{Rejection, Reply};
 
 /// Get the list of port configurations.
@@ -18,59 +23,41 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
 /// Get the status of a port.
 #[utoipa::path(
     get,
-    path = "/api/ports/{name}/status",
+    path = "/api/ports/{id}/status",
     params(
-        ("name" = String, Path, description = "Port configuration name")
+        ("id" = String, Path, description = "Port configuration id")
     ),
     responses(
         (status = 200, body = PortStatus),
         (status = 404)
     )
 )]
-pub async fn status(state: AppState, name: String) -> Result<impl Reply, Rejection> {
-    let name = percent_encoding::percent_decode_str(&name).decode_utf8_lossy();
+pub async fn status(state: AppState, id: String) -> Result<impl Reply, Rejection> {
     let data = state.data.lock().await;
-    if let Some(status) = data.status.get(name.as_ref()) {
+    if let Some(status) = data.status.get(&id) {
         Ok(warp::reply::json(&status))
     } else {
-        Err(warp::reject::custom(Error::NameNotFound {
-            name: name.to_string(),
-        }))
+        Err(warp::reject::custom(Error::IdNotFound { id }))
     }
 }
 
 /// Delete a port configuration.
 #[utoipa::path(
     delete,
-    path = "/api/ports/{name}",
+    path = "/api/ports/{id}",
     params(
-        ("name" = String, Path, description = "Port configuration name")
+        ("id" = String, Path, description = "Port configuration id")
     ),
     responses(
         (status = 200),
         (status = 404),
     )
 )]
-pub async fn delete(state: AppState, name: String) -> Result<impl Reply, Rejection> {
-    let name = percent_encoding::percent_decode_str(&name).decode_utf8_lossy();
-    if state
-        .data
-        .lock()
-        .await
-        .entries
-        .iter()
-        .all(|e| e.name != name)
-    {
-        return Err(warp::reject::custom(Error::NameNotFound {
-            name: name.to_string(),
-        }));
+pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {
+    if state.data.lock().await.entries.iter().all(|e| e.id != id) {
+        return Err(warp::reject::custom(Error::IdNotFound { id }));
     }
-    let _ = state
-        .sender
-        .send(ServerCommand::DeletePort {
-            name: name.to_string(),
-        })
-        .await;
+    let _ = state.sender.send(ServerCommand::DeletePort { id }).await;
     Ok(warp::reply::reply())
 }
 
@@ -84,13 +71,9 @@ pub async fn delete(state: AppState, name: String) -> Result<impl Reply, Rejecti
         (status = 400, body = Error),
     )
 )]
-pub async fn post(state: AppState, entry: PortEntry) -> Result<impl Reply, Rejection> {
+pub async fn post(state: AppState, entry: PortEntryRequest) -> Result<impl Reply, Rejection> {
     let data = state.data.lock().await;
-    let name = entry.name.clone();
-    if data.entries.iter().any(|e| e.name == name) {
-        return Err(warp::reject::custom(Error::NameAlreadyExists { name }));
-    }
-    let mut ctx = PortContext::new(entry)?;
+    let mut ctx = PortContext::new(entry.into())?;
     ctx.prepare(&data.config).await?;
     let _ = state.sender.send(ServerCommand::SetPort { ctx }).await;
     Ok(warp::reply::reply())
@@ -99,9 +82,9 @@ pub async fn post(state: AppState, entry: PortEntry) -> Result<impl Reply, Rejec
 /// Update or rename a port configuration.
 #[utoipa::path(
     put,
-    path = "/api/ports/{name}",
+    path = "/api/ports/{id}",
     params(
-        ("name" = String, Path, description = "Port configuration name")
+        ("id" = String, Path, description = "Port configuration name")
     ),
     request_body = PortEntry,
     responses(
@@ -110,22 +93,14 @@ pub async fn post(state: AppState, entry: PortEntry) -> Result<impl Reply, Rejec
         (status = 400, body = Error),
     )
 )]
-pub async fn put(state: AppState, entry: PortEntry, name: String) -> Result<impl Reply, Rejection> {
-    let name = percent_encoding::percent_decode_str(&name).decode_utf8_lossy();
-    if entry.name != name
-        && state
-            .data
-            .lock()
-            .await
-            .entries
-            .iter()
-            .any(|e| e.name == entry.name)
-    {
-        return Err(warp::reject::custom(Error::NameAlreadyExists {
-            name: entry.name,
-        }));
-    }
+pub async fn put(
+    state: AppState,
+    entry: PortEntryRequest,
+    id: String,
+) -> Result<impl Reply, Rejection> {
     let data = state.data.lock().await;
+    let mut entry: PortEntry = entry.into();
+    entry.id = id;
     let mut ctx = PortContext::new(entry)?;
     ctx.prepare(&data.config).await?;
     let _ = state.sender.send(ServerCommand::SetPort { ctx }).await;

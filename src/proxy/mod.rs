@@ -13,7 +13,6 @@ use utoipa::ToSchema;
 pub mod tcp;
 pub mod tls;
 
-const MAX_NAME_LEN: usize = 32;
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum SocketState {
@@ -71,9 +70,6 @@ pub struct PortContext {
 
 impl PortContext {
     pub fn new(entry: PortEntry) -> Result<Self, Error> {
-        if entry.name.is_empty() || entry.name.len() > MAX_NAME_LEN {
-            return Err(Error::InvalidName { name: entry.name });
-        }
         let kind = PortContextKind::Tcp(TcpPortContext::new(&entry)?);
         Ok(Self { entry, kind })
     }
@@ -81,7 +77,7 @@ impl PortContext {
     pub fn reserved() -> Self {
         Self {
             entry: PortEntry {
-                name: String::new(),
+                id: String::new(),
                 listen: Multiaddr::empty(),
                 servers: vec![],
                 opts: Default::default(),

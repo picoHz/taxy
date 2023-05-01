@@ -8,10 +8,6 @@
             <v-table>
                 <tbody>
                     <tr>
-                        <td>{{ $t('ports.status.name') }}</td>
-                        <td>{{ route.params.name }}</td>
-                    </tr>
-                    <tr>
                         <td>{{ $t('ports.status.interface') }}</td>
                         <td>{{ config.listen }}</td>
                     </tr>
@@ -37,7 +33,7 @@
             <v-dialog v-model="deleteDialog" width="auto">
                 <v-card :title="$t('ports.delete_port')">
                     <v-card-text>
-                        {{ $t('ports.delete_port_confirm', { name: route.params.name }) }}
+                        {{ $t('ports.delete_port_confirm', { id: route.params.id }) }}
                     </v-card-text>
                     <v-card-actions class="justify-end">
                         <v-btn @click="deleteDialog = false">Cancel</v-btn>
@@ -93,9 +89,9 @@ setInterval(() => {
     now.value = Date.now()
 }, 1000)
 
-const state = computed(() => portsStore.getStateByName(route.params.name));
-const status = computed(() => portsStore.getStatusByName(route.params.name));
-const config = computed(() => portsStore.table.find(({ name }) => route.params.name === name) || {});
+const state = computed(() => portsStore.getStateByName(route.params.id));
+const status = computed(() => portsStore.getStatusByName(route.params.id));
+const config = computed(() => portsStore.table.find(({ id }) => route.params.id === id) || {});
 const startedAt = computed(() => status.value.started_at);
 const uptime = computed(() => startedAt.value ? formatDuration(now.value - startedAt.value * 1000) : 'n/a');
 
@@ -104,8 +100,7 @@ const endpoint = import.meta.env.VITE_API_ENDPOINT;
 async function update(data) {
     loading.value = true;
     try {
-        await axios.put(`${endpoint}/ports/${encodeURIComponent(route.params.name)}`, data)
-        router.replace({ name: 'Port Status', params: { name: data.name } })
+        await axios.put(`${endpoint}/ports/${route.params.id}`, data)
         snackbar.value = true
     } catch (err) {
         let { response: { data } } = err;
@@ -117,7 +112,7 @@ async function update(data) {
 async function deletePort() {
     deleteDialog.value = false;
     try {
-        await axios.delete(`${endpoint}/ports/${encodeURIComponent(route.params.name)}`)
+        await axios.delete(`${endpoint}/ports/${route.params.id}`)
         router.replace({ name: 'List' })
     } catch (err) {
         let { response: { data } } = err;

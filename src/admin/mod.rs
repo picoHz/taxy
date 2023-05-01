@@ -43,8 +43,8 @@ pub async fn start_admin(
                 Ok(ServerEvent::PortTableUpdated { entries: ports, .. }) => {
                     data.lock().await.entries = ports;
                 }
-                Ok(ServerEvent::PortStatusUpdated { name, status }) => {
-                    data.lock().await.status.insert(name, status);
+                Ok(ServerEvent::PortStatusUpdated { id, status }) => {
+                    data.lock().await.status.insert(id, status);
                 }
                 Ok(ServerEvent::KeyringUpdated { items }) => {
                     data.lock().await.keyring_items = items;
