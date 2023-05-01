@@ -141,6 +141,55 @@ impl AcmeEntry {
     }
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+pub struct IdlessAcmeEntry {
+    pub provider: String,
+    pub identifiers: Vec<String>,
+
+    #[serde(serialize_with = "serialize_challenge_type")]
+    pub challenge_type: ChallengeType,
+
+    #[serde(
+        serialize_with = "serialize_system_time",
+        deserialize_with = "deserialize_system_time"
+    )]
+    pub last_updated: SystemTime,
+
+    #[serde(
+        serialize_with = "serialize_account",
+        deserialize_with = "deserialize_account"
+    )]
+    pub account: Account,
+}
+
+impl From<AcmeEntry> for (String, IdlessAcmeEntry) {
+    fn from(entry: AcmeEntry) -> Self {
+        (
+            entry.id,
+            IdlessAcmeEntry {
+                provider: entry.provider,
+                identifiers: entry.identifiers,
+                challenge_type: entry.challenge_type,
+                last_updated: entry.last_updated,
+                account: entry.account,
+            },
+        )
+    }
+}
+
+impl From<(String, IdlessAcmeEntry)> for AcmeEntry {
+    fn from((id, entry): (String, IdlessAcmeEntry)) -> Self {
+        Self {
+            id,
+            provider: entry.provider,
+            identifiers: entry.identifiers,
+            challenge_type: entry.challenge_type,
+            last_updated: entry.last_updated,
+            account: entry.account,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct AcmeInfo {
     pub id: String,

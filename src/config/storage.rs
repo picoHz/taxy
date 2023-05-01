@@ -2,7 +2,7 @@ use super::{port::PortEntry, AppConfig};
 use crate::{
     config::port::IdlessPortEntry,
     keyring::{
-        acme::AcmeEntry,
+        acme::{AcmeEntry, IdlessAcmeEntry},
         certs::Cert,
         {Keyring, KeyringItem},
     },
@@ -141,7 +141,7 @@ impl ConfigStorage {
     }
 
     pub async fn save_acme(&self, acme: &AcmeEntry) {
-        let path = self.dir.join("acme").join(format!("{}.toml", acme.id));
+        let path = self.dir.join("acme.toml");
         if let Err(err) = self.save_acme_impl(&path, acme).await {
             error!(?path, "failed to save: {err}");
         }
@@ -149,8 +149,41 @@ impl ConfigStorage {
 
     async fn save_acme_impl(&self, path: &Path, acme: &AcmeEntry) -> anyhow::Result<()> {
         fs::create_dir_all(path.parent().unwrap()).await?;
-        info!(?path, "save acme");
-        fs::write(path, toml::to_string(acme)?).await?;
+        info!(?path, "save config");
+        let mut doc = match self.load_document(path).await {
+            Ok(doc) => doc,
+            Err(err) => {
+                warn!(?path, ?err, "failed to load config");
+                Document::new()
+            }
+        };
+
+        let (id, entry): (String, IdlessAcmeEntry) = acme.clone().into();
+        doc[&id] = toml_edit::ser::to_document(&entry)?.as_item().clone();
+
+        fs::write(path, doc.to_string()).await?;
+        Ok(())
+    }
+
+    pub async fn delete_acme(&self, id: &str) {
+        let path = self.dir.join("acme.toml");
+        if let Err(err) = self.delete_acme_impl(&path, id).await {
+            error!(?path, "failed to save: {err}");
+        }
+    }
+
+    async fn delete_acme_impl(&self, path: &Path, id: &str) -> anyhow::Result<()> {
+        info!(?path, "delete acme");
+        let mut doc = match self.load_document(path).await {
+            Ok(doc) => doc,
+            Err(err) => {
+                warn!(?path, ?err, "failed to load config");
+                Document::new()
+            }
+        };
+
+        doc.remove(id);
+        fs::write(path, doc.to_string()).await?;
         Ok(())
     }
 
@@ -173,7 +206,7 @@ impl ConfigStorage {
             }
         }
 
-        let path = self.dir.join("acme");
+        let path = self.dir.join("acme.toml");
         match self.load_acmes_impl(&path).await {
             Ok(mut certs) => items.append(&mut certs),
             Err(err) => {
@@ -227,16 +260,12 @@ impl ConfigStorage {
     }
 
     pub async fn load_acmes_impl(&self, path: &Path) -> anyhow::Result<Vec<KeyringItem>> {
-        let walker = globwalk::GlobWalkerBuilder::from_patterns(path, &["*.toml"])
-            .build()?
-            .filter_map(Result::ok);
-        let mut entries = Vec::new();
-        for acme in walker {
-            let path = acme.path();
-            info!(?path, "load acme config");
-            let content = fs::read_to_string(path).await?;
-            entries.push(KeyringItem::Acme(toml::from_str(&content)?));
-        }
-        Ok(entries)
+        info!(?path, "load acmes");
+        let content = fs::read_to_string(path).await?;
+        let table: IndexMap<String, IdlessAcmeEntry> = toml::from_str(&content)?;
+        Ok(table
+            .into_iter()
+            .map(|entry| KeyringItem::Acme(Arc::new(entry.into())))
+            .collect())
     }
 }
