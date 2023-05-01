@@ -12,6 +12,9 @@
               <v-list-item prepend-icon="mdi-file-sign" @click="selfSignedDialog = true">
                 <v-list-item-title>{{ $t('certs.self_sign.self_sign') }}</v-list-item-title>
               </v-list-item>
+              <v-list-item prepend-icon="mdi-cloud-lock" @click="acmeDialog = true">
+                <v-list-item-title>{{ $t('certs.acme.acme') }}</v-list-item-title>
+              </v-list-item>
             </v-list>
           </v-menu>
         </v-btn>
@@ -21,6 +24,10 @@
     <v-list>
       <v-list-item v-if="certsStore.list.length === 0" disabled>
         <v-list-item-title class="text-center">{{ $t('certs.no_certs') }}</v-list-item-title>
+      </v-list-item>
+      <v-list-item prepend-icon="mdi-cloud-lock" v-for="item in certsStore.list.filter(item => item.type === 'acme')"
+        :key="item.id" :title="item.provider" :subtitle="item.identifiers.join(', ')"
+        :to="{ path: `/certs/acme/${item.id}` }">
       </v-list-item>
       <v-list-item prepend-icon="mdi-file-certificate"
         v-for="item in certsStore.list.filter(item => item.type === 'server_cert')" :key="item.id"
@@ -98,6 +105,32 @@
       </v-form>
     </v-dialog>
 
+    <v-dialog :width="600" v-model="acmeDialog" width="auto">
+      <v-form validate-on="submitAcmeForm" @submit.prevent="submitAcmeForm">
+        <v-card>
+          <v-card-title>
+            {{ $t('certs.acme.title') }}
+          </v-card-title>
+          <v-card-text>
+            <v-container>
+              <v-row>
+                <v-col cols="12" sm="12">
+                  <v-select :label="$t('certs.acme.provider')" :items="acmeProviders" v-model="acmeProvider"
+                    variant="outlined" density="compact"></v-select>
+                </v-col>
+              </v-row>
+            </v-container>
+            <LetsEncrypt v-model="acmeModel" :staging="acmeProvider === 'letsencrypt-staging'"></LetsEncrypt>
+          </v-card-text>
+
+          <v-card-actions class="justify-end">
+            <v-btn @click="acmeDialog = false">{{ $t('certs.acme.cancel') }}</v-btn>
+            <v-btn :loading="loading" type="submit" color="primary">{{ $t('certs.acme.create') }}</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-form>
+    </v-dialog>
+
     <v-snackbar v-model="snackbar" :timeout="3000">
       {{ $t('certs.successfully_updated') }}
       <template v-slot:actions>
@@ -115,6 +148,7 @@ import { ref, reactive } from 'vue'
 import { useCertsStore } from '@/stores/certs';
 import { useI18n } from 'vue-i18n'
 import { parseTlsServerNames } from '@/utils/validators'
+import LetsEncrypt from '@/acme/LetsEncrypt.vue';
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -123,12 +157,21 @@ const uploadDialog = ref(false);
 const chainFile = ref([]);
 const keyFile = ref([]);
 const selfSignedDialog = ref(false);
+const acmeDialog = ref(false);
 const selfSignedRequest = reactive({
   san: ""
 });
 const loading = ref(false);
 const snackbar = ref(false);
 const error = ref(null);
+
+const acmeProvider = ref('letsencrypt');
+const acmeModel = ref({});
+
+const acmeProviders = [
+  { title: "Let's Encrypt", value: 'letsencrypt' },
+  { title: "Let's Encrypt (Staging)", value: 'letsencrypt-staging' }
+];
 
 const endpoint = import.meta.env.VITE_API_ENDPOINT;
 
@@ -172,6 +215,21 @@ async function submitSelfSignedForm(event) {
   }
   loading.value = false;
   selfSignedDialog.value = false;
+}
+
+async function submitAcmeForm(event) {
+  let { valid } = await event;
+  if (!valid) return;
+
+  loading.value = true;
+  try {
+    await axios.post(`${endpoint}/certs/acme`, acmeModel.value)
+  } catch (err) {
+    let { response: { data } } = err;
+    error.value = data
+  }
+  loading.value = false;
+  acmeDialog.value = false;
 }
 
 const chainFileRules = [
