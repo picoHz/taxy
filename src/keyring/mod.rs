@@ -86,6 +86,21 @@ impl Keyring {
         certs.first().copied()
     }
 
+    pub fn find_server_cert_by_acme(&self, acme: &str) -> Vec<&Arc<Cert>> {
+        self.certs
+            .values()
+            .filter_map(|item| match item {
+                KeyringItem::ServerCert(cert) => Some(cert),
+                _ => None,
+            })
+            .filter(|cert| {
+                cert.metadata
+                    .as_ref()
+                    .map_or(false, |meta| meta.acme_id == acme)
+            })
+            .collect()
+    }
+
     pub fn add(&mut self, item: KeyringItem) {
         self.certs.insert(item.id().to_string(), item);
     }

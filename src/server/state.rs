@@ -3,7 +3,7 @@ use crate::{
     command::ServerCommand,
     config::{storage::ConfigStorage, Source},
     event::ServerEvent,
-    keyring::{acme::AcmeEntry, Keyring, KeyringItem},
+    keyring::{Keyring, KeyringItem},
     proxy::{PortContext, PortContextKind},
 };
 use http_body_util::Full;
@@ -22,7 +22,7 @@ use tokio::{
     net::TcpStream,
     sync::{broadcast, mpsc},
 };
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 use warp::http::{Request, Response};
 
 pub struct ServerState {
@@ -118,6 +118,7 @@ impl ServerState {
                 let _ = self.br_sender.send(ServerEvent::KeyringUpdated {
                     items: self.certs.list(),
                 });
+                self.start_http_challenges().await;
             }
             ServerCommand::DeleteKeyringItem { id } => {
                 match self.certs.delete(&id) {
@@ -240,7 +241,20 @@ impl ServerState {
                 _ => None,
             })
             .filter(|entry| {
-                entry.last_updated.elapsed().unwrap_or_default() > Duration::from_secs(60 * 60 * 24)
+                self.certs
+                    .find_server_cert_by_acme(&entry.id)
+                    .iter()
+                    .map(|cert| {
+                        cert.metadata
+                            .as_ref()
+                            .map(|meta| meta.created_at)
+                            .unwrap_or(SystemTime::UNIX_EPOCH)
+                    })
+                    .max()
+                    .unwrap_or(SystemTime::UNIX_EPOCH)
+                    .elapsed()
+                    .unwrap_or_default()
+                    > Duration::from_secs(60 * 60 * 24 * 30)
             })
             .collect::<Vec<_>>();
 
@@ -250,18 +264,20 @@ impl ServerState {
 
         let mut requests = Vec::new();
         for acme in entries {
+            info!(
+                id = acme.id,
+                provider = acme.provider,
+                identifiers = ?acme.identifiers,
+                "starting acme request"
+            );
             match acme.request().await {
-                Ok(request) => requests.push((request, acme)),
+                Ok(request) => requests.push(request),
                 Err(err) => error!("failed to request challenge: {}", err),
             }
         }
         let challenges = requests
             .iter()
-            .flat_map(
-                |(req, _): &(crate::keyring::acme::AcmeOrder, Arc<AcmeEntry>)| {
-                    req.http_challenges.clone()
-                },
-            )
+            .flat_map(|req| req.http_challenges.clone())
             .collect();
 
         self.http_challenges = challenges;
@@ -270,20 +286,13 @@ impl ServerState {
 
         let command = self.command_sender.clone();
         tokio::task::spawn(async move {
-            for (mut req, mut entry) in requests {
+            for mut req in requests {
                 match req.start_challenge().await {
                     Ok(cert) => {
                         debug!(id = cert.id(), "acme request completed");
                         let _ = command
                             .send(ServerCommand::AddKeyringItem {
                                 item: KeyringItem::ServerCert(Arc::new(cert)),
-                            })
-                            .await;
-                        let entry_mut = Arc::make_mut(&mut entry);
-                        entry_mut.last_updated = SystemTime::now();
-                        let _ = command
-                            .send(ServerCommand::AddKeyringItem {
-                                item: KeyringItem::Acme(entry),
                             })
                             .await;
                     }
