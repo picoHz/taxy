@@ -16,8 +16,8 @@ use warp::filters::body::BodyDeserializeError;
 use warp::{sse::Event, Filter, Rejection, Reply};
 
 mod app_info;
-mod certs;
 mod config;
+mod keyring;
 mod port;
 mod static_file;
 mod swagger;
@@ -101,36 +101,36 @@ pub async fn start_admin(
             .and_then(port::post),
     );
 
-    let api_certs_list = warp::get()
+    let api_keyring_list = warp::get()
         .and(warp::path::end())
-        .and(with_state(app_state.clone()).and_then(certs::list));
+        .and(with_state(app_state.clone()).and_then(keyring::list));
 
-    let api_certs_self_signed = warp::post().and(warp::path("self_signed")).and(
+    let api_keyring_self_signed = warp::post().and(warp::path("self_signed")).and(
         with_state(app_state.clone())
             .and(warp::body::json())
             .and(warp::path::end())
-            .and_then(certs::self_signed),
+            .and_then(keyring::self_signed),
     );
 
-    let api_certs_upload = warp::post().and(warp::path("upload")).and(
+    let api_keyring_upload = warp::post().and(warp::path("upload")).and(
         with_state(app_state.clone())
             .and(warp::multipart::form())
             .and(warp::path::end())
-            .and_then(certs::upload),
+            .and_then(keyring::upload),
     );
 
-    let api_certs_acme = warp::post().and(warp::path("acme")).and(
+    let api_keyring_acme = warp::post().and(warp::path("acme")).and(
         with_state(app_state.clone())
             .and(warp::body::json())
             .and(warp::path::end())
-            .and_then(certs::acme),
+            .and_then(keyring::acme),
     );
 
-    let api_certs_delete = warp::delete().and(
+    let api_keyring_delete = warp::delete().and(
         with_state(app_state.clone())
             .and(warp::path::param())
             .and(warp::path::end())
-            .and_then(certs::delete),
+            .and_then(keyring::delete),
     );
 
     let static_file = warp::get()
@@ -177,12 +177,12 @@ pub async fn start_admin(
             .or(api_ports_post),
     );
 
-    let certs = warp::path("certs").and(
-        api_certs_delete
-            .or(api_certs_self_signed)
-            .or(api_certs_upload)
-            .or(api_certs_acme)
-            .or(api_certs_list),
+    let keyring = warp::path("keyring").and(
+        api_keyring_delete
+            .or(api_keyring_self_signed)
+            .or(api_keyring_upload)
+            .or(api_keyring_acme)
+            .or(api_keyring_list),
     );
 
     let options = warp::options().map(warp::reply);
@@ -206,7 +206,7 @@ pub async fn start_admin(
             .or(app_info)
             .or(config)
             .or(port)
-            .or(certs)
+            .or(keyring)
             .or(api_events)
             .or(api_doc)
             .or(not_found),

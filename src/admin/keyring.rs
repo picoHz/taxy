@@ -13,10 +13,10 @@ use tokio_stream::StreamExt;
 use utoipa::ToSchema;
 use warp::{multipart::FormData, Buf, Rejection, Reply};
 
-/// List all certificates.
+/// List keyring items.
 #[utoipa::path(
     get,
-    path = "/api/certs",
+    path = "/api/keyring",
     responses(
         (status = 200, body = [KeyringInfo])
     )
@@ -29,7 +29,7 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
 /// Generate a self-signed certificate.
 #[utoipa::path(
     post,
-    path = "/api/certs/self_signed",
+    path = "/api/keyring/self_signed",
     request_body = SelfSignedCertRequest,
     responses(
         (status = 200),
@@ -60,7 +60,7 @@ pub struct CertPostBody {
 /// Upload a certificate and key pair.
 #[utoipa::path(
     post,
-    path = "/api/certs/upload",
+    path = "/api/keyring/upload",
     request_body(content = CertPostBody, content_type = "multipart/form-data"),
     responses(
         (status = 200),
@@ -111,7 +111,7 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
 /// Register an ACME configuration.
 #[utoipa::path(
     post,
-    path = "/api/certs/acme",
+    path = "/api/keyring/acme",
     request_body = AcmeRequest,
     responses(
         (status = 200),
@@ -127,10 +127,10 @@ pub async fn acme(state: AppState, request: AcmeRequest) -> Result<impl Reply, R
     Ok(warp::reply::reply())
 }
 
-/// Delete a certificate.
+/// Delete a keyring item.
 #[utoipa::path(
     delete,
-    path = "/api/certs/{id}",
+    path = "/api/keyring/{id}",
     params(
         ("id" = String, Path, description = "Certification ID")
     ),

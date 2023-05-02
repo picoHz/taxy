@@ -1,5 +1,5 @@
 use super::app_info::AppInfo;
-use super::{app_info, certs, certs::CertPostBody, config, port};
+use super::{app_info, config, keyring, keyring::CertPostBody, port};
 use crate::config::port::{BackendServer, PortEntry, PortEntryRequest, PortOptions};
 use crate::config::tls::TlsTermination;
 use crate::config::{AppConfig, Source};
@@ -26,11 +26,11 @@ use warp::{Rejection, Reply};
         port::put,
         config::get,
         config::put,
-        certs::list,
-        certs::delete,
-        certs::self_signed,
-        certs::upload,
-        certs::acme,
+        keyring::list,
+        keyring::delete,
+        keyring::self_signed,
+        keyring::upload,
+        keyring::acme,
         app_info::get,
     ),
     components(schemas(

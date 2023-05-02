@@ -50,7 +50,7 @@ onMounted(async () => {
   const { data: config } = await axious.get(`${endpoint}/config`);
   configStore.update(config);
 
-  const { data: certs } = await axious.get(`${endpoint}/certs`);
+  const { data: certs } = await axious.get(`${endpoint}/keyring`);
   certsStore.update(certs);
 
   const { data } = await axious.get(`${endpoint}/ports`);
