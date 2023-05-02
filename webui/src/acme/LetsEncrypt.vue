@@ -36,6 +36,7 @@ const emit = defineEmits(['update:modelValue']);
 const handleBlur = (event) => {
     emit('update:modelValue', {
         challenge_type: acmeChallange.value,
+        renewal_days: 60,
         identifiers: [
             domain.value
         ],
