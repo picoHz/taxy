@@ -11,6 +11,7 @@ A TCP reverse proxy with a user-friendly WebUI.
 - Intuitive and user-friendly WebUI for easy configuration
 - Live configuration updates without restarting the service
 - Import TLS certificates from GUI or generate a self-signed certificate
+- Let's Encrypt support (ACME v2) for seamless certificate provisioning
 
 ## Web UI Demo
 
