@@ -1,7 +1,7 @@
 use super::{listener::TcpListenerPool, table::ProxyTable};
 use crate::{
     command::ServerCommand,
-    config::{storage::ConfigStorage, Source},
+    config::{storage::ConfigStorage, AppConfig, Source},
     event::ServerEvent,
     keyring::{Keyring, KeyringItem},
     proxy::{PortContext, PortContextKind},
@@ -26,7 +26,8 @@ use tracing::{debug, error, info};
 use warp::http::{Request, Response};
 
 pub struct ServerState {
-    config: ConfigStorage,
+    config: AppConfig,
+    storage: ConfigStorage,
     table: ProxyTable,
     pool: TcpListenerPool,
     certs: Keyring,
@@ -37,27 +38,27 @@ pub struct ServerState {
 
 impl ServerState {
     pub async fn new(
-        config: ConfigStorage,
+        storage: ConfigStorage,
         command_sender: mpsc::Sender<ServerCommand>,
         br_sender: broadcast::Sender<ServerEvent>,
     ) -> Self {
-        let app_config = config.load_app_config().await;
+        let config = storage.load_app_config().await;
         let _ = br_sender.send(ServerEvent::AppConfigUpdated {
-            config: app_config.clone(),
+            config: config.clone(),
             source: Source::File,
         });
 
-        let certs = config.load_keychain().await;
+        let certs = storage.load_keychain().await;
         let _ = br_sender.send(ServerEvent::KeyringUpdated {
             items: certs.list(),
         });
 
         let mut table = ProxyTable::new();
-        let ports = config.load_entries().await;
+        let ports = storage.load_entries().await;
         for entry in ports {
             match PortContext::new(entry) {
                 Ok(mut ctx) => {
-                    if let Err(err) = ctx.prepare(&app_config).await {
+                    if let Err(err) = ctx.prepare(&config).await {
                         error!(?err, "failed to prepare port");
                     }
                     if let Err(err) = ctx.setup(&certs).await {
@@ -73,6 +74,7 @@ impl ServerState {
 
         let mut this = Self {
             config,
+            storage,
             table,
             pool: TcpListenerPool::new(),
             certs,
@@ -82,13 +84,17 @@ impl ServerState {
         };
 
         this.update_port_statuses().await;
-        this.start_http_challenges().await;
         this
+    }
+
+    pub fn config(&self) -> &AppConfig {
+        &self.config
     }
 
     pub async fn handle_command(&mut self, cmd: ServerCommand) {
         match cmd {
             ServerCommand::SetAppConfig { config } => {
+                self.config = config.clone();
                 let _ = self.br_sender.send(ServerEvent::AppConfigUpdated {
                     config,
                     source: Source::Api,
@@ -108,10 +114,10 @@ impl ServerState {
             ServerCommand::AddKeyringItem { item } => {
                 match &item {
                     KeyringItem::Acme(entry) => {
-                        self.config.save_acme(entry).await;
+                        self.storage.save_acme(entry).await;
                     }
                     KeyringItem::ServerCert(cert) => {
-                        self.config.save_cert(cert).await;
+                        self.storage.save_cert(cert).await;
                     }
                 }
                 self.certs.add(item);
@@ -123,10 +129,10 @@ impl ServerState {
             ServerCommand::DeleteKeyringItem { id } => {
                 match self.certs.delete(&id) {
                     Some(KeyringItem::Acme(_)) => {
-                        self.config.delete_acme(&id).await;
+                        self.storage.delete_acme(&id).await;
                     }
                     Some(KeyringItem::ServerCert(_)) => {
-                        self.config.delete_cert(&id).await;
+                        self.storage.delete_cert(&id).await;
                     }
                     _ => (),
                 }
@@ -149,12 +155,12 @@ impl ServerState {
                 source,
             } => {
                 if source != Source::File {
-                    self.config.save_app_config(&app_config).await;
+                    self.storage.save_app_config(&app_config).await;
                 }
             }
             ServerEvent::PortTableUpdated { entries, source } => {
                 if source != Source::File {
-                    self.config.save_entries(&entries).await;
+                    self.storage.save_entries(&entries).await;
                 }
             }
             _ => (),
@@ -230,6 +236,10 @@ impl ServerState {
             }
         }
         None
+    }
+
+    pub async fn run_background_tasks(&mut self) {
+        self.start_http_challenges().await;
     }
 
     async fn start_http_challenges(&mut self) {
