@@ -49,7 +49,7 @@ async fn main() -> anyhow::Result<()> {
     let config_dir = if let Some(dir) = args.config_dir {
         dir
     } else {
-        let dir = ProjectDirs::from("proxy", "taxy", "taxy").ok_or_else(|| {
+        let dir = ProjectDirs::from("", "", "taxy").ok_or_else(|| {
             anyhow::anyhow!("failed to get project directories, try setting --config-dir")
         })?;
         dir.config_dir().to_owned()
