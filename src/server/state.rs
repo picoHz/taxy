@@ -16,7 +16,7 @@ use std::{
     sync::Arc,
     time::{Duration, SystemTime},
 };
-use tokio::io::AsyncBufReadExt;
+use tokio::{io::AsyncBufReadExt, task::JoinHandle};
 use tokio::{
     io::BufStream,
     net::TcpStream,
@@ -84,6 +84,7 @@ impl ServerState {
         };
 
         this.update_port_statuses().await;
+        this.start_http_challenges().await;
         this
     }
 
@@ -239,10 +240,15 @@ impl ServerState {
     }
 
     pub async fn run_background_tasks(&mut self) {
-        self.start_http_challenges().await;
+        let _ = self.start_http_challenges().await.await;
+        for ctx in self.table.contexts_mut() {
+            if let Err(err) = ctx.refresh(&self.certs).await {
+                error!(?err, "failed to refresh port");
+            }
+        }
     }
 
-    async fn start_http_challenges(&mut self) {
+    async fn start_http_challenges(&mut self) -> JoinHandle<()> {
         let entries = self
             .certs
             .iter()
@@ -269,7 +275,7 @@ impl ServerState {
             .collect::<Vec<_>>();
 
         if entries.is_empty() {
-            return;
+            return tokio::task::spawn(async {});
         }
 
         let mut requests = Vec::new();
@@ -312,6 +318,6 @@ impl ServerState {
                 }
             }
             let _ = command.send(ServerCommand::StopHttpChallenges).await;
-        });
+        })
     }
 }

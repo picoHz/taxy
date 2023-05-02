@@ -17,8 +17,11 @@ pub async fn start_server(
 ) -> anyhow::Result<()> {
     let mut event_recv = event.subscribe();
     let mut server = ServerState::new(config, command_send, event).await;
+
     let mut background_task_interval =
         tokio::time::interval(server.config().background_task_interval);
+    background_task_interval.tick().await;
+
     loop {
         tokio::select! {
             cmd = command_recv.recv() => {

@@ -73,4 +73,8 @@ impl TlsTermination {
 
         TlsState::Active
     }
+
+    pub async fn refresh(&mut self, certs: &Keyring) -> TlsState {
+        self.setup(certs).await
+    }
 }
