@@ -57,9 +57,9 @@ export default {
             }
         }
     },
-    certs: {
-        certs: 'Certificates',
-        no_certs: 'No certificates found.',
+    keyring: {
+        keyring: 'Keyring',
+        no_certs: 'No keyring item found.',
         info: {
             san: 'SAN',
             fingerprint: 'Fingerprint',
@@ -68,7 +68,7 @@ export default {
             not_before: 'Not Before',
             not_after: 'Not After',
         },
-        add_cert: "Add Certificate",
+        add_item: "Add",
         self_sign: {
             self_sign: "Self-sign",
             title: "New Self-signed Certificate",

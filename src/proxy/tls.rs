@@ -43,10 +43,10 @@ impl TlsTermination {
         })
     }
 
-    pub async fn setup(&mut self, certs: &Keyring) -> TlsState {
+    pub async fn setup(&mut self, keyring: &Keyring) -> TlsState {
         let server_names = self.server_names.clone();
 
-        let cert = if let Some(cert) = certs.find_server_cert(&server_names) {
+        let cert = if let Some(cert) = keyring.find_server_cert(&server_names) {
             cert
         } else {
             return TlsState::NoValidCertificate;

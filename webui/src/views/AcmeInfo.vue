@@ -18,17 +18,17 @@
     <v-divider></v-divider>
     <v-card-actions class="justify-end">
         <v-btn color="red" @click="deleteDialog = true">
-            {{ $t('certs.delete_acme.delete_acme') }}
+            {{ $t('keyring.delete_acme.delete_acme') }}
         </v-btn>
     </v-card-actions>
     <v-dialog v-model="deleteDialog" width="auto">
-        <v-card :title="$t('certs.delete_acme.delete_acme')">
+        <v-card :title="$t('keyring.delete_acme.delete_acme')">
             <v-card-text>
-                {{ $t('certs.delete_acme.confirm', { id: route.params.id }) }}
+                {{ $t('keyring.delete_acme.confirm', { id: route.params.id }) }}
             </v-card-text>
             <v-card-actions class="justify-end">
-                <v-btn @click="deleteDialog = false">{{ $t('certs.delete_acme.cancel') }}</v-btn>
-                <v-btn color="red" @click="deleteCert">{{ $t('certs.delete_acme.delete') }}</v-btn>
+                <v-btn @click="deleteDialog = false">{{ $t('keyring.delete_acme.cancel') }}</v-btn>
+                <v-btn color="red" @click="deleteCert">{{ $t('keyring.delete_acme.delete') }}</v-btn>
             </v-card-actions>
         </v-card>
     </v-dialog>
@@ -52,7 +52,7 @@ const endpoint = import.meta.env.VITE_API_ENDPOINT;
 async function deleteCert() {
     deleteDialog.value = false;
     try {
-        await axios.delete(`${endpoint}/certs/${route.params.id}`)
+        await axios.delete(`${endpoint}/keyring/${route.params.id}`)
         router.replace({ name: 'Certificate List' })
     } catch (err) {
         let { response: { data } } = err;

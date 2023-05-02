@@ -105,9 +105,9 @@ impl PortContext {
         }
     }
 
-    pub async fn setup(&mut self, certs: &Keyring) -> Result<(), Error> {
+    pub async fn setup(&mut self, keyring: &Keyring) -> Result<(), Error> {
         match &mut self.kind {
-            PortContextKind::Tcp(ctx) => ctx.setup(certs).await,
+            PortContextKind::Tcp(ctx) => ctx.setup(keyring).await,
             PortContextKind::Reserved => Ok(()),
         }
     }

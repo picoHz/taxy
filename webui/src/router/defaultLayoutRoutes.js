@@ -10,8 +10,8 @@ const defaultLayoutRoutes = [
         children: portsRoutes,
     },
     {
-        path: "certs",
-        name: "Certificates",
+        path: "keyring",
+        name: "Keyring",
         component: () => import(/* webpackChunkName: "ports" */ "@/layouts/default/View.vue"),
         children: certsRoutes,
     },

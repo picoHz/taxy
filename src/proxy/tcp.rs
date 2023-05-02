@@ -119,9 +119,9 @@ impl TcpPortContext {
         Ok(())
     }
 
-    pub async fn setup(&mut self, certs: &Keyring) -> Result<(), Error> {
+    pub async fn setup(&mut self, keyring: &Keyring) -> Result<(), Error> {
         if let Some(tls) = &mut self.tls_termination {
-            self.status.state.tls = Some(tls.setup(certs).await);
+            self.status.state.tls = Some(tls.setup(keyring).await);
         }
         Ok(())
     }
