@@ -126,6 +126,13 @@ impl TcpPortContext {
         Ok(())
     }
 
+    pub async fn refresh(&mut self, certs: &Keyring) -> Result<(), Error> {
+        if let Some(tls) = &mut self.tls_termination {
+            self.status.state.tls = Some(tls.refresh(certs).await);
+        }
+        Ok(())
+    }
+
     pub fn apply(&mut self, new: Self) {
         *self = Self {
             round_robin_counter: self.round_robin_counter,

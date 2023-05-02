@@ -112,6 +112,13 @@ impl PortContext {
         }
     }
 
+    pub async fn refresh(&mut self, certs: &Keyring) -> Result<(), Error> {
+        match &mut self.kind {
+            PortContextKind::Tcp(ctx) => ctx.refresh(certs).await,
+            PortContextKind::Reserved => Ok(()),
+        }
+    }
+
     pub fn apply(&mut self, new: Self) {
         match (&mut self.kind, new.kind) {
             (PortContextKind::Tcp(old), PortContextKind::Tcp(new)) => old.apply(new),
