@@ -18,7 +18,7 @@ onMounted(async () => {
   const certsStore = useCertsStore();
 
   const endpoint = import.meta.env.VITE_API_ENDPOINT;
-  eventSource = new EventSource(`${endpoint}/events`);
+  eventSource = new EventSource(`${endpoint}/events?token=${localStorage.getItem('token')}`);
 
   eventSource.onopen = (event) => {
     console.log('EventSource open:', event);

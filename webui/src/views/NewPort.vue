@@ -30,9 +30,17 @@ const error = ref(null);
 async function register(data) {
     loading.value = true;
     try {
-        await axios.post(`${endpoint}/ports`, data)
+        await axios.post(`${endpoint}/ports`, data, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        })
         router.push({ name: 'List' })
     } catch (err) {
+        if (err.response.status === 401) {
+            localStorage.removeItem('token')
+            router.replace({ name: 'Login' })
+        }
         let { response: { data } } = err;
         error.value = data
     }

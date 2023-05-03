@@ -208,8 +208,16 @@ async function submitSelfSignedForm(event) {
   try {
     await axios.post(`${endpoint}/keyring/self_signed`, {
       san: parseTlsServerNames(selfSignedRequest.san)
+    }, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
     })
   } catch (err) {
+    if (err.response.status === 401) {
+      localStorage.removeItem('token')
+      router.replace({ name: 'Login' })
+    }
     let { response: { data } } = err;
     error.value = data
   }
@@ -223,7 +231,11 @@ async function submitAcmeForm(event) {
 
   loading.value = true;
   try {
-    await axios.post(`${endpoint}/keyring/acme`, acmeModel.value)
+    await axios.post(`${endpoint}/keyring/acme`, acmeModel.value, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
   } catch (err) {
     let { response: { data } } = err;
     error.value = data

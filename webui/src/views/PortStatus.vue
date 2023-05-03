@@ -100,7 +100,11 @@ const endpoint = import.meta.env.VITE_API_ENDPOINT;
 async function update(data) {
     loading.value = true;
     try {
-        await axios.put(`${endpoint}/ports/${route.params.id}`, data)
+        await axios.put(`${endpoint}/ports/${route.params.id}`, data, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        })
         snackbar.value = true
     } catch (err) {
         let { response: { data } } = err;
@@ -112,9 +116,17 @@ async function update(data) {
 async function deletePort() {
     deleteDialog.value = false;
     try {
-        await axios.delete(`${endpoint}/ports/${route.params.id}`)
+        await axios.delete(`${endpoint}/ports/${route.params.id}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        })
         router.replace({ name: 'List' })
     } catch (err) {
+        if (err.response.status === 401) {
+            localStorage.removeItem('token')
+            router.replace({ name: 'Login' })
+        }
         let { response: { data } } = err;
         error.value = data
     }

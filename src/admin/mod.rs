@@ -3,7 +3,7 @@ use crate::keyring::KeyringInfo;
 use crate::proxy::PortStatus;
 use crate::{command::ServerCommand, config::port::PortEntry, error::Error, event::ServerEvent};
 use hyper::StatusCode;
-use serde_derive::Serialize;
+use serde_derive::{Serialize, Deserialize};
 use std::collections::{HashMap, HashSet};
 use std::{convert::Infallible, net::SocketAddr, sync::Arc};
 use tokio::sync::broadcast::error::RecvError;
@@ -162,9 +162,10 @@ pub async fn start_admin(
     let mut event_recv = event.subscribe();
 
     let api_events = warp::path("events")
+        .and(with_state(app_state.clone()))
         .and(warp::path::end())
         .and(warp::get())
-        .map(move || {
+        .map(move |_| {
             let event_stream = event_stream.clone();
             warp::sse::reply(
                 warp::sse::keep_alive().stream(
@@ -237,7 +238,7 @@ pub async fn start_admin(
     let api = api
         .with(warp::reply::with::header(
             "Access-Control-Allow-Headers",
-            "content-type",
+            "content-type, authorization",
         ))
         .with(warp::reply::with::header(
             "Access-Control-Allow-Methods",
@@ -302,14 +303,20 @@ impl Data {
     }
 }
 
+#[derive(Deserialize)]
+struct TokenQuery {
+    token: Option<String>,
+}
+
 fn with_state(state: AppState) -> impl Filter<Extract = (AppState,), Error = Rejection> + Clone {
     let data = state.data.clone();
     warp::any()
         .and(
-            warp::header::optional("authorization").and_then(move |header: Option<String>| {
+            warp::header::optional("authorization").and(warp::query::<TokenQuery>())
+                .and_then(move |header: Option<String>, query: TokenQuery| {
                 let data = data.clone();
                 async move {
-                    if let Some(token) = auth::get_auth_token(&header) {
+                    if let Some(token) = auth::get_auth_token(&header).or(query.token.as_ref().map(|t| t.as_str())) {
                         if data.lock().await.auth_tokens.contains(token) {
                             return Ok(());
                         }
