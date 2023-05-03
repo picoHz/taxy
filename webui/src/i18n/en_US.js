@@ -5,6 +5,14 @@ export default {
         failed_to_read_cert: 'Failed to read certificate',
         failed_to_read_private_key: 'Failed to read private key',
     },
+    login: {
+        login: 'Login',
+        username: 'Username',
+        password: 'Password',
+        login_failed: 'Login failed',
+        username_required: 'Username is required',
+        password_required: 'Password is required',
+    },
     ports: {
         ports: 'Ports',
         no_ports: 'No port configurations found.',

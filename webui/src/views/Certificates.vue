@@ -210,6 +210,10 @@ async function submitSelfSignedForm(event) {
       san: parseTlsServerNames(selfSignedRequest.san)
     })
   } catch (err) {
+    if (err.response.status === 401) {
+      localStorage.removeItem('token')
+      router.replace({ name: 'Login' })
+    }
     let { response: { data } } = err;
     error.value = data
   }

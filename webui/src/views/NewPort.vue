@@ -33,6 +33,10 @@ async function register(data) {
         await axios.post(`${endpoint}/ports`, data)
         router.push({ name: 'List' })
     } catch (err) {
+        if (err.response.status === 401) {
+            localStorage.removeItem('token')
+            router.replace({ name: 'Login' })
+        }
         let { response: { data } } = err;
         error.value = data
     }
