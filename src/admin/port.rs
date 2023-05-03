@@ -13,6 +13,12 @@ use warp::{Rejection, Reply};
     path = "/api/ports",
     responses(
         (status = 200, body = [PortEntry])
+    ),
+    responses(
+        (status = 401),
+    ),
+    security(
+        ("authorization"=[])
     )
 )]
 pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
@@ -29,7 +35,11 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
     ),
     responses(
         (status = 200, body = PortStatus),
-        (status = 404)
+        (status = 404),
+        (status = 401),
+    ),
+    security(
+        ("authorization"=[])
     )
 )]
 pub async fn status(state: AppState, id: String) -> Result<impl Reply, Rejection> {
@@ -51,6 +61,10 @@ pub async fn status(state: AppState, id: String) -> Result<impl Reply, Rejection
     responses(
         (status = 200),
         (status = 404),
+        (status = 401),
+    ),
+    security(
+        ("authorization"=[])
     )
 )]
 pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {
@@ -69,6 +83,10 @@ pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection
     responses(
         (status = 200),
         (status = 400, body = Error),
+        (status = 401),
+    ),
+    security(
+        ("authorization"=[])
     )
 )]
 pub async fn post(state: AppState, entry: PortEntryRequest) -> Result<impl Reply, Rejection> {
@@ -91,6 +109,10 @@ pub async fn post(state: AppState, entry: PortEntryRequest) -> Result<impl Reply
         (status = 200),
         (status = 404),
         (status = 400, body = Error),
+        (status = 401),
+    ),
+    security(
+        ("authorization"=[])
     )
 )]
 pub async fn put(

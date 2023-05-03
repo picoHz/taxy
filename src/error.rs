@@ -49,6 +49,12 @@ pub enum Error {
 
     #[error("acme account creation failed")]
     AcmeAccountCreationFailed,
+
+    #[error("unauthorized")]
+    Unauthorized,
+
+    #[error("invalid login credentials")]
+    InvalidLoginCredentials,
 }
 
 impl Reject for Error {}
@@ -57,6 +63,7 @@ impl Error {
     pub fn status_code(&self) -> StatusCode {
         match self {
             Self::CertNotFound { .. } | Self::IdNotFound { .. } => StatusCode::NOT_FOUND,
+            Self::Unauthorized => StatusCode::UNAUTHORIZED,
             _ => StatusCode::BAD_REQUEST,
         }
     }

@@ -1,10 +1,24 @@
 use crate::log::LogFormat;
-use clap::Parser;
+use clap::{Args, Parser, Subcommand};
 use std::{net::SocketAddr, path::PathBuf};
 use tracing_subscriber::filter::LevelFilter;
 
-#[derive(Parser, Debug)]
-pub struct Args {
+#[derive(Parser)]
+pub struct Cli {
+    #[command(subcommand)]
+    pub command: Command,
+}
+
+#[derive(Subcommand)]
+pub enum Command {
+    /// Start server
+    Start(StartArgs),
+    /// Add user
+    AddUser(AddUserArgs),
+}
+
+#[derive(Args)]
+pub struct StartArgs {
     #[clap(long, value_name = "FILE", env = "TAXY_LOG")]
     pub log: Option<PathBuf>,
 
@@ -49,6 +63,17 @@ pub struct Args {
 
     #[clap(long, short, env = "TAXY_NO_WEBUI")]
     pub no_webui: bool,
+
+    #[clap(long, short, value_name = "DIR", env = "TAXY_CONFIG_DIR")]
+    pub config_dir: Option<PathBuf>,
+}
+
+#[derive(Args)]
+pub struct AddUserArgs {
+    pub name: String,
+
+    #[clap(long, short, value_name = "PASSWORD")]
+    pub password: Option<String>,
 
     #[clap(long, short, value_name = "DIR", env = "TAXY_CONFIG_DIR")]
     pub config_dir: Option<PathBuf>,

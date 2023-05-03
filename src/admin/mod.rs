@@ -1,10 +1,10 @@
-use crate::config::AppConfig;
+use crate::config::{AppConfig, AppInfo};
 use crate::keyring::KeyringInfo;
 use crate::proxy::PortStatus;
 use crate::{command::ServerCommand, config::port::PortEntry, error::Error, event::ServerEvent};
 use hyper::StatusCode;
 use serde_derive::Serialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::{convert::Infallible, net::SocketAddr, sync::Arc};
 use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::{broadcast, mpsc, Mutex};
@@ -16,6 +16,7 @@ use warp::filters::body::BodyDeserializeError;
 use warp::{sse::Event, Filter, Rejection, Reply};
 
 mod app_info;
+mod auth;
 mod config;
 mod keyring;
 mod port;
@@ -23,11 +24,12 @@ mod static_file;
 mod swagger;
 
 pub async fn start_admin(
+    app_info: AppInfo,
     addr: SocketAddr,
     command: mpsc::Sender<ServerCommand>,
     event: broadcast::Sender<ServerEvent>,
 ) -> anyhow::Result<()> {
-    let data = Arc::new(Mutex::new(Data::default()));
+    let data = Arc::new(Mutex::new(Data::new(app_info)));
     let app_state = AppState {
         sender: command,
         data: data.clone(),
@@ -133,6 +135,21 @@ pub async fn start_admin(
             .and_then(keyring::delete),
     );
 
+    let app_state_clone = app_state.clone();
+    let api_auth_login = warp::post()
+        .and(warp::path("login"))
+        .map(move || app_state_clone.clone())
+        .and(warp::body::json())
+        .and(warp::path::end())
+        .and_then(auth::login);
+
+    let api_auth_logout = warp::get().and(warp::path("logout")).and(
+        with_state(app_state.clone())
+            .and(warp::header::optional("authorization"))
+            .and(warp::path::end())
+            .and_then(auth::logout),
+    );
+
     let static_file = warp::get()
         .and(warp::path::full())
         .and_then(static_file::get);
@@ -162,10 +179,11 @@ pub async fn start_admin(
             )
         });
 
-    let app_info = warp::path("app_info")
-        .and(warp::get())
-        .and(warp::path::end())
-        .and_then(app_info::get);
+    let app_info = warp::path("app_info").and(warp::get()).and(
+        with_state(app_state.clone())
+            .and(warp::path::end())
+            .and_then(app_info::get),
+    );
 
     let config = warp::path("config").and(api_config_get.or(api_config_put));
 
@@ -184,6 +202,8 @@ pub async fn start_admin(
             .or(api_keyring_acme)
             .or(api_keyring_list),
     );
+
+    let auth = api_auth_login.or(api_auth_logout);
 
     let options = warp::options().map(warp::reply);
     let not_found = warp::get().and_then(handle_not_found);
@@ -208,6 +228,7 @@ pub async fn start_admin(
             .or(port)
             .or(keyring)
             .or(api_events)
+            .or(auth)
             .or(api_doc)
             .or(not_found),
     );
@@ -259,18 +280,45 @@ pub struct AppState {
     data: Arc<Mutex<Data>>,
 }
 
-#[derive(Default)]
 struct Data {
-    config: AppConfig,
-    entries: Vec<PortEntry>,
-    status: HashMap<String, PortStatus>,
-    keyring_items: Vec<KeyringInfo>,
+    pub app_info: AppInfo,
+    pub config: AppConfig,
+    pub entries: Vec<PortEntry>,
+    pub status: HashMap<String, PortStatus>,
+    pub keyring_items: Vec<KeyringInfo>,
+    pub auth_tokens: HashSet<String>,
 }
 
-fn with_state(
-    state: AppState,
-) -> impl Filter<Extract = (AppState,), Error = std::convert::Infallible> + Clone {
-    warp::any().map(move || state.clone())
+impl Data {
+    fn new(app_info: AppInfo) -> Self {
+        Self {
+            app_info,
+            config: AppConfig::default(),
+            entries: Vec::new(),
+            status: HashMap::new(),
+            keyring_items: Vec::new(),
+            auth_tokens: HashSet::new(),
+        }
+    }
+}
+
+fn with_state(state: AppState) -> impl Filter<Extract = (AppState,), Error = Rejection> + Clone {
+    let data = state.data.clone();
+    warp::any()
+        .and(
+            warp::header::optional("authorization").and_then(move |header: Option<String>| {
+                let data = data.clone();
+                async move {
+                    if let Some(token) = auth::get_auth_token(&header) {
+                        if data.lock().await.auth_tokens.contains(token) {
+                            return Ok(());
+                        }
+                    }
+                    Err(warp::reject::custom(Error::Unauthorized))
+                }
+            }),
+        )
+        .map(move |_| state.clone())
 }
 
 struct EventStream {

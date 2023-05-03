@@ -7,7 +7,11 @@ use warp::{Rejection, Reply};
     get,
     path = "/api/config",
     responses(
-        (status = 200, body = AppConfig)
+        (status = 200, body = AppConfig),
+        (status = 401),
+    ),
+    security(
+        ("authorization"=[])
     )
 )]
 pub async fn get(state: AppState) -> Result<impl Reply, Rejection> {
@@ -23,6 +27,10 @@ pub async fn get(state: AppState) -> Result<impl Reply, Rejection> {
     responses(
         (status = 200),
         (status = 400, body = Error),
+        (status = 401),
+    ),
+    security(
+        ("authorization"=[])
     )
 )]
 pub async fn put(state: AppState, config: AppConfig) -> Result<impl Reply, Rejection> {
