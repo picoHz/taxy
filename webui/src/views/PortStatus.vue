@@ -115,6 +115,10 @@ async function deletePort() {
         await axios.delete(`${endpoint}/ports/${route.params.id}`)
         router.replace({ name: 'List' })
     } catch (err) {
+        if (err.response.status === 401) {
+            localStorage.removeItem('token')
+            router.replace({ name: 'Login' })
+        }
         let { response: { data } } = err;
         error.value = data
     }

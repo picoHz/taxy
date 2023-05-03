@@ -7,7 +7,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { usePortsStore } from '@/stores/ports';
 import { useConfigStore } from '@/stores/config';
 import { useCertsStore } from '@/stores/certs';
-import axious from 'axios';
+import axios from 'axios';
 
 const message = ref('');
 let eventSource = null;
@@ -18,7 +18,7 @@ onMounted(async () => {
   const certsStore = useCertsStore();
 
   const endpoint = import.meta.env.VITE_API_ENDPOINT;
-  eventSource = new EventSource(`${endpoint}/events`);
+  eventSource = new EventSource(`${endpoint}/events?token=${localStorage.getItem('token')}`);
 
   eventSource.onopen = (event) => {
     console.log('EventSource open:', event);
@@ -47,17 +47,17 @@ onMounted(async () => {
     console.error('EventSource error:', error);
   };
 
-  const { data: config } = await axious.get(`${endpoint}/config`);
+  const { data: config } = await axios.get(`${endpoint}/config`);
   configStore.update(config);
 
-  const { data: certs } = await axious.get(`${endpoint}/keyring`);
+  const { data: certs } = await axios.get(`${endpoint}/keyring`);
   certsStore.update(certs);
 
-  const { data } = await axious.get(`${endpoint}/ports`);
+  const { data } = await axios.get(`${endpoint}/ports`);
   portsStore.updateTable(data);
 
   for (const port of data) {
-    axious.get(`${endpoint}/ports/${port.id}/status`).then(({ data }) => {
+    axios.get(`${endpoint}/ports/${port.id}/status`).then(({ data }) => {
       portsStore.updateStatus(port.id, data);
     });
   }
