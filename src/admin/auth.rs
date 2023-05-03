@@ -1,9 +1,14 @@
-use crate::error::Error;
-
 use super::AppState;
+use crate::error::Error;
 use serde::{Deserialize, Serialize};
+use std::{
+    collections::HashMap,
+    time::{Duration, Instant},
+};
 use utoipa::ToSchema;
 use warp::{Rejection, Reply};
+
+const MINIMUM_SESSION_EXPIRY: Duration = Duration::from_secs(60 * 5); // 5 minutes
 
 /// Login.
 #[utoipa::path(
@@ -18,9 +23,9 @@ use warp::{Rejection, Reply};
 pub async fn login(state: AppState, req: LoginRequest) -> Result<impl Reply, Rejection> {
     let mut data = state.data.lock().await;
     if crate::auth::verify_account(&data.app_info.config_path, &req.user, &req.password).await {
-        let token = cuid2::cuid();
-        data.auth_tokens.insert(token.clone());
-        Ok(warp::reply::json(&LoginResult { token }))
+        Ok(warp::reply::json(&LoginResult {
+            token: data.sessions.new_token(),
+        }))
     } else {
         Err(warp::reject::custom(Error::InvalidLoginCredentials))
     }
@@ -40,7 +45,7 @@ pub async fn login(state: AppState, req: LoginRequest) -> Result<impl Reply, Rej
 )]
 pub async fn logout(state: AppState, header: Option<String>) -> Result<impl Reply, Rejection> {
     if let Some(token) = get_auth_token(&header) {
-        state.data.lock().await.auth_tokens.remove(token);
+        state.data.lock().await.sessions.remove(token);
     }
     Ok(warp::reply::reply())
 }
@@ -69,4 +74,31 @@ pub struct LoginRequest {
 pub struct LoginResult {
     #[schema(example = "nidhmyh9c7txiyqe53ttsxyq")]
     pub token: String,
+}
+
+#[derive(Default)]
+pub struct SessionStore {
+    tokens: HashMap<String, Instant>,
+}
+
+impl SessionStore {
+    pub fn new_token(&mut self) -> String {
+        let token = cuid2::cuid();
+        self.tokens.insert(token.clone(), Instant::now());
+        token
+    }
+
+    pub fn verify(&mut self, token: &str, expiry: Duration) -> bool {
+        let expiry = expiry.max(MINIMUM_SESSION_EXPIRY);
+        self.tokens = self
+            .tokens
+            .drain()
+            .filter(|(_, t)| t.elapsed() < expiry)
+            .collect();
+        self.tokens.contains_key(token)
+    }
+
+    pub fn remove(&mut self, token: &str) {
+        self.tokens.remove(token);
+    }
 }
