@@ -18,7 +18,11 @@ use warp::{multipart::FormData, Buf, Rejection, Reply};
     get,
     path = "/api/keyring",
     responses(
-        (status = 200, body = [KeyringInfo])
+        (status = 200, body = [KeyringInfo]),
+        (status = 401),
+    ),
+    security(
+        ("authorization"=[])
     )
 )]
 pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
@@ -34,6 +38,10 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
     responses(
         (status = 200),
         (status = 400, body = Error),
+        (status = 401),
+    ),
+    security(
+        ("authorization"=[])
     )
 )]
 pub async fn self_signed(
@@ -65,7 +73,11 @@ pub struct CertPostBody {
     responses(
         (status = 200),
         (status = 400, body = Error),
+        (status = 401),
     ),
+    security(
+        ("authorization"=[])
+    )
 )]
 pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, Rejection> {
     let mut chain = Vec::new();
@@ -116,6 +128,10 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
     responses(
         (status = 200),
         (status = 400, body = Error),
+        (status = 401),
+    ),
+    security(
+        ("authorization"=[])
     )
 )]
 pub async fn acme(state: AppState, request: AcmeRequest) -> Result<impl Reply, Rejection> {
@@ -137,6 +153,10 @@ pub async fn acme(state: AppState, request: AcmeRequest) -> Result<impl Reply, R
     responses(
         (status = 200),
         (status = 404),
+        (status = 401),
+    ),
+    security(
+        ("authorization"=[])
     )
 )]
 pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {

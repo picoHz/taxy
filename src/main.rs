@@ -1,9 +1,13 @@
 #![forbid(unsafe_code)]
 
+use crate::args::Command;
 use crate::config::storage::ConfigStorage;
+use crate::config::AppInfo;
+use args::StartArgs;
 use clap::Parser;
 use directories::ProjectDirs;
 use std::fs;
+use std::path::PathBuf;
 use tokio::sync::{broadcast, mpsc};
 use tracing::{error, info};
 use tracing_subscriber::filter::{self, FilterExt};
@@ -11,6 +15,7 @@ use tracing_subscriber::prelude::*;
 
 mod admin;
 mod args;
+mod auth;
 mod command;
 mod config;
 mod error;
@@ -22,8 +27,17 @@ mod server;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let args = args::Args::parse();
+    let args = args::Cli::parse();
 
+    match args.command {
+        Command::Start(args) => start(args).await?,
+        Command::AddUser(args) => add_user(args).await?,
+    }
+
+    Ok(())
+}
+
+async fn start(args: StartArgs) -> anyhow::Result<()> {
     if let Some(path) = args.log.as_ref().and_then(|path| path.parent()) {
         fs::create_dir_all(path)?;
     }
@@ -46,16 +60,9 @@ async fn main() -> anyhow::Result<()> {
         .with(access_log.with_filter(access_log_filter))
         .init();
 
-    let config_dir = if let Some(dir) = args.config_dir {
-        dir
-    } else {
-        let dir = ProjectDirs::from("", "", "taxy").ok_or_else(|| {
-            anyhow::anyhow!("failed to get project directories, try setting --config-dir")
-        })?;
-        dir.config_dir().to_owned()
-    };
-
+    let config_dir = get_config_dir(args.config_dir)?;
     fs::create_dir_all(&config_dir)?;
+
     let config = ConfigStorage::new(&config_dir);
 
     let (event_send, _) = broadcast::channel(16);
@@ -67,9 +74,11 @@ async fn main() -> anyhow::Result<()> {
         event_send.clone(),
     ));
 
+    let app_info = AppInfo::new(&config_dir);
+
     let webui_enabled = !args.no_webui;
     tokio::select! {
-        r = admin::start_admin(args.webui, command_send, event_send.clone()), if webui_enabled => {
+        r = admin::start_admin(app_info, args.webui, command_send, event_send.clone()), if webui_enabled => {
             if let Err(err) = r {
                 error!("admin error: {}", err);
             }
@@ -83,4 +92,26 @@ async fn main() -> anyhow::Result<()> {
     server_task.await??;
 
     Ok(())
+}
+
+async fn add_user(args: args::AddUserArgs) -> anyhow::Result<()> {
+    let config_dir = get_config_dir(args.config_dir)?;
+    let password = if let Some(password) = args.password {
+        password
+    } else {
+        rpassword::prompt_password("password?: ")?
+    };
+    auth::add_account(&config_dir, &args.name, &password).await?;
+    Ok(())
+}
+
+fn get_config_dir(dir: Option<PathBuf>) -> anyhow::Result<PathBuf> {
+    if let Some(dir) = dir {
+        Ok(dir)
+    } else {
+        let dir = ProjectDirs::from("", "", "taxy").ok_or_else(|| {
+            anyhow::anyhow!("failed to get project directories, try setting --config-dir")
+        })?;
+        Ok(dir.config_dir().to_owned())
+    }
 }

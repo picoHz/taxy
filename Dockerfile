@@ -48,5 +48,8 @@ WORKDIR /app
 # Copy the Rust binary from the builder stage
 COPY --from=builder /usr/src/app/target/release/taxy .
 
+# Add admin user
+RUN ./taxy add-user admin -p admin
+
 # Set the entrypoint to run the Rust binary
-ENTRYPOINT ["./taxy", "--webui", "0.0.0.0:8080"]
+ENTRYPOINT ["./taxy", "start", "--webui", "0.0.0.0:8080"]
