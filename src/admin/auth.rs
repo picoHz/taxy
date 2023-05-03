@@ -22,7 +22,7 @@ const MINIMUM_SESSION_EXPIRY: Duration = Duration::from_secs(60 * 5); // 5 minut
 )]
 pub async fn login(state: AppState, req: LoginRequest) -> Result<impl Reply, Rejection> {
     let mut data = state.data.lock().await;
-    if crate::auth::verify_account(&data.app_info.config_path, &req.user, &req.password).await {
+    if crate::auth::verify_account(&data.app_info.config_path, &req.username, &req.password).await {
         Ok(warp::reply::json(&LoginResult {
             token: data.sessions.new_token(),
         }))
@@ -65,7 +65,7 @@ pub fn get_auth_token(header: &Option<String>) -> Option<&str> {
 #[derive(Deserialize, ToSchema)]
 pub struct LoginRequest {
     #[schema(example = "admin")]
-    pub user: String,
+    pub username: String,
     #[schema(example = "passw0rd")]
     pub password: String,
 }

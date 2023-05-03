@@ -9,7 +9,7 @@
           <v-alert v-if="error" color="error" icon="$error" :text="$t('login.login_failed')"></v-alert>
           <v-card-text>
             <v-form validate-on="submit" @submit.prevent="submit">
-              <v-text-field variant="filled" v-model="userName" :rules="nameRules"
+              <v-text-field variant="filled" v-model="username" :rules="nameRules"
                 :label="$t('login.username')"></v-text-field>
               <v-text-field variant="filled" type="password" v-model="password" :rules="passwordRules"
                 :label="$t('login.password')"></v-text-field>
@@ -31,7 +31,7 @@ import axios from 'axios';
 const { t } = useI18n({ useScope: 'global' })
 
 const router = useRouter();
-const userName = ref("");
+const username = ref("");
 const password = ref("");
 const loading = ref(false);
 const error = ref(null);
@@ -43,7 +43,7 @@ async function submit(event) {
   if (valid) {
     loading.value = true;
     try {
-      const { data } = await axios.post(`${endpoint}/login`, { user: userName.value, password: password.value })
+      const { data } = await axios.post(`${endpoint}/login`, { username: username.value, password: password.value })
       localStorage.setItem('token', data.token)
       router.push({ name: 'List' })
     } catch (err) {
