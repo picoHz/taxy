@@ -15,10 +15,18 @@ pub struct AppConfig {
     #[serde(with = "humantime_serde", default = "default_background_task_interval")]
     #[schema(value_type = String, example = "1h")]
     pub background_task_interval: Duration,
+
+    #[serde(with = "humantime_serde", default = "default_admin_session_expiry")]
+    #[schema(value_type = String, example = "1d")]
+    pub admin_session_expiry: Duration,
 }
 
 fn default_background_task_interval() -> Duration {
     Duration::from_secs(60 * 60)
+}
+
+fn default_admin_session_expiry() -> Duration {
+    Duration::from_secs(60 * 60 * 24)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]

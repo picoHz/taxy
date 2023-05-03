@@ -3,8 +3,8 @@ use crate::keyring::KeyringInfo;
 use crate::proxy::PortStatus;
 use crate::{command::ServerCommand, config::port::PortEntry, error::Error, event::ServerEvent};
 use hyper::StatusCode;
-use serde_derive::{Serialize, Deserialize};
-use std::collections::{HashMap, HashSet};
+use serde_derive::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::{convert::Infallible, net::SocketAddr, sync::Arc};
 use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::{broadcast, mpsc, Mutex};
@@ -14,6 +14,8 @@ use utoipa::OpenApi;
 use utoipa_swagger_ui::Config;
 use warp::filters::body::BodyDeserializeError;
 use warp::{sse::Event, Filter, Rejection, Reply};
+
+use self::auth::SessionStore;
 
 mod app_info;
 mod auth;
@@ -287,7 +289,7 @@ struct Data {
     pub entries: Vec<PortEntry>,
     pub status: HashMap<String, PortStatus>,
     pub keyring_items: Vec<KeyringInfo>,
-    pub auth_tokens: HashSet<String>,
+    pub sessions: SessionStore,
 }
 
 impl Data {
@@ -298,7 +300,7 @@ impl Data {
             entries: Vec::new(),
             status: HashMap::new(),
             keyring_items: Vec::new(),
-            auth_tokens: HashSet::new(),
+            sessions: Default::default(),
         }
     }
 }
@@ -312,18 +314,23 @@ fn with_state(state: AppState) -> impl Filter<Extract = (AppState,), Error = Rej
     let data = state.data.clone();
     warp::any()
         .and(
-            warp::header::optional("authorization").and(warp::query::<TokenQuery>())
+            warp::header::optional("authorization")
+                .and(warp::query::<TokenQuery>())
                 .and_then(move |header: Option<String>, query: TokenQuery| {
-                let data = data.clone();
-                async move {
-                    if let Some(token) = auth::get_auth_token(&header).or(query.token.as_ref().map(|t| t.as_str())) {
-                        if data.lock().await.auth_tokens.contains(token) {
-                            return Ok(());
+                    let data = data.clone();
+                    async move {
+                        if let Some(token) =
+                            auth::get_auth_token(&header).or(query.token.as_deref())
+                        {
+                            let mut data = data.lock().await;
+                            let expiry = data.config.admin_session_expiry;
+                            if data.sessions.verify(token, expiry) {
+                                return Ok(());
+                            }
                         }
+                        Err(warp::reject::custom(Error::Unauthorized))
                     }
-                    Err(warp::reject::custom(Error::Unauthorized))
-                }
-            }),
+                }),
         )
         .map(move |_| state.clone())
 }
