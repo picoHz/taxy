@@ -15,7 +15,7 @@ A TCP reverse proxy with a user-friendly WebUI.
 
 ## Web UI Demo
 
-Visit https://taxy.onrender.com/.
+Visit https://taxy.onrender.com/. (username: `admin`, password: `admin`)
 
 You can access the REST API documentation on https://taxy.onrender.com/swagger-ui.
 
