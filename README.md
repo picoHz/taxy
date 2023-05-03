@@ -33,6 +33,13 @@ Install "Taxy" using Cargo:
 
 ```bash
 cargo install taxy
+
+# Create admin user
+taxy add-user admin
+password?: ******
+
+# Start server
+taxy start
 ```
 
 ### From git
