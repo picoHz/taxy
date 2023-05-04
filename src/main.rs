@@ -60,7 +60,7 @@ async fn start(args: StartArgs) -> anyhow::Result<()> {
         args.log_format,
     );
 
-    let dynamic = DynamicFileLayer::new();
+    let dynamic = DynamicFileLayer::new(&log_dir.join("log.db")).await;
 
     let access_log_filter =
         filter::filter_fn(|metadata| metadata.target().starts_with("taxy::access_log"));

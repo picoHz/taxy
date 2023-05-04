@@ -1,8 +1,10 @@
 use clap::ValueEnum;
-use std::path::PathBuf;
+use sqlx::Executor;
+use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
+use std::path::{Path, PathBuf};
 use tracing::{
     field::{Field, Visit},
-    Event, Level,
+    Event,
 };
 use tracing::{span, Subscriber};
 use tracing_appender::non_blocking::WorkerGuard;
@@ -77,16 +79,35 @@ where
     }
 }
 
-use std::collections::HashMap;
-use std::sync::Mutex;
-use tracing_appender::rolling::{RollingFileAppender, Rotation};
-use tracing_subscriber::fmt::format::{DefaultFields, Format};
-use tracing_subscriber::fmt::MakeWriter;
+use tracing_subscriber::fmt::format::DefaultFields;
 
 pub struct DynamicFileLayer {}
 
 impl DynamicFileLayer {
-    pub fn new() -> Self {
+    pub async fn new(path: &Path) -> Self {
+        let opt = SqliteConnectOptions::new()
+            .filename(path)
+            .create_if_missing(true);
+        let mut conn = SqlitePool::connect_with(opt)
+            .await
+            .unwrap()
+            .acquire()
+            .await
+            .unwrap();
+
+        // Insert the task, then obtain the ID of this row
+
+        conn.execute(sqlx::query(
+            "CREATE TABLE IF NOT EXISTS todos
+        (
+            id          INTEGER PRIMARY KEY NOT NULL,
+            description TEXT                NOT NULL,
+            done        BOOLEAN             NOT NULL DEFAULT 0
+        );",
+        ))
+        .await
+        .unwrap();
+
         DynamicFileLayer {}
     }
 }
