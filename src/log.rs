@@ -1,6 +1,7 @@
 use clap::ValueEnum;
 use sqlx::Executor;
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
+use std::io::{self, Cursor};
 use std::path::{Path, PathBuf};
 use tracing::{
     field::{Field, Visit},
@@ -10,6 +11,7 @@ use tracing::{span, Subscriber};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::fmt;
+use tracing_subscriber::fmt::format::JsonVisitor;
 use tracing_subscriber::fmt::writer::MakeWriterExt;
 use tracing_subscriber::layer;
 use tracing_subscriber::layer::{Context, Layer};
@@ -95,7 +97,21 @@ impl DynamicFileLayer {
             .await
             .unwrap();
 
-        // Insert the task, then obtain the ID of this row
+        {
+            let opt = SqliteConnectOptions::new()
+                .filename(path)
+                .create_if_missing(true);
+            let pool = SqlitePool::connect_with(opt).await.unwrap();
+            let mut conn = pool.acquire().await.unwrap();
+
+            tokio::spawn(async move {
+                conn.execute(
+                    sqlx::query("INSERT INTO todos (description) VALUES($1);").bind(cuid2::cuid()),
+                )
+                .await
+                .unwrap();
+            });
+        }
 
         conn.execute(sqlx::query(
             "CREATE TABLE IF NOT EXISTS todos
@@ -123,6 +139,14 @@ where
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<'_, S>) {
         let metadata = event.metadata();
+
+        let mut buf = String::new();
+        {
+            let mut visitor = JsonVisitor::new(&mut buf);
+            event.record(&mut visitor);
+        }
+
+        println!("buf: {:?}", buf);
 
         let mut visitor = KeyValueVisitor::new("remote");
         event.record(&mut visitor);
