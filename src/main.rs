@@ -38,16 +38,22 @@ async fn main() -> anyhow::Result<()> {
 }
 
 async fn start(args: StartArgs) -> anyhow::Result<()> {
-    if let Some(path) = args.log.as_ref().and_then(|path| path.parent()) {
-        fs::create_dir_all(path)?;
-    }
-    if let Some(path) = args.access_log.as_ref().and_then(|path| path.parent()) {
+    let log_dir = get_log_dir(args.log_dir)?;
+    fs::create_dir_all(&log_dir)?;
+
+    let log = args.log.as_ref().map(|path| log_dir.join(path));
+    if let Some(path) = log.as_ref().and_then(|path| path.parent()) {
         fs::create_dir_all(path)?;
     }
 
-    let (log, _guard) = log::create_layer(args.log, "taxy.log", args.log_level, args.log_format);
+    let access_log = args.access_log.as_ref().map(|path| log_dir.join(path));
+    if let Some(path) = access_log.as_ref().and_then(|path| path.parent()) {
+        fs::create_dir_all(path)?;
+    }
+
+    let (log, _guard) = log::create_layer(log, "taxy.log", args.log_level, args.log_format);
     let (access_log, _guard) = log::create_layer(
-        args.access_log,
+        access_log,
         "access.log",
         args.access_log_level,
         args.log_format,
@@ -113,5 +119,16 @@ fn get_config_dir(dir: Option<PathBuf>) -> anyhow::Result<PathBuf> {
             anyhow::anyhow!("failed to get project directories, try setting --config-dir")
         })?;
         Ok(dir.config_dir().to_owned())
+    }
+}
+
+fn get_log_dir(dir: Option<PathBuf>) -> anyhow::Result<PathBuf> {
+    if let Some(dir) = dir {
+        Ok(dir)
+    } else {
+        let dir = ProjectDirs::from("", "", "taxy").ok_or_else(|| {
+            anyhow::anyhow!("failed to get project directories, try setting --log-dir")
+        })?;
+        Ok(dir.data_dir().join("logs"))
     }
 }
