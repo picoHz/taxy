@@ -21,7 +21,7 @@ mod app_info;
 mod auth;
 mod config;
 mod keyring;
-mod port;
+mod ports;
 mod static_file;
 mod swagger;
 
@@ -74,20 +74,20 @@ pub async fn start_admin(
 
     let api_ports_list = warp::get()
         .and(warp::path::end())
-        .and(with_state(app_state.clone()).and_then(port::list));
+        .and(with_state(app_state.clone()).and_then(ports::list));
 
     let api_ports_status = warp::get()
         .and(with_state(app_state.clone()))
         .and(warp::path::param())
         .and(warp::path("status"))
         .and(warp::path::end())
-        .and_then(port::status);
+        .and_then(ports::status);
 
     let api_ports_delete = warp::delete().and(
         with_state(app_state.clone())
             .and(warp::path::param())
             .and(warp::path::end())
-            .and_then(port::delete),
+            .and_then(ports::delete),
     );
 
     let api_ports_put = warp::put().and(
@@ -95,14 +95,14 @@ pub async fn start_admin(
             .and(warp::body::json())
             .and(warp::path::param())
             .and(warp::path::end())
-            .and_then(port::put),
+            .and_then(ports::put),
     );
 
     let api_ports_post = warp::post().and(
         with_state(app_state.clone())
             .and(warp::body::json())
             .and(warp::path::end())
-            .and_then(port::post),
+            .and_then(ports::post),
     );
 
     let api_keyring_list = warp::get()

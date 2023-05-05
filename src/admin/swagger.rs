@@ -1,5 +1,5 @@
 use super::auth::{LoginRequest, LoginResult};
-use super::{app_info, auth, config, keyring, keyring::CertPostBody, port};
+use super::{app_info, auth, config, keyring, keyring::CertPostBody, ports};
 use crate::config::port::{BackendServer, PortEntry, PortEntryRequest, PortOptions};
 use crate::config::tls::TlsTermination;
 use crate::config::{AppConfig, AppInfo, Source};
@@ -22,11 +22,11 @@ use warp::{Rejection, Reply};
     paths(
         auth::login,
         auth::logout,
-        port::list,
-        port::status,
-        port::delete,
-        port::post,
-        port::put,
+        ports::list,
+        ports::status,
+        ports::delete,
+        ports::post,
+        ports::put,
         config::get,
         config::put,
         keyring::list,
