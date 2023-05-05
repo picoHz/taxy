@@ -31,9 +31,11 @@ pub struct TcpPortContext {
 
 impl TcpPortContext {
     pub fn new(port: &PortEntry) -> Result<Self, Error> {
-        let span = span!(Level::INFO, "proxy", listen = ?port.listen);
+        let span = span!(Level::INFO, "proxy", resource_id = port.id, listen = ?port.listen);
         let enter = span.clone();
         let _enter = enter.enter();
+
+        info!("initializing tcp proxy");
 
         let listen = multiaddr_to_tcp(&port.listen)?;
 

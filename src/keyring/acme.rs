@@ -13,7 +13,7 @@ use std::{
     fmt,
     time::{Duration, SystemTime},
 };
-use tracing::error;
+use tracing::{error, info};
 use utoipa::ToSchema;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, ToSchema)]
@@ -193,6 +193,8 @@ pub struct AcmeOrder {
 
 impl AcmeOrder {
     pub async fn new(entry: &AcmeEntry) -> anyhow::Result<Self> {
+        info!("requesting certificate");
+
         let identifiers = entry
             .identifiers
             .iter()

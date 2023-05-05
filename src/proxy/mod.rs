@@ -64,8 +64,8 @@ pub enum PortContextEvent {
 
 #[derive(Debug)]
 pub struct PortContext {
-    entry: PortEntry,
-    kind: PortContextKind,
+    pub entry: PortEntry,
+    pub kind: PortContextKind,
 }
 
 impl PortContext {

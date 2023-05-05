@@ -18,6 +18,7 @@ argon2 = "0.5.0"
 backoff = { version = "0.4.0", features = ["tokio"] }
 clap = { version = "4.2.2", features = ["derive", "env"] }
 cuid2 = "0.1.0"
+dashmap = "5.4.0"
 directories = "5.0.0"
 futures = "0.3.28"
 globwalk = "0.8.1"
@@ -43,6 +44,7 @@ serde_derive = "1.0.160"
 serde_json = "1.0.96"
 serde_qs = "0.12.0"
 sha2 = "0.10.6"
+sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "sqlite", "time"] }
 thiserror = "1.0.40"
 time = { version = "0.3.20", features = ["serde"] }
 tokio = { version = "1.27.0", features = ["macros", "rt-multi-thread", "net", "signal", "io-util"] }

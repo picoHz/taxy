@@ -7,7 +7,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use tokio::net::{TcpListener, TcpStream};
-use tracing::{error, info};
+use tracing::{error, info, span, Instrument, Level};
 
 static RESERVED_ADDR: Lazy<SocketAddr> =
     Lazy::new(|| SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 80));
@@ -79,6 +79,7 @@ impl TcpListenerPool {
             .chain(reserved_ports.iter_mut())
             .enumerate()
         {
+            let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
             let bind = match ctx.kind() {
                 PortContextKind::Tcp(state) => state.listen,
                 _ => *RESERVED_ADDR,
@@ -86,8 +87,10 @@ impl TcpListenerPool {
             let (listener, state) = if let Some(listener) = listeners.remove(&bind) {
                 (Some(listener), SocketState::Listening)
             } else {
-                info!(%bind, "listening on tcp port");
-                match TcpListener::bind(bind).await {
+                span.in_scope(|| {
+                    info!(%bind, "listening on tcp port");
+                });
+                match TcpListener::bind(bind).instrument(span.clone()).await {
                     Ok(sock) => (
                         Some(TcpListenerStream {
                             index: 0,
@@ -95,9 +98,10 @@ impl TcpListenerPool {
                         }),
                         SocketState::Listening,
                     ),
-                    Err(error) => {
-                        error!(%bind, %error, "failed to listen on tcp port");
-                        let error = match error.kind() {
+                    Err(err) => {
+                        let _enter = span.enter();
+                        error!(%bind, %err, "failed to listen on tcp port");
+                        let error = match err.kind() {
                             io::ErrorKind::AddrInUse => SocketState::PortAlreadyInUse,
                             io::ErrorKind::PermissionDenied => SocketState::PermissionDenied,
                             io::ErrorKind::AddrNotAvailable => SocketState::AddressNotAvailable,
