@@ -1,8 +1,8 @@
 use clap::ValueEnum;
-use sqlx::Executor;
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
-use std::io::{self, Cursor};
 use std::path::{Path, PathBuf};
+use time::OffsetDateTime;
+use tokio::runtime::Handle;
 use tracing::{
     field::{Field, Visit},
     Event,
@@ -11,7 +11,6 @@ use tracing::{span, Subscriber};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::fmt;
-use tracing_subscriber::fmt::format::JsonVisitor;
 use tracing_subscriber::fmt::writer::MakeWriterExt;
 use tracing_subscriber::layer;
 use tracing_subscriber::layer::{Context, Layer};
@@ -81,54 +80,37 @@ where
     }
 }
 
-use tracing_subscriber::fmt::format::DefaultFields;
+pub struct DatabaseLayer {
+    pool: SqlitePool,
+    handle: Handle,
+}
 
-pub struct DynamicFileLayer {}
-
-impl DynamicFileLayer {
-    pub async fn new(path: &Path) -> Self {
+impl DatabaseLayer {
+    pub async fn new(path: &Path) -> anyhow::Result<Self> {
         let opt = SqliteConnectOptions::new()
             .filename(path)
             .create_if_missing(true);
-        let mut conn = SqlitePool::connect_with(opt)
-            .await
-            .unwrap()
-            .acquire()
-            .await
-            .unwrap();
+        let pool = SqlitePool::connect_with(opt).await?;
 
-        {
-            let opt = SqliteConnectOptions::new()
-                .filename(path)
-                .create_if_missing(true);
-            let pool = SqlitePool::connect_with(opt).await.unwrap();
-            let mut conn = pool.acquire().await.unwrap();
-
-            tokio::spawn(async move {
-                conn.execute(
-                    sqlx::query("INSERT INTO todos (description) VALUES($1);").bind(cuid2::cuid()),
-                )
-                .await
-                .unwrap();
-            });
-        }
-
-        conn.execute(sqlx::query(
-            "CREATE TABLE IF NOT EXISTS todos
+        sqlx::query(
+            "CREATE TABLE IF NOT EXISTS system_log
         (
-            id          INTEGER PRIMARY KEY NOT NULL,
-            description TEXT                NOT NULL,
-            done        BOOLEAN             NOT NULL DEFAULT 0
+            timestamp   INTEGER             NOT NULL,
+            level       TINYINT             NOT NULL,
+            message    STRING              
         );",
-        ))
-        .await
-        .unwrap();
+        )
+        .execute(&pool)
+        .await?;
 
-        DynamicFileLayer {}
+        Ok(DatabaseLayer {
+            pool,
+            handle: Handle::current(),
+        })
     }
 }
 
-impl<S> Layer<S> for DynamicFileLayer
+impl<S> Layer<S> for DatabaseLayer
 where
     S: Subscriber + for<'a> tracing_subscriber::registry::LookupSpan<'a>,
 {
@@ -139,22 +121,31 @@ where
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<'_, S>) {
         let metadata = event.metadata();
-
-        let mut buf = String::new();
-        {
-            let mut visitor = JsonVisitor::new(&mut buf);
+        if metadata.target().starts_with("taxy::") {
+            let timestamp = OffsetDateTime::now_utc();
+            let level = match *metadata.level() {
+                tracing::Level::ERROR => 1,
+                tracing::Level::WARN => 2,
+                tracing::Level::INFO => 3,
+                tracing::Level::DEBUG => 4,
+                tracing::Level::TRACE => 5,
+            };
+            let mut visitor = KeyValueVisitor::new("message");
             event.record(&mut visitor);
-        }
+            let message = visitor.get_value().unwrap_or_default();
 
-        println!("buf: {:?}", buf);
-
-        let mut visitor = KeyValueVisitor::new("remote");
-        event.record(&mut visitor);
-
-        if let Some(span) = ctx.lookup_current() {
-            let ext = span.extensions();
-            let fields = ext.get::<DefaultFields>();
-            println!("fields: {:?} {:?}", metadata.target(), visitor.get_value());
+            let pool = self.pool.clone();
+            self.handle.spawn(async move {
+                sqlx::query(
+                    "INSERT INTO system_log (timestamp, level, message)
+                    VALUES (?, ?, ?)",
+                )
+                .bind(timestamp)
+                .bind(level)
+                .bind(message)
+                .execute(&pool)
+                .await
+            });
         }
     }
 }
@@ -176,7 +167,6 @@ impl KeyValueVisitor {
 
 impl Visit for KeyValueVisitor {
     fn record_debug(&mut self, field: &Field, value: &dyn std::fmt::Debug) {
-        println!("record_debug: {:?} {:?}", field.name(), value);
         if field.name() == self.key {
             self.value = Some(format!("{:?}", value));
         }

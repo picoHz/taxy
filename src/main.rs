@@ -3,7 +3,7 @@
 use crate::args::Command;
 use crate::config::storage::ConfigStorage;
 use crate::config::AppInfo;
-use crate::log::DynamicFileLayer;
+use crate::log::DatabaseLayer;
 use args::StartArgs;
 use clap::Parser;
 use directories::ProjectDirs;
@@ -59,15 +59,14 @@ async fn start(args: StartArgs) -> anyhow::Result<()> {
         args.access_log_level,
         args.log_format,
     );
-
-    let dynamic = DynamicFileLayer::new(&log_dir.join("log.db")).await;
+    let db = DatabaseLayer::new(&log_dir.join("log.db")).await?;
 
     let access_log_filter =
         filter::filter_fn(|metadata| metadata.target().starts_with("taxy::access_log"));
     tracing_subscriber::registry()
         .with(log.with_filter(access_log_filter.clone().not()))
         .with(access_log.with_filter(access_log_filter))
-        .with(dynamic)
+        .with(db)
         .init();
 
     let config_dir = get_config_dir(args.config_dir)?;
