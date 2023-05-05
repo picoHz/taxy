@@ -22,7 +22,7 @@ use tokio::{
     net::TcpStream,
     sync::{broadcast, mpsc},
 };
-use tracing::{debug, error, info, span, Level};
+use tracing::{error, info, span, Instrument, Level};
 use warp::http::{Request, Response};
 
 pub struct ServerState {
@@ -288,7 +288,7 @@ impl ServerState {
                 identifiers = ?acme.identifiers,
                 "starting acme request"
             );
-            match acme.request().await {
+            match acme.request().instrument(span.clone()).await {
                 Ok(request) => requests.push(request),
                 Err(err) => {
                     let _enter = span.enter();
@@ -308,9 +308,11 @@ impl ServerState {
         let command = self.command_sender.clone();
         tokio::task::spawn(async move {
             for mut req in requests {
-                match req.start_challenge().await {
+                let span = span!(Level::INFO, "acme", resource_id = req.id);
+                match req.start_challenge().instrument(span.clone()).await {
                     Ok(cert) => {
-                        debug!(id = cert.id(), "acme request completed");
+                        let _enter = span.enter();
+                        info!(id = cert.id(), "acme request completed");
                         let _ = command
                             .send(ServerCommand::AddKeyringItem {
                                 item: KeyringItem::ServerCert(Arc::new(cert)),
@@ -318,6 +320,7 @@ impl ServerState {
                             .await;
                     }
                     Err(err) => {
+                        let _enter = span.enter();
                         error!(?err, "failed to start challenge");
                     }
                 }
