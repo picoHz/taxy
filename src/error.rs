@@ -39,7 +39,7 @@ pub enum Error {
     CertAlreadyExists { id: String },
 
     #[error("certificate not found: {id}")]
-    CertNotFound { id: String },
+    KeyringItemNotFound { id: String },
 
     #[error("no backend servers")]
     EmptyBackendServers,
@@ -55,6 +55,9 @@ pub enum Error {
 
     #[error("invalid login credentials")]
     InvalidLoginCredentials,
+
+    #[error("failed to fetch log")]
+    FailedToFetchLog,
 }
 
 impl Reject for Error {}
@@ -62,7 +65,7 @@ impl Reject for Error {}
 impl Error {
     pub fn status_code(&self) -> StatusCode {
         match self {
-            Self::CertNotFound { .. } | Self::IdNotFound { .. } => StatusCode::NOT_FOUND,
+            Self::KeyringItemNotFound { .. } | Self::IdNotFound { .. } => StatusCode::NOT_FOUND,
             Self::Unauthorized => StatusCode::UNAUTHORIZED,
             _ => StatusCode::BAD_REQUEST,
         }
