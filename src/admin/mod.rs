@@ -144,6 +144,7 @@ pub async fn start_admin(
         with_state(app_state.clone())
             .and(warp::path::param())
             .and(warp::path("log"))
+            .and(warp::query())
             .and(warp::path::end())
             .and_then(keyring::log),
     );
