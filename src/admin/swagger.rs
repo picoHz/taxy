@@ -1,4 +1,5 @@
 use super::auth::{LoginRequest, LoginResult};
+use super::log::SystemLogRow;
 use super::{app_info, auth, config, keyring, keyring::CertPostBody, ports};
 use crate::config::port::{BackendServer, PortEntry, PortEntryRequest, PortOptions};
 use crate::config::tls::TlsTermination;
@@ -34,6 +35,7 @@ use warp::{Rejection, Reply};
         keyring::self_signed,
         keyring::upload,
         keyring::acme,
+        keyring::log,
         app_info::get,
     ),
     components(schemas(
@@ -60,6 +62,7 @@ use warp::{Rejection, Reply};
         Source,
         LoginRequest,
         LoginResult,
+        SystemLogRow
     )),
     modifiers(&SecurityAddon)
 )]

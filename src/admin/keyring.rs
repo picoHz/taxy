@@ -168,11 +168,42 @@ pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection
         .iter()
         .any(|c| c.id() == id)
     {
-        return Err(warp::reject::custom(Error::CertNotFound { id }));
+        return Err(warp::reject::custom(Error::KeyringItemNotFound { id }));
     }
     let _ = state
         .sender
         .send(ServerCommand::DeleteKeyringItem { id })
         .await;
     Ok(warp::reply::reply())
+}
+
+/// Get log.
+#[utoipa::path(
+    get,
+    path = "/api/keyring/{id}/log",
+    params(
+        ("id" = String, Path, description = "Item ID")
+    ),
+    request_body = Vec<SystemLogRow>,
+    responses(
+        (status = 200),
+        (status = 404),
+        (status = 401),
+    ),
+    security(
+        ("authorization"=[])
+    )
+)]
+pub async fn log(state: AppState, id: String) -> Result<impl Reply, Rejection> {
+    let data = state.data.lock().await;
+    if let Some(item) = data.keyring_items.iter().find(|c| c.id() == id) {
+        let rows = data
+            .log
+            .fetch_system_log(item.id())
+            .await
+            .map_err(|_| Error::FailedToFetchLog)?;
+        Ok(warp::reply::json(&rows))
+    } else {
+        Err(warp::reject::custom(Error::KeyringItemNotFound { id }))
+    }
 }

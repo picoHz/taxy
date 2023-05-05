@@ -50,6 +50,8 @@ pub struct AppInfo {
     pub rustc: &'static str,
     #[schema(value_type = String, example = "/home/taxy/.config/taxy")]
     pub config_path: PathBuf,
+    #[schema(value_type = String, example = "/home/taxy/.config/taxy")]
+    pub log_path: PathBuf,
 }
 
 mod build_info {
@@ -57,7 +59,7 @@ mod build_info {
 }
 
 impl AppInfo {
-    pub fn new(config_path: &Path) -> Self {
+    pub fn new(config_path: &Path, log_path: &Path) -> Self {
         Self {
             version: build_info::PKG_VERSION,
             target: build_info::TARGET,
@@ -65,6 +67,7 @@ impl AppInfo {
             features: &build_info::FEATURES[..],
             rustc: build_info::RUSTC_VERSION,
             config_path: config_path.to_owned(),
+            log_path: log_path.to_owned(),
         }
     }
 }

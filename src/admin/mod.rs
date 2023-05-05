@@ -16,11 +16,13 @@ use warp::filters::body::BodyDeserializeError;
 use warp::{sse::Event, Filter, Rejection, Reply};
 
 use self::auth::SessionStore;
+use self::log::LogReader;
 
 mod app_info;
 mod auth;
 mod config;
 mod keyring;
+mod log;
 mod ports;
 mod static_file;
 mod swagger;
@@ -31,7 +33,8 @@ pub async fn start_admin(
     command: mpsc::Sender<ServerCommand>,
     event: broadcast::Sender<ServerEvent>,
 ) -> anyhow::Result<()> {
-    let data = Arc::new(Mutex::new(Data::new(app_info)));
+    let data = Data::new(app_info).await?;
+    let data = Arc::new(Mutex::new(data));
     let app_state = AppState {
         sender: command,
         data: data.clone(),
@@ -137,6 +140,14 @@ pub async fn start_admin(
             .and_then(keyring::delete),
     );
 
+    let api_keyring_log = warp::get().and(
+        with_state(app_state.clone())
+            .and(warp::path::param())
+            .and(warp::path("log"))
+            .and(warp::path::end())
+            .and_then(keyring::log),
+    );
+
     let app_state_clone = app_state.clone();
     let api_auth_login = warp::post()
         .and(warp::path("login"))
@@ -200,6 +211,7 @@ pub async fn start_admin(
 
     let keyring = warp::path("keyring").and(
         api_keyring_delete
+            .or(api_keyring_log)
             .or(api_keyring_self_signed)
             .or(api_keyring_upload)
             .or(api_keyring_acme)
@@ -290,18 +302,21 @@ struct Data {
     pub status: HashMap<String, PortStatus>,
     pub keyring_items: Vec<KeyringInfo>,
     pub sessions: SessionStore,
+    pub log: LogReader,
 }
 
 impl Data {
-    fn new(app_info: AppInfo) -> Self {
-        Self {
+    async fn new(app_info: AppInfo) -> anyhow::Result<Self> {
+        let log = app_info.log_path.join("log.db");
+        Ok(Self {
             app_info,
             config: AppConfig::default(),
             entries: Vec::new(),
             status: HashMap::new(),
             keyring_items: Vec::new(),
             sessions: Default::default(),
-        }
+            log: LogReader::new(&log).await?,
+        })
     }
 }
 
