@@ -26,7 +26,7 @@ fn default_background_task_interval() -> Duration {
 }
 
 fn default_admin_session_expiry() -> Duration {
-    Duration::from_secs(60 * 60 * 24)
+    Duration::from_secs(60 * 60)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
