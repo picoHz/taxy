@@ -1,4 +1,4 @@
-use super::AppState;
+use super::{log::LogQuery, AppState};
 use crate::{
     command::ServerCommand,
     error::Error,
@@ -182,11 +182,11 @@ pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection
     get,
     path = "/api/keyring/{id}/log",
     params(
-        ("id" = String, Path, description = "Item ID")
+        ("id" = String, Path, description = "Item ID"),
+        LogQuery
     ),
-    request_body = Vec<SystemLogRow>,
     responses(
-        (status = 200),
+        (status = 200, body = Vec<SystemLogRow>),
         (status = 404),
         (status = 401),
     ),
@@ -194,12 +194,12 @@ pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection
         ("authorization"=[])
     )
 )]
-pub async fn log(state: AppState, id: String) -> Result<impl Reply, Rejection> {
+pub async fn log(state: AppState, id: String, query: LogQuery) -> Result<impl Reply, Rejection> {
     let data = state.data.lock().await;
     if let Some(item) = data.keyring_items.iter().find(|c| c.id() == id) {
         let rows = data
             .log
-            .fetch_system_log(item.id())
+            .fetch_system_log(item.id(), query.since, query.until)
             .await
             .map_err(|_| Error::FailedToFetchLog)?;
         Ok(warp::reply::json(&rows))
