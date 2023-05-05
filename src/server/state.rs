@@ -22,7 +22,7 @@ use tokio::{
     net::TcpStream,
     sync::{broadcast, mpsc},
 };
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, span, Level};
 use warp::http::{Request, Response};
 
 pub struct ServerState {
@@ -280,15 +280,20 @@ impl ServerState {
 
         let mut requests = Vec::new();
         for acme in entries {
+            let span = span!(Level::INFO, "acme", resource_id = acme.id);
+            let _enter = span.enter();
+
             info!(
-                id = acme.id,
                 provider = acme.provider,
                 identifiers = ?acme.identifiers,
                 "starting acme request"
             );
             match acme.request().await {
                 Ok(request) => requests.push(request),
-                Err(err) => error!("failed to request challenge: {}", err),
+                Err(err) => {
+                    let _enter = span.enter();
+                    error!("failed to request challenge: {}", err)
+                }
             }
         }
         let challenges = requests

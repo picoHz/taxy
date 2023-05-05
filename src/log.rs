@@ -1,4 +1,5 @@
 use clap::ValueEnum;
+use dashmap::DashMap;
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
 use std::path::{Path, PathBuf};
 use time::OffsetDateTime;
@@ -83,6 +84,7 @@ where
 pub struct DatabaseLayer {
     pool: SqlitePool,
     handle: Handle,
+    span_map: DashMap<span::Id, String>,
 }
 
 impl DatabaseLayer {
@@ -97,7 +99,8 @@ impl DatabaseLayer {
         (
             timestamp   INTEGER             NOT NULL,
             level       TINYINT             NOT NULL,
-            message    STRING              
+            resource_id STRING                      ,
+            message     STRING              
         );",
         )
         .execute(&pool)
@@ -106,6 +109,7 @@ impl DatabaseLayer {
         Ok(DatabaseLayer {
             pool,
             handle: Handle::current(),
+            span_map: DashMap::new(),
         })
     }
 }
@@ -114,38 +118,46 @@ impl<S> Layer<S> for DatabaseLayer
 where
     S: Subscriber + for<'a> tracing_subscriber::registry::LookupSpan<'a>,
 {
-    fn on_new_span(&self, attrs: &span::Attributes<'_>, id: &span::Id, ctx: Context<'_, S>) {
-        let mut visitor = KeyValueVisitor::new("remote");
+    fn on_new_span(&self, attrs: &span::Attributes<'_>, id: &span::Id, _ctx: Context<'_, S>) {
+        let mut visitor = KeyValueVisitor::new("resource_id");
         attrs.record(&mut visitor);
+        if let Some(resource_id) = visitor.get_value() {
+            self.span_map.insert(id.clone(), resource_id);
+        }
     }
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<'_, S>) {
         let metadata = event.metadata();
-        if metadata.target().starts_with("taxy::") {
-            let timestamp = OffsetDateTime::now_utc();
-            let level = match *metadata.level() {
-                tracing::Level::ERROR => 1,
-                tracing::Level::WARN => 2,
-                tracing::Level::INFO => 3,
-                tracing::Level::DEBUG => 4,
-                tracing::Level::TRACE => 5,
-            };
-            let mut visitor = KeyValueVisitor::new("message");
-            event.record(&mut visitor);
-            let message = visitor.get_value().unwrap_or_default();
 
-            let pool = self.pool.clone();
-            self.handle.spawn(async move {
-                sqlx::query(
-                    "INSERT INTO system_log (timestamp, level, message)
-                    VALUES (?, ?, ?)",
-                )
-                .bind(timestamp)
-                .bind(level)
-                .bind(message)
-                .execute(&pool)
-                .await
-            });
+        if let Some(span) = ctx.lookup_current() {
+            if let Some(entry) = self.span_map.get(&span.id()) {
+                let resource_id = entry.value().to_string();
+                let timestamp = OffsetDateTime::now_utc();
+                let level = match *metadata.level() {
+                    tracing::Level::ERROR => 1,
+                    tracing::Level::WARN => 2,
+                    tracing::Level::INFO => 3,
+                    tracing::Level::DEBUG => 4,
+                    tracing::Level::TRACE => 5,
+                };
+                let mut visitor = KeyValueVisitor::new("message");
+                event.record(&mut visitor);
+                let message = visitor.get_value().unwrap_or_default();
+
+                let pool = self.pool.clone();
+                self.handle.spawn(async move {
+                    sqlx::query(
+                        "INSERT INTO system_log (timestamp, level, resource_id, message)
+                    VALUES (?, ?, ?, ?)",
+                    )
+                    .bind(timestamp)
+                    .bind(level)
+                    .bind(resource_id)
+                    .bind(message)
+                    .execute(&pool)
+                    .await
+                });
+            }
         }
     }
 }
@@ -168,7 +180,13 @@ impl KeyValueVisitor {
 impl Visit for KeyValueVisitor {
     fn record_debug(&mut self, field: &Field, value: &dyn std::fmt::Debug) {
         if field.name() == self.key {
-            self.value = Some(format!("{:?}", value));
+            self.value = Some(format!("{value:?}"));
+        }
+    }
+
+    fn record_str(&mut self, field: &Field, value: &str) {
+        if field.name() == self.key {
+            self.value = Some(value.to_string());
         }
     }
 }

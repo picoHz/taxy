@@ -18,6 +18,7 @@ argon2 = "0.5.0"
 backoff = { version = "0.4.0", features = ["tokio"] }
 clap = { version = "4.2.2", features = ["derive", "env"] }
 cuid2 = "0.1.0"
+dashmap = "5.4.0"
 directories = "5.0.0"
 futures = "0.3.28"
 globwalk = "0.8.1"
