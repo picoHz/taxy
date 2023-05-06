@@ -58,6 +58,9 @@ pub enum Error {
 
     #[error("failed to fetch log")]
     FailedToFetchLog,
+
+    #[error("waiting log timed out")]
+    WaitingLogTimedOut,
 }
 
 impl Reject for Error {}
@@ -67,6 +70,7 @@ impl Error {
         match self {
             Self::KeyringItemNotFound { .. } | Self::IdNotFound { .. } => StatusCode::NOT_FOUND,
             Self::Unauthorized => StatusCode::UNAUTHORIZED,
+            Self::WaitingLogTimedOut => StatusCode::REQUEST_TIMEOUT,
             _ => StatusCode::BAD_REQUEST,
         }
     }
