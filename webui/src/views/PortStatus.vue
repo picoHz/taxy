@@ -21,6 +21,7 @@
                     </tr>
                 </tbody>
             </v-table>
+            <LogViewer :logs="logs" />
         </v-window-item>
         <v-window-item :value="2">
             <port-config @submit="update" :entry="config" :loading="loading"></port-config>
@@ -67,7 +68,8 @@
 </template>
   
 <script setup>
-import { ref, computed } from 'vue';
+import LogViewer from '@/components/LogViewer.vue';
+import { ref, computed, onMounted } from 'vue';
 import PortConfig from '@/components/PortConfig.vue';
 import { useRoute, useRouter } from 'vue-router';
 import { usePortsStore } from '@/stores/ports';
@@ -82,6 +84,7 @@ const loading = ref(false);
 const snackbar = ref(false);
 const error = ref(null);
 const deleteDialog = ref(false);
+const logs = ref([]);
 
 const now = ref(Date.now())
 
@@ -119,4 +122,9 @@ async function deletePort() {
         error.value = data
     }
 }
+
+onMounted(async () => {
+    const { data } = await axios.get(`${endpoint}/ports/${route.params.id}/log`);
+    logs.value = data
+})
 </script>
