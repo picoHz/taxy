@@ -41,7 +41,8 @@ const handleBlur = (event) => {
             domain.value
         ],
         provider: props.staging ? "Let's Encrypt (Staging)" : "Let's Encrypt",
-        server_url: props.staging ? "https://acme-staging-v02.api.letsencrypt.org/directory" : "https://acme-v02.api.letsencrypt.org/directory"
+        server_url: props.staging ? "https://acme-staging-v02.api.letsencrypt.org/directory" : "https://acme-v02.api.letsencrypt.org/directory",
+        is_trusted: !props.staging,
     })
 }
 

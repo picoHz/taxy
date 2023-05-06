@@ -28,6 +28,8 @@ pub struct AcmeRequest {
     pub challenge_type: ChallengeType,
     #[schema(example = "60")]
     pub renewal_days: u64,
+    #[serde(default)]
+    pub is_trusted: bool,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -47,6 +49,9 @@ pub struct AcmeEntry {
         deserialize_with = "deserialize_account"
     )]
     pub account: Account,
+
+    #[serde(default)]
+    pub is_trusted: bool,
 }
 
 fn default_renewal_days() -> u64 {
@@ -103,6 +108,7 @@ impl AcmeEntry {
             account,
             challenge_type: req.challenge_type,
             renewal_days: req.renewal_days,
+            is_trusted: req.is_trusted,
         })
     }
 
@@ -140,6 +146,9 @@ pub struct IdlessAcmeEntry {
 
     #[serde(default = "default_renewal_days")]
     pub renewal_days: u64,
+
+    #[serde(default)]
+    pub is_trusted: bool,
 }
 
 impl From<AcmeEntry> for (String, IdlessAcmeEntry) {
@@ -152,6 +161,7 @@ impl From<AcmeEntry> for (String, IdlessAcmeEntry) {
                 challenge_type: entry.challenge_type,
                 account: entry.account,
                 renewal_days: entry.renewal_days,
+                is_trusted: entry.is_trusted,
             },
         )
     }
@@ -166,6 +176,7 @@ impl From<(String, IdlessAcmeEntry)> for AcmeEntry {
             challenge_type: entry.challenge_type,
             account: entry.account,
             renewal_days: entry.renewal_days,
+            is_trusted: entry.is_trusted,
         }
     }
 }
@@ -189,6 +200,7 @@ pub struct AcmeOrder {
     pub http_challenges: HashMap<String, String>,
     pub challenges: Vec<(String, String)>,
     pub order: Order,
+    pub is_trusted: bool,
 }
 
 impl AcmeOrder {
@@ -240,6 +252,7 @@ impl AcmeOrder {
             http_challenges,
             challenges,
             order,
+            is_trusted: entry.is_trusted,
         })
     }
 
@@ -290,6 +303,7 @@ impl AcmeOrder {
         let metadata = CertMetadata {
             acme_id: self.id.clone(),
             created_at: SystemTime::now(),
+            is_trusted: self.is_trusted,
         };
         let metadata = serde_qs::to_string(&metadata).unwrap_or_default();
         let cert_chain_pem = format!("# {}\r\n\r\n{}", metadata, cert_chain_pem);
