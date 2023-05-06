@@ -1,5 +1,6 @@
 use super::AppState;
 use crate::{
+    admin::log::LogQuery,
     command::ServerCommand,
     config::port::{PortEntry, PortEntryRequest},
     error::Error,
@@ -127,4 +128,35 @@ pub async fn put(
     ctx.prepare(&data.config).await?;
     let _ = state.sender.send(ServerCommand::SetPort { ctx }).await;
     Ok(warp::reply::reply())
+}
+
+/// Get log.
+#[utoipa::path(
+    get,
+    path = "/api/ports/{id}/log",
+    params(
+        ("id" = String, Path, description = "Port ID"),
+        LogQuery
+    ),
+    responses(
+        (status = 200, body = Vec<SystemLogRow>),
+        (status = 404),
+        (status = 401),
+    ),
+    security(
+        ("authorization"=[])
+    )
+)]
+pub async fn log(state: AppState, id: String, query: LogQuery) -> Result<impl Reply, Rejection> {
+    let data = state.data.lock().await;
+    if let Some(item) = data.entries.iter().find(|e| e.id == id) {
+        let rows = data
+            .log
+            .fetch_system_log(&item.id, query.since, query.until)
+            .await
+            .map_err(|_| Error::FailedToFetchLog)?;
+        Ok(warp::reply::json(&rows))
+    } else {
+        Err(warp::reject::custom(Error::KeyringItemNotFound { id }))
+    }
 }

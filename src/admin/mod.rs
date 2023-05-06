@@ -108,6 +108,15 @@ pub async fn start_admin(
             .and_then(ports::post),
     );
 
+    let api_ports_log = warp::get().and(
+        with_state(app_state.clone())
+            .and(warp::path::param())
+            .and(warp::path("log"))
+            .and(warp::query())
+            .and(warp::path::end())
+            .and_then(ports::log),
+    );
+
     let api_keyring_list = warp::get()
         .and(warp::path::end())
         .and(with_state(app_state.clone()).and_then(keyring::list));
@@ -204,6 +213,7 @@ pub async fn start_admin(
 
     let port = warp::path("ports").and(
         api_ports_delete
+            .or(api_ports_log)
             .or(api_ports_put)
             .or(api_ports_status)
             .or(api_ports_list)
