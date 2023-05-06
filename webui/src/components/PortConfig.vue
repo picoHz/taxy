@@ -14,8 +14,8 @@
                 </v-col>
 
                 <v-col cols="24" sm="6">
-                    <v-text-field :label="$t('ports.config.interface')" v-model="formData.ifs" required variant="outlined"
-                        density="compact" :rules="interfaceRules"></v-text-field>
+                    <v-text-field :label="$t('ports.config.interface')" autocapitalize="off" v-model="formData.ifs" required
+                        variant="outlined" density="compact" :rules="interfaceRules"></v-text-field>
                 </v-col>
 
                 <v-col cols="24" sm="4">
@@ -35,8 +35,9 @@
                 <v-row>
                     <v-col cols="12" sm="12">
                         <v-text-field :label="$t('ports.config.tls_term.server_names.server_names')" variant="outlined"
-                            :hint="$t('ports.config.tls_term.server_names.hint')" v-model="formData.tls_term.server_names"
-                            density="compact" :rules="tlsServerNamesRules" persistent-hint></v-text-field>
+                            :hint="$t('ports.config.tls_term.server_names.hint')" autocapitalize="off"
+                            v-model="formData.tls_term.server_names" density="compact" :rules="tlsServerNamesRules"
+                            persistent-hint></v-text-field>
                     </v-col>
                 </v-row>
             </v-container>
@@ -56,8 +57,8 @@
                     </v-col>
 
                     <v-col cols="12" sm="5">
-                        <v-text-field :label="$t('ports.config.host')" variant="outlined" density="compact"
-                            v-model="item.host" :rules="serverNameRules"></v-text-field>
+                        <v-text-field :label="$t('ports.config.host')" autocapitalize="off" variant="outlined"
+                            density="compact" v-model="item.host" :rules="serverNameRules"></v-text-field>
                     </v-col>
 
                     <v-col cols="12" sm="3">

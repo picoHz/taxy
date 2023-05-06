@@ -90,8 +90,8 @@
               <v-row>
                 <v-col cols="12" sm="12">
                   <v-text-field :label="$t('keyring.self_sign.subject_alternative_names')" variant="outlined"
-                    v-model="selfSignedRequest.san" :hint="$t('keyring.self_sign.hint')" :rules="tlsServerNamesRules"
-                    density="compact" persistent-hint></v-text-field>
+                    v-model="selfSignedRequest.san" autocapitalize="off" :hint="$t('keyring.self_sign.hint')"
+                    :rules="tlsServerNamesRules" density="compact" persistent-hint></v-text-field>
                 </v-col>
               </v-row>
             </v-container>
