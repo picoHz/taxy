@@ -49,6 +49,7 @@ impl TlsTermination {
         let cert = if let Some(cert) = keyring.find_server_cert(&server_names) {
             cert
         } else {
+            error!(?server_names, "no valid certificate found");
             return TlsState::NoValidCertificate;
         };
 
@@ -63,7 +64,7 @@ impl TlsTermination {
         let server_config = match server_config {
             Ok(config) => config,
             Err(err) => {
-                error!(?err, server_names = ?self.server_names);
+                error!(?err, ?server_names);
                 return TlsState::ConfigurationFailed;
             }
         };
