@@ -6,8 +6,8 @@
                     variant="outlined" density="compact"></v-select>
             </v-col>
             <v-col cols="12" sm="12">
-                <v-text-field @blur="handleBlur" :label="$t('keyring.acme.domain')" variant="outlined" v-model="domain"
-                    density="compact" :rules="domainNameRules" persistent-hint></v-text-field>
+                <v-text-field @blur="handleBlur" autocapitalize="off" :label="$t('keyring.acme.domain')" variant="outlined"
+                    v-model="domain" density="compact" :rules="domainNameRules" persistent-hint></v-text-field>
             </v-col>
         </v-row>
     </v-container>
