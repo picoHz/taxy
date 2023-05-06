@@ -16,6 +16,8 @@
         </tbody>
     </v-table>
     <v-divider></v-divider>
+    <LogViewer :logs="logs" />
+    <v-divider></v-divider>
     <v-card-actions class="justify-end">
         <v-btn color="red" @click="deleteDialog = true">
             {{ $t('keyring.delete_acme.delete_acme') }}
@@ -35,7 +37,8 @@
 </template>
   
 <script setup>
-import { ref, computed } from 'vue';
+import LogViewer from '@/components/LogViewer.vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useCertsStore } from '@/stores/certs';
 import axios from 'axios';
@@ -46,6 +49,7 @@ const router = useRouter();
 
 const info = computed(() => certsStore.getStatusbyId(route.params.id));
 const deleteDialog = ref(false);
+const logs = ref([]);
 
 const endpoint = import.meta.env.VITE_API_ENDPOINT;
 
@@ -59,5 +63,10 @@ async function deleteCert() {
         error.value = data
     }
 }
+
+onMounted(async () => {
+    const { data } = await axios.get(`${endpoint}/keyring/${route.params.id}/log`);
+    logs.value = data
+})
 
 </script>
