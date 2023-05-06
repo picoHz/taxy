@@ -55,10 +55,6 @@ async function deleteCert() {
         await axios.delete(`${endpoint}/keyring/${route.params.id}`)
         router.replace({ name: 'Certificate List' })
     } catch (err) {
-        if (err.response.status === 401) {
-            localStorage.removeItem('token')
-            router.replace({ name: 'Login' })
-        }
         let { response: { data } } = err;
         error.value = data
     }
