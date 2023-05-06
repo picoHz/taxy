@@ -37,6 +37,21 @@ impl PartialOrd for Cert {
         Some(
             self.is_self_signed
                 .cmp(&other.is_self_signed)
+                .then_with(|| {
+                    other
+                        .metadata
+                        .as_ref()
+                        .map(|meta| meta.is_trusted)
+                        .unwrap_or_default()
+                        .partial_cmp(
+                            &self
+                                .metadata
+                                .as_ref()
+                                .map(|meta| meta.is_trusted)
+                                .unwrap_or_default(),
+                        )
+                        .unwrap()
+                })
                 .then_with(|| other.not_before.partial_cmp(&self.not_before).unwrap())
                 .then_with(|| self.not_after.partial_cmp(&other.not_after).unwrap())
                 .then_with(|| self.fingerprint.cmp(&other.fingerprint)),
@@ -258,6 +273,8 @@ pub struct CertMetadata {
     )]
     #[schema(value_type = u64)]
     pub created_at: SystemTime,
+    #[serde(default)]
+    pub is_trusted: bool,
 }
 
 fn serialize_created_at<S>(time: &SystemTime, serializer: S) -> Result<S::Ok, S::Error>
