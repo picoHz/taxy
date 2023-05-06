@@ -1,5 +1,6 @@
 use crate::error::Error;
 use serde::{Deserialize, Serialize};
+use sqlx::ConnectOptions;
 use sqlx::{sqlite::SqliteConnectOptions, Row, SqlitePool};
 use std::time::Duration;
 use std::{collections::HashMap, path::Path};
@@ -15,7 +16,8 @@ pub struct LogReader {
 
 impl LogReader {
     pub async fn new(path: &Path) -> anyhow::Result<Self> {
-        let opt = SqliteConnectOptions::new().filename(path).read_only(true);
+        let mut opt = SqliteConnectOptions::new().filename(path).read_only(true);
+        opt.log_statements(log::LevelFilter::Trace);
         let pool = SqlitePool::connect_with(opt).await?;
         Ok(Self { pool })
     }

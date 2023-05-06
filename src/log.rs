@@ -1,6 +1,6 @@
 use clap::ValueEnum;
 use dashmap::DashMap;
-use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
+use sqlx::{sqlite::SqliteConnectOptions, ConnectOptions, SqlitePool};
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
@@ -92,9 +92,10 @@ pub struct DatabaseLayer {
 
 impl DatabaseLayer {
     pub async fn new(path: &Path) -> anyhow::Result<Self> {
-        let opt = SqliteConnectOptions::new()
+        let mut opt = SqliteConnectOptions::new()
             .filename(path)
             .create_if_missing(true);
+        opt.log_statements(log::LevelFilter::Trace);
         let pool = SqlitePool::connect_with(opt).await?;
 
         sqlx::query(
