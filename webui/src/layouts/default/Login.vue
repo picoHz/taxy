@@ -9,7 +9,7 @@
           <v-alert v-if="error" color="error" icon="$error" :text="$t('login.login_failed')"></v-alert>
           <v-card-text>
             <v-form validate-on="submit" @submit.prevent="submit">
-              <v-text-field variant="filled" v-model="username" :rules="nameRules"
+              <v-text-field variant="filled" autocapitalize="false" v-model="username" :rules="nameRules"
                 :label="$t('login.username')"></v-text-field>
               <v-text-field variant="filled" type="password" v-model="password" :rules="passwordRules"
                 :label="$t('login.password')"></v-text-field>
