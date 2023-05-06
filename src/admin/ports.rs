@@ -153,8 +153,7 @@ pub async fn log(state: AppState, id: String, query: LogQuery) -> Result<impl Re
         let rows = data
             .log
             .fetch_system_log(&item.id, query.since, query.until)
-            .await
-            .map_err(|_| Error::FailedToFetchLog)?;
+            .await?;
         Ok(warp::reply::json(&rows))
     } else {
         Err(warp::reject::custom(Error::KeyringItemNotFound { id }))

@@ -124,7 +124,9 @@ async function deletePort() {
 }
 
 onMounted(async () => {
-    const { data } = await axios.get(`${endpoint}/ports/${route.params.id}/log`);
-    logs.value = data
+    const { data } = await axios.get(`${endpoint}/ports/${route.params.id}/log`, {
+        params: { since: null }
+    });
+    logs.value = logs.value.concat(data)
 })
 </script>
