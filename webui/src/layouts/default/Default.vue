@@ -105,28 +105,20 @@ onMounted(async () => {
     console.error('EventSource error:', error);
   };
 
-  try {
-    const { data: config } = await axios.get(`${endpoint}/config`);
-    configStore.update(config);
+  const { data: config } = await axios.get(`${endpoint}/config`);
+  configStore.update(config);
 
-    const { data: certs } = await axios.get(`${endpoint}/keyring`);
-    certsStore.update(certs);
+  const { data: certs } = await axios.get(`${endpoint}/keyring`);
+  certsStore.update(certs);
 
-    const { data } = await axios.get(`${endpoint}/ports`);
-    portsStore.updateTable(data);
+  const { data } = await axios.get(`${endpoint}/ports`);
+  portsStore.updateTable(data);
 
-    for (const port of data) {
-      axios.get(`${endpoint}/ports/${port.id}/status`).then(({ data }) => {
-        portsStore.updateStatus(port.id, data);
-      });
-    }
-  } catch (err) {
-    if (err.response.status === 401) {
-      localStorage.removeItem('token')
-      router.replace({ name: 'Login' })
-    }
+  for (const port of data) {
+    axios.get(`${endpoint}/ports/${port.id}/status`).then(({ data }) => {
+      portsStore.updateStatus(port.id, data);
+    });
   }
-
 });
 
 onBeforeUnmount(() => {

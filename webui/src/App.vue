@@ -4,6 +4,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { useRouter } from 'vue-router';
 import { usePortsStore } from '@/stores/ports';
 import { useConfigStore } from '@/stores/config';
 import { useCertsStore } from '@/stores/certs';
@@ -12,7 +13,24 @@ import axios from 'axios';
 const message = ref('');
 let eventSource = null;
 
+const router = useRouter();
+
 onMounted(async () => {
+  const token = localStorage.getItem('token');
+  axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+  axios.interceptors.response.use((response) => {
+    console.log("x", response)
+    return response;
+  }, (error) => {
+    console.log("x", error)
+    if (error.response.status === 401) {
+      localStorage.removeItem('token')
+      router.replace({ name: 'Login' })
+    }
+    return Promise.reject(error);
+  });
+
   const portsStore = usePortsStore();
   const configStore = useConfigStore();
   const certsStore = useCertsStore();
