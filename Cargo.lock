@@ -2413,6 +2413,7 @@ dependencies = [
  "include_dir",
  "indexmap",
  "instant-acme",
+ "log",
  "mime_guess",
  "multiaddr",
  "once_cell",

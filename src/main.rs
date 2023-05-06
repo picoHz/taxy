@@ -61,13 +61,12 @@ async fn start(args: StartArgs) -> anyhow::Result<()> {
     );
     let db = DatabaseLayer::new(&log_dir.join("log.db")).await?;
 
-    let taxy_filter = filter::filter_fn(|metadata| metadata.target().starts_with("taxy::"));
     let access_log_filter =
         filter::filter_fn(|metadata| metadata.target().starts_with("taxy::access_log"));
     tracing_subscriber::registry()
-        .with(log.with_filter(access_log_filter.clone().not().and(taxy_filter.clone())))
+        .with(log.with_filter(access_log_filter.clone().not()))
         .with(access_log.with_filter(access_log_filter))
-        .with(db.with_filter(taxy_filter))
+        .with(db)
         .init();
 
     let config_dir = get_config_dir(args.config_dir)?;
