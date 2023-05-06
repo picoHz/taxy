@@ -124,7 +124,20 @@ async function deletePort() {
 }
 
 onMounted(async () => {
-    const { data } = await axios.get(`${endpoint}/ports/${route.params.id}/log`);
-    logs.value = data
+    let since = null;
+    for (; ;) {
+        try {
+            const { data } = await axios.get(`${endpoint}/ports/${route.params.id}/log`, {
+                params: { since }
+            });
+            logs.value = logs.value.concat(data)
+            const last = logs.value[logs.value.length - 1]
+            since = last ? last.timestamp : Date.now() / 1000;
+        } catch (err) {
+            if (err.response.status !== 408) {
+                throw err;
+            }
+        }
+    }
 })
 </script>

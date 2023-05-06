@@ -20,10 +20,8 @@ onMounted(async () => {
   axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
   axios.interceptors.response.use((response) => {
-    console.log("x", response)
     return response;
   }, (error) => {
-    console.log("x", error)
     if (error.response.status === 401) {
       localStorage.removeItem('token')
       router.replace({ name: 'Login' })

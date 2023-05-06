@@ -140,6 +140,7 @@ pub async fn put(
     ),
     responses(
         (status = 200, body = Vec<SystemLogRow>),
+        (status = 408),
         (status = 404),
         (status = 401),
     ),
@@ -150,11 +151,10 @@ pub async fn put(
 pub async fn log(state: AppState, id: String, query: LogQuery) -> Result<impl Reply, Rejection> {
     let data = state.data.lock().await;
     if let Some(item) = data.entries.iter().find(|e| e.id == id) {
-        let rows = data
-            .log
-            .fetch_system_log(&item.id, query.since, query.until)
-            .await
-            .map_err(|_| Error::FailedToFetchLog)?;
+        let log = data.log.clone();
+        let id = item.id.clone();
+        std::mem::drop(data);
+        let rows = log.fetch_system_log(&id, query.since, query.until).await?;
         Ok(warp::reply::json(&rows))
     } else {
         Err(warp::reject::custom(Error::KeyringItemNotFound { id }))

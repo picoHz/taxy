@@ -1,8 +1,13 @@
+use crate::error::Error;
 use serde::{Deserialize, Serialize};
 use sqlx::{sqlite::SqliteConnectOptions, Row, SqlitePool};
+use std::time::Duration;
 use std::{collections::HashMap, path::Path};
 use time::OffsetDateTime;
 use utoipa::{IntoParams, ToSchema};
+
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
+const REQUEST_INTERVAL: Duration = Duration::from_secs(1);
 
 pub struct LogReader {
     pool: SqlitePool,
@@ -20,22 +25,46 @@ impl LogReader {
         resource_id: &str,
         since: Option<OffsetDateTime>,
         until: Option<OffsetDateTime>,
-    ) -> anyhow::Result<Vec<SystemLogRow>> {
-        let rows = sqlx::query("select * from system_log WHERE resource_id = ? AND (timestamp BETWEEN ? AND ?) ORDER BY timestamp")
-            .bind(resource_id)
-            .bind(since.unwrap_or(OffsetDateTime::UNIX_EPOCH))
-            .bind(until.unwrap_or_else(OffsetDateTime::now_utc))
-            .fetch_all(&self.pool).await?;
-        Ok(rows
-            .into_iter()
-            .map(|row| SystemLogRow {
-                timestamp: row.get(0),
-                level: row.get(1),
-                resource_id: row.get(2),
-                message: row.get(3),
-                fields: serde_json::from_str(row.get(4)).unwrap_or_default(),
-            })
-            .collect())
+    ) -> Result<Vec<SystemLogRow>, Error> {
+        let mut timeout = tokio::time::interval(REQUEST_TIMEOUT);
+        timeout.tick().await;
+
+        loop {
+            let rows = sqlx::query("select * from system_log WHERE resource_id = ? AND (timestamp BETWEEN ? AND ?) ORDER BY timestamp")
+                .bind(resource_id)
+                .bind(since.unwrap_or(OffsetDateTime::UNIX_EPOCH))
+                .bind(until.unwrap_or_else(OffsetDateTime::now_utc))
+                .fetch_all(&self.pool);
+            tokio::select! {
+                _ = timeout.tick() => {
+                    break;
+                }
+                rows = rows => {
+                    match rows {
+                        Ok(rows) if !rows.is_empty() || until.is_some() => {
+                            return Ok(rows
+                                .into_iter()
+                                .map(|row| SystemLogRow {
+                                    timestamp: row.get(0),
+                                    level: row.get(1),
+                                    resource_id: row.get(2),
+                                    message: row.get(3),
+                                    fields: serde_json::from_str(row.get(4)).unwrap_or_default(),
+                                })
+                                .collect());
+                        },
+                        Err(_) => {
+                            return Err(Error::FailedToFetchLog);
+                        }
+                        _ => {
+                            tokio::time::sleep(REQUEST_INTERVAL).await;
+                        }
+                    }
+                }
+            }
+        }
+
+        Err(Error::WaitingLogTimedOut)
     }
 }
 

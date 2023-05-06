@@ -187,6 +187,7 @@ pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection
     ),
     responses(
         (status = 200, body = Vec<SystemLogRow>),
+        (status = 408),
         (status = 404),
         (status = 401),
     ),
@@ -200,8 +201,7 @@ pub async fn log(state: AppState, id: String, query: LogQuery) -> Result<impl Re
         let rows = data
             .log
             .fetch_system_log(item.id(), query.since, query.until)
-            .await
-            .map_err(|_| Error::FailedToFetchLog)?;
+            .await?;
         Ok(warp::reply::json(&rows))
     } else {
         Err(warp::reject::custom(Error::KeyringItemNotFound { id }))

@@ -313,7 +313,7 @@ struct Data {
     pub status: HashMap<String, PortStatus>,
     pub keyring_items: Vec<KeyringInfo>,
     pub sessions: SessionStore,
-    pub log: LogReader,
+    pub log: Arc<LogReader>,
 }
 
 impl Data {
@@ -326,7 +326,7 @@ impl Data {
             status: HashMap::new(),
             keyring_items: Vec::new(),
             sessions: Default::default(),
-            log: LogReader::new(&log).await?,
+            log: Arc::new(LogReader::new(&log).await?),
         })
     }
 }
