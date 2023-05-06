@@ -56,13 +56,18 @@ impl ServerState {
         let mut table = ProxyTable::new();
         let ports = storage.load_entries().await;
         for entry in ports {
+            let span = span!(Level::INFO, "port", resource_id = entry.id);
             match PortContext::new(entry) {
                 Ok(mut ctx) => {
-                    if let Err(err) = ctx.prepare(&config).await {
-                        error!(?err, "failed to prepare port");
+                    if let Err(err) = ctx.prepare(&config).instrument(span.clone()).await {
+                        span.in_scope(|| {
+                            error!(?err, "failed to prepare port");
+                        });
                     }
-                    if let Err(err) = ctx.setup(&certs).await {
-                        error!(?err, "failed to setup port");
+                    if let Err(err) = ctx.setup(&certs).instrument(span.clone()).await {
+                        span.in_scope(|| {
+                            error!(?err, "failed to setup port");
+                        });
                     }
                     table.set_port(ctx);
                 }
@@ -242,8 +247,11 @@ impl ServerState {
     pub async fn run_background_tasks(&mut self) {
         let _ = self.start_http_challenges().await.await;
         for ctx in self.table.contexts_mut() {
-            if let Err(err) = ctx.refresh(&self.certs).await {
-                error!(?err, "failed to refresh port");
+            let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
+            if let Err(err) = ctx.refresh(&self.certs).instrument(span.clone()).await {
+                span.in_scope(|| {
+                    error!(?err, "failed to refresh port");
+                });
             }
         }
     }
