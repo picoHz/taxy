@@ -18,7 +18,7 @@ pub async fn get(path: FullPath) -> Result<impl Reply, Rejection> {
     } else {
         path.trim_start_matches('/')
     };
-    let path = Path::new("webui").join(format!("{path}.br"));
+    let path = Path::new("webui").join(format!("{path}.gz"));
     if let Some(file) = STATIC_DIR.get_file(path) {
         let ext = file
             .path()
@@ -27,7 +27,7 @@ pub async fn get(path: FullPath) -> Result<impl Reply, Rejection> {
             .unwrap_or_default();
         let mime = mime_guess::from_path(ext).first_or_octet_stream();
         Ok(warp::reply::with_header(
-            warp::reply::with_header(file.contents(), "Content-Encoding", "br"),
+            warp::reply::with_header(file.contents(), "Content-Encoding", "gzip"),
             "Content-Type",
             mime.to_string(),
         ))
