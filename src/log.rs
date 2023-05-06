@@ -132,6 +132,9 @@ where
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<'_, S>) {
         let metadata = event.metadata();
+        if metadata.target().starts_with("taxy::access_log") {
+            return;
+        }
 
         if let Some(span) = ctx.lookup_current() {
             if let Some(entry) = self.span_map.get(&span.id()) {
