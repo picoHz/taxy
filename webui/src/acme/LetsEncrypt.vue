@@ -6,8 +6,9 @@
                     variant="outlined" density="compact"></v-select>
             </v-col>
             <v-col cols="12" sm="12">
-                <v-text-field @blur="handleBlur" autocapitalize="off" :label="$t('keyring.acme.domain')" variant="outlined"
-                    v-model="domain" density="compact" :rules="domainNameRules" persistent-hint></v-text-field>
+                <v-text-field @update:modelValue="update" autocapitalize="off" :label="$t('keyring.acme.domain')"
+                    variant="outlined" v-model="domain" density="compact" :rules="domainNameRules"
+                    persistent-hint></v-text-field>
             </v-col>
         </v-row>
     </v-container>
@@ -33,12 +34,12 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue']);
 
-const handleBlur = (event) => {
+const update = (value) => {
     emit('update:modelValue', {
         challenge_type: acmeChallange.value,
         renewal_days: 60,
         identifiers: [
-            domain.value
+            value
         ],
         provider: props.staging ? "Let's Encrypt (Staging)" : "Let's Encrypt",
         server_url: props.staging ? "https://acme-staging-v02.api.letsencrypt.org/directory" : "https://acme-v02.api.letsencrypt.org/directory",
