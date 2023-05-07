@@ -1,15 +1,16 @@
-use self::{tcp::TcpPortContext, tls::TlsState};
+use self::{http::HttpPortContext, tcp::TcpPortContext, tls::TlsState};
 use crate::{
     config::{port::PortEntry, AppConfig},
     error::Error,
     keyring::Keyring,
 };
-use multiaddr::Multiaddr;
+use multiaddr::{Multiaddr, Protocol};
 use once_cell::sync::OnceCell;
 use serde_derive::Serialize;
 use std::time::SystemTime;
 use utoipa::ToSchema;
 
+pub mod http;
 pub mod tcp;
 pub mod tls;
 
@@ -70,7 +71,12 @@ pub struct PortContext {
 
 impl PortContext {
     pub fn new(entry: PortEntry) -> Result<Self, Error> {
-        let kind = PortContextKind::Tcp(TcpPortContext::new(&entry)?);
+        let kind = match entry.listen.into_iter().last() {
+            Some(Protocol::Http) | Some(Protocol::Https) => {
+                PortContextKind::Http(HttpPortContext::new(&entry)?)
+            }
+            _ => PortContextKind::Tcp(TcpPortContext::new(&entry)?),
+        };
         Ok(Self { entry, kind })
     }
 
@@ -101,6 +107,7 @@ impl PortContext {
     pub async fn prepare(&mut self, config: &AppConfig) -> Result<(), Error> {
         match &mut self.kind {
             PortContextKind::Tcp(ctx) => ctx.prepare(config).await,
+            PortContextKind::Http(ctx) => ctx.prepare(config).await,
             PortContextKind::Reserved => Ok(()),
         }
     }
@@ -108,6 +115,7 @@ impl PortContext {
     pub async fn setup(&mut self, keyring: &Keyring) -> Result<(), Error> {
         match &mut self.kind {
             PortContextKind::Tcp(ctx) => ctx.setup(keyring).await,
+            PortContextKind::Http(ctx) => ctx.setup(keyring).await,
             PortContextKind::Reserved => Ok(()),
         }
     }
@@ -115,6 +123,7 @@ impl PortContext {
     pub async fn refresh(&mut self, certs: &Keyring) -> Result<(), Error> {
         match &mut self.kind {
             PortContextKind::Tcp(ctx) => ctx.refresh(certs).await,
+            PortContextKind::Http(ctx) => ctx.refresh(certs).await,
             PortContextKind::Reserved => Ok(()),
         }
     }
@@ -122,6 +131,7 @@ impl PortContext {
     pub fn apply(&mut self, new: Self) {
         match (&mut self.kind, new.kind) {
             (PortContextKind::Tcp(old), PortContextKind::Tcp(new)) => old.apply(new),
+            (PortContextKind::Http(old), PortContextKind::Http(new)) => old.apply(new),
             (old, new) => *old = new,
         }
         self.entry = new.entry;
@@ -130,6 +140,7 @@ impl PortContext {
     pub fn event(&mut self, event: PortContextEvent) {
         match &mut self.kind {
             PortContextKind::Tcp(ctx) => ctx.event(event),
+            PortContextKind::Http(ctx) => ctx.event(event),
             PortContextKind::Reserved => (),
         }
     }
@@ -137,6 +148,7 @@ impl PortContext {
     pub fn status(&self) -> &PortStatus {
         match &self.kind {
             PortContextKind::Tcp(ctx) => ctx.status(),
+            PortContextKind::Http(ctx) => ctx.status(),
             PortContextKind::Reserved => {
                 static STATUS: OnceCell<PortStatus> = OnceCell::new();
                 STATUS.get_or_init(PortStatus::default)
@@ -148,5 +160,6 @@ impl PortContext {
 #[derive(Debug)]
 pub enum PortContextKind {
     Tcp(TcpPortContext),
+    Http(HttpPortContext),
     Reserved,
 }
