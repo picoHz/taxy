@@ -289,7 +289,7 @@ fn multiaddr_to_tcp(addr: &Multiaddr) -> Result<SocketAddr, Error> {
 
 fn multiaddr_to_host(addr: &Multiaddr) -> Result<Connection, Error> {
     let stack = addr.iter().collect::<Vec<_>>();
-    let tls = stack.last() == Some(&Protocol::Tls);
+    let tls = stack.contains(&Protocol::Tls);
     match stack[..] {
         [Protocol::Ip4(addr), Protocol::Tcp(port), ..] if port > 0 => Ok(Connection {
             name: ServerName::IpAddress(IpAddr::V4(addr)),
