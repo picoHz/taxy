@@ -37,12 +37,10 @@ impl TcpListenerPool {
     pub async fn update(&mut self, ports: &mut [PortContext]) {
         let mut reserved_ports = Vec::new();
         if self.http_challenges {
-            let port_used = ports.iter().any(|ctx| {
-                if let PortContextKind::Tcp(state) = ctx.kind() {
-                    state.listen.port() == RESERVED_ADDR.port()
-                } else {
-                    false
-                }
+            let port_used = ports.iter().any(|ctx| match ctx.kind() {
+                PortContextKind::Tcp(state) => state.listen.port() == RESERVED_ADDR.port(),
+                PortContextKind::Http(state) => state.listen.port() == RESERVED_ADDR.port(),
+                _ => false,
             });
             if !port_used {
                 reserved_ports.push(PortContext::reserved());
@@ -52,12 +50,10 @@ impl TcpListenerPool {
         let used_addrs = ports
             .iter()
             .chain(&reserved_ports)
-            .filter_map(|ctx| {
-                if let PortContextKind::Tcp(state) = ctx.kind() {
-                    Some(state.listen)
-                } else {
-                    None
-                }
+            .filter_map(|ctx| match ctx.kind() {
+                PortContextKind::Tcp(state) => Some(state.listen),
+                PortContextKind::Http(state) => Some(state.listen),
+                _ => None,
             })
             .collect::<HashSet<_>>();
 
@@ -82,6 +78,7 @@ impl TcpListenerPool {
             let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
             let bind = match ctx.kind() {
                 PortContextKind::Tcp(state) => state.listen,
+                PortContextKind::Http(state) => state.listen,
                 _ => *RESERVED_ADDR,
             };
             let (listener, state) = if let Some(listener) = listeners.remove(&bind) {

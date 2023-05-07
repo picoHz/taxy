@@ -208,8 +208,14 @@ impl ServerState {
 
         if index < self.table.contexts().len() {
             let state = &mut self.table.contexts_mut()[index];
-            if let PortContextKind::Tcp(tcp) = state.kind_mut() {
-                tcp.start_proxy(stream);
+            match state.kind_mut() {
+                PortContextKind::Tcp(tcp) => {
+                    tcp.start_proxy(stream);
+                }
+                PortContextKind::Http(http) => {
+                    http.start_proxy(stream);
+                }
+                PortContextKind::Reserved => (),
             }
         }
     }
