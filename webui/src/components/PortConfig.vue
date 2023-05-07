@@ -192,9 +192,9 @@ function insertServer(n) {
 function serverUrlToMultiaddr(url) {
     const { protocol, hostname, port, pathname } = new URL(url)
     if (protocol === 'http:') {
-        return serverToMultiaddr(hostname, port || 80) + '/http' + pathname
+        return serverToMultiaddr(hostname, port || 80) + '/http'// + pathname
     } else if (protocol === 'https:') {
-        return serverToMultiaddr(hostname, port || 443) + '/tls/http' + pathname
+        return serverToMultiaddr(hostname, port || 443) + '/tls/http'// + pathname
     }
     return ''
 }
