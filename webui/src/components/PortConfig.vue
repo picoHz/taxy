@@ -8,7 +8,7 @@
         <v-divider></v-divider>
         <v-container>
             <v-row>
-                <v-col cols="12" sm="2">
+                <v-col cols="12" sm="3">
                     <v-select :label="$t('ports.config.protocol')" :items="protocols" v-model="formData.protocol"
                         variant="outlined" density="compact"></v-select>
                 </v-col>
@@ -18,13 +18,13 @@
                         variant="outlined" density="compact" :rules="interfaceRules"></v-text-field>
                 </v-col>
 
-                <v-col cols="24" sm="4">
+                <v-col cols="24" sm="3">
                     <v-text-field :label="$t('ports.config.port')" v-model="formData.port" required min="1" max="65535"
                         variant="outlined" density="compact" type="number" :rules="portRules"></v-text-field>
                 </v-col>
             </v-row>
         </v-container>
-        <div v-if="formData.protocol === 'tls'">
+        <div v-if="formData.protocol === 'tls' || formData.protocol === 'https'">
             <v-toolbar color="transparent" density="compact">
                 <v-toolbar-title>
                     {{ $t('ports.config.tls_term.tls_term') }}
@@ -48,7 +48,7 @@
             </v-toolbar-title>
         </v-toolbar>
         <v-divider></v-divider>
-        <v-container>
+        <v-container v-if="formData.protocol === 'tcp' || formData.protocol === 'tls'">
             <div v-for="(item, i) in formData.servers" :key="i">
                 <v-row justify="end">
                     <v-col cols="12" sm="2">
@@ -64,6 +64,24 @@
                     <v-col cols="12" sm="3">
                         <v-text-field :label="$t('ports.config.port')" v-model="item.port" required min="1" max="65535"
                             variant="outlined" density="compact" type="number" :rules="portRules"></v-text-field>
+                    </v-col>
+
+                    <v-col cols="12" sm="2">
+                        <v-btn-group density="compact" class="float-right">
+                            <v-btn :disabled="formData.servers.length <= 1" icon="mdi-minus"
+                                @click="removeServer(i)"></v-btn>
+                            <v-btn icon="mdi-plus" @click="insertServer(i)"></v-btn>
+                        </v-btn-group>
+                    </v-col>
+                </v-row>
+            </div>
+        </v-container>
+        <v-container v-else>
+            <div v-for="(item, i) in formData.servers" :key="i">
+                <v-row justify="end">
+                    <v-col cols="12" sm="10">
+                        <v-text-field :label="$t('ports.config.url')" type="url" variant="outlined" density="compact"
+                            v-model="item.url" :rules="serverUrlRules"></v-text-field>
                     </v-col>
 
                     <v-col cols="12" sm="2">
@@ -95,6 +113,7 @@
 import { reactive, defineEmits, defineProps, onMounted } from 'vue';
 import { Address6, Address4 } from 'ip-address';
 import { useI18n } from 'vue-i18n'
+import URL from 'url-parse';
 import { isValidHostname, parseTlsServerNames } from '@/utils/validators'
 
 const { t } = useI18n({ useScope: 'global' })
@@ -113,13 +132,15 @@ const formData = reactive({
     ifs: '0.0.0.0',
     port: 8080,
     protocol: 'tcp',
-    servers: [{ host: 'example.com', port: 8080, protocol: 'tcp' }],
+    servers: [{ host: 'example.com', port: 8080, protocol: 'tcp', url: 'https://example.com/' }],
     tls_term: { server_names: '' }
 });
 
 const protocols = [
     { title: 'TCP', value: 'tcp' },
-    { title: 'TLS', value: 'tls' }
+    { title: 'TLS', value: 'tls' },
+    { title: 'HTTP', value: 'http' },
+    { title: 'HTTPS', value: 'https' }
 ];
 
 onMounted(() => {
@@ -139,13 +160,19 @@ onMounted(() => {
 async function submitForm(event) {
     let { valid } = await event;
     if (valid) {
-        const entry = {
-            listen: serverToMultiaddrWithProtocol(formData.protocol, formData.ifs, formData.port),
-            servers: formData.servers.map(s => ({
+        const entry = {};
+        if (formData.protocol === 'tcp' || formData.protocol === 'tls') {
+            entry.listen = serverToMultiaddrWithProtocol(formData.protocol, formData.ifs, formData.port);
+            entry.servers = formData.servers.map(s => ({
                 addr: serverToMultiaddrWithProtocol(s.protocol, s.host, s.port),
-            }))
+            }));
+        } else {
+            entry.listen = serverUrlToMultiaddr(`${formData.protocol}://${formData.ifs}:${formData.port}`);
+            entry.servers = formData.servers.map(s => ({
+                addr: serverUrlToMultiaddr(s.url),
+            }));
         }
-        if (formData.protocol === 'tls') {
+        if (formData.protocol === 'tls' || formData.protocol === 'https') {
             entry.tls_termination = {
                 server_names: parseTlsServerNames(formData.tls_term.server_names)
             }
@@ -160,6 +187,16 @@ function removeServer(n) {
 
 function insertServer(n) {
     formData.servers.splice(n + 1, 0, { url: '' });
+}
+
+function serverUrlToMultiaddr(url) {
+    const { protocol, hostname, port, pathname } = new URL(url)
+    if (protocol === 'http:') {
+        return serverToMultiaddr(hostname, port || 80) + '/http' + pathname
+    } else if (protocol === 'https:') {
+        return serverToMultiaddr(hostname, port || 443) + '/tls/http' + pathname
+    }
+    return ''
 }
 
 function serverToMultiaddrWithProtocol(protocol, host, port) {
@@ -181,6 +218,40 @@ function serverToMultiaddr(host, port) {
 }
 
 function multiaddrToServer(addr) {
+    const ip4https = addr.match(/\/ip4\/([0-9.]+)\/tcp\/([0-9]+)\/tls\/http/)
+    if (ip4https) {
+        const port = ip4https[2] === '443' ? '' : `:${ip4https[2]}`;
+        return { host: ip4https[1], port: ip4https[2], protocol: 'https', url: `https://${ip4https[1]}${port}/` }
+    }
+    const ip6https = addr.match(/\/ip6\/([0-9a-f:]+)\/tcp\/([0-9]+)\/tls\/http/)
+    if (ip6https) {
+        const port = ip6https[2] === '443' ? '' : `:${ip6https[2]}`;
+        return { host: ip6https[1], port: ip6https[2], protocol: 'https', url: `https://[${ip6https[1]}]${port}/` }
+    }
+    const dnshttps = addr.match(/\/dns(?:4|6)?\/([0-9a-z.-]+)\/tcp\/([0-9]+)\/tls\/http/)
+    if (dnshttps) {
+        const port = dnshttps[2] === '443' ? '' : `:${dnshttps[2]}`;
+        return {
+            host: dnshttps[1], port: dnshttps[2], protocol: 'https', url: `https://${dnshttps[1]}${port}/`
+        }
+    }
+    const ip4http = addr.match(/\/ip4\/([0-9.]+)\/tcp\/([0-9]+)\/http/)
+    if (ip4http) {
+        const port = ip4http[2] === '80' ? '' : `:${ip4http[2]}`;
+        return {
+            host: ip4http[1], port: ip4http[2], protocol: 'http', url: `http://${ip4http[1]}${port}/`
+        }
+    }
+    const ip6http = addr.match(/\/ip6\/([0-9a-f:]+)\/tcp\/([0-9]+)\/http/)
+    if (ip6http) {
+        const port = ip6http[2] === '80' ? '' : `:${ip6http[2]}`;
+        return { host: ip6http[1], port: ip6http[2], protocol: 'http', url: `http://[${ip6http[1]}]${port}/` }
+    }
+    const dnshttp = addr.match(/\/dns(?:4|6)?\/([0-9a-z.-]+)\/tcp\/([0-9]+)\/http/)
+    if (dnshttp) {
+        const port = dnshttp[2] === '80' ? '' : `:${dnshttp[2]}`;
+        return { host: dnshttp[1], port: dnshttp[2], protocol: 'http', url: `http://${dnshttp[1]}${port}/` }
+    }
     const ip4tls = addr.match(/\/ip4\/([0-9.]+)\/tcp\/([0-9]+)\/tls/)
     if (ip4tls) {
         return { host: ip4tls[1], port: ip4tls[2], protocol: 'tls' }
@@ -241,6 +312,16 @@ const serverNameRules = [
             return true
         } catch (_) { }
         return t('ports.config.rule.hostname_required')
+    },
+]
+
+const serverUrlRules = [
+    value => {
+        try {
+            const url = new URL(value)
+            if (url.protocol === 'http:' || url.protocol === 'https:') return true;
+        } catch (_) { }
+        return t('ports.config.rule.url_required')
     },
 ]
 

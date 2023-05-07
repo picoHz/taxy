@@ -16,6 +16,7 @@
     "ip-address": "^8.1.0",
     "pinia": "^2.0.33",
     "roboto-fontface": "*",
+    "url-parse": "^1.5.10",
     "vee-validate": "^4.8.4",
     "vue": "^3.2.13",
     "vue-i18n": "^9.2.2",
