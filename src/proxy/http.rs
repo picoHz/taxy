@@ -212,9 +212,25 @@ pub async fn start(
         stream = Box::new(acceptor.accept(stream).await?);
     }
 
-    let service = hyper::service::service_fn(move |req| {
+    let service = hyper::service::service_fn(move |mut req| {
         let tls_client_config = tls_client_config.clone();
         let conn = conn.clone();
+
+        let uri_string = format!(
+            "http://{}:{}{}",
+            match &conn.name {
+                ServerName::DnsName(name) => name.as_ref().to_string(),
+                ServerName::IpAddress(addr) => addr.to_string(),
+                _ => unreachable!(),
+            },
+            conn.port,
+            req.uri()
+                .path_and_query()
+                .map(|x| x.as_str())
+                .unwrap_or("/")
+        );
+        let uri = uri_string.parse().unwrap();
+        *req.uri_mut() = uri;
 
         async move {
             let sock = if resolved.is_ipv4() {
