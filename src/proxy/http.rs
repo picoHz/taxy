@@ -49,29 +49,6 @@ impl HttpPortContext {
             servers.push(server);
         }
 
-        let mut tls_client_config = None;
-        let use_tls = servers.iter().any(|server| server.tls);
-        if use_tls {
-            let mut root_certs = RootCertStore::empty();
-            match rustls_native_certs::load_native_certs() {
-                Ok(certs) => {
-                    for certs in certs {
-                        if let Err(err) = root_certs.add(&Certificate(certs.0)) {
-                            warn!("failed to add native certs: {err}");
-                        }
-                    }
-                }
-                Err(err) => {
-                    warn!("failed to load native certs: {err}");
-                }
-            }
-            let config = ClientConfig::builder()
-                .with_safe_defaults()
-                .with_root_certificates(root_certs)
-                .with_no_client_auth();
-            tls_client_config = Some(Arc::new(config));
-        }
-
         let tls_termination = if let Some(tls) = &port.opts.tls_termination {
             Some(TlsTermination::new(tls)?)
         } else if port.listen.iter().any(|p| p == Protocol::Tls) {
@@ -86,7 +63,7 @@ impl HttpPortContext {
             status: Default::default(),
             span,
             tls_termination,
-            tls_client_config,
+            tls_client_config: None,
             round_robin_counter: 0,
         })
     }
@@ -111,10 +88,11 @@ impl HttpPortContext {
                     }
                 }
             }
-            let config = ClientConfig::builder()
+            let mut config = ClientConfig::builder()
                 .with_safe_defaults()
                 .with_root_certificates(root_certs)
                 .with_no_client_auth();
+            config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
             self.tls_client_config = Some(Arc::new(config));
         }
 
@@ -164,6 +142,7 @@ impl HttpPortContext {
     pub fn start_proxy(&mut self, stream: BufStream<TcpStream>) {
         let span = self.span.clone();
         let conn = self.servers[self.round_robin_counter % self.servers.len()].clone();
+
         let tls_client_config = self
             .tls_client_config
             .as_ref()
@@ -242,21 +221,35 @@ pub async fn start(
             let out = sock.connect(resolved).await?;
             debug!(%resolved, "connected");
 
+            let mut http2 = false;
+
             let mut out: Box<dyn IoStream> = Box::new(out);
             if let Some(config) = tls_client_config {
                 debug!(%resolved, "client: tls handshake");
-                let tls = TlsConnector::from(config);
-                out = Box::new(tls.connect(conn.name, out).await?);
+                let tls = TlsConnector::from(config.clone());
+                let tls_stream = tls.connect(conn.name, out).await?;
+                http2 = tls_stream.get_ref().1.alpn_protocol() == Some(b"h2");
+                out = Box::new(tls_stream);
             }
 
-            let (mut sender, conn) = hyper::client::conn::http1::handshake(out).await?;
-            tokio::task::spawn(async move {
-                if let Err(err) = conn.await {
-                    error!("Connection failed: {:?}", err);
-                }
-            });
-
-            Result::<_, anyhow::Error>::Ok(sender.send_request(req).await?)
+            if http2 {
+                let (mut sender, conn) =
+                    hyper::client::conn::http2::handshake(TokioExecutor, out).await?;
+                tokio::task::spawn(async move {
+                    if let Err(err) = conn.await {
+                        error!("Connection failed: {:?}", err);
+                    }
+                });
+                Result::<_, anyhow::Error>::Ok(sender.send_request(req).await?)
+            } else {
+                let (mut sender, conn) = hyper::client::conn::http1::handshake(out).await?;
+                tokio::task::spawn(async move {
+                    if let Err(err) = conn.await {
+                        error!("Connection failed: {:?}", err);
+                    }
+                });
+                Result::<_, anyhow::Error>::Ok(sender.send_request(req).await?)
+            }
         }
     });
 
@@ -319,4 +312,17 @@ pub struct Connection {
     pub name: ServerName,
     pub port: u16,
     pub tls: bool,
+}
+
+#[derive(Clone)]
+pub struct TokioExecutor;
+
+impl<F> hyper::rt::Executor<F> for TokioExecutor
+where
+    F: std::future::Future + Send + 'static,
+    F::Output: Send + 'static,
+{
+    fn execute(&self, fut: F) {
+        tokio::task::spawn(fut);
+    }
 }
