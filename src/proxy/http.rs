@@ -237,17 +237,16 @@ pub async fn start(
                 TcpSocket::new_v4()
             } else {
                 TcpSocket::new_v6()
-            }
-            .unwrap();
+            }?;
 
-            let out = sock.connect(resolved).await.unwrap();
+            let out = sock.connect(resolved).await?;
             debug!(%resolved, "connected");
 
             let mut out: Box<dyn IoStream> = Box::new(out);
             if let Some(config) = tls_client_config {
                 debug!(%resolved, "client: tls handshake");
                 let tls = TlsConnector::from(config);
-                out = Box::new(tls.connect(conn.name, out).await.unwrap());
+                out = Box::new(tls.connect(conn.name, out).await?);
             }
 
             let (mut sender, conn) = hyper::client::conn::http1::handshake(out).await?;
@@ -257,7 +256,7 @@ pub async fn start(
                 }
             });
 
-            sender.send_request(req).await
+            Result::<_, anyhow::Error>::Ok(sender.send_request(req).await?)
         }
     });
 
