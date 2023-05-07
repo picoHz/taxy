@@ -49,29 +49,6 @@ impl TcpPortContext {
             servers.push(server);
         }
 
-        let mut tls_client_config = None;
-        let use_tls = servers.iter().any(|server| server.tls);
-        if use_tls {
-            let mut root_certs = RootCertStore::empty();
-            match rustls_native_certs::load_native_certs() {
-                Ok(certs) => {
-                    for certs in certs {
-                        if let Err(err) = root_certs.add(&Certificate(certs.0)) {
-                            warn!("failed to add native certs: {err}");
-                        }
-                    }
-                }
-                Err(err) => {
-                    warn!("failed to load native certs: {err}");
-                }
-            }
-            let config = ClientConfig::builder()
-                .with_safe_defaults()
-                .with_root_certificates(root_certs)
-                .with_no_client_auth();
-            tls_client_config = Some(Arc::new(config));
-        }
-
         let tls_termination = if let Some(tls) = &port.opts.tls_termination {
             Some(TlsTermination::new(tls)?)
         } else if port.listen.iter().any(|p| p == Protocol::Tls) {
@@ -86,7 +63,7 @@ impl TcpPortContext {
             status: Default::default(),
             span,
             tls_termination,
-            tls_client_config,
+            tls_client_config: None,
             round_robin_counter: 0,
         })
     }
