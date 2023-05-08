@@ -50,7 +50,7 @@ impl TcpPortContext {
         }
 
         let tls_termination = if let Some(tls) = &port.opts.tls_termination {
-            Some(TlsTermination::new(tls)?)
+            Some(TlsTermination::new(tls, vec![])?)
         } else if port.listen.iter().any(|p| p == Protocol::Tls) {
             return Err(Error::TlsTerminationConfigMissing);
         } else {

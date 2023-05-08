@@ -21,6 +21,7 @@ pub enum TlsState {
 pub struct TlsTermination {
     pub server_names: Vec<SubjectName>,
     pub acceptor: Option<TlsAcceptor>,
+    pub alpn_protocols: Vec<Vec<u8>>,
 }
 
 impl fmt::Debug for TlsTermination {
@@ -32,7 +33,10 @@ impl fmt::Debug for TlsTermination {
 }
 
 impl TlsTermination {
-    pub fn new(config: &config::tls::TlsTermination) -> Result<Self, Error> {
+    pub fn new(
+        config: &config::tls::TlsTermination,
+        alpn_protocols: Vec<Vec<u8>>,
+    ) -> Result<Self, Error> {
         let mut server_names = Vec::new();
         for name in &config.server_names {
             let name = SubjectName::from_str(name)?;
@@ -41,6 +45,7 @@ impl TlsTermination {
         Ok(Self {
             server_names,
             acceptor: None,
+            alpn_protocols,
         })
     }
 
@@ -51,10 +56,11 @@ impl TlsTermination {
             true,
         ));
 
-        let server_config = ServerConfig::builder()
+        let mut server_config = ServerConfig::builder()
             .with_safe_defaults()
             .with_no_client_auth()
             .with_cert_resolver(resolver);
+        server_config.alpn_protocols = self.alpn_protocols.clone();
 
         let server_config = Arc::new(server_config);
         self.acceptor = Some(TlsAcceptor::from(server_config));
