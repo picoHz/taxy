@@ -59,7 +59,7 @@ async fn start(args: StartArgs) -> anyhow::Result<()> {
         args.access_log_level,
         args.log_format,
     );
-    let db = DatabaseLayer::new(&log_dir.join("log.db")).await?;
+    let db = DatabaseLayer::new(&log_dir.join("log.db"), args.log_level).await?;
 
     let access_log_filter =
         filter::filter_fn(|metadata| metadata.target().starts_with("taxy::access_log"));
