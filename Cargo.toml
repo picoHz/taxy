@@ -23,7 +23,6 @@ directories = "5.0.1"
 futures = "0.3.28"
 globwalk = "0.8.1"
 hex = "0.4.3"
-http-body-util = "0.1.0-rc.2"
 humantime-serde = "1.1.1"
 hyper = { version = "0.14", features = ["full"] }
 include_dir = "0.7.3"
