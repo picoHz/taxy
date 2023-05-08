@@ -1029,35 +1029,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "hyper"
-version = "1.0.0-rc.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b75264b2003a3913f118d35c586e535293b3e22e41f074930762929d071e092"
-dependencies = [
- "bytes",
- "futures-channel",
- "futures-core",
- "futures-util",
- "h2",
- "http",
- "http-body 1.0.0-rc.2",
- "httparse",
- "httpdate",
- "itoa",
- "pin-project-lite",
- "tokio",
- "tracing",
- "want",
-]
-
-[[package]]
 name = "hyper-rustls"
 version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0646026eb1b3eea4cd9ba47912ea5ce9cc07713d105b1a14698f4e6433d348b7"
 dependencies = [
  "http",
- "hyper 0.14.26",
+ "hyper",
  "rustls 0.21.0",
  "rustls-native-certs",
  "tokio",
@@ -1143,7 +1121,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f3d50eb225913c1903c788287ddd0b16369771e5abc988756a5e5927390ba04f"
 dependencies = [
  "base64 0.21.0",
- "hyper 0.14.26",
+ "hyper",
  "hyper-rustls",
  "ring",
  "serde",
@@ -2409,7 +2387,7 @@ dependencies = [
  "hex",
  "http-body-util",
  "humantime-serde",
- "hyper 1.0.0-rc.3",
+ "hyper",
  "include_dir",
  "indexmap",
  "instant-acme",
@@ -2968,7 +2946,7 @@ dependencies = [
  "futures-util",
  "headers",
  "http",
- "hyper 0.14.26",
+ "hyper",
  "log",
  "mime",
  "mime_guess",
