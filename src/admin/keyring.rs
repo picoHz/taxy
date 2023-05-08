@@ -201,7 +201,9 @@ pub async fn log(state: AppState, id: String, query: LogQuery) -> Result<impl Re
         let log = data.log.clone();
         let id = item.id().to_string();
         std::mem::drop(data);
-        let rows = log.fetch_system_log(&id, query.since, query.until).await?;
+        let rows = log
+            .fetch_system_log(&id, query.since, query.until, query.limit)
+            .await?;
         Ok(warp::reply::json(&rows))
     } else {
         Err(warp::reject::custom(Error::KeyringItemNotFound { id }))
