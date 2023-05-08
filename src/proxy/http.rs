@@ -51,7 +51,8 @@ impl HttpPortContext {
         }
 
         let tls_termination = if let Some(tls) = &port.opts.tls_termination {
-            Some(TlsTermination::new(tls)?)
+            let alpn = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
+            Some(TlsTermination::new(tls, alpn)?)
         } else if port.listen.iter().any(|p| p == Protocol::Tls) {
             return Err(Error::TlsTerminationConfigMissing);
         } else {
@@ -187,9 +188,13 @@ pub async fn start(
     info!(target: "taxy::access_log", remote = %remote, %local, %resolved);
 
     let mut stream: Box<dyn IoStream> = Box::new(stream);
+    let mut server_http2 = false;
+
     if let Some(acceptor) = tls_acceptor {
         debug!(%remote, "server: tls handshake");
-        stream = Box::new(acceptor.accept(stream).await?);
+        let accepted = acceptor.accept(stream).await?;
+        server_http2 = accepted.get_ref().1.alpn_protocol() == Some(b"h2");
+        stream = Box::new(accepted);
     }
 
     let service = hyper::service::service_fn(move |mut req| {
@@ -222,19 +227,19 @@ pub async fn start(
             let out = sock.connect(resolved).await?;
             debug!(%resolved, "connected");
 
-            let mut http2 = false;
+            let mut client_http2 = false;
 
             let mut out: Box<dyn IoStream> = Box::new(out);
             if let Some(config) = tls_client_config {
                 debug!(%resolved, "client: tls handshake");
                 let tls = TlsConnector::from(config.clone());
                 let tls_stream = tls.connect(conn.name, out).await?;
-                http2 = tls_stream.get_ref().1.alpn_protocol() == Some(b"h2");
+                client_http2 = tls_stream.get_ref().1.alpn_protocol() == Some(b"h2");
                 out = Box::new(tls_stream);
             }
 
             let (mut sender, conn) = client::conn::Builder::new()
-                .http2_only(http2)
+                .http2_only(client_http2)
                 .handshake(out)
                 .await?;
             tokio::task::spawn(async move {
@@ -247,7 +252,11 @@ pub async fn start(
     });
 
     tokio::task::spawn(async move {
-        if let Err(err) = Http::new().serve_connection(stream, service).await {
+        if let Err(err) = Http::new()
+            .http2_only(server_http2)
+            .serve_connection(stream, service)
+            .await
+        {
             error!("Failed to serve the connection: {:?}", err);
         }
     });
