@@ -4,10 +4,13 @@ use rcgen::{CertificateParams, DistinguishedName, DnType, SanType};
 use rustls_pemfile::Item;
 use serde_derive::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::fmt;
 use std::io::{BufRead, BufReader};
 use std::str::FromStr;
+use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use tokio_rustls::rustls::{Certificate, PrivateKey};
+use tokio_rustls::rustls::sign::CertifiedKey;
+use tokio_rustls::rustls::{sign, Certificate, PrivateKey};
 use tracing::error;
 use utoipa::ToSchema;
 use x509_parser::{extensions::GeneralName, time::ASN1Time};
@@ -15,10 +18,10 @@ use x509_parser::{parse_x509_certificate, prelude::X509Certificate};
 
 const CERT_ID_LENGTH: usize = 20;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone)]
 pub struct Cert {
     pub id: String,
-    pub chain: Vec<Certificate>,
+    pub certified: Arc<CertifiedKey>,
     pub key: PrivateKey,
     pub raw_chain: Vec<u8>,
     pub raw_key: Vec<u8>,
@@ -30,6 +33,30 @@ pub struct Cert {
     pub not_before: ASN1Time,
     pub is_self_signed: bool,
     pub metadata: Option<CertMetadata>,
+}
+
+impl PartialEq for Cert {
+    fn eq(&self, other: &Self) -> bool {
+        self.fingerprint == other.fingerprint
+    }
+}
+
+impl Eq for Cert {}
+
+impl fmt::Debug for Cert {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Cert")
+            .field("id", &self.id)
+            .field("fingerprint", &self.fingerprint)
+            .field("issuer", &self.issuer)
+            .field("root_cert", &self.root_cert)
+            .field("san", &self.san)
+            .field("not_after", &self.not_after)
+            .field("not_before", &self.not_before)
+            .field("is_self_signed", &self.is_self_signed)
+            .field("metadata", &self.metadata)
+            .finish()
+    }
 }
 
 impl PartialOrd for Cert {
@@ -201,10 +228,14 @@ impl Cert {
             .filter(|_| chain.len() > 1)
             .map(|cert| cert.subject().to_string());
 
+        let signing_key =
+            sign::any_supported_type(&key).map_err(|_| Error::FailedToReadPrivateKey)?;
+        let certified = Arc::new(CertifiedKey::new(chain, signing_key));
+
         Ok(Cert {
             id: fingerprint[..CERT_ID_LENGTH].to_string(),
             fingerprint,
-            chain,
+            certified,
             key,
             raw_chain,
             raw_key,

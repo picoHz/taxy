@@ -18,7 +18,7 @@ export function isValidTlsServerName(name) {
 }
 
 export function parseTlsServerNames(names) {
-    const list = names.split(',').map(n => n.trim())
-    if (list.some(n => !isValidTlsServerName(n))) return []
+    const list = (names.split(',') || []).map(n => n.trim()).filter(n => n.length > 0)
+    if (list.some(n => !isValidTlsServerName(n))) return null
     return list
 }

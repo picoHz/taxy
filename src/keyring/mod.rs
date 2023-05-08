@@ -72,18 +72,17 @@ impl Keyring {
         self.certs.values()
     }
 
-    pub fn find_server_cert(&self, names: &[SubjectName]) -> Option<&Arc<Cert>> {
+    pub fn certs(&self) -> Vec<Arc<Cert>> {
         let mut certs = self
             .certs
             .values()
             .filter_map(|item| match item {
-                KeyringItem::ServerCert(cert) => Some(cert),
+                KeyringItem::ServerCert(cert) => Some(cert.clone()),
                 _ => None,
             })
-            .filter(|cert| cert.is_valid() && names.iter().all(|name| cert.has_subject_name(name)))
             .collect::<Vec<_>>();
         certs.sort();
-        certs.first().copied()
+        certs
     }
 
     pub fn find_server_cert_by_acme(&self, acme: &str) -> Vec<&Arc<Cert>> {

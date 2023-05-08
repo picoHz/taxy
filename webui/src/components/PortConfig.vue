@@ -336,7 +336,7 @@ const portRules = [
 const tlsServerNamesRules = [
     value => {
         const list = parseTlsServerNames(value)
-        if (list.length > 0) return true
+        if (list !== null) return true
         return t('ports.config.tls_term.server_names.rule')
     },
 ]
