@@ -1,12 +1,12 @@
 [package]
 name = "taxy"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 include = ["/src", "/build.rs", "/LICENSE", "/webui/dist"]
 build = "build.rs"
 description = "A reverse proxy server with a user-friendly WebUI"
 authors = ["picoHz <picoHz@outlook.com>"]
-keywords = ["tcp", "http", "tls", "https", "acme", "proxy", "reverse-proxy"]
+keywords = ["tcp", "http", "tls", "proxy", "reverse-proxy"]
 categories = ["network-programming"]
 license = "MIT"
 repository = "https://github.com/picoHz/taxy"
