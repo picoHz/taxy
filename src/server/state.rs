@@ -6,10 +6,8 @@ use crate::{
     keyring::{Keyring, KeyringItem},
     proxy::{PortContext, PortContextKind},
 };
-use http_body_util::Full;
-use hyper::body::{Bytes, Incoming};
-use hyper::server::conn::http1;
-use hyper::service::service_fn;
+use hyper::server::conn::Http;
+use hyper::{service::service_fn, Body};
 use std::convert::Infallible;
 use std::{
     collections::HashMap,
@@ -23,7 +21,7 @@ use tokio::{
     sync::{broadcast, mpsc},
 };
 use tracing::{error, info, span, Instrument, Level};
-use warp::http::{Request, Response};
+use warp::http::Response;
 
 pub struct ServerState {
     config: AppConfig,
@@ -187,14 +185,12 @@ impl ServerState {
         if !self.http_challenges.is_empty() {
             if let Some(body) = self.handle_http_challenge(&mut stream).await {
                 tokio::task::spawn(async move {
-                    if let Err(err) = http1::Builder::new()
+                    if let Err(err) = Http::new()
                         .serve_connection(
                             stream,
-                            service_fn(|_: Request<Incoming>| {
+                            service_fn(|_| {
                                 let body = body.clone();
-                                async move {
-                                    Ok::<_, Infallible>(Response::new(Full::new(Bytes::from(body))))
-                                }
+                                async move { Ok::<_, Infallible>(Response::new(Body::from(body))) }
                             }),
                         )
                         .await

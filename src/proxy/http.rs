@@ -4,6 +4,7 @@ use crate::{
     error::Error,
     keyring::Keyring,
 };
+use hyper::{client, server::conn::Http};
 use multiaddr::{Multiaddr, Protocol};
 use std::{
     net::{IpAddr, SocketAddr},
@@ -232,32 +233,21 @@ pub async fn start(
                 out = Box::new(tls_stream);
             }
 
-            if http2 {
-                let (mut sender, conn) =
-                    hyper::client::conn::http2::handshake(TokioExecutor, out).await?;
-                tokio::task::spawn(async move {
-                    if let Err(err) = conn.await {
-                        error!("Connection failed: {:?}", err);
-                    }
-                });
-                Result::<_, anyhow::Error>::Ok(sender.send_request(req).await?)
-            } else {
-                let (mut sender, conn) = hyper::client::conn::http1::handshake(out).await?;
-                tokio::task::spawn(async move {
-                    if let Err(err) = conn.await {
-                        error!("Connection failed: {:?}", err);
-                    }
-                });
-                Result::<_, anyhow::Error>::Ok(sender.send_request(req).await?)
-            }
+            let (mut sender, conn) = client::conn::Builder::new()
+                .http2_only(http2)
+                .handshake(out)
+                .await?;
+            tokio::task::spawn(async move {
+                if let Err(err) = conn.await {
+                    error!("Connection failed: {:?}", err);
+                }
+            });
+            Result::<_, anyhow::Error>::Ok(sender.send_request(req).await?)
         }
     });
 
     tokio::task::spawn(async move {
-        if let Err(err) = hyper::server::conn::http1::Builder::new()
-            .serve_connection(stream, service)
-            .await
-        {
+        if let Err(err) = Http::new().serve_connection(stream, service).await {
             error!("Failed to serve the connection: {:?}", err);
         }
     });
