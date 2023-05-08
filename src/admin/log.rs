@@ -9,6 +9,7 @@ use utoipa::{IntoParams, ToSchema};
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 const REQUEST_INTERVAL: Duration = Duration::from_secs(1);
+const REQUEST_DEFAULT_LIMIT: u32 = 100;
 
 pub struct LogReader {
     pool: SqlitePool,
@@ -27,15 +28,17 @@ impl LogReader {
         resource_id: &str,
         since: Option<OffsetDateTime>,
         until: Option<OffsetDateTime>,
+        limit: Option<u32>,
     ) -> Result<Vec<SystemLogRow>, Error> {
         let mut timeout = tokio::time::interval(REQUEST_TIMEOUT);
         timeout.tick().await;
 
         loop {
-            let rows = sqlx::query("select * from system_log WHERE resource_id = ? AND (timestamp BETWEEN ? AND ?) ORDER BY timestamp")
+            let rows = sqlx::query("select * from system_log WHERE resource_id = ? AND (timestamp BETWEEN ? AND ?) ORDER BY timestamp DESC LIMIT ?")
                 .bind(resource_id)
                 .bind(since.unwrap_or(OffsetDateTime::UNIX_EPOCH))
                 .bind(until.unwrap_or_else(OffsetDateTime::now_utc))
+                .bind(limit.unwrap_or(REQUEST_DEFAULT_LIMIT))
                 .fetch_all(&self.pool);
             tokio::select! {
                 _ = timeout.tick() => {
@@ -53,6 +56,7 @@ impl LogReader {
                                     message: row.get(3),
                                     fields: serde_json::from_str(row.get(4)).unwrap_or_default(),
                                 })
+                                .rev()
                                 .collect());
                         },
                         Err(_) => {
@@ -114,6 +118,7 @@ pub struct LogQuery {
     #[serde(default, deserialize_with = "deserialize_time")]
     #[param(value_type = Option<u64>)]
     pub until: Option<OffsetDateTime>,
+    pub limit: Option<u32>,
 }
 
 fn deserialize_time<'de, D>(deserializer: D) -> Result<Option<OffsetDateTime>, D::Error>
