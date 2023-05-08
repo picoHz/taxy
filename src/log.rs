@@ -88,10 +88,11 @@ pub struct DatabaseLayer {
     pool: SqlitePool,
     handle: Handle,
     span_map: DashMap<span::Id, String>,
+    level_filter: LevelFilter,
 }
 
 impl DatabaseLayer {
-    pub async fn new(path: &Path) -> anyhow::Result<Self> {
+    pub async fn new(path: &Path, level_filter: LevelFilter) -> anyhow::Result<Self> {
         let mut opt = SqliteConnectOptions::new()
             .filename(path)
             .create_if_missing(true);
@@ -115,6 +116,7 @@ impl DatabaseLayer {
             pool,
             handle: Handle::current(),
             span_map: DashMap::new(),
+            level_filter,
         })
     }
 }
@@ -133,6 +135,9 @@ where
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<'_, S>) {
         let metadata = event.metadata();
+        if metadata.level() > &self.level_filter {
+            return;
+        }
         if metadata.target().starts_with("taxy::access_log") {
             return;
         }
