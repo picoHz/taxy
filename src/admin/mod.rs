@@ -319,6 +319,8 @@ pub struct AppState {
     data: Arc<Mutex<Data>>,
 }
 
+type CallbackData = Result<Box<dyn Any + Send + Sync>, Error>;
+
 struct Data {
     app_info: AppInfo,
     config: AppConfig,
@@ -329,7 +331,7 @@ struct Data {
     log: Arc<LogReader>,
 
     rpc_counter: usize,
-    rpc_callbacks: HashMap<usize, oneshot::Sender<Result<Box<dyn Any + Send + Sync>, Error>>>,
+    rpc_callbacks: HashMap<usize, oneshot::Sender<CallbackData>>,
 }
 
 impl AppState {
