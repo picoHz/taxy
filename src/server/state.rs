@@ -99,6 +99,7 @@ impl ServerState {
         };
 
         this.register_callback::<rpc::ports::GetPortList>();
+        this.register_callback::<rpc::ports::GetPortStatus>();
 
         this.update_port_statuses().await;
         this.start_http_challenges().await;
