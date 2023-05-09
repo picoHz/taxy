@@ -61,6 +61,9 @@ pub enum Error {
 
     #[error("waiting log timed out")]
     WaitingLogTimedOut,
+
+    #[error("rpc error")]
+    RpcError,
 }
 
 impl Reject for Error {}

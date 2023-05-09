@@ -1,13 +1,15 @@
 use crate::config::{AppConfig, AppInfo};
 use crate::keyring::KeyringInfo;
 use crate::proxy::PortStatus;
+use crate::server::rpc::{RpcCallback, RpcMethod};
 use crate::{command::ServerCommand, config::port::PortEntry, error::Error, event::ServerEvent};
 use hyper::StatusCode;
 use serde_derive::{Deserialize, Serialize};
+use std::any::Any;
 use std::collections::HashMap;
 use std::{convert::Infallible, net::SocketAddr, sync::Arc};
 use tokio::sync::broadcast::error::RecvError;
-use tokio::sync::{broadcast, mpsc, Mutex};
+use tokio::sync::{broadcast, mpsc, oneshot, Mutex};
 use tokio_stream::{wrappers::BroadcastStream, StreamExt};
 use tracing::{error, info, trace, warn};
 use utoipa::OpenApi;
@@ -31,6 +33,7 @@ pub async fn start_admin(
     app_info: AppInfo,
     addr: SocketAddr,
     command: mpsc::Sender<ServerCommand>,
+    mut callback: mpsc::Receiver<RpcCallback>,
     event: broadcast::Sender<ServerEvent>,
 ) -> anyhow::Result<()> {
     let data = Data::new(app_info).await?;
@@ -39,6 +42,16 @@ pub async fn start_admin(
         sender: command,
         data: data.clone(),
     };
+
+    let data_clone = data.clone();
+    tokio::spawn(async move {
+        while let Some(cb) = callback.recv().await {
+            let mut data = data_clone.lock().await;
+            if let Some(tx) = data.rpc_callbacks.remove(&cb.id) {
+                let _ = tx.send(cb.result);
+            }
+        }
+    });
 
     let mut event_recv = event.subscribe();
     tokio::spawn(async move {
@@ -307,13 +320,49 @@ pub struct AppState {
 }
 
 struct Data {
-    pub app_info: AppInfo,
-    pub config: AppConfig,
-    pub entries: Vec<PortEntry>,
-    pub status: HashMap<String, PortStatus>,
-    pub keyring_items: Vec<KeyringInfo>,
-    pub sessions: SessionStore,
-    pub log: Arc<LogReader>,
+    app_info: AppInfo,
+    config: AppConfig,
+    entries: Vec<PortEntry>,
+    status: HashMap<String, PortStatus>,
+    keyring_items: Vec<KeyringInfo>,
+    sessions: SessionStore,
+    log: Arc<LogReader>,
+
+    rpc_counter: usize,
+    rpc_callbacks: HashMap<usize, oneshot::Sender<Result<Box<dyn Any + Send + Sync>, Error>>>,
+}
+
+impl AppState {
+    async fn call<T>(&self, method: T) -> Result<Box<T::Output>, Error>
+    where
+        T: RpcMethod,
+    {
+        let mut data = self.data.lock().await;
+        let id = data.rpc_counter;
+        data.rpc_counter += 1;
+
+        let (tx, rx) = oneshot::channel();
+        data.rpc_callbacks.insert(id, tx);
+        std::mem::drop(data);
+
+        let arg = Box::new(method) as Box<dyn Any + Send + Sync>;
+        let _ = self
+            .sender
+            .send(ServerCommand::CallMethod {
+                id,
+                method: T::NAME.to_string(),
+                arg,
+            })
+            .await;
+
+        match rx.await {
+            Ok(v) => match v {
+                Ok(value) => value.downcast().map_err(|_| Error::RpcError),
+                Err(err) => Err(err),
+            },
+            Err(_) => Err(Error::RpcError),
+        }
+    }
 }
 
 impl Data {
@@ -327,6 +376,8 @@ impl Data {
             keyring_items: Vec::new(),
             sessions: Default::default(),
             log: Arc::new(LogReader::new(&log).await?),
+            rpc_counter: 0,
+            rpc_callbacks: HashMap::new(),
         })
     }
 }

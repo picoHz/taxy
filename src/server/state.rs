@@ -1,14 +1,19 @@
-use super::{listener::TcpListenerPool, table::ProxyTable};
+use super::{
+    listener::TcpListenerPool,
+    rpc::{RpcCallback, RpcCallbackFunc, RpcMethod},
+    table::ProxyTable,
+};
 use crate::{
     command::ServerCommand,
     config::{storage::ConfigStorage, AppConfig, Source},
+    error::Error,
     event::ServerEvent,
     keyring::{Keyring, KeyringItem},
     proxy::{PortContext, PortContextKind},
 };
 use hyper::server::conn::Http;
 use hyper::{service::service_fn, Body};
-use std::convert::Infallible;
+use std::{any::Any, convert::Infallible};
 use std::{
     collections::HashMap,
     sync::Arc,
@@ -32,12 +37,15 @@ pub struct ServerState {
     http_challenges: HashMap<String, String>,
     command_sender: mpsc::Sender<ServerCommand>,
     br_sender: broadcast::Sender<ServerEvent>,
+    callback_sender: mpsc::Sender<RpcCallback>,
+    callbacks: HashMap<String, RpcCallbackFunc>,
 }
 
 impl ServerState {
     pub async fn new(
         storage: ConfigStorage,
         command_sender: mpsc::Sender<ServerCommand>,
+        callback_sender: mpsc::Sender<RpcCallback>,
         br_sender: broadcast::Sender<ServerEvent>,
     ) -> Self {
         let config = storage.load_app_config().await;
@@ -84,6 +92,8 @@ impl ServerState {
             http_challenges: HashMap::new(),
             command_sender,
             br_sender,
+            callback_sender,
+            callbacks: HashMap::new(),
         };
 
         this.update_port_statuses().await;
@@ -148,6 +158,13 @@ impl ServerState {
                 self.pool.set_http_challenges(false);
                 self.http_challenges.clear();
                 self.pool.update(self.table.contexts_mut()).await;
+            }
+            ServerCommand::CallMethod { id, method, arg } => {
+                if let Some(cb) = self.callbacks.remove(&method) {
+                    let result = cb(self, arg);
+                    self.callbacks.insert(method, cb);
+                    let _ = self.callback_sender.send(RpcCallback { id, result }).await;
+                }
             }
         }
     }
@@ -214,6 +231,23 @@ impl ServerState {
                 PortContextKind::Reserved => (),
             }
         }
+    }
+
+    fn register_callback<M>(&mut self)
+    where
+        M: RpcMethod,
+    {
+        let func = move |this: &mut ServerState,
+                         data: Box<dyn Any>|
+              -> Result<Box<dyn Any + Send + Sync>, Error> {
+            let input = data.downcast::<M>().map_err(|_| Error::RpcError)?;
+            match input.call(this) {
+                Ok(output) => Ok(Box::new(output) as Box<dyn Any + Send + Sync>),
+                Err(err) => Err(err),
+            }
+        };
+        let func = Box::new(func) as RpcCallbackFunc;
+        self.callbacks.insert(M::NAME.to_string(), func);
     }
 
     async fn update_port_statuses(&mut self) {

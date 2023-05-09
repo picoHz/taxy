@@ -1,3 +1,4 @@
+use self::rpc::RpcCallback;
 use self::state::ServerState;
 use crate::config::storage::ConfigStorage;
 use crate::{command::ServerCommand, event::ServerEvent};
@@ -6,6 +7,7 @@ use tokio::sync::{broadcast, mpsc};
 use tracing::{info, warn};
 
 mod listener;
+pub mod rpc;
 mod state;
 mod table;
 
@@ -13,10 +15,11 @@ pub async fn start_server(
     config: ConfigStorage,
     command_send: mpsc::Sender<ServerCommand>,
     mut command_recv: mpsc::Receiver<ServerCommand>,
+    callback: mpsc::Sender<RpcCallback>,
     event: broadcast::Sender<ServerEvent>,
 ) -> anyhow::Result<()> {
     let mut event_recv = event.subscribe();
-    let mut server = ServerState::new(config, command_send, event).await;
+    let mut server = ServerState::new(config, command_send, callback, event).await;
 
     let mut background_task_interval =
         tokio::time::interval(server.config().background_task_interval);
