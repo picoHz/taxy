@@ -5,6 +5,7 @@ use crate::{
     config::port::{PortEntry, PortEntryRequest},
     error::Error,
     proxy::PortContext,
+    server::rpc::ports::GetPortList,
 };
 use warp::{Rejection, Reply};
 
@@ -23,8 +24,7 @@ use warp::{Rejection, Reply};
     )
 )]
 pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
-    let data = state.data.lock().await;
-    Ok(warp::reply::json(&data.entries))
+    Ok(warp::reply::json(&state.call(GetPortList).await?))
 }
 
 /// Get the status of a port.

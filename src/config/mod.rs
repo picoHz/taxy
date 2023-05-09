@@ -36,7 +36,7 @@ pub enum Source {
     Api,
 }
 
-#[derive(Serialize, ToSchema)]
+#[derive(Clone, Serialize, ToSchema)]
 pub struct AppInfo {
     #[schema(example = "0.0.0")]
     pub version: &'static str,

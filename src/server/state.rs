@@ -1,3 +1,4 @@
+use super::rpc;
 use super::{
     listener::TcpListenerPool,
     rpc::{RpcCallback, RpcCallbackFunc, RpcMethod},
@@ -5,7 +6,7 @@ use super::{
 };
 use crate::{
     command::ServerCommand,
-    config::{storage::ConfigStorage, AppConfig, Source},
+    config::{port::PortEntry, storage::ConfigStorage, AppConfig, Source},
     error::Error,
     event::ServerEvent,
     keyring::{Keyring, KeyringItem},
@@ -95,6 +96,8 @@ impl ServerState {
             callback_sender,
             callbacks: HashMap::new(),
         };
+
+        this.register_callback::<rpc::ports::GetPortList>();
 
         this.update_port_statuses().await;
         this.start_http_challenges().await;
@@ -372,5 +375,9 @@ impl ServerState {
             }
             let _ = command.send(ServerCommand::StopHttpChallenges).await;
         })
+    }
+
+    pub fn get_port_list(&self) -> Vec<PortEntry> {
+        self.table.entries()
     }
 }

@@ -73,6 +73,7 @@ async fn start(args: StartArgs) -> anyhow::Result<()> {
     fs::create_dir_all(&config_dir)?;
 
     let config = ConfigStorage::new(&config_dir);
+    let app_info = AppInfo::new(&config_dir, &log_dir);
 
     let (event_send, _) = broadcast::channel(16);
     let (command_send, command_recv) = mpsc::channel(1);
@@ -84,8 +85,6 @@ async fn start(args: StartArgs) -> anyhow::Result<()> {
         callback_send,
         event_send.clone(),
     ));
-
-    let app_info = AppInfo::new(&config_dir, &log_dir);
 
     let webui_enabled = !args.no_webui;
     tokio::select! {

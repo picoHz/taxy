@@ -1,8 +1,7 @@
-use std::any::Any;
-
 use crate::config::AppConfig;
 use crate::keyring::KeyringItem;
 use crate::proxy::PortContext;
+use std::any::Any;
 
 #[derive(Debug)]
 pub enum ServerCommand {
