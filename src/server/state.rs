@@ -4,6 +4,7 @@ use super::{
     rpc::{RpcCallback, RpcCallbackFunc, RpcMethod},
     table::ProxyTable,
 };
+use crate::proxy::PortStatus;
 use crate::{
     command::ServerCommand,
     config::{port::PortEntry, storage::ConfigStorage, AppConfig, Source},
@@ -379,5 +380,14 @@ impl ServerState {
 
     pub fn get_port_list(&self) -> Vec<PortEntry> {
         self.table.entries()
+    }
+
+    pub fn get_port_status(&self, id: &str) -> Result<PortStatus, Error> {
+        self.table
+            .contexts()
+            .iter()
+            .find(|ctx| ctx.entry.id == id)
+            .map(|ctx| *ctx.status())
+            .ok_or_else(|| Error::IdNotFound { id: id.to_string() })
     }
 }
