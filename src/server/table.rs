@@ -35,9 +35,12 @@ impl ProxyTable {
         }
     }
 
-    pub fn delete_port(&mut self, id: &str) {
+    pub fn delete_port(&mut self, id: &str) -> bool {
         if let Some(index) = self.contexts.iter().position(|p| p.entry().id == *id) {
             self.contexts.remove(index);
+            true
+        } else {
+            false
         }
     }
 }
