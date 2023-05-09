@@ -1,5 +1,5 @@
 use super::AppState;
-use crate::{command::ServerCommand, config::AppConfig};
+use crate::{config::AppConfig, server::rpc::config::*};
 use warp::{Rejection, Reply};
 
 /// Get the application configuration.
@@ -15,8 +15,7 @@ use warp::{Rejection, Reply};
     )
 )]
 pub async fn get(state: AppState) -> Result<impl Reply, Rejection> {
-    let data = state.data.lock().await;
-    Ok(warp::reply::json(&data.config))
+    Ok(warp::reply::json(&state.call(GetConfig).await?))
 }
 
 /// Update the application configuration.
@@ -34,9 +33,5 @@ pub async fn get(state: AppState) -> Result<impl Reply, Rejection> {
     )
 )]
 pub async fn put(state: AppState, config: AppConfig) -> Result<impl Reply, Rejection> {
-    let _ = state
-        .sender
-        .send(ServerCommand::SetAppConfig { config })
-        .await;
-    Ok(warp::reply::reply())
+    Ok(warp::reply::json(&state.call(SetConfig { config }).await?))
 }

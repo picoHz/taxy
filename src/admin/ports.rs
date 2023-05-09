@@ -1,10 +1,8 @@
 use super::AppState;
 use crate::{
     admin::log::LogQuery,
-    command::ServerCommand,
     config::port::{PortEntry, PortEntryRequest},
-    error::Error,
-    proxy::PortContext,
+    server::rpc::ports::*,
 };
 use warp::{Rejection, Reply};
 
@@ -23,8 +21,7 @@ use warp::{Rejection, Reply};
     )
 )]
 pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
-    let data = state.data.lock().await;
-    Ok(warp::reply::json(&data.entries))
+    Ok(warp::reply::json(&state.call(GetPortList).await?))
 }
 
 /// Get the status of a port.
@@ -44,12 +41,7 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
     )
 )]
 pub async fn status(state: AppState, id: String) -> Result<impl Reply, Rejection> {
-    let data = state.data.lock().await;
-    if let Some(status) = data.status.get(&id) {
-        Ok(warp::reply::json(&status))
-    } else {
-        Err(warp::reject::custom(Error::IdNotFound { id }))
-    }
+    Ok(warp::reply::json(&state.call(GetPortStatus { id }).await?))
 }
 
 /// Delete a port configuration.
@@ -69,11 +61,7 @@ pub async fn status(state: AppState, id: String) -> Result<impl Reply, Rejection
     )
 )]
 pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {
-    if state.data.lock().await.entries.iter().all(|e| e.id != id) {
-        return Err(warp::reject::custom(Error::IdNotFound { id }));
-    }
-    let _ = state.sender.send(ServerCommand::DeletePort { id }).await;
-    Ok(warp::reply::reply())
+    Ok(warp::reply::json(&state.call(DeletePort { id }).await?))
 }
 
 /// Create a new port configuration.
@@ -91,11 +79,13 @@ pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection
     )
 )]
 pub async fn post(state: AppState, entry: PortEntryRequest) -> Result<impl Reply, Rejection> {
-    let data = state.data.lock().await;
-    let mut ctx = PortContext::new(entry.into())?;
-    ctx.prepare(&data.config).await?;
-    let _ = state.sender.send(ServerCommand::SetPort { ctx }).await;
-    Ok(warp::reply::reply())
+    Ok(warp::reply::json(
+        &state
+            .call(AddPort {
+                entry: entry.into(),
+            })
+            .await?,
+    ))
 }
 
 /// Update or rename a port configuration.
@@ -121,13 +111,9 @@ pub async fn put(
     entry: PortEntryRequest,
     id: String,
 ) -> Result<impl Reply, Rejection> {
-    let data = state.data.lock().await;
     let mut entry: PortEntry = entry.into();
     entry.id = id;
-    let mut ctx = PortContext::new(entry)?;
-    ctx.prepare(&data.config).await?;
-    let _ = state.sender.send(ServerCommand::SetPort { ctx }).await;
-    Ok(warp::reply::reply())
+    Ok(warp::reply::json(&state.call(UpdatePort { entry }).await?))
 }
 
 /// Get log.
@@ -149,16 +135,9 @@ pub async fn put(
     )
 )]
 pub async fn log(state: AppState, id: String, query: LogQuery) -> Result<impl Reply, Rejection> {
-    let data = state.data.lock().await;
-    if let Some(item) = data.entries.iter().find(|e| e.id == id) {
-        let log = data.log.clone();
-        let id = item.id.clone();
-        std::mem::drop(data);
-        let rows = log
-            .fetch_system_log(&id, query.since, query.until, query.limit)
-            .await?;
-        Ok(warp::reply::json(&rows))
-    } else {
-        Err(warp::reject::custom(Error::KeyringItemNotFound { id }))
-    }
+    let log = state.data.lock().await.log.clone();
+    let rows = log
+        .fetch_system_log(&id, query.since, query.until, query.limit)
+        .await?;
+    Ok(warp::reply::json(&rows))
 }

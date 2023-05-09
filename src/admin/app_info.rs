@@ -1,6 +1,5 @@
-use warp::{Rejection, Reply};
-
 use super::AppState;
+use warp::{Rejection, Reply};
 
 /// Get app info.
 #[utoipa::path(

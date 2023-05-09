@@ -47,6 +47,9 @@ pub enum Error {
     #[error("port id not found: {id}")]
     IdNotFound { id: String },
 
+    #[error("port id already exists: {id}")]
+    IdAlreadyExists { id: String },
+
     #[error("acme account creation failed")]
     AcmeAccountCreationFailed,
 
@@ -61,6 +64,9 @@ pub enum Error {
 
     #[error("waiting log timed out")]
     WaitingLogTimedOut,
+
+    #[error("rpc error")]
+    RpcError,
 }
 
 impl Reject for Error {}

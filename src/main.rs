@@ -73,21 +73,22 @@ async fn start(args: StartArgs) -> anyhow::Result<()> {
     fs::create_dir_all(&config_dir)?;
 
     let config = ConfigStorage::new(&config_dir);
+    let app_info = AppInfo::new(&config_dir, &log_dir);
 
     let (event_send, _) = broadcast::channel(16);
     let (command_send, command_recv) = mpsc::channel(1);
+    let (callback_send, callback_recv) = mpsc::channel(16);
     let server_task = tokio::spawn(server::start_server(
         config,
         command_send.clone(),
         command_recv,
+        callback_send,
         event_send.clone(),
     ));
 
-    let app_info = AppInfo::new(&config_dir, &log_dir);
-
     let webui_enabled = !args.no_webui;
     tokio::select! {
-        r = admin::start_admin(app_info, args.webui, command_send, event_send.clone()), if webui_enabled => {
+        r = admin::start_admin(app_info, args.webui, command_send, callback_recv, event_send.clone()), if webui_enabled => {
             if let Err(err) = r {
                 error!("admin error: {}", err);
             }

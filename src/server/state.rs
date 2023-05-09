@@ -1,14 +1,22 @@
-use super::{listener::TcpListenerPool, table::ProxyTable};
+use super::rpc;
+use super::{
+    listener::TcpListenerPool,
+    rpc::{RpcCallback, RpcCallbackFunc, RpcMethod},
+    table::ProxyTable,
+};
+use crate::keyring::KeyringInfo;
+use crate::proxy::PortStatus;
 use crate::{
     command::ServerCommand,
-    config::{storage::ConfigStorage, AppConfig, Source},
+    config::{port::PortEntry, storage::ConfigStorage, AppConfig, Source},
+    error::Error,
     event::ServerEvent,
     keyring::{Keyring, KeyringItem},
     proxy::{PortContext, PortContextKind},
 };
 use hyper::server::conn::Http;
 use hyper::{service::service_fn, Body};
-use std::convert::Infallible;
+use std::{any::Any, convert::Infallible};
 use std::{
     collections::HashMap,
     sync::Arc,
@@ -32,12 +40,15 @@ pub struct ServerState {
     http_challenges: HashMap<String, String>,
     command_sender: mpsc::Sender<ServerCommand>,
     br_sender: broadcast::Sender<ServerEvent>,
+    callback_sender: mpsc::Sender<RpcCallback>,
+    callbacks: HashMap<String, RpcCallbackFunc>,
 }
 
 impl ServerState {
     pub async fn new(
         storage: ConfigStorage,
         command_sender: mpsc::Sender<ServerCommand>,
+        callback_sender: mpsc::Sender<RpcCallback>,
         br_sender: broadcast::Sender<ServerEvent>,
     ) -> Self {
         let config = storage.load_app_config().await;
@@ -84,35 +95,33 @@ impl ServerState {
             http_challenges: HashMap::new(),
             command_sender,
             br_sender,
+            callback_sender,
+            callbacks: HashMap::new(),
         };
+
+        this.register_callback::<rpc::ports::GetPortList>();
+        this.register_callback::<rpc::ports::GetPortStatus>();
+        this.register_callback::<rpc::ports::DeletePort>();
+        this.register_callback::<rpc::ports::AddPort>();
+        this.register_callback::<rpc::ports::UpdatePort>();
+        this.register_callback::<rpc::config::GetConfig>();
+        this.register_callback::<rpc::config::SetConfig>();
+        this.register_callback::<rpc::keyring::GetKeyringItemList>();
+        this.register_callback::<rpc::keyring::AddKeyringItem>();
+        this.register_callback::<rpc::keyring::DeleteKeyringItem>();
 
         this.update_port_statuses().await;
         this.start_http_challenges().await;
         this
     }
 
-    pub fn config(&self) -> &AppConfig {
-        &self.config
-    }
-
     pub async fn handle_command(&mut self, cmd: ServerCommand) {
         match cmd {
-            ServerCommand::SetAppConfig { config } => {
-                self.config = config.clone();
-                let _ = self.br_sender.send(ServerEvent::AppConfigUpdated {
-                    config,
-                    source: Source::Api,
-                });
-            }
             ServerCommand::SetPort { mut ctx } => {
                 if let Err(err) = ctx.setup(&self.certs).await {
                     error!(?err, "failed to setup port");
                 }
                 self.table.set_port(ctx);
-                self.update_port_statuses().await;
-            }
-            ServerCommand::DeletePort { id } => {
-                self.table.delete_port(&id);
                 self.update_port_statuses().await;
             }
             ServerCommand::AddKeyringItem { item } => {
@@ -148,6 +157,16 @@ impl ServerState {
                 self.pool.set_http_challenges(false);
                 self.http_challenges.clear();
                 self.pool.update(self.table.contexts_mut()).await;
+            }
+            ServerCommand::CallMethod { id, method, arg } => {
+                if let Some(cb) = self.callbacks.remove(&method) {
+                    let result = cb(self, arg);
+                    self.callbacks.insert(method, cb);
+                    let _ = self.callback_sender.send(RpcCallback { id, result }).await;
+                }
+            }
+            ServerCommand::UpdatePorts => {
+                self.update_port_statuses().await;
             }
         }
     }
@@ -214,6 +233,23 @@ impl ServerState {
                 PortContextKind::Reserved => (),
             }
         }
+    }
+
+    fn register_callback<M>(&mut self)
+    where
+        M: RpcMethod,
+    {
+        let func = move |this: &mut ServerState,
+                         data: Box<dyn Any>|
+              -> Result<Box<dyn Any + Send + Sync>, Error> {
+            let input = data.downcast::<M>().map_err(|_| Error::RpcError)?;
+            match input.call(this) {
+                Ok(output) => Ok(Box::new(output) as Box<dyn Any + Send + Sync>),
+                Err(err) => Err(err),
+            }
+        };
+        let func = Box::new(func) as RpcCallbackFunc;
+        self.callbacks.insert(M::NAME.to_string(), func);
     }
 
     async fn update_port_statuses(&mut self) {
@@ -338,5 +374,87 @@ impl ServerState {
             }
             let _ = command.send(ServerCommand::StopHttpChallenges).await;
         })
+    }
+
+    pub fn config(&self) -> &AppConfig {
+        &self.config
+    }
+
+    pub fn set_config(&mut self, config: AppConfig) {
+        self.config = config.clone();
+        let _ = self.br_sender.send(ServerEvent::AppConfigUpdated {
+            config,
+            source: Source::Api,
+        });
+    }
+
+    pub fn get_port_list(&self) -> Vec<PortEntry> {
+        self.table.entries()
+    }
+
+    pub fn get_port_status(&self, id: &str) -> Result<PortStatus, Error> {
+        self.table
+            .contexts()
+            .iter()
+            .find(|ctx| ctx.entry.id == id)
+            .map(|ctx| *ctx.status())
+            .ok_or_else(|| Error::IdNotFound { id: id.to_string() })
+    }
+
+    pub fn add_port(&mut self, entry: PortEntry) -> Result<(), Error> {
+        if self.get_port_status(&entry.id).is_ok() {
+            Err(Error::IdAlreadyExists { id: entry.id })
+        } else {
+            let _ = self.command_sender.try_send(ServerCommand::SetPort {
+                ctx: PortContext::new(entry)?,
+            });
+            Ok(())
+        }
+    }
+
+    pub fn update_port(&mut self, entry: PortEntry) -> Result<(), Error> {
+        if self.get_port_status(&entry.id).is_ok() {
+            let _ = self.command_sender.try_send(ServerCommand::SetPort {
+                ctx: PortContext::new(entry)?,
+            });
+            Ok(())
+        } else {
+            Err(Error::IdNotFound { id: entry.id })
+        }
+    }
+
+    pub fn delete_port(&mut self, id: &str) -> Result<(), Error> {
+        if self.table.delete_port(id) {
+            let _ = self.command_sender.try_send(ServerCommand::UpdatePorts);
+            Ok(())
+        } else {
+            Err(Error::IdNotFound { id: id.to_string() })
+        }
+    }
+
+    pub fn get_keyring_item_list(&self) -> Vec<KeyringInfo> {
+        self.certs.list()
+    }
+
+    pub fn add_keyring_item(&mut self, item: KeyringItem) -> Result<(), Error> {
+        if self.certs.iter().any(|i: &KeyringItem| i.id() == item.id()) {
+            Err(Error::IdAlreadyExists { id: item.id().into() })
+        } else {
+            let _ = self
+                .command_sender
+                .try_send(ServerCommand::AddKeyringItem { item });
+            Ok(())
+        }
+    }
+
+    pub fn delete_keyring_item(&mut self, id: &str) -> Result<(), Error> {
+        if self.certs.iter().any(|item| item.id() == id) {
+            let _ = self
+                .command_sender
+                .try_send(ServerCommand::DeleteKeyringItem { id: id.into() });
+            Ok(())
+        } else {
+            Err(Error::IdNotFound { id: id.to_string() })
+        }
     }
 }

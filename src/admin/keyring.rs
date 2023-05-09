@@ -1,12 +1,12 @@
 use super::{log::LogQuery, AppState};
 use crate::{
-    command::ServerCommand,
     error::Error,
     keyring::{
         acme::{AcmeEntry, AcmeRequest},
         certs::{Cert, SelfSignedCertRequest},
         KeyringItem,
     },
+    server::rpc::keyring::*,
 };
 use std::{io::Read, sync::Arc};
 use tokio_stream::StreamExt;
@@ -26,8 +26,7 @@ use warp::{multipart::FormData, Buf, Rejection, Reply};
     )
 )]
 pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
-    let data = state.data.lock().await;
-    Ok(warp::reply::json(&data.keyring_items))
+    Ok(warp::reply::json(&state.call(GetKeyringItemList).await?))
 }
 
 /// Generate a self-signed certificate.
@@ -49,11 +48,9 @@ pub async fn self_signed(
     request: SelfSignedCertRequest,
 ) -> Result<impl Reply, Rejection> {
     let item = KeyringItem::ServerCert(Arc::new(Cert::new_self_signed(&request)?));
-    let _ = state
-        .sender
-        .send(ServerCommand::AddKeyringItem { item })
-        .await;
-    Ok(warp::reply::reply())
+    Ok(warp::reply::json(
+        &state.call(AddKeyringItem { item }).await?,
+    ))
 }
 
 #[derive(ToSchema)]
@@ -101,23 +98,9 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
     }
 
     let item = KeyringItem::ServerCert(Arc::new(Cert::new(chain, key)?));
-    if state
-        .data
-        .lock()
-        .await
-        .keyring_items
-        .iter()
-        .any(|c| c.id() == item.id())
-    {
-        return Err(warp::reject::custom(Error::CertAlreadyExists {
-            id: item.id().to_string(),
-        }));
-    }
-    let _ = state
-        .sender
-        .send(ServerCommand::AddKeyringItem { item })
-        .await;
-    Ok(warp::reply::reply())
+    Ok(warp::reply::json(
+        &state.call(AddKeyringItem { item }).await?,
+    ))
 }
 
 /// Register an ACME configuration.
@@ -136,11 +119,9 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
 )]
 pub async fn acme(state: AppState, request: AcmeRequest) -> Result<impl Reply, Rejection> {
     let item = KeyringItem::Acme(Arc::new(AcmeEntry::new(request).await?));
-    let _ = state
-        .sender
-        .send(ServerCommand::AddKeyringItem { item })
-        .await;
-    Ok(warp::reply::reply())
+    Ok(warp::reply::json(
+        &state.call(AddKeyringItem { item }).await?,
+    ))
 }
 
 /// Delete a keyring item.
@@ -160,21 +141,9 @@ pub async fn acme(state: AppState, request: AcmeRequest) -> Result<impl Reply, R
     )
 )]
 pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {
-    if !state
-        .data
-        .lock()
-        .await
-        .keyring_items
-        .iter()
-        .any(|c| c.id() == id)
-    {
-        return Err(warp::reject::custom(Error::KeyringItemNotFound { id }));
-    }
-    let _ = state
-        .sender
-        .send(ServerCommand::DeleteKeyringItem { id })
-        .await;
-    Ok(warp::reply::reply())
+    Ok(warp::reply::json(
+        &state.call(DeleteKeyringItem { id }).await?,
+    ))
 }
 
 /// Get log.
@@ -196,16 +165,9 @@ pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection
     )
 )]
 pub async fn log(state: AppState, id: String, query: LogQuery) -> Result<impl Reply, Rejection> {
-    let data = state.data.lock().await;
-    if let Some(item) = data.keyring_items.iter().find(|c| c.id() == id) {
-        let log = data.log.clone();
-        let id = item.id().to_string();
-        std::mem::drop(data);
-        let rows = log
-            .fetch_system_log(&id, query.since, query.until, query.limit)
-            .await?;
-        Ok(warp::reply::json(&rows))
-    } else {
-        Err(warp::reject::custom(Error::KeyringItemNotFound { id }))
-    }
+    let log = state.data.lock().await.log.clone();
+    let rows = log
+        .fetch_system_log(&id, query.since, query.until, query.limit)
+        .await?;
+    Ok(warp::reply::json(&rows))
 }
