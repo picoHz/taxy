@@ -5,7 +5,7 @@ use crate::{
     config::port::{PortEntry, PortEntryRequest},
     error::Error,
     proxy::PortContext,
-    server::rpc::ports::GetPortList,
+    server::rpc::ports::{GetPortList, GetPortStatus},
 };
 use warp::{Rejection, Reply};
 
@@ -44,12 +44,7 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
     )
 )]
 pub async fn status(state: AppState, id: String) -> Result<impl Reply, Rejection> {
-    let data = state.data.lock().await;
-    if let Some(status) = data.status.get(&id) {
-        Ok(warp::reply::json(&status))
-    } else {
-        Err(warp::reject::custom(Error::IdNotFound { id }))
-    }
+    Ok(warp::reply::json(&state.call(GetPortStatus { id }).await?))
 }
 
 /// Delete a port configuration.
