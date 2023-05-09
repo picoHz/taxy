@@ -126,10 +126,6 @@ impl ServerState {
                 self.table.set_port(ctx);
                 self.update_port_statuses().await;
             }
-            ServerCommand::DeletePort { id } => {
-                self.table.delete_port(&id);
-                self.update_port_statuses().await;
-            }
             ServerCommand::AddKeyringItem { item } => {
                 match &item {
                     KeyringItem::Acme(entry) => {
@@ -170,6 +166,9 @@ impl ServerState {
                     self.callbacks.insert(method, cb);
                     let _ = self.callback_sender.send(RpcCallback { id, result }).await;
                 }
+            }
+            ServerCommand::UpdatePorts => {
+                self.update_port_statuses().await;
             }
         }
     }
@@ -390,5 +389,14 @@ impl ServerState {
             .find(|ctx| ctx.entry.id == id)
             .map(|ctx| *ctx.status())
             .ok_or_else(|| Error::IdNotFound { id: id.to_string() })
+    }
+
+    pub fn delete_port(&mut self, id: &str) -> Result<(), Error> {
+        if self.table.delete_port(id) {
+            let _ = self.command_sender.try_send(ServerCommand::UpdatePorts);
+            Ok(())
+        } else {
+            Err(Error::IdNotFound { id: id.to_string() })
+        }
     }
 }

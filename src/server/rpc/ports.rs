@@ -24,3 +24,16 @@ impl RpcMethod for GetPortStatus {
         state.get_port_status(&self.id)
     }
 }
+
+pub struct DeletePort {
+    pub id: String,
+}
+
+impl RpcMethod for DeletePort {
+    const NAME: &'static str = "delete_port";
+    type Output = ();
+
+    fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
+        state.delete_port(&self.id)
+    }
+}

@@ -5,7 +5,7 @@ use crate::{
     config::port::{PortEntry, PortEntryRequest},
     error::Error,
     proxy::PortContext,
-    server::rpc::ports::{GetPortList, GetPortStatus},
+    server::rpc::ports::{DeletePort, GetPortList, GetPortStatus},
 };
 use warp::{Rejection, Reply};
 
@@ -64,11 +64,7 @@ pub async fn status(state: AppState, id: String) -> Result<impl Reply, Rejection
     )
 )]
 pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {
-    if state.data.lock().await.entries.iter().all(|e| e.id != id) {
-        return Err(warp::reject::custom(Error::IdNotFound { id }));
-    }
-    let _ = state.sender.send(ServerCommand::DeletePort { id }).await;
-    Ok(warp::reply::reply())
+    Ok(warp::reply::json(&state.call(DeletePort { id }).await?))
 }
 
 /// Create a new port configuration.

@@ -11,9 +11,7 @@ pub enum ServerCommand {
     SetPort {
         ctx: PortContext,
     },
-    DeletePort {
-        id: String,
-    },
+    UpdatePorts,
     AddKeyringItem {
         item: KeyringItem,
     },
