@@ -1,5 +1,4 @@
 use crate::config::{AppConfig, AppInfo};
-use crate::keyring::KeyringInfo;
 use crate::server::rpc::{RpcCallback, RpcMethod};
 use crate::{command::ServerCommand, error::Error, event::ServerEvent};
 use hyper::StatusCode;
@@ -58,9 +57,6 @@ pub async fn start_admin(
             match event_recv.recv().await {
                 Ok(ServerEvent::AppConfigUpdated { config, .. }) => {
                     data.lock().await.config = config;
-                }
-                Ok(ServerEvent::KeyringUpdated { items }) => {
-                    data.lock().await.keyring_items = items;
                 }
                 Ok(ServerEvent::Shutdown) => break,
                 Err(RecvError::Lagged(n)) => {
@@ -317,7 +313,6 @@ type CallbackData = Result<Box<dyn Any + Send + Sync>, Error>;
 struct Data {
     app_info: AppInfo,
     config: AppConfig,
-    keyring_items: Vec<KeyringInfo>,
     sessions: SessionStore,
     log: Arc<LogReader>,
 
@@ -364,7 +359,6 @@ impl Data {
         Ok(Self {
             app_info,
             config: AppConfig::default(),
-            keyring_items: Vec::new(),
             sessions: Default::default(),
             log: Arc::new(LogReader::new(&log).await?),
             rpc_counter: 0,
