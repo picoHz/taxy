@@ -29,17 +29,17 @@ pub async fn start_server(
         tokio::select! {
             cmd = command_recv.recv() => {
                 if let Some(cmd) = cmd {
-                    if let ServerCommand::SetAppConfig { config } = &cmd {
-                        let mut new_interval = tokio::time::interval(config.background_task_interval);
-                        new_interval.tick().await;
-                        background_task_interval = new_interval;
-                    }
                     server.handle_command(cmd).await;
                 }
             }
             event = event_recv.recv() => {
                 match event {
                     Ok(ServerEvent::Shutdown) => break,
+                    Ok(ServerEvent::AppConfigUpdated { config, .. }) => {
+                        let mut new_interval = tokio::time::interval(config.background_task_interval);
+                        new_interval.tick().await;
+                        background_task_interval = new_interval;
+                    },
                     Ok(event) => server.handle_event(event).await,
                     Err(RecvError::Lagged(n)) => {
                         warn!("event stream lagged: {}", n);

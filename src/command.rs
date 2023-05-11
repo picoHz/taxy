@@ -5,9 +5,6 @@ use std::any::Any;
 
 #[derive(Debug)]
 pub enum ServerCommand {
-    SetAppConfig {
-        config: AppConfig,
-    },
     SetPort {
         ctx: PortContext,
     },

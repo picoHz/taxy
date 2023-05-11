@@ -113,15 +113,16 @@ impl ServerState {
         &self.config
     }
 
+    pub fn set_config(&mut self, config: AppConfig) {
+        self.config = config;
+        let _ = self.br_sender.send(ServerEvent::AppConfigUpdated {
+            config,
+            source: Source::Api,
+        });
+    }
+
     pub async fn handle_command(&mut self, cmd: ServerCommand) {
         match cmd {
-            ServerCommand::SetAppConfig { config } => {
-                self.config = config.clone();
-                let _ = self.br_sender.send(ServerEvent::AppConfigUpdated {
-                    config,
-                    source: Source::Api,
-                });
-            }
             ServerCommand::SetPort { mut ctx } => {
                 if let Err(err) = ctx.setup(&self.certs).await {
                     error!(?err, "failed to setup port");
@@ -396,7 +397,7 @@ impl ServerState {
 
     pub fn add_port(&mut self, entry: PortEntry) -> Result<(), Error> {
         if self.get_port_status(&entry.id).is_ok() {
-             Err(Error::IdAlreadyExists { id: entry.id })
+            Err(Error::IdAlreadyExists { id: entry.id })
         } else {
             let _ = self.command_sender.try_send(ServerCommand::SetPort {
                 ctx: PortContext::new(entry)?,
