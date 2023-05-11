@@ -1,8 +1,7 @@
 use crate::config::{AppConfig, AppInfo};
 use crate::keyring::KeyringInfo;
-use crate::proxy::PortStatus;
 use crate::server::rpc::{RpcCallback, RpcMethod};
-use crate::{command::ServerCommand, config::port::PortEntry, error::Error, event::ServerEvent};
+use crate::{command::ServerCommand, error::Error, event::ServerEvent};
 use hyper::StatusCode;
 use serde_derive::{Deserialize, Serialize};
 use std::any::Any;
@@ -59,12 +58,6 @@ pub async fn start_admin(
             match event_recv.recv().await {
                 Ok(ServerEvent::AppConfigUpdated { config, .. }) => {
                     data.lock().await.config = config;
-                }
-                Ok(ServerEvent::PortTableUpdated { entries: ports, .. }) => {
-                    data.lock().await.entries = ports;
-                }
-                Ok(ServerEvent::PortStatusUpdated { id, status }) => {
-                    data.lock().await.status.insert(id, status);
                 }
                 Ok(ServerEvent::KeyringUpdated { items }) => {
                     data.lock().await.keyring_items = items;
@@ -324,8 +317,6 @@ type CallbackData = Result<Box<dyn Any + Send + Sync>, Error>;
 struct Data {
     app_info: AppInfo,
     config: AppConfig,
-    entries: Vec<PortEntry>,
-    status: HashMap<String, PortStatus>,
     keyring_items: Vec<KeyringInfo>,
     sessions: SessionStore,
     log: Arc<LogReader>,
@@ -373,8 +364,6 @@ impl Data {
         Ok(Self {
             app_info,
             config: AppConfig::default(),
-            entries: Vec::new(),
-            status: HashMap::new(),
             keyring_items: Vec::new(),
             sessions: Default::default(),
             log: Arc::new(LogReader::new(&log).await?),

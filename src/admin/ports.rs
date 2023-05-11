@@ -2,7 +2,6 @@ use super::AppState;
 use crate::{
     admin::log::LogQuery,
     config::port::{PortEntry, PortEntryRequest},
-    error::Error,
     server::rpc::ports::*,
 };
 use warp::{Rejection, Reply};
@@ -143,15 +142,10 @@ pub async fn put(
 )]
 pub async fn log(state: AppState, id: String, query: LogQuery) -> Result<impl Reply, Rejection> {
     let data = state.data.lock().await;
-    if let Some(item) = data.entries.iter().find(|e| e.id == id) {
-        let log = data.log.clone();
-        let id = item.id.clone();
-        std::mem::drop(data);
-        let rows = log
-            .fetch_system_log(&id, query.since, query.until, query.limit)
-            .await?;
-        Ok(warp::reply::json(&rows))
-    } else {
-        Err(warp::reject::custom(Error::KeyringItemNotFound { id }))
-    }
+    let log = data.log.clone();
+    std::mem::drop(data);
+    let rows = log
+        .fetch_system_log(&id, query.since, query.until, query.limit)
+        .await?;
+    Ok(warp::reply::json(&rows))
 }
