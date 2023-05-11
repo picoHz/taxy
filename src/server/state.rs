@@ -4,6 +4,7 @@ use super::{
     rpc::{RpcCallback, RpcCallbackFunc, RpcMethod},
     table::ProxyTable,
 };
+use crate::keyring::KeyringInfo;
 use crate::proxy::PortStatus;
 use crate::{
     command::ServerCommand,
@@ -107,18 +108,6 @@ impl ServerState {
         this.update_port_statuses().await;
         this.start_http_challenges().await;
         this
-    }
-
-    pub fn config(&self) -> &AppConfig {
-        &self.config
-    }
-
-    pub fn set_config(&mut self, config: AppConfig) {
-        self.config = config.clone();
-        let _ = self.br_sender.send(ServerEvent::AppConfigUpdated {
-            config,
-            source: Source::Api,
-        });
     }
 
     pub async fn handle_command(&mut self, cmd: ServerCommand) {
@@ -382,6 +371,18 @@ impl ServerState {
         })
     }
 
+    pub fn config(&self) -> &AppConfig {
+        &self.config
+    }
+
+    pub fn set_config(&mut self, config: AppConfig) {
+        self.config = config.clone();
+        let _ = self.br_sender.send(ServerEvent::AppConfigUpdated {
+            config,
+            source: Source::Api,
+        });
+    }
+
     pub fn get_port_list(&self) -> Vec<PortEntry> {
         self.table.entries()
     }
@@ -420,6 +421,32 @@ impl ServerState {
     pub fn delete_port(&mut self, id: &str) -> Result<(), Error> {
         if self.table.delete_port(id) {
             let _ = self.command_sender.try_send(ServerCommand::UpdatePorts);
+            Ok(())
+        } else {
+            Err(Error::IdNotFound { id: id.to_string() })
+        }
+    }
+
+    pub fn get_keyring_item_list(&self) -> Vec<KeyringInfo> {
+        self.certs.list()
+    }
+
+    pub fn add_keyring_item(&mut self, item: KeyringItem) -> Result<(), Error> {
+        if self.certs.iter().any(|i: &KeyringItem| i.id() == item.id()) {
+            Err(Error::IdAlreadyExists { id: item.id().into() })
+        } else {
+            let _ = self
+                .command_sender
+                .try_send(ServerCommand::AddKeyringItem { item });
+            Ok(())
+        }
+    }
+
+    pub fn delete_keyring_item(&mut self, id: &str) -> Result<(), Error> {
+        if self.certs.iter().any(|item| item.id() == id) {
+            let _ = self
+                .command_sender
+                .try_send(ServerCommand::DeleteKeyringItem { id: id.into() });
             Ok(())
         } else {
             Err(Error::IdNotFound { id: id.to_string() })
