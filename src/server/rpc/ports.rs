@@ -37,3 +37,16 @@ impl RpcMethod for DeletePort {
         state.delete_port(&self.id)
     }
 }
+
+pub struct AddPort {
+    pub entry: PortEntry,
+}
+
+impl RpcMethod for AddPort {
+    const NAME: &'static str = "add_port";
+    type Output = ();
+
+    fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
+        state.add_port(self.entry.clone())
+    }
+}
