@@ -392,6 +392,28 @@ impl ServerState {
             .ok_or_else(|| Error::IdNotFound { id: id.to_string() })
     }
 
+    pub fn add_port(&mut self, entry: PortEntry) -> Result<(), Error> {
+        if self.get_port_status(&entry.id).is_ok() {
+             Err(Error::IdAlreadyExists { id: entry.id })
+        } else {
+            let _ = self.command_sender.try_send(ServerCommand::SetPort {
+                ctx: PortContext::new(entry)?,
+            });
+            Ok(())
+        }
+    }
+
+    pub fn update_port(&mut self, entry: PortEntry) -> Result<(), Error> {
+        if self.get_port_status(&entry.id).is_ok() {
+            let _ = self.command_sender.try_send(ServerCommand::SetPort {
+                ctx: PortContext::new(entry)?,
+            });
+            Ok(())
+        } else {
+            Err(Error::IdNotFound { id: entry.id })
+        }
+    }
+
     pub fn delete_port(&mut self, id: &str) -> Result<(), Error> {
         if self.table.delete_port(id) {
             let _ = self.command_sender.try_send(ServerCommand::UpdatePorts);

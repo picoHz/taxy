@@ -47,6 +47,9 @@ pub enum Error {
     #[error("port id not found: {id}")]
     IdNotFound { id: String },
 
+    #[error("port id already exists: {id}")]
+    IdAlreadyExists { id: String },
+
     #[error("acme account creation failed")]
     AcmeAccountCreationFailed,
 
