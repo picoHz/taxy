@@ -114,7 +114,7 @@ impl ServerState {
     }
 
     pub fn set_config(&mut self, config: AppConfig) {
-        self.config = config;
+        self.config = config.clone();
         let _ = self.br_sender.send(ServerEvent::AppConfigUpdated {
             config,
             source: Source::Api,
