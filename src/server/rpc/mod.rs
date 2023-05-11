@@ -10,7 +10,7 @@ pub type RpcCallbackFunc =
 pub trait RpcMethod: Any + Send + Sync {
     const NAME: &'static str;
     type Output: Any + Send + Sync;
-    fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error>;
+    fn call(self, state: &mut ServerState) -> Result<Self::Output, Error>;
 }
 
 pub struct RpcCallback {

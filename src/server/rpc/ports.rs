@@ -7,7 +7,7 @@ impl RpcMethod for GetPortList {
     const NAME: &'static str = "get_port_list";
     type Output = Vec<PortEntry>;
 
-    fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
+    fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         Ok(state.get_port_list())
     }
 }
@@ -20,7 +20,7 @@ impl RpcMethod for GetPortStatus {
     const NAME: &'static str = "get_port_status";
     type Output = PortStatus;
 
-    fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
+    fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state.get_port_status(&self.id)
     }
 }
@@ -33,7 +33,7 @@ impl RpcMethod for DeletePort {
     const NAME: &'static str = "delete_port";
     type Output = ();
 
-    fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
+    fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state.delete_port(&self.id)
     }
 }
@@ -46,7 +46,7 @@ impl RpcMethod for AddPort {
     const NAME: &'static str = "add_port";
     type Output = ();
 
-    fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
+    fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state.add_port(self.entry.clone())
     }
 }
