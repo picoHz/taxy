@@ -1,4 +1,3 @@
-use crate::config::AppConfig;
 use crate::keyring::KeyringItem;
 use crate::proxy::PortContext;
 use std::any::Any;

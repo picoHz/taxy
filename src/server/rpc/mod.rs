@@ -3,6 +3,7 @@ use crate::error::Error;
 use std::any::Any;
 
 pub mod ports;
+pub mod config;
 
 pub type RpcCallbackFunc =
     Box<dyn Fn(&mut ServerState, Box<dyn Any>) -> Result<Box<dyn Any + Send + Sync>, Error> + Send>;
