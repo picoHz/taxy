@@ -196,16 +196,9 @@ pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection
     )
 )]
 pub async fn log(state: AppState, id: String, query: LogQuery) -> Result<impl Reply, Rejection> {
-    let data = state.data.lock().await;
-    if let Some(item) = data.keyring_items.iter().find(|c| c.id() == id) {
-        let log = data.log.clone();
-        let id = item.id().to_string();
-        std::mem::drop(data);
-        let rows = log
-            .fetch_system_log(&id, query.since, query.until, query.limit)
-            .await?;
-        Ok(warp::reply::json(&rows))
-    } else {
-        Err(warp::reject::custom(Error::KeyringItemNotFound { id }))
-    }
+    let log = state.data.lock().await.log.clone();
+    let rows = log
+        .fetch_system_log(&id, query.since, query.until, query.limit)
+        .await?;
+    Ok(warp::reply::json(&rows))
 }

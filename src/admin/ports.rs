@@ -141,9 +141,7 @@ pub async fn put(
     )
 )]
 pub async fn log(state: AppState, id: String, query: LogQuery) -> Result<impl Reply, Rejection> {
-    let data = state.data.lock().await;
-    let log = data.log.clone();
-    std::mem::drop(data);
+    let log = state.data.lock().await.log.clone();
     let rows = log
         .fetch_system_log(&id, query.since, query.until, query.limit)
         .await?;
