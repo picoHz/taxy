@@ -113,13 +113,7 @@ pub async fn put(
 ) -> Result<impl Reply, Rejection> {
     let mut entry: PortEntry = entry.into();
     entry.id = id;
-    Ok(warp::reply::json(
-        &state
-            .call(UpdatePort {
-                entry: entry.into(),
-            })
-            .await?,
-    ))
+    Ok(warp::reply::json(&state.call(UpdatePort { entry }).await?))
 }
 
 /// Get log.
