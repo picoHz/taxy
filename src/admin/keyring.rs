@@ -98,18 +98,6 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
     }
 
     let item = KeyringItem::ServerCert(Arc::new(Cert::new(chain, key)?));
-    if state
-        .data
-        .lock()
-        .await
-        .keyring_items
-        .iter()
-        .any(|c| c.id() == item.id())
-    {
-        return Err(warp::reject::custom(Error::CertAlreadyExists {
-            id: item.id().to_string(),
-        }));
-    }
     Ok(warp::reply::json(
         &state.call(AddKeyringItem { item }).await?,
     ))
@@ -153,16 +141,6 @@ pub async fn acme(state: AppState, request: AcmeRequest) -> Result<impl Reply, R
     )
 )]
 pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {
-    if !state
-        .data
-        .lock()
-        .await
-        .keyring_items
-        .iter()
-        .any(|c| c.id() == id)
-    {
-        return Err(warp::reject::custom(Error::KeyringItemNotFound { id }));
-    }
     Ok(warp::reply::json(
         &state.call(DeleteKeyringItem { id }).await?,
     ))
