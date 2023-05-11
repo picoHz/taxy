@@ -101,6 +101,8 @@ impl ServerState {
         this.register_callback::<rpc::ports::GetPortList>();
         this.register_callback::<rpc::ports::GetPortStatus>();
         this.register_callback::<rpc::ports::DeletePort>();
+        this.register_callback::<rpc::ports::AddPort>();
+        this.register_callback::<rpc::ports::UpdatePort>();
 
         this.update_port_statuses().await;
         this.start_http_challenges().await;

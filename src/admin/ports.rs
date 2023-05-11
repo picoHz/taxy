@@ -1,11 +1,9 @@
 use super::AppState;
 use crate::{
     admin::log::LogQuery,
-    command::ServerCommand,
     config::port::{PortEntry, PortEntryRequest},
     error::Error,
-    proxy::PortContext,
-    server::rpc::ports::{DeletePort, GetPortList, GetPortStatus},
+    server::rpc::ports::*,
 };
 use warp::{Rejection, Reply};
 
@@ -82,11 +80,13 @@ pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection
     )
 )]
 pub async fn post(state: AppState, entry: PortEntryRequest) -> Result<impl Reply, Rejection> {
-    let data = state.data.lock().await;
-    let mut ctx = PortContext::new(entry.into())?;
-    ctx.prepare(&data.config).await?;
-    let _ = state.sender.send(ServerCommand::SetPort { ctx }).await;
-    Ok(warp::reply::reply())
+    Ok(warp::reply::json(
+        &state
+            .call(AddPort {
+                entry: entry.into(),
+            })
+            .await?,
+    ))
 }
 
 /// Update or rename a port configuration.
@@ -112,13 +112,15 @@ pub async fn put(
     entry: PortEntryRequest,
     id: String,
 ) -> Result<impl Reply, Rejection> {
-    let data = state.data.lock().await;
     let mut entry: PortEntry = entry.into();
     entry.id = id;
-    let mut ctx = PortContext::new(entry)?;
-    ctx.prepare(&data.config).await?;
-    let _ = state.sender.send(ServerCommand::SetPort { ctx }).await;
-    Ok(warp::reply::reply())
+    Ok(warp::reply::json(
+        &state
+            .call(UpdatePort {
+                entry: entry.into(),
+            })
+            .await?,
+    ))
 }
 
 /// Get log.

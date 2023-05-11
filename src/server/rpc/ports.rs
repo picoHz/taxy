@@ -47,6 +47,19 @@ impl RpcMethod for AddPort {
     type Output = ();
 
     fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.add_port(self.entry.clone())
+        state.add_port(self.entry)
+    }
+}
+
+pub struct UpdatePort {
+    pub entry: PortEntry,
+}
+
+impl RpcMethod for UpdatePort {
+    const NAME: &'static str = "update_port";
+    type Output = ();
+
+    fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
+        state.update_port(self.entry)
     }
 }
