@@ -1,6 +1,5 @@
 use super::{log::LogQuery, AppState};
 use crate::{
-    command::ServerCommand,
     error::Error,
     keyring::{
         acme::{AcmeEntry, AcmeRequest},
@@ -164,7 +163,9 @@ pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection
     {
         return Err(warp::reject::custom(Error::KeyringItemNotFound { id }));
     }
-    Ok(warp::reply::json(&state.call(DeleteKeyringItem { id }).await?))
+    Ok(warp::reply::json(
+        &state.call(DeleteKeyringItem { id }).await?,
+    ))
 }
 
 /// Get log.
