@@ -104,6 +104,11 @@ impl ServerState {
         this.register_callback::<rpc::ports::DeletePort>();
         this.register_callback::<rpc::ports::AddPort>();
         this.register_callback::<rpc::ports::UpdatePort>();
+        this.register_callback::<rpc::config::GetConfig>();
+        this.register_callback::<rpc::config::SetConfig>();
+        this.register_callback::<rpc::keyring::GetKeyringItemList>();
+        this.register_callback::<rpc::keyring::AddKeyringItem>();
+        this.register_callback::<rpc::keyring::DeleteKeyringItem>();
 
         this.update_port_statuses().await;
         this.start_http_challenges().await;
