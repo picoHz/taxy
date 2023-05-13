@@ -8,6 +8,7 @@ import { useRouter } from 'vue-router';
 import { usePortsStore } from '@/stores/ports';
 import { useConfigStore } from '@/stores/config';
 import { useCertsStore } from '@/stores/certs';
+import { useAcmeStore } from '@/stores/acme';
 import axios from 'axios';
 
 const message = ref('');
@@ -32,6 +33,7 @@ onMounted(async () => {
   const portsStore = usePortsStore();
   const configStore = useConfigStore();
   const certsStore = useCertsStore();
+  const acmeStore = useAcmeStore();
 
   const endpoint = import.meta.env.VITE_API_ENDPOINT;
   eventSource = new EventSource(`${endpoint}/events?token=${localStorage.getItem('token')}`);
@@ -52,8 +54,11 @@ onMounted(async () => {
       case 'app_config_updated':
         configStore.update(json.config);
         break;
-      case 'keyring_updated':
+      case 'server_certs_updated':
         certsStore.update(json.items);
+        break;
+      case 'acme_updated':
+        acmeStore.update(json.items);
         break;
     }
     message.value = event.data;
@@ -66,8 +71,11 @@ onMounted(async () => {
   const { data: config } = await axios.get(`${endpoint}/config`);
   configStore.update(config);
 
-  const { data: certs } = await axios.get(`${endpoint}/keyring`);
+  const { data: certs } = await axios.get(`${endpoint}/server_certs`);
   certsStore.update(certs);
+
+  const { data: acme } = await axios.get(`${endpoint}/acme`);
+  acmeStore.update(acme);
 
   const { data } = await axios.get(`${endpoint}/ports`);
   portsStore.updateTable(data);
