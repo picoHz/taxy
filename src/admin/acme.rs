@@ -35,7 +35,7 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
         ("authorization"=[])
     )
 )]
-pub async fn acme(state: AppState, request: AcmeRequest) -> Result<impl Reply, Rejection> {
+pub async fn add(state: AppState, request: AcmeRequest) -> Result<impl Reply, Rejection> {
     let item = AcmeEntry::new(request).await?;
     Ok(warp::reply::json(&state.call(AddAcme { item }).await?))
 }

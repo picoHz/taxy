@@ -290,6 +290,7 @@ pub async fn start_admin(
             .or(config)
             .or(port)
             .or(keyring)
+            .or(acme)
             .or(api_events)
             .or(auth)
             .or(api_doc)
