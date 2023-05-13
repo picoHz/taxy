@@ -116,6 +116,9 @@ impl ServerState {
         this.register_callback::<rpc::acme::GetAcmeList>();
         this.register_callback::<rpc::acme::AddAcme>();
         this.register_callback::<rpc::acme::DeleteAcme>();
+        this.register_callback::<rpc::server_certs::GetServerCertList>();
+        this.register_callback::<rpc::server_certs::AddServerCert>();
+        this.register_callback::<rpc::server_certs::DeleteServerCert>();
 
         this.update_port_statuses().await;
         this.start_http_challenges().await;
