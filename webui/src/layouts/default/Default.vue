@@ -4,7 +4,6 @@
       <v-navigation-drawer v-model="drawer">
         <v-list>
           <v-list-item prepend-icon="mdi-network" title="Ports" :to="{ path: '/ports' }"></v-list-item>
-          <v-list-item prepend-icon="mdi-key-chain" title="Keyring" :to="{ path: '/keyring' }"></v-list-item>
           <v-list-item prepend-icon="mdi-certificate" title="Server Certificates"
             :to="{ path: '/server_certs' }"></v-list-item>
           <v-list-item prepend-icon="mdi-cloud-lock" title="ACME" :to="{ path: '/acme' }"></v-list-item>
