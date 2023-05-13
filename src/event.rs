@@ -1,6 +1,6 @@
 use crate::{
     config::{port::PortEntry, AppConfig, Source},
-    keyring::KeyringInfo,
+    keyring::{acme::AcmeInfo, certs::CertInfo, KeyringInfo},
     proxy::PortStatus,
 };
 use serde_derive::Serialize;
@@ -23,6 +23,12 @@ pub enum ServerEvent {
     },
     KeyringUpdated {
         items: Vec<KeyringInfo>,
+    },
+    ServerCertsUpdated {
+        items: Vec<CertInfo>,
+    },
+    AcmeUpdated {
+        items: Vec<AcmeInfo>,
     },
     Shutdown,
 }

@@ -120,6 +120,13 @@ impl ServerState {
         this.register_callback::<rpc::server_certs::AddServerCert>();
         this.register_callback::<rpc::server_certs::DeleteServerCert>();
 
+        let _ = this.br_sender.send(ServerEvent::AcmeUpdated {
+            items: this.get_acme_list(),
+        });
+        let _ = this.br_sender.send(ServerEvent::ServerCertsUpdated {
+            items: this.get_server_cert_list(),
+        });
+
         this.update_port_statuses().await;
         this.start_http_challenges().await;
         this
@@ -147,6 +154,12 @@ impl ServerState {
                 let _ = self.br_sender.send(ServerEvent::KeyringUpdated {
                     items: self.certs.list(),
                 });
+                let _ = self.br_sender.send(ServerEvent::AcmeUpdated {
+                    items: self.get_acme_list(),
+                });
+                let _ = self.br_sender.send(ServerEvent::ServerCertsUpdated {
+                    items: self.get_server_cert_list(),
+                });
                 self.start_http_challenges().await;
             }
             ServerCommand::DeleteKeyringItem { id } => {
@@ -161,6 +174,12 @@ impl ServerState {
                 }
                 let _ = self.br_sender.send(ServerEvent::KeyringUpdated {
                     items: self.certs.list(),
+                });
+                let _ = self.br_sender.send(ServerEvent::AcmeUpdated {
+                    items: self.get_acme_list(),
+                });
+                let _ = self.br_sender.send(ServerEvent::ServerCertsUpdated {
+                    items: self.get_server_cert_list(),
                 });
             }
             ServerCommand::StopHttpChallenges => {
