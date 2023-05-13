@@ -62,10 +62,6 @@ impl ServerState {
         });
 
         let certs = storage.load_keychain().await;
-        let _ = br_sender.send(ServerEvent::KeyringUpdated {
-            items: certs.list(),
-        });
-
         let mut table = ProxyTable::new();
         let ports = storage.load_entries().await;
         for entry in ports {
@@ -110,9 +106,6 @@ impl ServerState {
         this.register_callback::<rpc::ports::UpdatePort>();
         this.register_callback::<rpc::config::GetConfig>();
         this.register_callback::<rpc::config::SetConfig>();
-        this.register_callback::<rpc::keyring::GetKeyringItemList>();
-        this.register_callback::<rpc::keyring::AddKeyringItem>();
-        this.register_callback::<rpc::keyring::DeleteKeyringItem>();
         this.register_callback::<rpc::acme::GetAcmeList>();
         this.register_callback::<rpc::acme::AddAcme>();
         this.register_callback::<rpc::acme::DeleteAcme>();
@@ -151,9 +144,6 @@ impl ServerState {
                     }
                 }
                 self.certs.add(item);
-                let _ = self.br_sender.send(ServerEvent::KeyringUpdated {
-                    items: self.certs.list(),
-                });
                 let _ = self.br_sender.send(ServerEvent::AcmeUpdated {
                     items: self.get_acme_list(),
                 });
@@ -172,9 +162,6 @@ impl ServerState {
                     }
                     _ => (),
                 }
-                let _ = self.br_sender.send(ServerEvent::KeyringUpdated {
-                    items: self.certs.list(),
-                });
                 let _ = self.br_sender.send(ServerEvent::AcmeUpdated {
                     items: self.get_acme_list(),
                 });
@@ -519,34 +506,6 @@ impl ServerState {
     }
 
     pub fn delete_server_cert(&mut self, id: &str) -> Result<(), Error> {
-        if self.certs.iter().any(|item| item.id() == id) {
-            let _ = self
-                .command_sender
-                .try_send(ServerCommand::DeleteKeyringItem { id: id.into() });
-            Ok(())
-        } else {
-            Err(Error::IdNotFound { id: id.to_string() })
-        }
-    }
-
-    pub fn get_keyring_item_list(&self) -> Vec<KeyringInfo> {
-        self.certs.list()
-    }
-
-    pub fn add_keyring_item(&mut self, item: KeyringItem) -> Result<(), Error> {
-        if self.certs.iter().any(|i: &KeyringItem| i.id() == item.id()) {
-            Err(Error::IdAlreadyExists {
-                id: item.id().into(),
-            })
-        } else {
-            let _ = self
-                .command_sender
-                .try_send(ServerCommand::AddKeyringItem { item });
-            Ok(())
-        }
-    }
-
-    pub fn delete_keyring_item(&mut self, id: &str) -> Result<(), Error> {
         if self.certs.iter().any(|item| item.id() == id) {
             let _ = self
                 .command_sender

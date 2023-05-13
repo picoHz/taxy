@@ -4,7 +4,6 @@ use std::any::Any;
 
 pub mod acme;
 pub mod config;
-pub mod keyring;
 pub mod ports;
 pub mod server_certs;
 

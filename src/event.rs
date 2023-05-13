@@ -21,9 +21,6 @@ pub enum ServerEvent {
         id: String,
         status: PortStatus,
     },
-    KeyringUpdated {
-        items: Vec<KeyringInfo>,
-    },
     ServerCertsUpdated {
         items: Vec<CertInfo>,
     },
