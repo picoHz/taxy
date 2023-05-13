@@ -2,27 +2,27 @@
     <v-table>
         <tbody>
             <tr>
-                <td>{{ $t('keyring.info.san') }}</td>
+                <td>{{ $t('server_certs.info.san') }}</td>
                 <td>{{ info.san.join(', ') }}</td>
             </tr>
             <tr>
-                <td>{{ $t('keyring.info.fingerprint') }}</td>
+                <td>{{ $t('server_certs.info.fingerprint') }}</td>
                 <td>{{ info.fingerprint }}</td>
             </tr>
             <tr>
-                <td>{{ $t('keyring.info.issuer') }}</td>
+                <td>{{ $t('server_certs.info.issuer') }}</td>
                 <td>{{ info.issuer }}</td>
             </tr>
             <tr v-if="info.root_cert">
-                <td>{{ $t('keyring.info.root_cert') }}</td>
+                <td>{{ $t('server_certs.info.root_cert') }}</td>
                 <td>{{ info.root_cert }}</td>
             </tr>
             <tr>
-                <td>{{ $t('keyring.info.not_before') }}</td>
+                <td>{{ $t('server_certs.info.not_before') }}</td>
                 <td>{{ (new Date(info.not_before * 1000)).toISOString() }}</td>
             </tr>
             <tr>
-                <td>{{ $t('keyring.info.not_after') }}</td>
+                <td>{{ $t('server_certs.info.not_after') }}</td>
                 <td>{{ (new Date(info.not_after * 1000)).toISOString() }}</td>
             </tr>
         </tbody>
@@ -30,17 +30,17 @@
     <v-divider></v-divider>
     <v-card-actions class="justify-end">
         <v-btn color="red" @click="deleteDialog = true">
-            {{ $t('keyring.delete_cert.delete_cert') }}
+            {{ $t('server_certs.delete_cert.delete_cert') }}
         </v-btn>
     </v-card-actions>
     <v-dialog v-model="deleteDialog" width="auto">
-        <v-card :title="$t('keyring.delete_cert.delete_cert')">
+        <v-card :title="$t('server_certs.delete_cert.delete_cert')">
             <v-card-text>
-                {{ $t('keyring.delete_cert.confirm', { id: route.params.id }) }}
+                {{ $t('server_certs.delete_cert.confirm', { id: route.params.id }) }}
             </v-card-text>
             <v-card-actions class="justify-end">
-                <v-btn @click="deleteDialog = false">{{ $t('keyring.delete_cert.cancel') }}</v-btn>
-                <v-btn color="red" @click="deleteCert">{{ $t('keyring.delete_cert.delete') }}</v-btn>
+                <v-btn @click="deleteDialog = false">{{ $t('server_certs.delete_cert.cancel') }}</v-btn>
+                <v-btn color="red" @click="deleteCert">{{ $t('server_certs.delete_cert.delete') }}</v-btn>
             </v-card-actions>
         </v-card>
     </v-dialog>
@@ -66,8 +66,8 @@ const endpoint = import.meta.env.VITE_API_ENDPOINT;
 async function deleteCert() {
     deleteDialog.value = false;
     try {
-        await axios.delete(`${endpoint}/keyring/${route.params.id}`)
-        router.replace({ name: 'Certificate List' })
+        await axios.delete(`${endpoint}/server_certs/${route.params.id}`)
+        router.replace({ name: 'Server Certificate List' })
     } catch (err) {
         let { response: { data } } = err;
         error.value = data
