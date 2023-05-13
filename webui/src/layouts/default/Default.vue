@@ -80,6 +80,17 @@ onMounted(async () => {
   const token = localStorage.getItem('token');
   axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
+  axios.interceptors.response.use((response) => {
+    return response;
+  }, (error) => {
+    if (error.response.status === 401) {
+      localStorage.removeItem('token')
+      router.replace({ name: 'Login' })
+    }
+    return Promise.reject(error);
+  });
+
+
   eventSource = new EventSource(`${endpoint}/events?token=${localStorage.getItem('token')}`);
 
   eventSource.onopen = (event) => {
