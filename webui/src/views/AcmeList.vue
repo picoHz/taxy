@@ -34,7 +34,7 @@
       <v-form validate-on="submitAcmeForm" @submit.prevent="submitAcmeForm">
         <v-card>
           <v-card-title>
-            {{ $t('acme.title') }}
+            {{ $t('acme.add_acme.title') }}
           </v-card-title>
           <v-card-text>
             <v-container>
@@ -49,8 +49,8 @@
           </v-card-text>
 
           <v-card-actions class="justify-end">
-            <v-btn @click="acmeDialog = false">{{ $t('acme.cancel') }}</v-btn>
-            <v-btn :loading="loading" type="submit" color="primary">{{ $t('keyring.acme.create') }}</v-btn>
+            <v-btn @click="acmeDialog = false">{{ $t('acme.add_acme.cancel') }}</v-btn>
+            <v-btn :loading="loading" type="submit" color="primary">{{ $t('acme.add_acme.create') }}</v-btn>
           </v-card-actions>
         </v-card>
       </v-form>

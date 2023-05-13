@@ -67,7 +67,7 @@ export default {
             }
         }
     },
-    keyring: {
+    _keyring: {
         keyring: 'Keyring',
         no_certs: 'No keyring item found.',
         info: {
@@ -125,6 +125,25 @@ export default {
         }
     },
     acme: {
+        acme: "ACME",
+        add_item: "Add",
+        no_items: "No ACME requests found.",
+        provider: "Provider",
+        challenge: "Challenge",
+        domain: "Domain Name",
+        create: "Create",
+        cancel: "Cancel",
+        add_acme: {
+            title: "New ACME Request",
+            cancel: "Cancel",
+            create: "Create",
+        },
+        delete_acme: {
+            delete_acme: "Delete ACME",
+            confirm: "Are you sure to delete {id}?",
+            cancel: "Cancel",
+            delete: "Delete"
+        },
         info: {
             provider: "Provider",
             identifiers: "Identifiers",

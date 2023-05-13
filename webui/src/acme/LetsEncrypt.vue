@@ -2,13 +2,12 @@
     <v-container>
         <v-row>
             <v-col cols="12" sm="12">
-                <v-select :label="$t('keyring.acme.challenge')" :items="challenges" v-model="acmeChallange"
-                    variant="outlined" density="compact"></v-select>
+                <v-select :label="$t('acme.challenge')" :items="challenges" v-model="acmeChallange" variant="outlined"
+                    density="compact"></v-select>
             </v-col>
             <v-col cols="12" sm="12">
-                <v-text-field @update:modelValue="update" autocapitalize="off" :label="$t('keyring.acme.domain')"
-                    variant="outlined" v-model="domain" density="compact" :rules="domainNameRules"
-                    persistent-hint></v-text-field>
+                <v-text-field @update:modelValue="update" autocapitalize="off" :label="$t('acme.domain')" variant="outlined"
+                    v-model="domain" density="compact" :rules="domainNameRules" persistent-hint></v-text-field>
             </v-col>
         </v-row>
     </v-container>
@@ -57,7 +56,7 @@ const challenges = [
 const domainNameRules = [
     value => {
         if (isValidHostname(value)) return true
-        return t('keyring.acme.rule.hostname_required')
+        return t('acme.add_acme.rule.hostname_required')
     },
 ]
 </script>

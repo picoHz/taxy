@@ -7,7 +7,7 @@ const certsRoutes = [
             breadcrumb() {
                 return [
                     {
-                        trName: "keyring.keyring",
+                        trName: "server_certs.server_certs",
                         disabled: false,
                         to: { path: "/server_certs" },
                     },
