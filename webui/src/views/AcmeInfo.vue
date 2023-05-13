@@ -56,8 +56,8 @@ const endpoint = import.meta.env.VITE_API_ENDPOINT;
 async function deleteCert() {
     deleteDialog.value = false;
     try {
-        await axios.delete(`${endpoint}/keyring/${route.params.id}`)
-        router.replace({ name: 'Certificate List' })
+        await axios.delete(`${endpoint}/acme/${route.params.id}`)
+        router.replace({ name: 'ACME List' })
     } catch (err) {
         let { response: { data } } = err;
         error.value = data
@@ -68,7 +68,7 @@ onMounted(async () => {
     let since = null;
     for (; ;) {
         try {
-            const { data } = await axios.get(`${endpoint}/keyring/${route.params.id}/log`, {
+            const { data } = await axios.get(`${endpoint}/acme/${route.params.id}/log`, {
                 params: { since }
             });
             logs.value = logs.value.concat(data)
