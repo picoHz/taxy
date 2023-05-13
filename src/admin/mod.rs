@@ -25,6 +25,7 @@ mod config;
 mod keyring;
 mod log;
 mod ports;
+mod server_certs;
 mod static_file;
 mod swagger;
 
@@ -161,22 +162,56 @@ pub async fn start_admin(
             .and_then(keyring::log),
     );
 
+    let api_server_certs_list = warp::get()
+        .and(warp::path::end())
+        .and(with_state(app_state.clone()).and_then(server_certs::list));
+
+    let api_server_certs_self_sign = warp::post().and(warp::path("self_sign")).and(
+        with_state(app_state.clone())
+            .and(warp::body::json())
+            .and(warp::path::end())
+            .and_then(server_certs::self_sign),
+    );
+
+    let api_server_certs_upload = warp::post().and(warp::path("upload")).and(
+        with_state(app_state.clone())
+            .and(warp::multipart::form())
+            .and(warp::path::end())
+            .and_then(server_certs::upload),
+    );
+
+    let api_server_certs_delete = warp::delete().and(
+        with_state(app_state.clone())
+            .and(warp::path::param())
+            .and(warp::path::end())
+            .and_then(server_certs::delete),
+    );
+
+    let api_server_certs_log = warp::get().and(
+        with_state(app_state.clone())
+            .and(warp::path::param())
+            .and(warp::path("log"))
+            .and(warp::query())
+            .and(warp::path::end())
+            .and_then(server_certs::log),
+    );
+
     let api_acme_list = warp::get()
         .and(warp::path::end())
-        .and(with_state(app_state.clone()).and_then(keyring::list));
+        .and(with_state(app_state.clone()).and_then(acme::list));
 
     let api_acme_add = warp::post().and(
         with_state(app_state.clone())
             .and(warp::body::json())
             .and(warp::path::end())
-            .and_then(keyring::acme),
+            .and_then(acme::add),
     );
 
     let api_acme_delete = warp::delete().and(
         with_state(app_state.clone())
             .and(warp::path::param())
             .and(warp::path::end())
-            .and_then(keyring::delete),
+            .and_then(acme::delete),
     );
 
     let api_acme_log = warp::get().and(
@@ -185,7 +220,7 @@ pub async fn start_admin(
             .and(warp::path("log"))
             .and(warp::query())
             .and(warp::path::end())
-            .and_then(keyring::log),
+            .and_then(acme::log),
     );
 
     let app_state_clone = app_state.clone();
@@ -259,6 +294,14 @@ pub async fn start_admin(
             .or(api_keyring_list),
     );
 
+    let server_certs = warp::path("server_certs").and(
+        api_server_certs_delete
+            .or(api_server_certs_log)
+            .or(api_server_certs_self_sign)
+            .or(api_server_certs_upload)
+            .or(api_server_certs_list),
+    );
+
     let acme = warp::path("acme").and(
         api_acme_delete
             .or(api_acme_log)
@@ -290,6 +333,7 @@ pub async fn start_admin(
             .or(config)
             .or(port)
             .or(keyring)
+            .or(server_certs)
             .or(acme)
             .or(api_events)
             .or(auth)
