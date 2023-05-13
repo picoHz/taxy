@@ -6,6 +6,7 @@ pub mod acme;
 pub mod config;
 pub mod keyring;
 pub mod ports;
+pub mod server_certs;
 
 pub type RpcCallbackFunc =
     Box<dyn Fn(&mut ServerState, Box<dyn Any>) -> Result<Box<dyn Any + Send + Sync>, Error> + Send>;

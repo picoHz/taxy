@@ -4,6 +4,7 @@ use super::{
     rpc::{RpcCallback, RpcCallbackFunc, RpcMethod},
     table::ProxyTable,
 };
+use crate::keyring::certs::{Cert, CertInfo};
 use crate::keyring::KeyringInfo;
 use crate::proxy::PortStatus;
 use crate::{
@@ -465,6 +466,41 @@ impl ServerState {
             let _ = self
                 .command_sender
                 .try_send(ServerCommand::DeleteKeyringItem { id: id.to_string() });
+            Ok(())
+        } else {
+            Err(Error::IdNotFound { id: id.to_string() })
+        }
+    }
+
+    pub fn get_server_cert_list(&self) -> Vec<CertInfo> {
+        self.certs
+            .list()
+            .into_iter()
+            .filter_map(|item| match item {
+                KeyringInfo::ServerCert(cert) => Some(cert),
+                _ => None,
+            })
+            .collect()
+    }
+
+    pub fn add_server_cert(&mut self, cert: Arc<Cert>) -> Result<(), Error> {
+        if self.certs.iter().any(|item| item.id() == cert.id()) {
+            Err(Error::IdAlreadyExists {
+                id: cert.id().into(),
+            })
+        } else {
+            let _ = self.command_sender.try_send(ServerCommand::AddKeyringItem {
+                item: KeyringItem::ServerCert(cert),
+            });
+            Ok(())
+        }
+    }
+
+    pub fn delete_server_cert(&mut self, id: &str) -> Result<(), Error> {
+        if self.certs.iter().any(|item| item.id() == id) {
+            let _ = self
+                .command_sender
+                .try_send(ServerCommand::DeleteKeyringItem { id: id.into() });
             Ok(())
         } else {
             Err(Error::IdNotFound { id: id.to_string() })
