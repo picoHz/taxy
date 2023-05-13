@@ -45,7 +45,7 @@ const certsRoutes = [
                     {
                         trName: 'server_certs.server_certs',
                         disabled: false,
-                        to: { path: '/keyring' },
+                        to: { path: '/server_certs' },
                     },
                     {
                         title: route.params.id,
