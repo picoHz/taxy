@@ -18,6 +18,7 @@ use warp::{sse::Event, Filter, Rejection, Reply};
 use self::auth::SessionStore;
 use self::log::LogReader;
 
+mod acme;
 mod app_info;
 mod auth;
 mod config;
@@ -160,6 +161,33 @@ pub async fn start_admin(
             .and_then(keyring::log),
     );
 
+    let api_acme_list = warp::get()
+        .and(warp::path::end())
+        .and(with_state(app_state.clone()).and_then(keyring::list));
+
+    let api_acme_add = warp::post().and(
+        with_state(app_state.clone())
+            .and(warp::body::json())
+            .and(warp::path::end())
+            .and_then(keyring::acme),
+    );
+
+    let api_acme_delete = warp::delete().and(
+        with_state(app_state.clone())
+            .and(warp::path::param())
+            .and(warp::path::end())
+            .and_then(keyring::delete),
+    );
+
+    let api_acme_log = warp::get().and(
+        with_state(app_state.clone())
+            .and(warp::path::param())
+            .and(warp::path("log"))
+            .and(warp::query())
+            .and(warp::path::end())
+            .and_then(keyring::log),
+    );
+
     let app_state_clone = app_state.clone();
     let api_auth_login = warp::post()
         .and(warp::path("login"))
@@ -229,6 +257,13 @@ pub async fn start_admin(
             .or(api_keyring_upload)
             .or(api_keyring_acme)
             .or(api_keyring_list),
+    );
+
+    let keyring = warp::path("acme").and(
+        api_acme_delete
+            .or(api_acme_log)
+            .or(api_acme_add)
+            .or(api_acme_list),
     );
 
     let auth = api_auth_login.or(api_auth_logout);
