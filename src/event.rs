@@ -1,6 +1,6 @@
 use crate::{
     config::{port::PortEntry, AppConfig, Source},
-    keyring::{acme::AcmeInfo, certs::CertInfo, KeyringInfo},
+    keyring::{acme::AcmeInfo, certs::CertInfo},
     proxy::PortStatus,
 };
 use serde_derive::Serialize;
