@@ -259,7 +259,7 @@ pub async fn start_admin(
             .or(api_keyring_list),
     );
 
-    let keyring = warp::path("acme").and(
+    let acme = warp::path("acme").and(
         api_acme_delete
             .or(api_acme_log)
             .or(api_acme_add)
