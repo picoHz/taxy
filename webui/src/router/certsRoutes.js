@@ -1,7 +1,7 @@
 const certsRoutes = [
     {
         path: "",
-        name: "Server Certificate List",
+        name: "server_certs List",
         component: () => import(/* webpackChunkName: "certs" */ "@/views/Certificates.vue"),
         meta: {
             breadcrumb() {
@@ -16,7 +16,7 @@ const certsRoutes = [
         },
     },
     {
-        path: "server_certs/:id",
+        path: ":id",
         name: "Server Certificate Info",
         component: () => import(/* webpackChunkName: "cert_info" */ "@/views/CertInfo.vue"),
         meta: {

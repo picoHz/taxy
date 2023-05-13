@@ -1,13 +1,13 @@
-const certsRoutes = [
+const acmeRoutes = [
     {
         path: "",
         name: "ACME List",
-        component: () => import(/* webpackChunkName: "certs" */ "@/views/Certificates.vue"),
+        component: () => import(/* webpackChunkName: "certs" */ "@/views/AcmeList.vue"),
         meta: {
             breadcrumb() {
                 return [
                     {
-                        trName: "keyring.keyring",
+                        trName: "acme.acme",
                         disabled: false,
                         to: { path: "/acme" },
                     },
@@ -16,14 +16,14 @@ const certsRoutes = [
         },
     },
     {
-        path: "acme/:id",
+        path: ":id",
         name: "ACME Info",
         component: () => import(/* webpackChunkName: "acme_info" */ "@/views/AcmeInfo.vue"),
         meta: {
             breadcrumb(route) {
                 return [
                     {
-                        trName: 'keyring.keyring',
+                        trName: 'acme.acme',
                         disabled: false,
                         to: { path: '/acme' },
                     },
@@ -37,5 +37,5 @@ const certsRoutes = [
     },
 ];
 
-export default certsRoutes;
+export default acmeRoutes;
 
