@@ -1,7 +1,7 @@
 const certsRoutes = [
     {
         path: "",
-        name: "Server Certificate List",
+        name: "ACME List",
         component: () => import(/* webpackChunkName: "certs" */ "@/views/Certificates.vue"),
         meta: {
             breadcrumb() {
@@ -9,27 +9,7 @@ const certsRoutes = [
                     {
                         trName: "keyring.keyring",
                         disabled: false,
-                        to: { path: "/server_certs" },
-                    },
-                ];
-            },
-        },
-    },
-    {
-        path: "server_certs/:id",
-        name: "Server Certificate Info",
-        component: () => import(/* webpackChunkName: "cert_info" */ "@/views/CertInfo.vue"),
-        meta: {
-            breadcrumb(route) {
-                return [
-                    {
-                        trName: 'keyring.keyring',
-                        disabled: false,
-                        to: { path: '/server_certs' },
-                    },
-                    {
-                        title: route.params.id,
-                        disabled: true,
+                        to: { path: "/acme" },
                     },
                 ];
             },
@@ -45,7 +25,7 @@ const certsRoutes = [
                     {
                         trName: 'keyring.keyring',
                         disabled: false,
-                        to: { path: '/keyring' },
+                        to: { path: '/acme' },
                     },
                     {
                         title: route.params.id,
