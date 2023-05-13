@@ -137,6 +137,9 @@ export default {
             title: "New ACME Request",
             cancel: "Cancel",
             create: "Create",
+            rule: {
+                hostname_required: 'Provide a valid hostname.',
+            }
         },
         delete_acme: {
             delete_acme: "Delete ACME",
