@@ -1,24 +1,20 @@
 use super::{log::LogQuery, AppState};
 use crate::{
     error::Error,
-    keyring::{
-        acme::{AcmeEntry, AcmeRequest},
-        certs::{Cert, SelfSignedCertRequest},
-        KeyringItem,
-    },
-    server::rpc::keyring::*,
+    keyring::certs::{Cert, SelfSignedCertRequest},
+    server::rpc::server_certs::*,
 };
-use std::{io::Read, sync::Arc};
+use std::io::Read;
 use tokio_stream::StreamExt;
 use utoipa::ToSchema;
 use warp::{multipart::FormData, Buf, Rejection, Reply};
 
-/// List keyring items.
+/// List server certificates.
 #[utoipa::path(
     get,
-    path = "/api/keyring",
+    path = "/api/server_certs",
     responses(
-        (status = 200, body = [KeyringInfo]),
+        (status = 200, body = [CertInfo]),
         (status = 401),
     ),
     security(
@@ -26,13 +22,13 @@ use warp::{multipart::FormData, Buf, Rejection, Reply};
     )
 )]
 pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
-    Ok(warp::reply::json(&state.call(GetKeyringItemList).await?))
+    Ok(warp::reply::json(&state.call(GetServerCertList).await?))
 }
 
 /// Generate a self-signed certificate.
 #[utoipa::path(
     post,
-    path = "/api/keyring/self_signed",
+    path = "/api/server_certs/self_sign",
     request_body = SelfSignedCertRequest,
     responses(
         (status = 200),
@@ -43,13 +39,13 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
         ("authorization"=[])
     )
 )]
-pub async fn self_signed(
+pub async fn self_sign(
     state: AppState,
     request: SelfSignedCertRequest,
 ) -> Result<impl Reply, Rejection> {
-    let item = KeyringItem::ServerCert(Arc::new(Cert::new_self_signed(&request)?));
+    let cert = Cert::new_self_signed(&request)?;
     Ok(warp::reply::json(
-        &state.call(AddKeyringItem { item }).await?,
+        &state.call(AddServerCert { cert }).await?,
     ))
 }
 
@@ -65,7 +61,7 @@ pub struct CertPostBody {
 /// Upload a certificate and key pair.
 #[utoipa::path(
     post,
-    path = "/api/keyring/upload",
+    path = "/api/server_certs/upload",
     request_body(content = CertPostBody, content_type = "multipart/form-data"),
     responses(
         (status = 200),
@@ -97,37 +93,16 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
         }
     }
 
-    let item = KeyringItem::ServerCert(Arc::new(Cert::new(chain, key)?));
+    let cert = Cert::new(chain, key)?;
     Ok(warp::reply::json(
-        &state.call(AddKeyringItem { item }).await?,
+        &state.call(AddServerCert { cert }).await?,
     ))
 }
 
-/// Register an ACME configuration.
-#[utoipa::path(
-    post,
-    path = "/api/keyring/acme",
-    request_body = AcmeRequest,
-    responses(
-        (status = 200),
-        (status = 400, body = Error),
-        (status = 401),
-    ),
-    security(
-        ("authorization"=[])
-    )
-)]
-pub async fn acme(state: AppState, request: AcmeRequest) -> Result<impl Reply, Rejection> {
-    let item = KeyringItem::Acme(Arc::new(AcmeEntry::new(request).await?));
-    Ok(warp::reply::json(
-        &state.call(AddKeyringItem { item }).await?,
-    ))
-}
-
-/// Delete a keyring item.
+/// Delete a certificate.
 #[utoipa::path(
     delete,
-    path = "/api/keyring/{id}",
+    path = "/api/server_certs/{id}",
     params(
         ("id" = String, Path, description = "Certification ID")
     ),
@@ -142,14 +117,14 @@ pub async fn acme(state: AppState, request: AcmeRequest) -> Result<impl Reply, R
 )]
 pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(
-        &state.call(DeleteKeyringItem { id }).await?,
+        &state.call(DeleteServerCert { id }).await?,
     ))
 }
 
 /// Get log.
 #[utoipa::path(
     get,
-    path = "/api/keyring/{id}/log",
+    path = "/api/server_certs/{id}/log",
     params(
         ("id" = String, Path, description = "Item ID"),
         LogQuery

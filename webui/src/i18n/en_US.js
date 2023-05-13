@@ -67,9 +67,9 @@ export default {
             }
         }
     },
-    keyring: {
-        keyring: 'Keyring',
-        no_certs: 'No keyring item found.',
+    server_certs: {
+        server_certs: 'Server Certificates',
+        no_certs: 'No certificates found.',
         info: {
             san: 'SAN',
             fingerprint: 'Fingerprint',
@@ -98,33 +98,36 @@ export default {
             rule_key: "Select valid private key.",
             cancel: "Cancel"
         },
-        acme: {
-            acme: "ACME",
-            title: "New ACME Request",
-            provider: "Provider",
-            challenge: "Challenge",
-            email: "Email",
-            domain: "Domain Name",
-            create: "Create",
-            cancel: "Cancel",
-            rule: {
-                hostname_required: 'Provide a valid hostname.',
-            }
-        },
         delete_cert: {
             delete_cert: "Delete Certificate",
             confirm: "Are you sure to delete {id}?",
             delete: "Delete",
             cancel: "Cancel"
+        }
+    },
+    acme: {
+        acme: "ACME",
+        add_item: "Add",
+        no_items: "No ACME requests found.",
+        provider: "Provider",
+        challenge: "Challenge",
+        domain: "Domain Name",
+        create: "Create",
+        cancel: "Cancel",
+        add_acme: {
+            title: "New ACME Request",
+            cancel: "Cancel",
+            create: "Create",
+            rule: {
+                hostname_required: 'Provide a valid hostname.',
+            }
         },
         delete_acme: {
             delete_acme: "Delete ACME",
             confirm: "Are you sure to delete {id}?",
             cancel: "Cancel",
             delete: "Delete"
-        }
-    },
-    acme: {
+        },
         info: {
             provider: "Provider",
             identifiers: "Identifiers",

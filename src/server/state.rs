@@ -4,6 +4,7 @@ use super::{
     rpc::{RpcCallback, RpcCallbackFunc, RpcMethod},
     table::ProxyTable,
 };
+use crate::keyring::certs::{Cert, CertInfo};
 use crate::keyring::KeyringInfo;
 use crate::proxy::PortStatus;
 use crate::{
@@ -11,7 +12,10 @@ use crate::{
     config::{port::PortEntry, storage::ConfigStorage, AppConfig, Source},
     error::Error,
     event::ServerEvent,
-    keyring::{Keyring, KeyringItem},
+    keyring::{
+        acme::{AcmeEntry, AcmeInfo},
+        Keyring, KeyringItem,
+    },
     proxy::{PortContext, PortContextKind},
 };
 use hyper::server::conn::Http;
@@ -58,10 +62,6 @@ impl ServerState {
         });
 
         let certs = storage.load_keychain().await;
-        let _ = br_sender.send(ServerEvent::KeyringUpdated {
-            items: certs.list(),
-        });
-
         let mut table = ProxyTable::new();
         let ports = storage.load_entries().await;
         for entry in ports {
@@ -106,9 +106,19 @@ impl ServerState {
         this.register_callback::<rpc::ports::UpdatePort>();
         this.register_callback::<rpc::config::GetConfig>();
         this.register_callback::<rpc::config::SetConfig>();
-        this.register_callback::<rpc::keyring::GetKeyringItemList>();
-        this.register_callback::<rpc::keyring::AddKeyringItem>();
-        this.register_callback::<rpc::keyring::DeleteKeyringItem>();
+        this.register_callback::<rpc::acme::GetAcmeList>();
+        this.register_callback::<rpc::acme::AddAcme>();
+        this.register_callback::<rpc::acme::DeleteAcme>();
+        this.register_callback::<rpc::server_certs::GetServerCertList>();
+        this.register_callback::<rpc::server_certs::AddServerCert>();
+        this.register_callback::<rpc::server_certs::DeleteServerCert>();
+
+        let _ = this.br_sender.send(ServerEvent::AcmeUpdated {
+            items: this.get_acme_list(),
+        });
+        let _ = this.br_sender.send(ServerEvent::ServerCertsUpdated {
+            items: this.get_server_cert_list(),
+        });
 
         this.update_port_statuses().await;
         this.start_http_challenges().await;
@@ -134,8 +144,11 @@ impl ServerState {
                     }
                 }
                 self.certs.add(item);
-                let _ = self.br_sender.send(ServerEvent::KeyringUpdated {
-                    items: self.certs.list(),
+                let _ = self.br_sender.send(ServerEvent::AcmeUpdated {
+                    items: self.get_acme_list(),
+                });
+                let _ = self.br_sender.send(ServerEvent::ServerCertsUpdated {
+                    items: self.get_server_cert_list(),
                 });
                 self.start_http_challenges().await;
             }
@@ -149,8 +162,11 @@ impl ServerState {
                     }
                     _ => (),
                 }
-                let _ = self.br_sender.send(ServerEvent::KeyringUpdated {
-                    items: self.certs.list(),
+                let _ = self.br_sender.send(ServerEvent::AcmeUpdated {
+                    items: self.get_acme_list(),
+                });
+                let _ = self.br_sender.send(ServerEvent::ServerCertsUpdated {
+                    items: self.get_server_cert_list(),
                 });
             }
             ServerCommand::StopHttpChallenges => {
@@ -432,22 +448,64 @@ impl ServerState {
         }
     }
 
-    pub fn get_keyring_item_list(&self) -> Vec<KeyringInfo> {
-        self.certs.list()
+    pub fn get_acme_list(&self) -> Vec<AcmeInfo> {
+        self.certs
+            .list()
+            .into_iter()
+            .filter_map(|item| match item {
+                KeyringInfo::Acme(acme) => Some(acme),
+                _ => None,
+            })
+            .collect()
     }
 
-    pub fn add_keyring_item(&mut self, item: KeyringItem) -> Result<(), Error> {
-        if self.certs.iter().any(|i: &KeyringItem| i.id() == item.id()) {
-            Err(Error::IdAlreadyExists { id: item.id().into() })
+    pub fn add_acme(&mut self, entry: AcmeEntry) -> Result<(), Error> {
+        if self.certs.iter().any(|item| item.id() == entry.id) {
+            Err(Error::IdAlreadyExists { id: entry.id })
         } else {
-            let _ = self
-                .command_sender
-                .try_send(ServerCommand::AddKeyringItem { item });
+            let _ = self.command_sender.try_send(ServerCommand::AddKeyringItem {
+                item: KeyringItem::Acme(Arc::new(entry)),
+            });
             Ok(())
         }
     }
 
-    pub fn delete_keyring_item(&mut self, id: &str) -> Result<(), Error> {
+    pub fn delete_acme(&mut self, id: &str) -> Result<(), Error> {
+        if self.certs.iter().any(|item| item.id() == id) {
+            let _ = self
+                .command_sender
+                .try_send(ServerCommand::DeleteKeyringItem { id: id.to_string() });
+            Ok(())
+        } else {
+            Err(Error::IdNotFound { id: id.to_string() })
+        }
+    }
+
+    pub fn get_server_cert_list(&self) -> Vec<CertInfo> {
+        self.certs
+            .list()
+            .into_iter()
+            .filter_map(|item| match item {
+                KeyringInfo::ServerCert(cert) => Some(cert),
+                _ => None,
+            })
+            .collect()
+    }
+
+    pub fn add_server_cert(&mut self, cert: Cert) -> Result<(), Error> {
+        if self.certs.iter().any(|item| item.id() == cert.id()) {
+            Err(Error::IdAlreadyExists {
+                id: cert.id().into(),
+            })
+        } else {
+            let _ = self.command_sender.try_send(ServerCommand::AddKeyringItem {
+                item: KeyringItem::ServerCert(Arc::new(cert)),
+            });
+            Ok(())
+        }
+    }
+
+    pub fn delete_server_cert(&mut self, id: &str) -> Result<(), Error> {
         if self.certs.iter().any(|item| item.id() == id) {
             let _ = self
                 .command_sender

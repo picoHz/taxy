@@ -1,6 +1,7 @@
 use super::auth::{LoginRequest, LoginResult};
 use super::log::SystemLogRow;
-use super::{app_info, auth, config, keyring, keyring::CertPostBody, ports};
+use super::server_certs::CertPostBody;
+use super::{acme, app_info, auth, config, ports, server_certs};
 use crate::config::port::{BackendServer, PortEntry, PortEntryRequest, PortOptions};
 use crate::config::tls::TlsTermination;
 use crate::config::{AppConfig, AppInfo, Source};
@@ -8,7 +9,6 @@ use crate::error::Error;
 use crate::event::ServerEvent;
 use crate::keyring::acme::{AcmeInfo, AcmeRequest};
 use crate::keyring::certs::{CertInfo, CertMetadata, SelfSignedCertRequest};
-use crate::keyring::KeyringInfo;
 use crate::proxy::tls::TlsState;
 use crate::proxy::{PortState, PortStatus, SocketState};
 use hyper::{Response, StatusCode, Uri};
@@ -31,13 +31,16 @@ use warp::{Rejection, Reply};
         ports::log,
         config::get,
         config::put,
-        keyring::list,
-        keyring::delete,
-        keyring::self_signed,
-        keyring::upload,
-        keyring::acme,
-        keyring::log,
         app_info::get,
+        acme::list,
+        acme::delete,
+        acme::add,
+        acme::log,
+        server_certs::list,
+        server_certs::delete,
+        server_certs::self_sign,
+        server_certs::upload,
+        server_certs::log,
     ),
     components(schemas(
         AppInfo,
@@ -50,7 +53,6 @@ use warp::{Rejection, Reply};
         PortState,
         SocketState,
         TlsState,
-        KeyringInfo,
         CertInfo,
         CertMetadata,
         AcmeInfo,
