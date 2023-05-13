@@ -1,6 +1,6 @@
 use super::auth::{LoginRequest, LoginResult};
 use super::log::SystemLogRow;
-use super::{app_info, auth, config, keyring, keyring::CertPostBody, ports};
+use super::{acme, app_info, auth, config, keyring, keyring::CertPostBody, ports, server_certs};
 use crate::config::port::{BackendServer, PortEntry, PortEntryRequest, PortOptions};
 use crate::config::tls::TlsTermination;
 use crate::config::{AppConfig, AppInfo, Source};
@@ -38,6 +38,15 @@ use warp::{Rejection, Reply};
         keyring::acme,
         keyring::log,
         app_info::get,
+        acme::list,
+        acme::delete,
+        acme::add,
+        acme::log,
+        server_certs::list,
+        server_certs::delete,
+        server_certs::self_sign,
+        server_certs::upload,
+        server_certs::log,
     ),
     components(schemas(
         AppInfo,
