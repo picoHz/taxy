@@ -4,7 +4,7 @@ use crate::{
     keyring::certs::{Cert, SelfSignedCertRequest},
     server::rpc::server_certs::*,
 };
-use std::{io::Read, sync::Arc};
+use std::io::Read;
 use tokio_stream::StreamExt;
 use utoipa::ToSchema;
 use warp::{multipart::FormData, Buf, Rejection, Reply};
@@ -43,7 +43,7 @@ pub async fn self_sign(
     state: AppState,
     request: SelfSignedCertRequest,
 ) -> Result<impl Reply, Rejection> {
-    let cert = Arc::new(Cert::new_self_signed(&request)?);
+    let cert = Cert::new_self_signed(&request)?;
     Ok(warp::reply::json(
         &state.call(AddServerCert { cert }).await?,
     ))
@@ -93,7 +93,7 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
         }
     }
 
-    let cert = Arc::new(Cert::new(chain, key)?);
+    let cert = Cert::new(chain, key)?;
     Ok(warp::reply::json(
         &state.call(AddServerCert { cert }).await?,
     ))

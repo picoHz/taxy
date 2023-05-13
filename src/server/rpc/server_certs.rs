@@ -4,7 +4,6 @@ use crate::{
     keyring::certs::{Cert, CertInfo},
     server::state::ServerState,
 };
-use std::sync::Arc;
 
 pub struct GetServerCertList;
 
@@ -18,7 +17,7 @@ impl RpcMethod for GetServerCertList {
 }
 
 pub struct AddServerCert {
-    pub cert: Arc<Cert>,
+    pub cert: Cert,
 }
 
 impl RpcMethod for AddServerCert {

@@ -486,14 +486,14 @@ impl ServerState {
             .collect()
     }
 
-    pub fn add_server_cert(&mut self, cert: Arc<Cert>) -> Result<(), Error> {
+    pub fn add_server_cert(&mut self, cert: Cert) -> Result<(), Error> {
         if self.certs.iter().any(|item| item.id() == cert.id()) {
             Err(Error::IdAlreadyExists {
                 id: cert.id().into(),
             })
         } else {
             let _ = self.command_sender.try_send(ServerCommand::AddKeyringItem {
-                item: KeyringItem::ServerCert(cert),
+                item: KeyringItem::ServerCert(Arc::new(cert)),
             });
             Ok(())
         }
