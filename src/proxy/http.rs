@@ -4,7 +4,11 @@ use crate::{
     error::Error,
     keyring::Keyring,
 };
-use hyper::{client, server::conn::Http};
+use humantime_serde::re;
+use hyper::{
+    client, header::UPGRADE, http::HeaderValue, server::conn::Http, upgrade::Upgraded, Body,
+    Client, Request, Response, StatusCode,
+};
 use multiaddr::{Multiaddr, Protocol};
 use std::{
     net::{IpAddr, SocketAddr},
@@ -18,6 +22,7 @@ use tokio_rustls::{
     TlsAcceptor, TlsConnector,
 };
 use tracing::{debug, error, info, span, warn, Instrument, Level, Span};
+use warp::test::RequestBuilder;
 
 #[derive(Debug)]
 pub struct HttpPortContext {
@@ -198,8 +203,11 @@ pub async fn start(
     }
 
     let service = hyper::service::service_fn(move |mut req| {
+        println!("req: {:?}", req);
         let tls_client_config = tls_client_config.clone();
         let conn = conn.clone();
+
+        let upgrade = req.headers().contains_key(UPGRADE);
 
         let uri_string = format!(
             "http://{}:{}{}",
@@ -238,15 +246,25 @@ pub async fn start(
                 out = Box::new(tls_stream);
             }
 
+            if upgrade {
+                return upgrade_connection(req, out).await;
+            }
+
             let (mut sender, conn) = client::conn::Builder::new()
                 .http2_only(client_http2)
                 .handshake(out)
-                .await?;
+                .await
+                .map_err(|err| {
+                    println!("cerr: {:?}", err);
+                    err
+                })?;
+
             tokio::task::spawn(async move {
                 if let Err(err) = conn.await {
                     error!("Connection failed: {:?}", err);
                 }
             });
+
             Result::<_, anyhow::Error>::Ok(sender.send_request(req).await?)
         }
     });
@@ -255,6 +273,7 @@ pub async fn start(
         if let Err(err) = Http::new()
             .http2_only(server_http2)
             .serve_connection(stream, service)
+            .with_upgrades()
             .await
         {
             error!("Failed to serve the connection: {:?}", err);
@@ -324,4 +343,67 @@ where
     fn execute(&self, fut: F) {
         tokio::task::spawn(fut);
     }
+}
+
+async fn upgrade_connection(
+    mut req: Request<Body>,
+    stream: Box<dyn IoStream>,
+) -> anyhow::Result<Response<Body>> {
+    let mut client_req = Request::builder().uri(req.uri()).body(Body::empty())?;
+    *client_req.headers_mut() = req.headers().clone();
+    client_req.headers_mut().remove("Host");
+    client_req.headers_mut().append(
+        "Host",
+        HeaderValue::from_str(req.uri().host().unwrap()).unwrap(),
+    );
+
+    tokio::spawn(async move {
+        match hyper::upgrade::on(&mut req).await {
+            Ok(upgraded) => {
+                if let Err(e) = server_upgraded_io(upgraded).await {
+                    eprintln!("server foobar io error: {}", e)
+                };
+            }
+            Err(e) => eprintln!("upgrade error: {}", e),
+        }
+    });
+
+    let (mut sender, conn) = client::conn::Builder::new()
+        .handshake::<_, Body>(stream)
+        .await?;
+
+    tokio::task::spawn(async move {
+        if let Err(err) = conn.await {
+            error!("Connection failed: {:?}", err);
+        }
+    });
+
+    let mut res = sender.send_request(client_req).await?;
+
+    if res.status() != StatusCode::SWITCHING_PROTOCOLS {
+        panic!("Our server didn't upgrade: {}", res.status());
+    }
+
+    match hyper::upgrade::on(&mut res).await {
+        Ok(upgraded) => {
+            if let Err(e) = client_upgraded_io(upgraded).await {
+                eprintln!("client foobar io error: {}", e)
+            };
+        }
+        Err(e) => eprintln!("upgrade error: {}", e),
+    }
+
+    Ok(res)
+}
+
+async fn server_upgraded_io(
+    upgraded: Upgraded,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    println!("server upgraded io");
+    Ok(())
+}
+
+async fn client_upgraded_io(mut upgraded: Upgraded) -> anyhow::Result<()> {
+    println!("client upgraded io");
+    Ok(())
 }
