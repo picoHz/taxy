@@ -128,8 +128,16 @@ impl ServerState {
     pub async fn handle_command(&mut self, cmd: ServerCommand) {
         match cmd {
             ServerCommand::SetPort { mut ctx } => {
-                if let Err(err) = ctx.setup(&self.certs).await {
-                    error!(?err, "failed to setup port");
+                let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
+                if let Err(err) = ctx.prepare(&self.config).instrument(span.clone()).await {
+                    span.in_scope(|| {
+                        error!(?err, "failed to prepare port");
+                    });
+                }
+                if let Err(err) = ctx.setup(&self.certs).instrument(span.clone()).await {
+                    span.in_scope(|| {
+                        error!(?err, "failed to setup port");
+                    });
                 }
                 self.table.set_port(ctx);
                 self.update_port_statuses().await;
