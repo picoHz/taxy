@@ -4,7 +4,12 @@ use crate::{
     error::Error,
     keyring::Keyring,
 };
-use hyper::{client, server::conn::Http};
+use hyper::{
+    client,
+    header::{HOST, UPGRADE},
+    http::HeaderValue,
+    server::conn::Http,
+};
 use multiaddr::{Multiaddr, Protocol};
 use std::{
     net::{IpAddr, SocketAddr},
@@ -18,6 +23,8 @@ use tokio_rustls::{
     TlsAcceptor, TlsConnector,
 };
 use tracing::{debug, error, info, span, warn, Instrument, Level, Span};
+
+mod upgrade;
 
 #[derive(Debug)]
 pub struct HttpPortContext {
@@ -201,14 +208,19 @@ pub async fn start(
         let tls_client_config = tls_client_config.clone();
         let conn = conn.clone();
 
-        let uri_string = format!(
-            "http://{}:{}{}",
+        let upgrade = req.headers().contains_key(UPGRADE);
+        let host = format!(
+            "{}:{}",
             match &conn.name {
                 ServerName::DnsName(name) => name.as_ref().to_string(),
                 ServerName::IpAddress(addr) => addr.to_string(),
                 _ => unreachable!(),
             },
-            conn.port,
+            conn.port
+        );
+        let uri_string = format!(
+            "http://{}{}",
+            host,
             req.uri()
                 .path_and_query()
                 .map(|x| x.as_str())
@@ -216,6 +228,9 @@ pub async fn start(
         );
         let uri = uri_string.parse().unwrap();
         *req.uri_mut() = uri;
+        if let Some(req_host) = req.headers_mut().get_mut(HOST) {
+            *req_host = HeaderValue::from_str(&host).unwrap();
+        }
 
         async move {
             let sock = if resolved.is_ipv4() {
@@ -238,15 +253,25 @@ pub async fn start(
                 out = Box::new(tls_stream);
             }
 
+            if upgrade {
+                return upgrade::connect(req, out).await;
+            }
+
             let (mut sender, conn) = client::conn::Builder::new()
                 .http2_only(client_http2)
                 .handshake(out)
-                .await?;
+                .await
+                .map_err(|err| {
+                    println!("cerr: {:?}", err);
+                    err
+                })?;
+
             tokio::task::spawn(async move {
                 if let Err(err) = conn.await {
                     error!("Connection failed: {:?}", err);
                 }
             });
+
             Result::<_, anyhow::Error>::Ok(sender.send_request(req).await?)
         }
     });
@@ -255,6 +280,7 @@ pub async fn start(
         if let Err(err) = Http::new()
             .http2_only(server_http2)
             .serve_connection(stream, service)
+            .with_upgrades()
             .await
         {
             error!("Failed to serve the connection: {:?}", err);
@@ -302,7 +328,7 @@ fn multiaddr_to_host(addr: &Multiaddr) -> Result<Connection, Error> {
     }
 }
 
-trait IoStream: AsyncRead + AsyncWrite + Unpin + Send {}
+pub trait IoStream: AsyncRead + AsyncWrite + Unpin + Send {}
 
 impl<S> IoStream for S where S: AsyncRead + AsyncWrite + Unpin + Send {}
 
@@ -311,17 +337,4 @@ pub struct Connection {
     pub name: ServerName,
     pub port: u16,
     pub tls: bool,
-}
-
-#[derive(Clone)]
-pub struct TokioExecutor;
-
-impl<F> hyper::rt::Executor<F> for TokioExecutor
-where
-    F: std::future::Future + Send + 'static,
-    F::Output: Send + 'static,
-{
-    fn execute(&self, fut: F) {
-        tokio::task::spawn(fut);
-    }
 }
