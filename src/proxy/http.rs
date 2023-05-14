@@ -4,10 +4,9 @@ use crate::{
     error::Error,
     keyring::Keyring,
 };
-use humantime_serde::re;
 use hyper::{
     client, header::UPGRADE, http::HeaderValue, server::conn::Http, upgrade::Upgraded, Body,
-    Client, Request, Response, StatusCode,
+    Request, Response, StatusCode,
 };
 use multiaddr::{Multiaddr, Protocol};
 use std::{
@@ -346,7 +345,7 @@ where
 }
 
 async fn upgrade_connection(
-    mut req: Request<Body>,
+    req: Request<Body>,
     stream: Box<dyn IoStream>,
 ) -> anyhow::Result<Response<Body>> {
     let mut client_req = Request::builder().uri(req.uri()).body(Body::empty())?;
@@ -356,17 +355,6 @@ async fn upgrade_connection(
         "Host",
         HeaderValue::from_str(req.uri().host().unwrap()).unwrap(),
     );
-
-    tokio::spawn(async move {
-        match hyper::upgrade::on(&mut req).await {
-            Ok(upgraded) => {
-                if let Err(e) = server_upgraded_io(upgraded).await {
-                    eprintln!("server foobar io error: {}", e)
-                };
-            }
-            Err(e) => eprintln!("upgrade error: {}", e),
-        }
-    });
 
     let (mut sender, conn) = client::conn::Builder::new()
         .handshake::<_, Body>(stream)
@@ -384,26 +372,35 @@ async fn upgrade_connection(
         panic!("Our server didn't upgrade: {}", res.status());
     }
 
-    match hyper::upgrade::on(&mut res).await {
-        Ok(upgraded) => {
-            if let Err(e) = client_upgraded_io(upgraded).await {
-                eprintln!("client foobar io error: {}", e)
-            };
+    let upgraded_client = match hyper::upgrade::on(&mut res).await {
+        Ok(upgraded) => Some(upgraded),
+        Err(e) => {
+            eprintln!("upgrade error: {}", e);
+            None
         }
-        Err(e) => eprintln!("upgrade error: {}", e),
-    }
+    };
+
+    tokio::spawn(async move {
+        match hyper::upgrade::on(req).await {
+            Ok(upgraded) => {
+                if let Some(upgraded_client) = upgraded_client {
+                    if let Err(err) = server_upgraded_io(upgraded, upgraded_client).await {
+                        eprintln!("server upgraded io error: {}", err);
+                    }
+                }
+                println!("upgraded2");
+            }
+            Err(e) => eprintln!("upgrade error: {}", e),
+        }
+    });
 
     Ok(res)
 }
 
 async fn server_upgraded_io(
-    upgraded: Upgraded,
+    mut server: Upgraded,
+    mut client: Upgraded,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    println!("server upgraded io");
-    Ok(())
-}
-
-async fn client_upgraded_io(mut upgraded: Upgraded) -> anyhow::Result<()> {
-    println!("client upgraded io");
+    tokio::io::copy_bidirectional(&mut server, &mut client).await?;
     Ok(())
 }
