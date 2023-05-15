@@ -111,15 +111,6 @@ pub async fn start_admin(
             .and_then(ports::post),
     );
 
-    let api_ports_log = warp::get().and(
-        with_state(app_state.clone())
-            .and(warp::path::param())
-            .and(warp::path("log"))
-            .and(warp::query())
-            .and(warp::path::end())
-            .and_then(ports::log),
-    );
-
     let api_server_certs_list = warp::get()
         .and(warp::path::end())
         .and(with_state(app_state.clone()).and_then(server_certs::list));
@@ -145,15 +136,6 @@ pub async fn start_admin(
             .and_then(server_certs::delete),
     );
 
-    let api_server_certs_log = warp::get().and(
-        with_state(app_state.clone())
-            .and(warp::path::param())
-            .and(warp::path("log"))
-            .and(warp::query())
-            .and(warp::path::end())
-            .and_then(server_certs::log),
-    );
-
     let api_acme_list = warp::get()
         .and(warp::path::end())
         .and(with_state(app_state.clone()).and_then(acme::list));
@@ -170,15 +152,6 @@ pub async fn start_admin(
             .and(warp::path::param())
             .and(warp::path::end())
             .and_then(acme::delete),
-    );
-
-    let api_acme_log = warp::get().and(
-        with_state(app_state.clone())
-            .and(warp::path::param())
-            .and(warp::path("log"))
-            .and(warp::query())
-            .and(warp::path::end())
-            .and_then(acme::log),
     );
 
     let app_state_clone = app_state.clone();
@@ -236,7 +209,6 @@ pub async fn start_admin(
 
     let port = warp::path("ports").and(
         api_ports_delete
-            .or(api_ports_log)
             .or(api_ports_put)
             .or(api_ports_status)
             .or(api_ports_list)
@@ -245,17 +217,19 @@ pub async fn start_admin(
 
     let server_certs = warp::path("server_certs").and(
         api_server_certs_delete
-            .or(api_server_certs_log)
             .or(api_server_certs_self_sign)
             .or(api_server_certs_upload)
             .or(api_server_certs_list),
     );
 
-    let acme = warp::path("acme").and(
-        api_acme_delete
-            .or(api_acme_log)
-            .or(api_acme_add)
-            .or(api_acme_list),
+    let acme = warp::path("acme").and(api_acme_delete.or(api_acme_add).or(api_acme_list));
+
+    let log = warp::get().and(warp::path("log")).and(
+        with_state(app_state.clone())
+            .and(warp::path::param())
+            .and(warp::query())
+            .and(warp::path::end())
+            .and_then(log::get),
     );
 
     let auth = api_auth_login.or(api_auth_logout);
@@ -283,6 +257,7 @@ pub async fn start_admin(
             .or(port)
             .or(server_certs)
             .or(acme)
+            .or(log)
             .or(api_events)
             .or(auth)
             .or(api_doc)
