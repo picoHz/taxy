@@ -127,7 +127,7 @@ onMounted(async () => {
     let since = null;
     for (; ;) {
         try {
-            const { data } = await axios.get(`${endpoint}/ports/${route.params.id}/log`, {
+            const { data } = await axios.get(`${endpoint}/log/${route.params.id}`, {
                 params: { since }
             });
             logs.value = logs.value.concat(data)

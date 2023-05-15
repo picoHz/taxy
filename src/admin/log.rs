@@ -1,3 +1,4 @@
+use super::AppState;
 use crate::error::Error;
 use serde::{Deserialize, Serialize};
 use sqlx::ConnectOptions;
@@ -6,10 +7,37 @@ use std::time::Duration;
 use std::{collections::HashMap, path::Path};
 use time::OffsetDateTime;
 use utoipa::{IntoParams, ToSchema};
+use warp::{Rejection, Reply};
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 const REQUEST_INTERVAL: Duration = Duration::from_secs(1);
 const REQUEST_DEFAULT_LIMIT: u32 = 100;
+
+/// Get log.
+#[utoipa::path(
+    get,
+    path = "/api/log/{id}",
+    params(
+        ("id" = String, Path, description = "Resource ID"),
+        LogQuery
+    ),
+    responses(
+        (status = 200, body = Vec<SystemLogRow>),
+        (status = 408),
+        (status = 404),
+        (status = 401),
+    ),
+    security(
+        ("authorization"=[])
+    )
+)]
+pub async fn get(state: AppState, id: String, query: LogQuery) -> Result<impl Reply, Rejection> {
+    let log = state.data.lock().await.log.clone();
+    let rows = log
+        .fetch_system_log(&id, query.since, query.until, query.limit)
+        .await?;
+    Ok(warp::reply::json(&rows))
+}
 
 pub struct LogReader {
     pool: SqlitePool,

@@ -1,6 +1,5 @@
 use super::AppState;
 use crate::{
-    admin::log::LogQuery,
     config::port::{PortEntry, PortEntryRequest},
     server::rpc::ports::*,
 };
@@ -114,30 +113,4 @@ pub async fn put(
     let mut entry: PortEntry = entry.into();
     entry.id = id;
     Ok(warp::reply::json(&state.call(UpdatePort { entry }).await?))
-}
-
-/// Get log.
-#[utoipa::path(
-    get,
-    path = "/api/ports/{id}/log",
-    params(
-        ("id" = String, Path, description = "Port ID"),
-        LogQuery
-    ),
-    responses(
-        (status = 200, body = Vec<SystemLogRow>),
-        (status = 408),
-        (status = 404),
-        (status = 401),
-    ),
-    security(
-        ("authorization"=[])
-    )
-)]
-pub async fn log(state: AppState, id: String, query: LogQuery) -> Result<impl Reply, Rejection> {
-    let log = state.data.lock().await.log.clone();
-    let rows = log
-        .fetch_system_log(&id, query.since, query.until, query.limit)
-        .await?;
-    Ok(warp::reply::json(&rows))
 }
