@@ -22,6 +22,8 @@ pub struct AcmeRequest {
     pub provider: String,
     #[schema(example = "https://acme-staging-v02.api.letsencrypt.org/directory")]
     pub server_url: String,
+    #[schema(example = json!(["mailto:admin@example.com"]))]
+    pub contacts: Vec<String>,
     #[schema(value_type = [String], example = json!(["example.com"]))]
     pub identifiers: Vec<SubjectName>,
     #[schema(value_type = String, example = "http-01")]
@@ -83,9 +85,10 @@ impl fmt::Debug for AcmeEntry {
 
 impl AcmeEntry {
     pub async fn new(req: AcmeRequest) -> Result<Self, Error> {
+        let contact = req.contacts.iter().map(|c| c.as_str()).collect::<Vec<_>>();
         let account = Account::create(
             &NewAccount {
-                contact: &[],
+                contact: &contact,
                 terms_of_service_agreed: true,
                 only_return_existing: false,
             },
