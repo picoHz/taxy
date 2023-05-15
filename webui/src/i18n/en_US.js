@@ -111,6 +111,7 @@ export default {
         no_items: "No ACME requests found.",
         provider: "Provider",
         challenge: "Challenge",
+        email: "Email",
         domain: "Domain Name",
         create: "Create",
         cancel: "Cancel",
@@ -120,6 +121,7 @@ export default {
             create: "Create",
             rule: {
                 hostname_required: 'Provide a valid hostname.',
+                email_required: 'Provide a valid email address.',
             }
         },
         delete_acme: {

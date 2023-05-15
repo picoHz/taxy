@@ -6,6 +6,10 @@
                     density="compact"></v-select>
             </v-col>
             <v-col cols="12" sm="12">
+                <v-text-field @update:modelValue="update" type="email" :label="$t('acme.email')" variant="outlined"
+                    v-model="email" density="compact" :rules="emailRules" persistent-hint></v-text-field>
+            </v-col>
+            <v-col cols="12" sm="12">
                 <v-text-field @update:modelValue="update" autocapitalize="off" :label="$t('acme.domain')" variant="outlined"
                     v-model="domain" density="compact" :rules="domainNameRules" persistent-hint></v-text-field>
             </v-col>
@@ -42,12 +46,14 @@ const update = (value) => {
         ],
         provider: props.staging ? "Let's Encrypt (Staging)" : "Let's Encrypt",
         server_url: props.staging ? "https://acme-staging-v02.api.letsencrypt.org/directory" : "https://acme-v02.api.letsencrypt.org/directory",
+        contacts: [`mailto:${email.value}`],
         is_trusted: !props.staging,
     })
 }
 
 const acmeChallange = ref('http-01');
 const domain = ref('');
+const email = ref('');
 
 const challenges = [
     { title: 'HTTP', value: 'http-01' }
@@ -57,6 +63,13 @@ const domainNameRules = [
     value => {
         if (isValidHostname(value)) return true
         return t('acme.add_acme.rule.hostname_required')
+    },
+]
+
+const emailRules = [
+    value => {
+        if (/\S+@\S+\.\S+/.test(value)) return true
+        return t('acme.add_acme.rule.email_required')
     },
 ]
 </script>
