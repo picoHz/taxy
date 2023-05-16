@@ -18,51 +18,65 @@ impl HeaderRewriter {
         Default::default()
     }
 
+    fn remove_untrusted_headers(&self, headers: &mut HeaderMap) {
+        let header_keys = &[
+            FORWARDED.as_str(),
+            "x-forwarded-for",
+            "x-forwarded-host",
+            "x-real-ip",
+        ];
+        for key in header_keys {
+            if let Entry::Occupied(entry) = headers.entry(*key) {
+                entry.remove_entry_mult();
+            }
+        }
+    }
+
+    fn parse_x_forwarded_for(&self, headers: &mut HeaderMap) -> Vec<IpAddr> {
+        if let Entry::Occupied(entry) = headers.entry("x-forwarded-for") {
+            return entry
+                .remove_entry_mult()
+                .1
+                .flat_map(|v| {
+                    v.to_str()
+                        .ok()
+                        .unwrap_or_default()
+                        .split(',')
+                        .filter_map(|ip| ip.trim().parse().ok())
+                        .collect::<Vec<IpAddr>>()
+                })
+                .collect();
+        }
+        Vec::new()
+    }
+
+    fn parse_forwarded(&self, headers: &mut HeaderMap) -> Vec<String> {
+        if let Entry::Occupied(entry) = headers.entry(FORWARDED) {
+            return entry
+                .remove_entry_mult()
+                .1
+                .flat_map(|v| {
+                    v.to_str()
+                        .ok()
+                        .unwrap_or_default()
+                        .split(',')
+                        .map(|item| item.trim().to_string())
+                        .collect::<Vec<String>>()
+                })
+                .collect();
+        }
+        Vec::new()
+    }
+
     pub fn pre_process(&self, headers: &mut HeaderMap, remote_addr: IpAddr) {
-        let mut x_forwarded_for: Vec<IpAddr> = Vec::new();
-        let mut forwarded: Vec<String> = Vec::new();
+        let mut x_forwarded_for = Vec::new();
+        let mut forwarded = Vec::new();
+
         if self.trust_upstream_headers {
-            if let Entry::Occupied(entry) = headers.entry("x-forwarded-for") {
-                x_forwarded_for = entry
-                    .remove_entry_mult()
-                    .1
-                    .flat_map(|v| {
-                        v.to_str()
-                            .ok()
-                            .unwrap_or_default()
-                            .split(',')
-                            .filter_map(|ip| ip.trim().parse().ok())
-                            .collect::<Vec<_>>()
-                    })
-                    .collect();
-            }
-            if let Entry::Occupied(entry) = headers.entry(FORWARDED) {
-                forwarded = entry
-                    .remove_entry_mult()
-                    .1
-                    .flat_map(|v| {
-                        v.to_str()
-                            .ok()
-                            .unwrap_or_default()
-                            .split(',')
-                            .map(|item| item.trim().to_string())
-                            .collect::<Vec<_>>()
-                    })
-                    .collect();
-            }
+            x_forwarded_for = self.parse_x_forwarded_for(headers);
+            forwarded = self.parse_forwarded(headers);
         } else {
-            if let Entry::Occupied(entry) = headers.entry(FORWARDED) {
-                entry.remove_entry_mult();
-            }
-            if let Entry::Occupied(entry) = headers.entry("x-forwarded-for") {
-                entry.remove_entry_mult();
-            }
-            if let Entry::Occupied(entry) = headers.entry("x-forwarded-host") {
-                entry.remove_entry_mult();
-            }
-            if let Entry::Occupied(entry) = headers.entry("x-real-ip") {
-                entry.remove_entry_mult();
-            }
+            self.remove_untrusted_headers(headers);
         }
 
         if self.use_std_forwarded || !forwarded.is_empty() {
