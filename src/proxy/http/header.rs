@@ -115,4 +115,14 @@ mod test {
             "192.168.0.1, 127.0.0.1"
         );
     }
+
+    #[test]
+    fn test_header_rewriter_post_process() {
+        let mut headers = HeaderMap::new();
+        let rewriter = HeaderRewriter::builder()
+            .set_via("taxy".parse().unwrap())
+            .build();
+        rewriter.post_process(&mut headers);
+        assert_eq!(headers.get("via").unwrap(), "taxy");
+    }
 }
