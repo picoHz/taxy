@@ -88,3 +88,31 @@ impl Builder {
         self.inner
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::net::Ipv4Addr;
+
+    #[test]
+    fn test_header_rewriter_pre_process() {
+        let mut headers = HeaderMap::new();
+        headers.append("x-forwarded-for", "192.168.0.1".parse().unwrap());
+
+        let rewriter = HeaderRewriter::builder().build();
+        rewriter.pre_process(&mut headers, Ipv4Addr::new(127, 0, 0, 1).into());
+        assert_eq!(headers.get("x-forwarded-for").unwrap(), "127.0.0.1");
+
+        let mut headers = HeaderMap::new();
+        headers.append("x-forwarded-for", "192.168.0.1".parse().unwrap());
+
+        let rewriter = HeaderRewriter::builder()
+            .trust_upstream_headers(true)
+            .build();
+        rewriter.pre_process(&mut headers, Ipv4Addr::new(127, 0, 0, 1).into());
+        assert_eq!(
+            headers.get("x-forwarded-for").unwrap(),
+            "192.168.0.1, 127.0.0.1"
+        );
+    }
+}
