@@ -91,17 +91,15 @@ impl HeaderRewriter {
             ) {
                 headers.insert(FORWARDED, forwarded_value);
             }
-        } else {
-            if let Ok(x_forwarded_value) = HeaderValue::from_str(
-                &x_forwarded_for
-                    .iter()
-                    .chain(iter::once(&remote_addr))
-                    .map(|ip| ip.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", "),
-            ) {
-                headers.insert("x-forwarded-for", x_forwarded_value);
-            }
+        } else if let Ok(x_forwarded_value) = HeaderValue::from_str(
+            &x_forwarded_for
+                .iter()
+                .chain(iter::once(&remote_addr))
+                .map(|ip| ip.to_string())
+                .collect::<Vec<_>>()
+                .join(", "),
+        ) {
+            headers.insert("x-forwarded-for", x_forwarded_value);
         }
     }
 

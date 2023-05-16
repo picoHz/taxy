@@ -250,8 +250,8 @@ pub async fn start(
             *req_host = HeaderValue::from_str(&host).unwrap();
         }
 
-        header_rewriter.pre_process(&mut req.headers_mut(), remote.ip());
-        header_rewriter.post_process(&mut req.headers_mut());
+        header_rewriter.pre_process(req.headers_mut(), remote.ip());
+        header_rewriter.post_process(req.headers_mut());
 
         async move {
             let sock = if resolved.is_ipv4() {
