@@ -4,11 +4,12 @@ use hyper::{
     http::HeaderValue,
     HeaderMap,
 };
-use std::net::IpAddr;
+use std::{iter, net::IpAddr};
 
 #[derive(Default)]
 pub struct HeaderRewriter {
     trust_upstream_headers: bool,
+    use_std_forwarded: bool,
     set_via: Option<HeaderValue>,
 }
 
@@ -19,6 +20,7 @@ impl HeaderRewriter {
 
     pub fn pre_process(&self, headers: &mut HeaderMap, remote_addr: IpAddr) {
         let mut x_forwarded_for: Vec<IpAddr> = Vec::new();
+        let mut forwarded: Vec<String> = Vec::new();
         if self.trust_upstream_headers {
             if let Entry::Occupied(entry) = headers.entry("x-forwarded-for") {
                 x_forwarded_for = entry
@@ -30,6 +32,20 @@ impl HeaderRewriter {
                             .unwrap_or_default()
                             .split(',')
                             .filter_map(|ip| ip.trim().parse().ok())
+                            .collect::<Vec<_>>()
+                    })
+                    .collect();
+            }
+            if let Entry::Occupied(entry) = headers.entry(FORWARDED) {
+                forwarded = entry
+                    .remove_entry_mult()
+                    .1
+                    .flat_map(|v| {
+                        v.to_str()
+                            .ok()
+                            .unwrap_or_default()
+                            .split(',')
+                            .map(|item| item.trim().to_string())
                             .collect::<Vec<_>>()
                     })
                     .collect();
@@ -48,15 +64,44 @@ impl HeaderRewriter {
                 entry.remove_entry_mult();
             }
         }
-        x_forwarded_for.push(remote_addr);
-        if let Ok(x_forwarded_value) = HeaderValue::from_str(
-            &x_forwarded_for
-                .iter()
-                .map(|ip| ip.to_string())
-                .collect::<Vec<_>>()
-                .join(", "),
-        ) {
-            headers.insert("x-forwarded-for", x_forwarded_value);
+
+        if self.use_std_forwarded || !forwarded.is_empty() {
+            if forwarded.is_empty() {
+                forwarded = x_forwarded_for
+                    .into_iter()
+                    .map(|ip| {
+                        if ip.is_ipv6() {
+                            format!("for=\"[{ip}]\"")
+                        } else {
+                            format!("for={ip}")
+                        }
+                    })
+                    .collect();
+            }
+            if let Ok(forwarded_value) = HeaderValue::from_str(
+                &forwarded
+                    .into_iter()
+                    .chain(iter::once(if remote_addr.is_ipv6() {
+                        format!("for=\"[{remote_addr}]\"")
+                    } else {
+                        format!("for={remote_addr}")
+                    }))
+                    .collect::<Vec<_>>()
+                    .join(", "),
+            ) {
+                headers.insert(FORWARDED, forwarded_value);
+            }
+        } else {
+            if let Ok(x_forwarded_value) = HeaderValue::from_str(
+                &x_forwarded_for
+                    .iter()
+                    .chain(iter::once(&remote_addr))
+                    .map(|ip| ip.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", "),
+            ) {
+                headers.insert("x-forwarded-for", x_forwarded_value);
+            }
         }
     }
 
@@ -78,6 +123,11 @@ impl Builder {
         self
     }
 
+    pub fn use_std_forwarded(mut self, use_std: bool) -> Self {
+        self.inner.use_std_forwarded = use_std;
+        self
+    }
+
     pub fn set_via(mut self, via: HeaderValue) -> Self {
         self.inner.set_via = Some(via);
         self
@@ -91,7 +141,7 @@ impl Builder {
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::net::Ipv4Addr;
+    use std::net::{Ipv4Addr, Ipv6Addr};
 
     #[test]
     fn test_header_rewriter_pre_process() {
@@ -103,6 +153,18 @@ mod test {
         assert_eq!(headers.get("x-forwarded-for").unwrap(), "127.0.0.1");
 
         let mut headers = HeaderMap::new();
+        headers.append(FORWARDED, "for=192.168.0.1".parse().unwrap());
+
+        let rewriter = HeaderRewriter::builder()
+            .trust_upstream_headers(true)
+            .build();
+        rewriter.pre_process(&mut headers, Ipv4Addr::new(127, 0, 0, 1).into());
+        assert_eq!(
+            headers.get(FORWARDED).unwrap(),
+            "for=192.168.0.1, for=127.0.0.1"
+        );
+
+        let mut headers = HeaderMap::new();
         headers.append("x-forwarded-for", "192.168.0.1".parse().unwrap());
 
         let rewriter = HeaderRewriter::builder()
@@ -112,6 +174,19 @@ mod test {
         assert_eq!(
             headers.get("x-forwarded-for").unwrap(),
             "192.168.0.1, 127.0.0.1"
+        );
+
+        let mut headers = HeaderMap::new();
+        headers.append("x-forwarded-for", "192.168.0.1".parse().unwrap());
+
+        let rewriter = HeaderRewriter::builder()
+            .trust_upstream_headers(true)
+            .use_std_forwarded(true)
+            .build();
+        rewriter.pre_process(&mut headers, Ipv6Addr::LOCALHOST.into());
+        assert_eq!(
+            headers.get(FORWARDED).unwrap(),
+            "for=192.168.0.1, for=\"[::1]\""
         );
     }
 

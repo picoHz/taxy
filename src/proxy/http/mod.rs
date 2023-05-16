@@ -166,7 +166,8 @@ impl HttpPortContext {
             .and_then(|tls| tls.acceptor.clone());
 
         let header_rewriter = HeaderRewriter::builder()
-            .trust_upstream_headers(false)
+            .trust_upstream_headers(true)
+            .use_std_forwarded(true)
             .set_via(HeaderValue::from_static("taxy"))
             .build();
 
