@@ -1,11 +1,10 @@
-use std::net::IpAddr;
-
 use hyper::{
     header::{FORWARDED, VIA},
     http::header::Entry,
     http::HeaderValue,
     HeaderMap,
 };
+use std::net::IpAddr;
 
 #[derive(Default)]
 pub struct HeaderRewriter {
