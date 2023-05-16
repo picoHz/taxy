@@ -24,7 +24,10 @@ use tokio_rustls::{
 };
 use tracing::{debug, error, info, span, warn, Instrument, Level, Span};
 
+mod header;
 mod upgrade;
+
+use header::HeaderRewriter;
 
 #[derive(Debug)]
 pub struct HttpPortContext {
@@ -162,9 +165,22 @@ impl HttpPortContext {
             .as_ref()
             .and_then(|tls| tls.acceptor.clone());
 
+        let header_rewriter = HeaderRewriter::builder()
+            .trust_upstream_headers(false)
+            .set_via(HeaderValue::from_static("taxy"))
+            .build();
+
         tokio::spawn(
             async move {
-                if let Err(err) = start(stream, conn, tls_client_config, tls_acceptor).await {
+                if let Err(err) = start(
+                    stream,
+                    conn,
+                    tls_client_config,
+                    tls_acceptor,
+                    header_rewriter,
+                )
+                .await
+                {
                     error!("{err}");
                 }
             }
@@ -179,6 +195,7 @@ pub async fn start(
     conn: Connection,
     tls_client_config: Option<Arc<ClientConfig>>,
     tls_acceptor: Option<TlsAcceptor>,
+    header_rewriter: HeaderRewriter,
 ) -> anyhow::Result<()> {
     let remote = stream.get_ref().peer_addr()?;
     let local = stream.get_ref().local_addr()?;
@@ -231,6 +248,9 @@ pub async fn start(
         if let Some(req_host) = req.headers_mut().get_mut(HOST) {
             *req_host = HeaderValue::from_str(&host).unwrap();
         }
+
+        header_rewriter.pre_process(&mut req.headers_mut(), remote.ip());
+        header_rewriter.post_process(&mut req.headers_mut());
 
         async move {
             let sock = if resolved.is_ipv4() {
