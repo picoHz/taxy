@@ -69,23 +69,13 @@ impl HeaderRewriter {
             if forwarded.is_empty() {
                 forwarded = x_forwarded_for
                     .into_iter()
-                    .map(|ip| {
-                        if ip.is_ipv6() {
-                            format!("for=\"[{ip}]\"")
-                        } else {
-                            format!("for={ip}")
-                        }
-                    })
+                    .map(forwarded_directive)
                     .collect();
             }
             if let Ok(forwarded_value) = HeaderValue::from_str(
                 &forwarded
                     .into_iter()
-                    .chain(iter::once(if remote_addr.is_ipv6() {
-                        format!("for=\"[{remote_addr}]\"")
-                    } else {
-                        format!("for={remote_addr}")
-                    }))
+                    .chain(iter::once(forwarded_directive(remote_addr)))
                     .collect::<Vec<_>>()
                     .join(", "),
             ) {
@@ -133,6 +123,14 @@ impl Builder {
 
     pub fn build(self) -> HeaderRewriter {
         self.inner
+    }
+}
+
+fn forwarded_directive(addr: IpAddr) -> String {
+    if addr.is_ipv6() {
+        format!("for=\"[{addr}]\"")
+    } else {
+        format!("for={addr}")
     }
 }
 
