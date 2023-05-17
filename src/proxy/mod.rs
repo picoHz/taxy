@@ -1,6 +1,9 @@
 use self::{http::HttpPortContext, tcp::TcpPortContext, tls::TlsState};
 use crate::{
-    config::{port::PortEntry, AppConfig},
+    config::{
+        port::{Port, PortEntry},
+        AppConfig,
+    },
     error::Error,
     keyring::Keyring,
 };
@@ -71,7 +74,7 @@ pub struct PortContext {
 
 impl PortContext {
     pub fn new(entry: PortEntry) -> Result<Self, Error> {
-        let kind = match entry.listen.into_iter().last() {
+        let kind = match entry.port.listen.into_iter().last() {
             Some(Protocol::Http) | Some(Protocol::Https) => {
                 PortContextKind::Http(HttpPortContext::new(&entry)?)
             }
@@ -84,9 +87,11 @@ impl PortContext {
         Self {
             entry: PortEntry {
                 id: String::new(),
-                listen: Multiaddr::empty(),
-                servers: vec![],
-                opts: Default::default(),
+                port: Port {
+                    listen: Multiaddr::empty(),
+                    servers: vec![],
+                    opts: Default::default(),
+                },
             },
             kind: PortContextKind::Reserved,
         }
