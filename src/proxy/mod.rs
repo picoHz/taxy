@@ -155,6 +155,14 @@ impl PortContext {
             }
         }
     }
+
+    pub fn reset(&mut self) {
+        match &mut self.kind {
+            PortContextKind::Tcp(ctx) => ctx.reset(),
+            PortContextKind::Http(ctx) => ctx.reset(),
+            PortContextKind::Reserved => (),
+        }
+    }
 }
 
 #[derive(Debug)]

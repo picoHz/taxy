@@ -16,8 +16,11 @@ use std::{
     sync::Arc,
     time::SystemTime,
 };
-use tokio::io::{AsyncRead, AsyncWrite, BufStream};
 use tokio::net::{self, TcpSocket, TcpStream};
+use tokio::{
+    io::{AsyncRead, AsyncWrite, BufStream},
+    sync::Notify,
+};
 use tokio_rustls::{
     rustls::{client::ServerName, Certificate, ClientConfig, RootCertStore},
     TlsAcceptor, TlsConnector,
@@ -38,6 +41,7 @@ pub struct HttpPortContext {
     tls_termination: Option<TlsTermination>,
     tls_client_config: Option<Arc<ClientConfig>>,
     round_robin_counter: usize,
+    stop_notifier: Arc<Notify>,
 }
 
 impl HttpPortContext {
@@ -77,6 +81,7 @@ impl HttpPortContext {
             tls_termination,
             tls_client_config: None,
             round_robin_counter: 0,
+            stop_notifier: Arc::new(Notify::new()),
         })
     }
 
@@ -128,6 +133,7 @@ impl HttpPortContext {
     pub fn apply(&mut self, new: Self) {
         *self = Self {
             round_robin_counter: self.round_robin_counter,
+            stop_notifier: self.stop_notifier.clone(),
             ..new
         };
     }
@@ -151,6 +157,10 @@ impl HttpPortContext {
         &self.status
     }
 
+    pub fn reset(&mut self) {
+        self.stop_notifier.notify_waiters();
+    }
+
     pub fn start_proxy(&mut self, stream: BufStream<TcpStream>) {
         let span = self.span.clone();
         let conn = self.servers[self.round_robin_counter % self.servers.len()].clone();
@@ -171,6 +181,8 @@ impl HttpPortContext {
             .set_via(HeaderValue::from_static("taxy"))
             .build();
 
+        let stop_notifier = self.stop_notifier.clone();
+
         tokio::spawn(
             async move {
                 if let Err(err) = start(
@@ -179,6 +191,7 @@ impl HttpPortContext {
                     tls_client_config,
                     tls_acceptor,
                     header_rewriter,
+                    stop_notifier,
                 )
                 .await
                 {
@@ -197,6 +210,7 @@ pub async fn start(
     tls_client_config: Option<Arc<ClientConfig>>,
     tls_acceptor: Option<TlsAcceptor>,
     header_rewriter: HeaderRewriter,
+    stop_notifier: Arc<Notify>,
 ) -> anyhow::Result<()> {
     let remote = stream.get_ref().peer_addr()?;
     let local = stream.get_ref().local_addr()?;
@@ -222,6 +236,7 @@ pub async fn start(
         stream = Box::new(accepted);
     }
 
+    let stop_notifier_clone = stop_notifier.clone();
     let service = hyper::service::service_fn(move |mut req| {
         let tls_client_config = tls_client_config.clone();
         let conn = conn.clone();
@@ -253,6 +268,7 @@ pub async fn start(
         header_rewriter.pre_process(req.headers_mut(), remote.ip());
         header_rewriter.post_process(req.headers_mut());
 
+        let stop_notifier = stop_notifier_clone.clone();
         async move {
             let sock = if resolved.is_ipv4() {
                 TcpSocket::new_v4()
@@ -275,7 +291,7 @@ pub async fn start(
             }
 
             if upgrade {
-                return upgrade::connect(req, out).await;
+                return upgrade::connect(req, out, stop_notifier.clone()).await;
             }
 
             let (mut sender, conn) = client::conn::Builder::new()
@@ -288,8 +304,15 @@ pub async fn start(
                 })?;
 
             tokio::task::spawn(async move {
-                if let Err(err) = conn.await {
-                    error!("Connection failed: {:?}", err);
+                tokio::select! {
+                    result = conn => {
+                        if let Err(err) = result {
+                            error!("Connection failed: {:?}", err);
+                        }
+                    },
+                    _ = stop_notifier.notified() => {
+                        debug!("stop");
+                    },
                 }
             });
 
@@ -298,13 +321,19 @@ pub async fn start(
     });
 
     tokio::task::spawn(async move {
-        if let Err(err) = Http::new()
+        let http = Http::new()
             .http2_only(server_http2)
             .serve_connection(stream, service)
-            .with_upgrades()
-            .await
-        {
-            error!("Failed to serve the connection: {:?}", err);
+            .with_upgrades();
+        tokio::select! {
+            result = http => {
+                if let Err(err) = result {
+                    error!("Failed to serve the connection: {:?}", err);
+                }
+            },
+            _ = stop_notifier.notified() => {
+                debug!("stop");
+            },
         }
     });
 

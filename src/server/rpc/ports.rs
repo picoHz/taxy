@@ -63,3 +63,16 @@ impl RpcMethod for UpdatePort {
         state.update_port(self.entry)
     }
 }
+
+pub struct ResetPort {
+    pub id: String,
+}
+
+impl RpcMethod for ResetPort {
+    const NAME: &'static str = "reset_port";
+    type Output = ();
+
+    fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
+        state.reset_port(&self.id)
+    }
+}

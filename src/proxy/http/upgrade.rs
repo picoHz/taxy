@@ -1,10 +1,14 @@
 use super::IoStream;
-use hyper::{client, upgrade::Upgraded, Body, Request, Response, StatusCode};
-use tracing::error;
+use hyper::{client, Body, Request, Response, StatusCode};
+use std::sync::Arc;
+use tokio::io::AsyncWriteExt;
+use tokio::sync::Notify;
+use tracing::{debug, error};
 
 pub async fn connect(
     req: Request<Body>,
     stream: Box<dyn IoStream>,
+    stop_notifier: Arc<Notify>,
 ) -> anyhow::Result<Response<Body>> {
     let mut client_req = Request::builder().uri(req.uri()).body(Body::empty())?;
     *client_req.headers_mut() = req.headers().clone();
@@ -13,9 +17,17 @@ pub async fn connect(
         .handshake::<_, Body>(stream)
         .await?;
 
+    let stop_notifier_clone = stop_notifier.clone();
     tokio::task::spawn(async move {
-        if let Err(err) = conn.await {
-            error!("Connection failed: {:?}", err);
+        tokio::select! {
+            result = conn => {
+                if let Err(err) = result {
+                    error!("Connection failed: {:?}", err);
+                }
+            },
+            _ = stop_notifier_clone.notified() => {
+                debug!("stop");
+            },
         }
     });
 
@@ -24,7 +36,7 @@ pub async fn connect(
         return Ok(res);
     }
 
-    let upgraded_client = match hyper::upgrade::on(&mut res).await {
+    let mut upgraded_client = match hyper::upgrade::on(&mut res).await {
         Ok(upgraded) => upgraded,
         Err(e) => {
             error!("client upgrade error: {}", e);
@@ -37,22 +49,23 @@ pub async fn connect(
 
     tokio::spawn(async move {
         match hyper::upgrade::on(req).await {
-            Ok(upgraded) => {
-                if let Err(err) = serve_upgraded_io(upgraded, upgraded_client).await {
-                    error!("upgraded io error: {}", err);
+            Ok(mut upgraded) => {
+                tokio::select! {
+                    result = tokio::io::copy_bidirectional(&mut upgraded_client, &mut upgraded) => {
+                        if let Err(err) = result {
+                            error!("upgraded io error: {}", err);
+                        }
+                    },
+                    _ = stop_notifier.notified() => {
+                        debug!("stop");
+                    },
                 }
+                let _ = upgraded.shutdown().await;
+                let _ = upgraded_client.shutdown().await;
             }
             Err(e) => error!("server upgrade error: {}", e),
         }
     });
 
     Ok(res)
-}
-
-async fn serve_upgraded_io(
-    mut server: Upgraded,
-    mut client: Upgraded,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    tokio::io::copy_bidirectional(&mut server, &mut client).await?;
-    Ok(())
 }

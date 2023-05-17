@@ -104,6 +104,7 @@ impl ServerState {
         this.register_callback::<rpc::ports::DeletePort>();
         this.register_callback::<rpc::ports::AddPort>();
         this.register_callback::<rpc::ports::UpdatePort>();
+        this.register_callback::<rpc::ports::ResetPort>();
         this.register_callback::<rpc::config::GetConfig>();
         this.register_callback::<rpc::config::SetConfig>();
         this.register_callback::<rpc::acme::GetAcmeList>();
@@ -450,6 +451,14 @@ impl ServerState {
     pub fn delete_port(&mut self, id: &str) -> Result<(), Error> {
         if self.table.delete_port(id) {
             let _ = self.command_sender.try_send(ServerCommand::UpdatePorts);
+            Ok(())
+        } else {
+            Err(Error::IdNotFound { id: id.to_string() })
+        }
+    }
+
+    pub fn reset_port(&mut self, id: &str) -> Result<(), Error> {
+        if self.table.reset_port(id) {
             Ok(())
         } else {
             Err(Error::IdNotFound { id: id.to_string() })
