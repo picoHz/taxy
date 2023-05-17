@@ -206,10 +206,8 @@ impl ServerState {
                     self.storage.save_app_config(&app_config).await;
                 }
             }
-            ServerEvent::PortTableUpdated { entries, source } => {
-                if source != Source::File {
-                    self.storage.save_entries(&entries).await;
-                }
+            ServerEvent::PortTableUpdated { entries } => {
+                self.storage.save_entries(&entries).await;
             }
             _ => (),
         }
@@ -281,7 +279,6 @@ impl ServerState {
         self.pool.update(self.table.contexts_mut()).await;
         let _ = self.br_sender.send(ServerEvent::PortTableUpdated {
             entries: self.table.entries().to_vec(),
-            source: Source::Api,
         });
         for (entry, ctx) in self.table.entries().iter().zip(self.table.contexts()) {
             let _ = self.br_sender.send(ServerEvent::PortStatusUpdated {
