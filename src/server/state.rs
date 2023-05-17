@@ -341,7 +341,7 @@ impl ServerState {
                     .unwrap_or(SystemTime::UNIX_EPOCH)
                     .elapsed()
                     .unwrap_or_default()
-                    > Duration::from_secs(60 * 60 * 24 * entry.renewal_days)
+                    > Duration::from_secs(60 * 60 * 24 * entry.acme.renewal_days)
             })
             .collect::<Vec<_>>();
 
@@ -350,16 +350,16 @@ impl ServerState {
         }
 
         let mut requests = Vec::new();
-        for acme in entries {
-            let span = span!(Level::INFO, "acme", resource_id = acme.id);
+        for entry in entries {
+            let span = span!(Level::INFO, "acme", resource_id = entry.id);
             span.in_scope(|| {
                 info!(
-                    provider = acme.provider,
-                    identifiers = ?acme.identifiers,
+                    provider = entry.acme.provider,
+                    identifiers = ?entry.acme.identifiers,
                     "starting acme request"
                 );
             });
-            match acme.request().instrument(span.clone()).await {
+            match entry.request().instrument(span.clone()).await {
                 Ok(request) => requests.push(request),
                 Err(err) => {
                     let _enter = span.enter();

@@ -16,44 +16,43 @@ use std::{
 use tracing::{error, info};
 use utoipa::ToSchema;
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, ToSchema)]
-pub struct AcmeRequest {
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, ToSchema)]
+pub struct Acme {
     #[schema(example = "Let's Encrypt")]
     pub provider: String,
     #[schema(example = "https://acme-staging-v02.api.letsencrypt.org/directory")]
-    pub server_url: String,
-    #[schema(example = json!(["mailto:admin@example.com"]))]
-    pub contacts: Vec<String>,
-    #[schema(value_type = [String], example = json!(["example.com"]))]
     pub identifiers: Vec<SubjectName>,
     #[schema(value_type = String, example = "http-01")]
+    #[serde(serialize_with = "serialize_challenge_type")]
     pub challenge_type: ChallengeType,
     #[schema(example = "60")]
+    #[serde(default = "default_renewal_days")]
     pub renewal_days: u64,
     #[serde(default)]
     pub is_trusted: bool,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, ToSchema)]
+pub struct AcmeRequest {
+    #[schema(example = "https://acme-staging-v02.api.letsencrypt.org/directory")]
+    pub server_url: String,
+    #[schema(example = json!(["mailto:admin@example.com"]))]
+    pub contacts: Vec<String>,
+    #[schema(inline)]
+    #[serde(flatten)]
+    pub acme: Acme,
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct AcmeEntry {
     pub id: String,
-    pub provider: String,
-    pub identifiers: Vec<String>,
-
-    #[serde(default = "default_renewal_days")]
-    pub renewal_days: u64,
-
-    #[serde(serialize_with = "serialize_challenge_type")]
-    pub challenge_type: ChallengeType,
-
+    #[serde(flatten)]
+    pub acme: Acme,
     #[serde(
         serialize_with = "serialize_account",
         deserialize_with = "deserialize_account"
     )]
     pub account: Account,
-
-    #[serde(default)]
-    pub is_trusted: bool,
 }
 
 fn default_renewal_days() -> u64 {
@@ -77,8 +76,8 @@ where
 impl fmt::Debug for AcmeEntry {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("AcmeEntry")
-            .field("provider", &self.provider)
-            .field("identifiers", &self.identifiers)
+            .field("provider", &self.acme.provider)
+            .field("identifiers", &self.acme.identifiers)
             .finish()
     }
 }
@@ -106,12 +105,8 @@ impl AcmeEntry {
 
         Ok(Self {
             id: cuid2::create_id(),
-            provider: req.provider,
-            identifiers: req.identifiers.into_iter().map(|i| i.to_string()).collect(),
+            acme: req.acme,
             account,
-            challenge_type: req.challenge_type,
-            renewal_days: req.renewal_days,
-            is_trusted: req.is_trusted,
         })
     }
 
@@ -126,60 +121,47 @@ impl AcmeEntry {
     pub fn info(&self) -> AcmeInfo {
         AcmeInfo {
             id: self.id.to_string(),
-            provider: self.provider.to_string(),
-            identifiers: self.identifiers.clone(),
-            challenge_type: self.challenge_type,
+            provider: self.acme.provider.to_string(),
+            identifiers: self
+                .acme
+                .identifiers
+                .iter()
+                .map(|id| id.to_string())
+                .collect(),
+            challenge_type: self.acme.challenge_type,
         }
     }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct IdlessAcmeEntry {
-    pub provider: String,
-    pub identifiers: Vec<String>,
-
-    #[serde(serialize_with = "serialize_challenge_type")]
-    pub challenge_type: ChallengeType,
-
+pub struct AcmeAccount {
+    #[serde(flatten)]
+    pub acme: Acme,
     #[serde(
         serialize_with = "serialize_account",
         deserialize_with = "deserialize_account"
     )]
     pub account: Account,
-
-    #[serde(default = "default_renewal_days")]
-    pub renewal_days: u64,
-
-    #[serde(default)]
-    pub is_trusted: bool,
 }
 
-impl From<AcmeEntry> for (String, IdlessAcmeEntry) {
+impl From<AcmeEntry> for (String, AcmeAccount) {
     fn from(entry: AcmeEntry) -> Self {
         (
             entry.id,
-            IdlessAcmeEntry {
-                provider: entry.provider,
-                identifiers: entry.identifiers,
-                challenge_type: entry.challenge_type,
+            AcmeAccount {
+                acme: entry.acme,
                 account: entry.account,
-                renewal_days: entry.renewal_days,
-                is_trusted: entry.is_trusted,
             },
         )
     }
 }
 
-impl From<(String, IdlessAcmeEntry)> for AcmeEntry {
-    fn from((id, entry): (String, IdlessAcmeEntry)) -> Self {
+impl From<(String, AcmeAccount)> for AcmeEntry {
+    fn from((id, entry): (String, AcmeAccount)) -> Self {
         Self {
             id,
-            provider: entry.provider,
-            identifiers: entry.identifiers,
-            challenge_type: entry.challenge_type,
+            acme: entry.acme,
             account: entry.account,
-            renewal_days: entry.renewal_days,
-            is_trusted: entry.is_trusted,
         }
     }
 }
@@ -211,10 +193,13 @@ impl AcmeOrder {
         info!("requesting certificate");
 
         let identifiers = entry
+            .acme
             .identifiers
             .iter()
-            .cloned()
-            .map(Identifier::Dns)
+            .filter_map(|id| match id {
+                SubjectName::DnsName(domain) => Some(Identifier::Dns(domain.to_string())),
+                _ => None,
+            })
             .collect::<Vec<_>>();
         let mut order = entry
             .account
@@ -250,12 +235,12 @@ impl AcmeOrder {
         }
         Ok(Self {
             id: entry.id.clone(),
-            challenge_type: entry.challenge_type,
+            challenge_type: entry.acme.challenge_type,
             identifiers,
             http_challenges,
             challenges,
             order,
-            is_trusted: entry.is_trusted,
+            is_trusted: entry.acme.is_trusted,
         })
     }
 
