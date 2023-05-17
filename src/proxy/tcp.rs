@@ -37,28 +37,28 @@ pub struct TcpPortContext {
 }
 
 impl TcpPortContext {
-    pub fn new(port: &PortEntry) -> Result<Self, Error> {
-        let span = span!(Level::INFO, "proxy", resource_id = port.id, listen = ?port.listen);
+    pub fn new(entry: &PortEntry) -> Result<Self, Error> {
+        let span = span!(Level::INFO, "proxy", resource_id = entry.id, listen = ?entry.port.listen);
         let enter = span.clone();
         let _enter = enter.enter();
 
         info!("initializing tcp proxy");
 
-        let listen = multiaddr_to_tcp(&port.listen)?;
+        let listen = multiaddr_to_tcp(&entry.port.listen)?;
 
-        if port.servers.is_empty() {
+        if entry.port.servers.is_empty() {
             return Err(Error::EmptyBackendServers);
         }
 
         let mut servers = Vec::new();
-        for server in &port.servers {
+        for server in &entry.port.servers {
             let server = multiaddr_to_host(&server.addr)?;
             servers.push(server);
         }
 
-        let tls_termination = if let Some(tls) = &port.opts.tls_termination {
+        let tls_termination = if let Some(tls) = &entry.port.opts.tls_termination {
             Some(TlsTermination::new(tls, vec![])?)
-        } else if port.listen.iter().any(|p| p == Protocol::Tls) {
+        } else if entry.port.listen.iter().any(|p| p == Protocol::Tls) {
             return Err(Error::TlsTerminationConfigMissing);
         } else {
             None

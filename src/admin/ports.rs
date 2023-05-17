@@ -1,6 +1,6 @@
 use super::AppState;
 use crate::{
-    config::port::{PortEntry, PortEntryRequest},
+    config::port::{Port, PortEntry},
     server::rpc::ports::*,
 };
 use warp::{Rejection, Reply};
@@ -77,11 +77,11 @@ pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection
         ("authorization"=[])
     )
 )]
-pub async fn post(state: AppState, entry: PortEntryRequest) -> Result<impl Reply, Rejection> {
+pub async fn post(state: AppState, entry: Port) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(
         &state
             .call(AddPort {
-                entry: entry.into(),
+                entry: (cuid2::cuid(), entry).into(),
             })
             .await?,
     ))
@@ -105,12 +105,8 @@ pub async fn post(state: AppState, entry: PortEntryRequest) -> Result<impl Reply
         ("authorization"=[])
     )
 )]
-pub async fn put(
-    state: AppState,
-    entry: PortEntryRequest,
-    id: String,
-) -> Result<impl Reply, Rejection> {
-    let mut entry: PortEntry = entry.into();
+pub async fn put(state: AppState, entry: Port, id: String) -> Result<impl Reply, Rejection> {
+    let mut entry: PortEntry = (cuid2::cuid(), entry).into();
     entry.id = id;
     Ok(warp::reply::json(&state.call(UpdatePort { entry }).await?))
 }

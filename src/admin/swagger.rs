@@ -2,7 +2,7 @@ use super::auth::{LoginRequest, LoginResult};
 use super::log::SystemLogRow;
 use super::server_certs::CertPostBody;
 use super::{acme, app_info, auth, config, log, ports, server_certs};
-use crate::config::port::{BackendServer, PortEntry, PortEntryRequest, PortOptions};
+use crate::config::port::{BackendServer, PortEntry, PortOptions};
 use crate::config::tls::TlsTermination;
 use crate::config::{AppConfig, AppInfo, Source};
 use crate::error::Error;
@@ -55,7 +55,6 @@ use warp::{Rejection, Reply};
         CertInfo,
         CertMetadata,
         AcmeInfo,
-        PortEntryRequest,
         SelfSignedCertRequest,
         AcmeRequest,
         CertPostBody,
