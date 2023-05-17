@@ -10,8 +10,14 @@ use std::{
     sync::Arc,
     time::SystemTime,
 };
-use tokio::io::{AsyncRead, AsyncWrite, BufStream};
-use tokio::net::{self, TcpSocket, TcpStream};
+use tokio::{
+    io::AsyncWriteExt,
+    net::{self, TcpSocket, TcpStream},
+};
+use tokio::{
+    io::{AsyncRead, AsyncWrite, BufStream},
+    sync::Notify,
+};
 use tokio_rustls::{
     rustls::{client::ServerName, Certificate, ClientConfig, RootCertStore},
     TlsAcceptor, TlsConnector,
@@ -27,6 +33,7 @@ pub struct TcpPortContext {
     tls_termination: Option<TlsTermination>,
     tls_client_config: Option<Arc<ClientConfig>>,
     round_robin_counter: usize,
+    stop_notifier: Arc<Notify>,
 }
 
 impl TcpPortContext {
@@ -65,6 +72,7 @@ impl TcpPortContext {
             tls_termination,
             tls_client_config: None,
             round_robin_counter: 0,
+            stop_notifier: Arc::new(Notify::new()),
         })
     }
 
@@ -115,6 +123,7 @@ impl TcpPortContext {
     pub fn apply(&mut self, new: Self) {
         *self = Self {
             round_robin_counter: self.round_robin_counter,
+            stop_notifier: self.stop_notifier.clone(),
             ..new
         };
     }
@@ -138,6 +147,10 @@ impl TcpPortContext {
         &self.status
     }
 
+    pub fn reset(&mut self) {
+        self.stop_notifier.notify_waiters();
+    }
+
     pub fn start_proxy(&mut self, stream: BufStream<TcpStream>) {
         let span = self.span.clone();
         let conn = self.servers[self.round_robin_counter % self.servers.len()].clone();
@@ -151,9 +164,13 @@ impl TcpPortContext {
             .as_ref()
             .and_then(|tls| tls.acceptor.clone());
 
+        let stop_notifier = self.stop_notifier.clone();
+
         tokio::spawn(
             async move {
-                if let Err(err) = start(stream, conn, tls_client_config, tls_acceptor).await {
+                if let Err(err) =
+                    start(stream, conn, tls_client_config, tls_acceptor, stop_notifier).await
+                {
                     error!("{err}");
                 }
             }
@@ -168,6 +185,7 @@ pub async fn start(
     conn: Connection,
     tls_client_config: Option<Arc<ClientConfig>>,
     tls_acceptor: Option<TlsAcceptor>,
+    stop_notifier: Arc<Notify>,
 ) -> anyhow::Result<()> {
     let remote = stream.get_ref().peer_addr()?;
     let local = stream.get_ref().local_addr()?;
@@ -205,7 +223,20 @@ pub async fn start(
         out = Box::new(tls.connect(conn.name, out).await?);
     }
 
-    tokio::io::copy_bidirectional(&mut stream, &mut out).await?;
+    tokio::select! {
+        result = tokio::io::copy_bidirectional(&mut stream, &mut out) => {
+            if let Err(err) = result {
+                error!("{err}");
+            }
+        },
+        _ = stop_notifier.notified() => {
+            debug!(%resolved, "stop");
+        },
+    }
+
+    stream.shutdown().await?;
+    out.shutdown().await?;
+
     debug!(%resolved, "eof");
     Ok(())
 }

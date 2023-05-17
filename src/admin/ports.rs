@@ -114,3 +114,23 @@ pub async fn put(
     entry.id = id;
     Ok(warp::reply::json(&state.call(UpdatePort { entry }).await?))
 }
+
+/// Close all existing connections.
+#[utoipa::path(
+    get,
+    path = "/api/ports/{id}/reset",
+    params(
+        ("id" = String, Path, description = "Port configuration id")
+    ),
+    responses(
+        (status = 200),
+        (status = 404),
+        (status = 401),
+    ),
+    security(
+        ("authorization"=[])
+    )
+)]
+pub async fn reset(state: AppState, id: String) -> Result<impl Reply, Rejection> {
+    Ok(warp::reply::json(&state.call(ResetPort { id }).await?))
+}

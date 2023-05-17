@@ -111,6 +111,13 @@ pub async fn start_admin(
             .and_then(ports::post),
     );
 
+    let api_ports_reset = warp::get()
+        .and(with_state(app_state.clone()))
+        .and(warp::path::param())
+        .and(warp::path("reset"))
+        .and(warp::path::end())
+        .and_then(ports::reset);
+
     let api_server_certs_list = warp::get()
         .and(warp::path::end())
         .and(with_state(app_state.clone()).and_then(server_certs::list));
@@ -211,6 +218,7 @@ pub async fn start_admin(
         api_ports_delete
             .or(api_ports_put)
             .or(api_ports_status)
+            .or(api_ports_reset)
             .or(api_ports_list)
             .or(api_ports_post),
     );

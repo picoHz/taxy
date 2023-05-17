@@ -27,6 +27,9 @@
             <port-config @submit="update" :entry="config" :loading="loading"></port-config>
             <v-divider></v-divider>
             <v-card-actions class="justify-end">
+                <v-btn color="yellow" @click="resetDialog = true">
+                    {{ $t('ports.reset_port') }}
+                </v-btn>
                 <v-btn color="red" @click="deleteDialog = true">
                     {{ $t('ports.delete_port') }}
                 </v-btn>
@@ -39,6 +42,17 @@
                     <v-card-actions class="justify-end">
                         <v-btn @click="deleteDialog = false">Cancel</v-btn>
                         <v-btn color="red" @click="deletePort">Delete</v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
+            <v-dialog v-model="resetDialog" width="auto">
+                <v-card :title="$t('ports.reset_port')">
+                    <v-card-text>
+                        {{ $t('ports.reset_port_confirm', { id: route.params.id }) }}
+                    </v-card-text>
+                    <v-card-actions class="justify-end">
+                        <v-btn @click="resetDialog = false">Cancel</v-btn>
+                        <v-btn color="red" @click="resetPort">Reset</v-btn>
                     </v-card-actions>
                 </v-card>
             </v-dialog>
@@ -84,6 +98,7 @@ const loading = ref(false);
 const snackbar = ref(false);
 const error = ref(null);
 const deleteDialog = ref(false);
+const resetDialog = ref(false);
 const logs = ref([]);
 
 const now = ref(Date.now())
@@ -117,6 +132,16 @@ async function deletePort() {
     try {
         await axios.delete(`${endpoint}/ports/${route.params.id}`)
         router.replace({ name: 'List' })
+    } catch (err) {
+        let { response: { data } } = err;
+        error.value = data
+    }
+}
+
+async function resetPort() {
+    resetDialog.value = false;
+    try {
+        await axios.get(`${endpoint}/ports/${route.params.id}/reset`)
     } catch (err) {
         let { response: { data } } = err;
         error.value = data

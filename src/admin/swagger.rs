@@ -28,6 +28,7 @@ use warp::{Rejection, Reply};
         ports::delete,
         ports::post,
         ports::put,
+        ports::reset,
         config::get,
         config::put,
         app_info::get,

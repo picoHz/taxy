@@ -19,6 +19,8 @@ export default {
         new_port: 'New Port',
         delete_port: 'Delete Port',
         delete_port_confirm: 'Are you sure to delete {id}?',
+        reset_port: 'Reset Port',
+        reset_port_confirm: 'This operation closes all existing connections. Are you sure you want to continue?',
         successfully_updated: 'Successfully updated',
         snackbar_close: 'Close',
         state: {
