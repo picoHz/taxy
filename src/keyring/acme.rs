@@ -1,4 +1,5 @@
-use super::{certs::CertMetadata, subject_name::SubjectName};
+use super::certs::CertMetadata;
+use crate::config::subject_name::SubjectName;
 use crate::{error::Error, keyring::certs::Cert};
 use anyhow::bail;
 use backoff::{backoff::Backoff, ExponentialBackoff};

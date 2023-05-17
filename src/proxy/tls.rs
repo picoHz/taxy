@@ -1,5 +1,5 @@
+use crate::config::subject_name::SubjectName;
 use crate::keyring::certs::Cert;
-use crate::keyring::subject_name::SubjectName;
 use crate::keyring::Keyring;
 use crate::{config, error::Error};
 use serde_derive::Serialize;

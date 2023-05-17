@@ -1,4 +1,4 @@
-use super::{port::PortEntry, AppConfig};
+use super::{port::PortEntry, site::Site, AppConfig};
 use crate::{
     config::port::IdlessPortEntry,
     keyring::{

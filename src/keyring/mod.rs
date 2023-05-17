@@ -2,15 +2,13 @@ use self::{
     acme::{AcmeEntry, AcmeInfo},
     certs::{Cert, CertInfo},
 };
+use crate::config::subject_name::SubjectName;
 use serde_derive::Serialize;
 use std::{collections::HashMap, sync::Arc};
 use utoipa::ToSchema;
 
 pub mod acme;
 pub mod certs;
-pub mod subject_name;
-
-use subject_name::SubjectName;
 
 #[derive(Debug, Default)]
 pub struct Keyring {
