@@ -2,7 +2,7 @@ use super::{port::PortEntry, AppConfig};
 use crate::{
     config::port::Port,
     keyring::{
-        acme::{AcmeEntry, IdlessAcmeEntry},
+        acme::{AcmeAccount, AcmeEntry},
         certs::Cert,
         {Keyring, KeyringItem},
     },
@@ -158,7 +158,7 @@ impl ConfigStorage {
             }
         };
 
-        let (id, entry): (String, IdlessAcmeEntry) = acme.clone().into();
+        let (id, entry): (String, AcmeAccount) = acme.clone().into();
         doc[&id] = toml_edit::ser::to_document(&entry)?.as_item().clone();
 
         fs::write(path, doc.to_string()).await?;
@@ -262,7 +262,7 @@ impl ConfigStorage {
     pub async fn load_acmes_impl(&self, path: &Path) -> anyhow::Result<Vec<KeyringItem>> {
         info!(?path, "load acmes");
         let content = fs::read_to_string(path).await?;
-        let table: IndexMap<String, IdlessAcmeEntry> = toml::from_str(&content)?;
+        let table: IndexMap<String, AcmeAccount> = toml::from_str(&content)?;
         Ok(table
             .into_iter()
             .map(|entry| KeyringItem::Acme(Arc::new(entry.into())))
