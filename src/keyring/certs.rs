@@ -1,6 +1,6 @@
 use super::SubjectName;
 use crate::error::Error;
-use rcgen::{CertificateParams, DistinguishedName, DnType, SanType};
+use rcgen::{BasicConstraints, CertificateParams, DistinguishedName, DnType, IsCa, SanType};
 use rustls_pemfile::Item;
 use serde_derive::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -237,7 +237,18 @@ impl Cert {
 
     pub fn new_self_signed(req: &SelfSignedCertRequest) -> Result<Self, Error> {
         let mut distinguished_name = DistinguishedName::new();
-        distinguished_name.push(DnType::CommonName, "taxy self signed cert");
+        distinguished_name.push(DnType::CommonName, "Taxy CA");
+        let mut ca_params = CertificateParams::default();
+        ca_params.is_ca = IsCa::Ca(BasicConstraints::Unconstrained);
+        ca_params.distinguished_name = distinguished_name;
+
+        let ca_cert = match rcgen::Certificate::from_params(ca_params) {
+            Ok(cert) => cert,
+            Err(err) => {
+                error!(?err);
+                return Err(Error::FailedToGerateSelfSignedCertificate);
+            }
+        };
 
         let mut params = CertificateParams::default();
         params.subject_alt_names = req
@@ -251,6 +262,15 @@ impl Cert {
                 }
             })
             .collect();
+
+        let common_name = req
+            .san
+            .iter()
+            .map(|name| name.to_string())
+            .next()
+            .unwrap_or_else(|| "Taxy Cert".into());
+        let mut distinguished_name = DistinguishedName::new();
+        distinguished_name.push(DnType::CommonName, common_name);
         params.distinguished_name = distinguished_name;
 
         let cert = match rcgen::Certificate::from_params(params) {
@@ -261,10 +281,15 @@ impl Cert {
             }
         };
 
-        let raw_chain = cert
+        let cert_pem = cert
+            .serialize_pem_with_signer(&ca_cert)
+            .map_err(|_| Error::FailedToGerateSelfSignedCertificate)?;
+
+        let ca_pem = ca_cert
             .serialize_pem()
-            .map_err(|_| Error::FailedToGerateSelfSignedCertificate)?
-            .into_bytes();
+            .map_err(|_| Error::FailedToGerateSelfSignedCertificate)?;
+
+        let raw_chain = format!("{}\r\n{}", cert_pem, ca_pem).into_bytes();
         let raw_key = cert.serialize_private_key_pem().into_bytes();
 
         Self::new(raw_chain, raw_key)
