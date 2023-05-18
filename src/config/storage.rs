@@ -273,7 +273,7 @@ impl ConfigStorage {
                 .map_err(|_| anyhow::anyhow!("failed to parse private key info"))?;
             let secret_doc = key_info
                 .decrypt("password")
-                .map_err(|_| anyhow::anyhow!("failed to encrypt private key info"))?;
+                .map_err(|_| anyhow::anyhow!("failed to decrypt private key info"))?;
             let decrypted_key_pem = secret_doc
                 .to_pem("PRIVATE KEY", pkcs8::LineEnding::CRLF)
                 .map_err(|_| anyhow::anyhow!("failed to encrypt private key info"))?;

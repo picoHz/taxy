@@ -28,6 +28,7 @@ hyper = { version = "0.14", features = ["full"] }
 include_dir = "0.7.3"
 indexmap = { version = "1.9.3", features = ["serde"] }
 instant-acme = "0.2.1"
+keyring = "2.0.2"
 log = "0.4.17"
 mime_guess = "2.0.4"
 multiaddr = "0.17.1"
