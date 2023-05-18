@@ -22,7 +22,6 @@ const CERT_ID_LENGTH: usize = 20;
 pub struct Cert {
     pub id: String,
     pub certified: Arc<CertifiedKey>,
-    pub key: PrivateKey,
     pub raw_chain: Vec<u8>,
     pub raw_key: Vec<u8>,
     pub fingerprint: String,
@@ -223,7 +222,6 @@ impl Cert {
             id: fingerprint[..CERT_ID_LENGTH].to_string(),
             fingerprint,
             certified,
-            key,
             raw_chain,
             raw_key,
             issuer,
