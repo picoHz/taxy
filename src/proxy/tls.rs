@@ -2,6 +2,7 @@ use crate::keyring::certs::Cert;
 use crate::keyring::subject_name::SubjectName;
 use crate::keyring::Keyring;
 use crate::{config, error::Error};
+use dashmap::DashMap;
 use serde_derive::Serialize;
 use std::fmt;
 use std::str::FromStr;
@@ -77,6 +78,7 @@ pub struct ServerCertResolver {
     certs: Vec<Arc<Cert>>,
     default_names: Vec<SubjectName>,
     sni: bool,
+    cache: DashMap<String, Arc<CertifiedKey>>,
 }
 
 impl ServerCertResolver {
@@ -85,6 +87,7 @@ impl ServerCertResolver {
             certs,
             default_names,
             sni,
+            cache: DashMap::new(),
         }
     }
 }
@@ -109,6 +112,12 @@ impl ResolvesServerCert for ServerCertResolver {
             .iter()
             .find(|cert| cert.is_valid() && names.iter().all(|name| cert.has_subject_name(name)))?;
 
-        Some(cert.certified.clone())
+        if let Some(cert) = self.cache.get(cert.id()) {
+            Some(cert.clone())
+        } else {
+            let certified = cert.certified();
+            self.cache.insert(cert.id().to_string(), certified.clone());
+            Some(certified)
+        }
     }
 }

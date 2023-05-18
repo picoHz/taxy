@@ -90,6 +90,10 @@ impl Cert {
         &self.id
     }
 
+    pub fn certified(&self) -> Arc<CertifiedKey> {
+        self.certified.clone()
+    }
+
     pub fn info(&self) -> CertInfo {
         CertInfo {
             id: self.id.clone(),
