@@ -34,6 +34,7 @@ multiaddr = "0.17.1"
 once_cell = "1.17.1"
 percent-encoding = "2.2.0"
 pin-project-lite = "0.2.9"
+pkcs8 = { version = "0.10.2", features = ["pem", "encryption"] }
 rcgen = "0.10.0"
 rpassword = "7.2.0"
 rustls-native-certs = "0.6.2"

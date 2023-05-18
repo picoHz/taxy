@@ -7,7 +7,9 @@ use crate::{
         {Keyring, KeyringItem},
     },
 };
+use argon2::password_hash::rand_core::OsRng;
 use indexmap::map::IndexMap;
+use pkcs8::{PrivateKeyInfo, SecretDocument};
 use std::{
     collections::HashSet,
     path::{Path, PathBuf},
@@ -135,8 +137,21 @@ impl ConfigStorage {
     async fn save_cert_impl(&self, path: &Path, cert: &Cert) -> anyhow::Result<()> {
         fs::create_dir_all(path).await?;
         info!(?path, "save cert");
+
+        let (_, doc) = SecretDocument::from_pem(&std::str::from_utf8(&cert.raw_key)?)
+            .map_err(|_| anyhow::anyhow!("failed to parse pem"))?;
+        let key_info: PrivateKeyInfo = doc
+            .decode_msg()
+            .map_err(|_| anyhow::anyhow!("failed to parse private key info"))?;
+        let secret_doc = key_info
+            .encrypt(OsRng, "password")
+            .map_err(|_| anyhow::anyhow!("failed to encrypt private key info"))?;
+        let encrypted_key_pem = secret_doc
+            .to_pem("ENCRYPTED PRIVATE KEY", pkcs8::LineEnding::CRLF)
+            .map_err(|_| anyhow::anyhow!("failed to encrypt private key info"))?;
+
         fs::write(path.join("cert.pem"), &cert.raw_chain).await?;
-        fs::write(path.join("key.pem"), &cert.raw_key).await?;
+        fs::write(path.join("key.pem"), encrypted_key_pem.as_bytes()).await?;
         Ok(())
     }
 
