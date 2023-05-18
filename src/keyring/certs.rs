@@ -31,7 +31,6 @@ pub struct Cert {
     pub san: Vec<SubjectName>,
     pub not_after: ASN1Time,
     pub not_before: ASN1Time,
-    pub is_self_signed: bool,
     pub metadata: Option<CertMetadata>,
 }
 
@@ -53,7 +52,6 @@ impl fmt::Debug for Cert {
             .field("san", &self.san)
             .field("not_after", &self.not_after)
             .field("not_before", &self.not_before)
-            .field("is_self_signed", &self.is_self_signed)
             .field("metadata", &self.metadata)
             .finish()
     }
@@ -62,23 +60,19 @@ impl fmt::Debug for Cert {
 impl PartialOrd for Cert {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(
-            self.is_self_signed
-                .cmp(&other.is_self_signed)
-                .then_with(|| {
-                    other
+            other
+                .metadata
+                .as_ref()
+                .map(|meta| meta.is_trusted)
+                .unwrap_or_default()
+                .partial_cmp(
+                    &self
                         .metadata
                         .as_ref()
                         .map(|meta| meta.is_trusted)
-                        .unwrap_or_default()
-                        .partial_cmp(
-                            &self
-                                .metadata
-                                .as_ref()
-                                .map(|meta| meta.is_trusted)
-                                .unwrap_or_default(),
-                        )
-                        .unwrap()
-                })
+                        .unwrap_or_default(),
+                )
+                .unwrap()
                 .then_with(|| other.not_before.partial_cmp(&self.not_before).unwrap())
                 .then_with(|| self.not_after.partial_cmp(&other.not_after).unwrap())
                 .then_with(|| self.fingerprint.cmp(&other.fingerprint)),
@@ -106,7 +100,6 @@ impl Cert {
             san: self.san.clone(),
             not_after: self.not_after.timestamp(),
             not_before: self.not_before.timestamp(),
-            is_self_signed: self.is_self_signed,
             metadata: self.metadata.clone(),
         }
     }
@@ -149,8 +142,6 @@ pub struct CertInfo {
     pub not_after: i64,
     #[schema(example = "157766400")]
     pub not_before: i64,
-    #[schema(example = "true")]
-    pub is_self_signed: bool,
     pub metadata: Option<CertMetadata>,
 }
 
@@ -203,10 +194,6 @@ impl Cert {
         let fingerprint = hex::encode(hasher.finalize());
 
         let parsed_chain = parse_chain(&chain)?;
-        let is_self_signed = parsed_chain
-            .iter()
-            .any(|cert| cert.issuer() == cert.subject());
-
         let x509 = parsed_chain.first().ok_or(Error::FailedToReadCertificate)?;
         let san = x509
             .subject_alternative_name()
@@ -244,7 +231,6 @@ impl Cert {
             san,
             not_after,
             not_before,
-            is_self_signed,
             metadata,
         })
     }
