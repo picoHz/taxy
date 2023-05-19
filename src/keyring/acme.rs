@@ -296,7 +296,7 @@ impl AcmeOrder {
         let metadata = serde_qs::to_string(&metadata).unwrap_or_default();
         let cert_chain_pem = format!("# {}\r\n\r\n{}", metadata, cert_chain_pem);
 
-        let cert = Cert::new(
+        let cert = Cert::from_plain_key(
             cert_chain_pem.into_bytes(),
             cert.serialize_private_key_pem().into_bytes(),
         );
