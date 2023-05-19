@@ -2,9 +2,10 @@ use super::{certs::CertMetadata, subject_name::SubjectName};
 use crate::{error::Error, keyring::certs::Cert};
 use anyhow::bail;
 use backoff::{backoff::Backoff, ExponentialBackoff};
+use base64::{engine::general_purpose, Engine as _};
 use instant_acme::{
-    Account, AccountCredentials, AuthorizationStatus, ChallengeType, Identifier, NewAccount,
-    NewOrder, Order, OrderStatus,
+    Account, AccountCredentials, AuthorizationStatus, ChallengeType, ExternalAccountKey,
+    Identifier, NewAccount, NewOrder, Order, OrderStatus,
 };
 use rcgen::{Certificate, CertificateParams, DistinguishedName};
 use serde_derive::{Deserialize, Serialize};
@@ -38,9 +39,41 @@ pub struct AcmeRequest {
     pub server_url: String,
     #[schema(example = json!(["mailto:admin@example.com"]))]
     pub contacts: Vec<String>,
+    #[serde(default)]
+    pub eab: Option<ExternalAccountBinding>,
     #[schema(inline)]
     #[serde(flatten)]
     pub acme: Acme,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, ToSchema)]
+pub struct ExternalAccountBinding {
+    #[schema(example = "f9cf7e3faa1aca7e6086")]
+    pub key_id: String,
+    #[schema(value_type = String, example = "TszzWRgQWTUqo04dxmSuKDH06")]
+    #[serde(
+        serialize_with = "serialize_hmac_key",
+        deserialize_with = "deserialize_hmac_key"
+    )]
+    pub hmac_key: Vec<u8>,
+}
+
+fn serialize_hmac_key<S>(hmac_key: &[u8], serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    serializer.serialize_str(&general_purpose::URL_SAFE_NO_PAD.encode(hmac_key))
+}
+
+fn deserialize_hmac_key<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de::Deserialize;
+    let hmac_key = String::deserialize(deserializer)?;
+    general_purpose::URL_SAFE_NO_PAD
+        .decode(hmac_key.as_bytes())
+        .map_err(serde::de::Error::custom)
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -85,6 +118,9 @@ impl fmt::Debug for AcmeEntry {
 impl AcmeEntry {
     pub async fn new(req: AcmeRequest) -> Result<Self, Error> {
         let contact = req.contacts.iter().map(|c| c.as_str()).collect::<Vec<_>>();
+        let external_account = req
+            .eab
+            .map(|eab| ExternalAccountKey::new(eab.key_id, &eab.hmac_key));
         let account = Account::create(
             &NewAccount {
                 contact: &contact,
@@ -92,7 +128,7 @@ impl AcmeEntry {
                 only_return_existing: false,
             },
             &req.server_url,
-            None,
+            external_account.as_ref(),
         )
         .await;
 
