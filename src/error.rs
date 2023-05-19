@@ -67,6 +67,15 @@ pub enum Error {
 
     #[error("rpc error")]
     RpcError,
+
+    #[error("failed to load app key")]
+    FailedToLoadAppKey,
+
+    #[error("failed to encrypt private key")]
+    FailedToEncryptPrivateKey,
+
+    #[error("failed to decrypt private key")]
+    FailedToDecryptPrivateKey,
 }
 
 impl Reject for Error {}

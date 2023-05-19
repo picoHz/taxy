@@ -1,5 +1,5 @@
 use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
+    password_hash::{PasswordHasher, SaltString},
     Argon2, PasswordHash, PasswordVerifier,
 };
 use serde::{Deserialize, Serialize};
@@ -21,7 +21,7 @@ pub async fn add_account(config_dir: &Path, name: &str, password: &str) -> anyho
         Err(_) => Document::default(),
     };
 
-    let salt = SaltString::generate(&mut OsRng);
+    let salt = SaltString::generate(rand::thread_rng());
     let argon2 = Argon2::default();
     let password_hash = argon2
         .hash_password(password.as_bytes(), &salt)

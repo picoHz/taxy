@@ -1,13 +1,13 @@
 use super::SubjectName;
 use crate::error::Error;
+use pkcs8::{EncryptedPrivateKeyInfo, PrivateKeyInfo, SecretDocument};
 use rcgen::{BasicConstraints, CertificateParams, DistinguishedName, DnType, IsCa, SanType};
-use rustls_pemfile::Item;
 use serde_derive::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fmt;
 use std::io::{BufRead, BufReader};
+use std::ops::Deref;
 use std::str::FromStr;
-use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio_rustls::rustls::sign::CertifiedKey;
 use tokio_rustls::rustls::{sign, Certificate, PrivateKey};
@@ -21,7 +21,7 @@ const CERT_ID_LENGTH: usize = 20;
 #[derive(Clone)]
 pub struct Cert {
     pub id: String,
-    pub certified: Arc<CertifiedKey>,
+    pub key: SecretDocument,
     pub raw_chain: Vec<u8>,
     pub raw_key: Vec<u8>,
     pub fingerprint: String,
@@ -124,34 +124,17 @@ impl Cert {
         }
         false
     }
-}
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, ToSchema)]
-pub struct CertInfo {
-    #[schema(example = "a13e1ecc080e42cfcdd5")]
-    pub id: String,
-    #[schema(example = "a13e1ecc080e42cfcdd5b77fec8450c777554aa7269c029b242a7c548d0d73da")]
-    pub fingerprint: String,
-    #[schema(example = "CN=taxy self signed cert")]
-    pub issuer: String,
-    pub root_cert: Option<String>,
-    #[schema(value_type = [String], example = json!(["localhost"]))]
-    pub san: Vec<SubjectName>,
-    #[schema(example = "67090118400")]
-    pub not_after: i64,
-    #[schema(example = "157766400")]
-    pub not_before: i64,
-    pub metadata: Option<CertMetadata>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, ToSchema)]
-pub struct SelfSignedCertRequest {
-    #[schema(value_type = [String], example = json!(["localhost"]))]
-    pub san: Vec<SubjectName>,
-}
-
-impl Cert {
     pub fn new(raw_chain: Vec<u8>, raw_key: Vec<u8>) -> Result<Self, Error> {
+        let key_pem =
+            std::str::from_utf8(&raw_key).map_err(|_| Error::FailedToDecryptPrivateKey)?;
+        let (_, key) =
+            SecretDocument::from_pem(key_pem).map_err(|_| Error::FailedToDecryptPrivateKey)?;
+
+        if key.decode_msg::<PrivateKeyInfo>().is_ok() {
+            return Self::from_plain_key(raw_chain, raw_key);
+        }
+
         let chain_meta = raw_chain.as_slice();
         let mut meta_read = BufReader::new(chain_meta);
         let mut comment = String::new();
@@ -167,26 +150,10 @@ impl Cert {
         .ok();
 
         let mut chain = raw_chain.as_slice();
-        let mut key = raw_key.as_slice();
         let chain =
             rustls_pemfile::certs(&mut chain).map_err(|_| Error::FailedToReadCertificate)?;
         let chain = chain.into_iter().map(Certificate).collect::<Vec<_>>();
 
-        let mut privkey = None;
-        while let Some(key) =
-            rustls_pemfile::read_one(&mut key).map_err(|_| Error::FailedToReadPrivateKey)?
-        {
-            match key {
-                Item::RSAKey(key) | Item::PKCS8Key(key) | Item::ECKey(key) => {
-                    if privkey.is_none() {
-                        privkey = Some(PrivateKey(key));
-                    }
-                }
-                _ => {}
-            }
-        }
-
-        let key = privkey.ok_or(Error::FailedToReadPrivateKey)?;
         let der = &chain.first().ok_or(Error::FailedToReadCertificate)?.0;
         let mut hasher = Sha256::new();
         hasher.update(der);
@@ -214,14 +181,10 @@ impl Cert {
             .filter(|_| chain.len() > 1)
             .map(|cert| cert.subject().to_string());
 
-        let signing_key =
-            sign::any_supported_type(&key).map_err(|_| Error::FailedToReadPrivateKey)?;
-        let certified = Arc::new(CertifiedKey::new(chain, signing_key));
-
         Ok(Cert {
             id: fingerprint[..CERT_ID_LENGTH].to_string(),
             fingerprint,
-            certified,
+            key,
             raw_chain,
             raw_key,
             issuer,
@@ -290,8 +253,78 @@ impl Cert {
         let raw_chain = format!("{}\r\n{}", cert_pem, ca_pem).into_bytes();
         let raw_key = cert.serialize_private_key_pem().into_bytes();
 
-        Self::new(raw_chain, raw_key)
+        Self::from_plain_key(raw_chain, raw_key)
     }
+
+    pub fn from_plain_key(raw_chain: Vec<u8>, raw_plain_key: Vec<u8>) -> Result<Self, Error> {
+        let key_pem = Self::encrypt(raw_plain_key).map_err(|_| Error::FailedToEncryptPrivateKey)?;
+        Self::new(raw_chain, key_pem)
+    }
+
+    pub fn certified(&self) -> Result<CertifiedKey, Error> {
+        match self.certified_impl() {
+            Ok(certified) => Ok(certified),
+            Err(err) => {
+                error!(?err);
+                Err(Error::FailedToDecryptPrivateKey)
+            }
+        }
+    }
+
+    fn certified_impl(&self) -> anyhow::Result<CertifiedKey> {
+        let key_info: EncryptedPrivateKeyInfo = self
+            .key
+            .decode_msg()
+            .map_err(|err| anyhow::anyhow!("{err}"))?;
+        let secret_doc = key_info
+            .decrypt(crate::keyring::load_appkey()?)
+            .map_err(|err| anyhow::anyhow!("{err}"))?;
+        let key = PrivateKey(secret_doc.to_bytes().deref().to_vec());
+        let signing_key = sign::any_supported_type(&key).map_err(|err| anyhow::anyhow!("{err}"))?;
+
+        let mut chain = self.raw_chain.as_slice();
+        let chain =
+            rustls_pemfile::certs(&mut chain).map_err(|_| Error::FailedToReadCertificate)?;
+        let chain = chain.into_iter().map(Certificate).collect::<Vec<_>>();
+        Ok(CertifiedKey::new(chain, signing_key))
+    }
+
+    fn encrypt(plain_key: Vec<u8>) -> anyhow::Result<Vec<u8>> {
+        let (_, doc) = SecretDocument::from_pem(std::str::from_utf8(&plain_key)?)
+            .map_err(|err| anyhow::anyhow!("{err}"))?;
+        let key_info: PrivateKeyInfo = doc.decode_msg().map_err(|err| anyhow::anyhow!("{err}"))?;
+        let secret_doc = key_info
+            .encrypt(rand::thread_rng(), crate::keyring::load_appkey()?)
+            .map_err(|err| anyhow::anyhow!("{err}"))?;
+        let encrypted_key_pem = secret_doc
+            .to_pem("ENCRYPTED PRIVATE KEY", pkcs8::LineEnding::CRLF)
+            .map_err(|err| anyhow::anyhow!("{err}"))?;
+        Ok(encrypted_key_pem.as_bytes().to_vec())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, ToSchema)]
+pub struct CertInfo {
+    #[schema(example = "a13e1ecc080e42cfcdd5")]
+    pub id: String,
+    #[schema(example = "a13e1ecc080e42cfcdd5b77fec8450c777554aa7269c029b242a7c548d0d73da")]
+    pub fingerprint: String,
+    #[schema(example = "CN=taxy self signed cert")]
+    pub issuer: String,
+    pub root_cert: Option<String>,
+    #[schema(value_type = [String], example = json!(["localhost"]))]
+    pub san: Vec<SubjectName>,
+    #[schema(example = "67090118400")]
+    pub not_after: i64,
+    #[schema(example = "157766400")]
+    pub not_before: i64,
+    pub metadata: Option<CertMetadata>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, ToSchema)]
+pub struct SelfSignedCertRequest {
+    #[schema(value_type = [String], example = json!(["localhost"]))]
+    pub san: Vec<SubjectName>,
 }
 
 fn parse_chain(chain: &[Certificate]) -> Result<Vec<X509Certificate>, Error> {
