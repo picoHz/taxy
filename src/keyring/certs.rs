@@ -1,5 +1,6 @@
 use super::SubjectName;
 use crate::error::Error;
+use anyhow::bail;
 use pkcs8::{EncryptedPrivateKeyInfo, PrivateKeyInfo, SecretDocument};
 use rcgen::{BasicConstraints, CertificateParams, DistinguishedName, DnType, IsCa, SanType};
 use serde_derive::{Deserialize, Serialize};
@@ -131,10 +132,6 @@ impl Cert {
         let (_, key) =
             SecretDocument::from_pem(key_pem).map_err(|_| Error::FailedToDecryptPrivateKey)?;
 
-        if key.decode_msg::<PrivateKeyInfo>().is_ok() {
-            return Self::from_plain_key(raw_chain, raw_key);
-        }
-
         let chain_meta = raw_chain.as_slice();
         let mut meta_read = BufReader::new(chain_meta);
         let mut comment = String::new();
@@ -257,8 +254,14 @@ impl Cert {
     }
 
     pub fn from_plain_key(raw_chain: Vec<u8>, raw_plain_key: Vec<u8>) -> Result<Self, Error> {
-        let key_pem = Self::encrypt(raw_plain_key).map_err(|_| Error::FailedToEncryptPrivateKey)?;
-        Self::new(raw_chain, key_pem)
+        let raw_key = if let Some(password) =
+            crate::keyring::load_appkey().map_err(|_| Error::FailedToEncryptPrivateKey)?
+        {
+            Self::encrypt(raw_plain_key, &password).map_err(|_| Error::FailedToEncryptPrivateKey)?
+        } else {
+            raw_plain_key
+        };
+        Self::new(raw_chain, raw_key)
     }
 
     pub fn certified(&self) -> Result<CertifiedKey, Error> {
@@ -272,14 +275,24 @@ impl Cert {
     }
 
     fn certified_impl(&self) -> anyhow::Result<CertifiedKey> {
-        let key_info: EncryptedPrivateKeyInfo = self
-            .key
-            .decode_msg()
-            .map_err(|err| anyhow::anyhow!("{err}"))?;
-        let secret_doc = key_info
-            .decrypt(crate::keyring::load_appkey()?)
-            .map_err(|err| anyhow::anyhow!("{err}"))?;
-        let key = PrivateKey(secret_doc.to_bytes().deref().to_vec());
+        let key = if self.key.decode_msg::<PrivateKeyInfo>().is_ok() {
+            PrivateKey(self.key.to_bytes().deref().to_vec())
+        } else {
+            let password = if let Some(password) = crate::keyring::load_appkey()? {
+                password
+            } else {
+                bail!("keystore is not enabled");
+            };
+            let key_info: EncryptedPrivateKeyInfo = self
+                .key
+                .decode_msg()
+                .map_err(|err| anyhow::anyhow!("{err}"))?;
+            let secret_doc = key_info
+                .decrypt(password)
+                .map_err(|err| anyhow::anyhow!("{err}"))?;
+            PrivateKey(secret_doc.to_bytes().deref().to_vec())
+        };
+
         let signing_key = sign::any_supported_type(&key).map_err(|err| anyhow::anyhow!("{err}"))?;
 
         let mut chain = self.raw_chain.as_slice();
@@ -289,12 +302,12 @@ impl Cert {
         Ok(CertifiedKey::new(chain, signing_key))
     }
 
-    fn encrypt(plain_key: Vec<u8>) -> anyhow::Result<Vec<u8>> {
+    fn encrypt(plain_key: Vec<u8>, password: &[u8]) -> anyhow::Result<Vec<u8>> {
         let (_, doc) = SecretDocument::from_pem(std::str::from_utf8(&plain_key)?)
             .map_err(|err| anyhow::anyhow!("{err}"))?;
         let key_info: PrivateKeyInfo = doc.decode_msg().map_err(|err| anyhow::anyhow!("{err}"))?;
         let secret_doc = key_info
-            .encrypt(rand::thread_rng(), crate::keyring::load_appkey()?)
+            .encrypt(rand::thread_rng(), password)
             .map_err(|err| anyhow::anyhow!("{err}"))?;
         let encrypted_key_pem = secret_doc
             .to_pem("ENCRYPTED PRIVATE KEY", pkcs8::LineEnding::CRLF)

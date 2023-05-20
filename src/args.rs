@@ -69,6 +69,9 @@ pub struct StartArgs {
 
     #[clap(long, short = 'd', value_name = "DIR", env = "TAXY_LOG_DIR")]
     pub log_dir: Option<PathBuf>,
+
+    #[clap(long)]
+    pub no_keystore: bool,
 }
 
 #[derive(Args)]
