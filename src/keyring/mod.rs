@@ -13,6 +13,7 @@ use zeroize::Zeroizing;
 
 pub mod acme;
 pub mod certs;
+mod keyutils;
 pub mod subject_name;
 
 use subject_name::SubjectName;
