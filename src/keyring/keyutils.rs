@@ -155,7 +155,7 @@ impl KeyutilsCredential {
     pub fn new_with_target(target: Option<&str>, service: &str, user: &str) -> Result<Self> {
         // Obtain the session keyring
         let session =
-            KeyRing::from_special_id(KeyRingIdentifier::User, false).map_err(decode_error)?;
+            KeyRing::from_special_id(KeyRingIdentifier::User, true).map_err(decode_error)?;
 
         // Link the persistent keyring to the session
         let persistent = KeyRing::get_persistent(KeyRingIdentifier::User).ok();
