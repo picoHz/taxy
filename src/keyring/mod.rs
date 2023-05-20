@@ -134,6 +134,7 @@ pub fn load_appkey() -> anyhow::Result<Zeroizing<Vec<u8>>> {
         .get_or_try_init(|| keyring::Entry::new(APPKEY_KEYRING_SERVICE, APPKEY_KEYRING_USER))?;
 
     let password: keyring::Result<Zeroizing<String>> = entry.get_password().map(Zeroizing::new);
+
     match password {
         Ok(password) => Ok(Zeroizing::new(
             general_purpose::STANDARD_NO_PAD.decode::<&str>(&password)?,

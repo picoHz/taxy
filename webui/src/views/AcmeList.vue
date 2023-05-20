@@ -45,7 +45,8 @@
                 </v-col>
               </v-row>
             </v-container>
-            <LetsEncrypt v-model="acmeModel" :staging="acmeProvider === 'letsencrypt-staging'"></LetsEncrypt>
+            <LetsEncrypt v-if="acmeProvider.startsWith('letsencrypt')" v-model="acmeModel"
+              :staging="acmeProvider === 'letsencrypt-staging'"></LetsEncrypt>
           </v-card-text>
 
           <v-card-actions class="justify-end">
@@ -84,7 +85,7 @@ const acmeModel = ref({});
 
 const acmeProviders = [
   { title: "Let's Encrypt", value: 'letsencrypt' },
-  { title: "Let's Encrypt (Staging)", value: 'letsencrypt-staging' }
+  { title: "Let's Encrypt (Staging)", value: 'letsencrypt-staging' },
 ];
 
 const endpoint = import.meta.env.VITE_API_ENDPOINT;

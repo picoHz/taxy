@@ -70,3 +70,9 @@ built = "0.6.0"
 
 [profile.release]
 strip = true
+
+[profile.dev.package.argon2]
+opt-level = 3
+
+[profile.dev.package.scrypt]
+opt-level = 3
