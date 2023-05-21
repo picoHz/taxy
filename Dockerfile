@@ -52,4 +52,4 @@ COPY --from=builder /usr/src/app/target/release/taxy .
 RUN ./taxy add-user admin -p admin
 
 # Set the entrypoint to run the Rust binary
-ENTRYPOINT ["./taxy", "start", "--webui", "0.0.0.0:8080", "--no-keystore"]
+ENTRYPOINT ["./taxy", "start", "--webui", "0.0.0.0:8080"]

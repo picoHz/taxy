@@ -133,8 +133,7 @@ static ENTRY: OnceCell<Option<keyring::Entry>> = OnceCell::new();
 pub fn init_appkey(use_keystore: bool) -> anyhow::Result<()> {
     ENTRY.get_or_try_init(|| {
         if use_keystore {
-            keyring::Entry::new(APPKEY_KEYRING_SERVICE, APPKEY_KEYRING_USER)
-                .map(|entry| Some(entry))
+            keyring::Entry::new(APPKEY_KEYRING_SERVICE, APPKEY_KEYRING_USER).map(Some)
         } else {
             Ok(None)
         }

@@ -39,11 +39,7 @@ async fn main() -> anyhow::Result<()> {
 }
 
 async fn start(args: StartArgs) -> anyhow::Result<()> {
-    if let Err(err) = crate::keyring::init_appkey(!args.no_keystore) {
-        error!("failed to access the system keystore: {}", err);
-        error!("To disable the system keystore, use --no-keystore option");
-        return Err(err);
-    }
+    crate::keyring::init_appkey(args.use_keystore)?;
 
     let log_dir = get_log_dir(args.log_dir)?;
     fs::create_dir_all(&log_dir)?;

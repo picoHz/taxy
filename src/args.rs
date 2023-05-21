@@ -71,7 +71,7 @@ pub struct StartArgs {
     pub log_dir: Option<PathBuf>,
 
     #[clap(long)]
-    pub no_keystore: bool,
+    pub use_keystore: bool,
 }
 
 #[derive(Args)]
