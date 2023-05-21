@@ -1,8 +1,5 @@
 use super::AppState;
-use crate::{
-    config::port::{Port, PortEntry},
-    server::rpc::ports::*,
-};
+use crate::{config::port::Port, server::rpc::ports::*};
 use warp::{Rejection, Reply};
 
 /// Get the list of port configurations.
@@ -106,8 +103,7 @@ pub async fn post(state: AppState, entry: Port) -> Result<impl Reply, Rejection>
     )
 )]
 pub async fn put(state: AppState, entry: Port, id: String) -> Result<impl Reply, Rejection> {
-    let mut entry: PortEntry = (cuid2::cuid(), entry).into();
-    entry.id = id;
+    let entry = (id, entry).into();
     Ok(warp::reply::json(&state.call(UpdatePort { entry }).await?))
 }
 
