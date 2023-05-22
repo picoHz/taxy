@@ -25,6 +25,7 @@ mod config;
 mod log;
 mod ports;
 mod server_certs;
+mod sites;
 mod static_file;
 mod swagger;
 
@@ -143,6 +144,32 @@ pub async fn start_admin(
             .and_then(server_certs::delete),
     );
 
+    let api_sites_list = warp::get()
+        .and(warp::path::end())
+        .and(with_state(app_state.clone()).and_then(sites::list));
+
+    let api_sites_delete = warp::delete().and(
+        with_state(app_state.clone())
+            .and(warp::path::param())
+            .and(warp::path::end())
+            .and_then(sites::delete),
+    );
+
+    let api_sites_put = warp::put().and(
+        with_state(app_state.clone())
+            .and(warp::body::json())
+            .and(warp::path::param())
+            .and(warp::path::end())
+            .and_then(sites::put),
+    );
+
+    let api_sites_post = warp::post().and(
+        with_state(app_state.clone())
+            .and(warp::body::json())
+            .and(warp::path::end())
+            .and_then(sites::post),
+    );
+
     let api_acme_list = warp::get()
         .and(warp::path::end())
         .and(with_state(app_state.clone()).and_then(acme::list));
@@ -223,6 +250,13 @@ pub async fn start_admin(
             .or(api_ports_post),
     );
 
+    let sites = warp::path("sites").and(
+        api_sites_delete
+            .or(api_sites_put)
+            .or(api_sites_list)
+            .or(api_sites_post),
+    );
+
     let server_certs = warp::path("server_certs").and(
         api_server_certs_delete
             .or(api_server_certs_self_sign)
@@ -263,6 +297,7 @@ pub async fn start_admin(
             .or(app_info)
             .or(config)
             .or(port)
+            .or(sites)
             .or(server_certs)
             .or(acme)
             .or(log)
