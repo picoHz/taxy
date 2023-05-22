@@ -61,7 +61,7 @@ pub struct StartArgs {
     )]
     pub webui: SocketAddr,
 
-    #[clap(long, short, env = "TAXY_NO_WEBUI")]
+    #[clap(long, short, env = "TAXY_NO_WEBUI", conflicts_with = "webui")]
     pub no_webui: bool,
 
     #[clap(long, short, value_name = "DIR", env = "TAXY_CONFIG_DIR")]
