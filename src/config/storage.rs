@@ -1,6 +1,6 @@
-use super::{port::PortEntry, AppConfig};
+use super::{port::PortEntry, site::SiteEntry, AppConfig};
 use crate::{
-    config::port::Port,
+    config::{port::Port, site::Site},
     keyring::{
         acme::{AcmeAccount, AcmeEntry},
         certs::Cert,
@@ -122,6 +122,62 @@ impl ConfigStorage {
         let content = fs::read_to_string(path).await?;
         let table: IndexMap<String, Port> = toml::from_str(&content)?;
         Ok(table.into_iter().map(|entry| entry.into()).collect())
+    }
+
+    pub async fn load_sites(&self) -> Vec<SiteEntry> {
+        let dir = &self.dir;
+        let path = dir.join("sites.toml");
+        match self.load_sites_impl(&path).await {
+            Ok(sites) => sites,
+            Err(err) => {
+                warn!(?path, "failed to load: {err}");
+                Default::default()
+            }
+        }
+    }
+
+    async fn load_sites_impl(&self, path: &Path) -> anyhow::Result<Vec<SiteEntry>> {
+        info!(?path, "load sites");
+        let content = fs::read_to_string(path).await?;
+        let table: IndexMap<String, Site> = toml::from_str(&content)?;
+        Ok(table.into_iter().map(|entry| entry.into()).collect())
+    }
+
+    pub async fn save_sites(&self, sites: &[SiteEntry]) {
+        let dir = &self.dir;
+        let path = dir.join("sites.toml");
+        if let Err(err) = self.save_sites_impl(&path, sites).await {
+            error!(?path, "failed to save: {err}");
+        }
+    }
+
+    async fn save_sites_impl(&self, path: &Path, sites: &[SiteEntry]) -> anyhow::Result<()> {
+        fs::create_dir_all(path.parent().unwrap()).await?;
+        info!(?path, "save config");
+        let mut doc = match self.load_document(path).await {
+            Ok(doc) => doc,
+            Err(err) => {
+                warn!(?path, ?err, "failed to load config");
+                Document::new()
+            }
+        };
+
+        let mut unused = doc
+            .as_table()
+            .iter()
+            .map(|(key, _)| key.to_string())
+            .collect::<HashSet<_>>();
+        for site in sites {
+            let (id, entry): (String, Site) = site.clone().into();
+            doc[&id] = toml_edit::ser::to_document(&entry)?.as_item().clone();
+            unused.remove(&id);
+        }
+        for key in unused {
+            doc.remove(&key);
+        }
+
+        fs::write(path, doc.to_string()).await?;
+        Ok(())
     }
 
     pub async fn save_cert(&self, cert: &Cert) {

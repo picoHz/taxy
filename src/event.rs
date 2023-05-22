@@ -1,5 +1,5 @@
 use crate::{
-    config::{port::PortEntry, AppConfig, Source},
+    config::{port::PortEntry, site::SiteEntry, AppConfig, Source},
     keyring::{acme::AcmeInfo, certs::CertInfo},
     proxy::PortStatus,
 };
@@ -13,6 +13,7 @@ pub enum ServerEvent {
     PortTableUpdated { entries: Vec<PortEntry> },
     PortStatusUpdated { id: String, status: PortStatus },
     ServerCertsUpdated { items: Vec<CertInfo> },
+    SitesUpdated { items: Vec<SiteEntry> },
     AcmeUpdated { items: Vec<AcmeInfo> },
     Shutdown,
 }

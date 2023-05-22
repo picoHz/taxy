@@ -4,6 +4,7 @@ use super::{
     rpc::{RpcCallback, RpcCallbackFunc, RpcMethod},
     table::ProxyTable,
 };
+use crate::config::site::SiteEntry;
 use crate::keyring::certs::{Cert, CertInfo};
 use crate::keyring::KeyringInfo;
 use crate::proxy::PortStatus;
@@ -64,6 +65,8 @@ impl ServerState {
         let certs = storage.load_keychain().await;
         let mut table = ProxyTable::new();
         let ports = storage.load_entries().await;
+        let _sites = storage.load_sites().await;
+
         for entry in ports {
             let span = span!(Level::INFO, "port", resource_id = entry.id);
             match PortContext::new(entry) {
@@ -110,6 +113,10 @@ impl ServerState {
         this.register_callback::<rpc::acme::GetAcmeList>();
         this.register_callback::<rpc::acme::AddAcme>();
         this.register_callback::<rpc::acme::DeleteAcme>();
+        this.register_callback::<rpc::sites::GetSiteList>();
+        this.register_callback::<rpc::sites::DeleteSite>();
+        this.register_callback::<rpc::sites::AddSite>();
+        this.register_callback::<rpc::sites::UpdateSite>();
         this.register_callback::<rpc::server_certs::GetServerCertList>();
         this.register_callback::<rpc::server_certs::AddServerCert>();
         this.register_callback::<rpc::server_certs::DeleteServerCert>();
@@ -119,6 +126,9 @@ impl ServerState {
         });
         let _ = this.br_sender.send(ServerEvent::ServerCertsUpdated {
             items: this.get_server_cert_list(),
+        });
+        let _ = this.br_sender.send(ServerEvent::SitesUpdated {
+            items: this.get_site_list(),
         });
 
         this.update_port_statuses().await;
@@ -208,6 +218,9 @@ impl ServerState {
             }
             ServerEvent::PortTableUpdated { entries } => {
                 self.storage.save_entries(&entries).await;
+            }
+            ServerEvent::SitesUpdated { items } => {
+                self.storage.save_sites(&items).await;
             }
             _ => (),
         }
@@ -528,5 +541,21 @@ impl ServerState {
         } else {
             Err(Error::IdNotFound { id: id.to_string() })
         }
+    }
+
+    pub fn get_site_list(&self) -> Vec<SiteEntry> {
+        vec![]
+    }
+
+    pub fn add_site(&mut self, _entry: SiteEntry) -> Result<(), Error> {
+        Ok(())
+    }
+
+    pub fn update_site(&mut self, _entry: SiteEntry) -> Result<(), Error> {
+        Ok(())
+    }
+
+    pub fn delete_site(&mut self, _id: &str) -> Result<(), Error> {
+        Ok(())
     }
 }

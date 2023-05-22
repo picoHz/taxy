@@ -7,7 +7,9 @@ use std::{
 use utoipa::ToSchema;
 
 pub mod port;
+pub mod site;
 pub mod storage;
+pub mod subject_name;
 pub mod tls;
 
 #[derive(Debug, DefaultFromSerde, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
