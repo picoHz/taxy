@@ -3,11 +3,11 @@ use crate::{config::AppConfig, error::Error, server::state::ServerState};
 
 pub struct GetConfig;
 
+#[async_trait::async_trait]
 impl RpcMethod for GetConfig {
-    const NAME: &'static str = "get_config";
     type Output = AppConfig;
 
-    fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
+    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
         Ok(state.config().clone())
     }
 }
@@ -16,12 +16,12 @@ pub struct SetConfig {
     pub config: AppConfig,
 }
 
+#[async_trait::async_trait]
 impl RpcMethod for SetConfig {
-    const NAME: &'static str = "set_config";
     type Output = ();
 
-    fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.set_config(self.config);
+    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
+        state.set_config(self.config.clone());
         Ok(())
     }
 }
