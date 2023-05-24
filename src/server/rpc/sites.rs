@@ -6,7 +6,7 @@ pub struct GetSiteList;
 impl RpcMethod for GetSiteList {
     type Output = Vec<SiteEntry>;
 
-    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
+    async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         Ok(state.get_site_list())
     }
 }
@@ -19,7 +19,7 @@ pub struct DeleteSite {
 impl RpcMethod for DeleteSite {
     type Output = ();
 
-    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
+    async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state.delete_site(&self.id)
     }
 }
@@ -32,8 +32,8 @@ pub struct AddSite {
 impl RpcMethod for AddSite {
     type Output = ();
 
-    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.add_site(self.entry.clone())
+    async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
+        state.add_site(self.entry)
     }
 }
 
@@ -45,7 +45,7 @@ pub struct UpdateSite {
 impl RpcMethod for UpdateSite {
     type Output = ();
 
-    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.update_site(self.entry.clone())
+    async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
+        state.update_site(self.entry)
     }
 }

@@ -11,7 +11,7 @@ pub struct GetServerCertList;
 impl RpcMethod for GetServerCertList {
     type Output = Vec<CertInfo>;
 
-    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
+    async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         Ok(state.get_server_cert_list())
     }
 }
@@ -24,8 +24,8 @@ pub struct AddServerCert {
 impl RpcMethod for AddServerCert {
     type Output = ();
 
-    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.add_server_cert(self.cert.clone())
+    async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
+        state.add_server_cert(self.cert)
     }
 }
 
@@ -37,7 +37,7 @@ pub struct DeleteServerCert {
 impl RpcMethod for DeleteServerCert {
     type Output = ();
 
-    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
+    async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state.delete_server_cert(&self.id)
     }
 }

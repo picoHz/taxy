@@ -7,7 +7,7 @@ pub struct GetPortList;
 impl RpcMethod for GetPortList {
     type Output = Vec<PortEntry>;
 
-    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
+    async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         Ok(state.get_port_list())
     }
 }
@@ -20,7 +20,7 @@ pub struct GetPortStatus {
 impl RpcMethod for GetPortStatus {
     type Output = PortStatus;
 
-    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
+    async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state.get_port_status(&self.id)
     }
 }
@@ -33,7 +33,7 @@ pub struct DeletePort {
 impl RpcMethod for DeletePort {
     type Output = ();
 
-    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
+    async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state.delete_port(&self.id)
     }
 }
@@ -46,8 +46,8 @@ pub struct AddPort {
 impl RpcMethod for AddPort {
     type Output = ();
 
-    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.add_port(self.entry.clone())
+    async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
+        state.add_port(self.entry)
     }
 }
 
@@ -59,8 +59,8 @@ pub struct UpdatePort {
 impl RpcMethod for UpdatePort {
     type Output = ();
 
-    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.update_port(self.entry.clone())
+    async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
+        state.update_port(self.entry)
     }
 }
 
@@ -72,7 +72,7 @@ pub struct ResetPort {
 impl RpcMethod for ResetPort {
     type Output = ();
 
-    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
+    async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state.reset_port(&self.id)
     }
 }

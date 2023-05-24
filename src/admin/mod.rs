@@ -1,10 +1,10 @@
 use crate::config::{AppConfig, AppInfo};
-use crate::server::rpc::{RpcCallback, RpcMethod};
+use crate::server::rpc::ErasedRpcMethod;
+use crate::server::rpc::{RpcCallback, RpcMethod, RpcWrapper};
 use crate::{command::ServerCommand, error::Error, event::ServerEvent};
 use hyper::StatusCode;
 use serde_derive::{Deserialize, Serialize};
 use std::any::Any;
-use crate::server::rpc::ErasedRpcMethod;
 use std::collections::HashMap;
 use std::{convert::Infallible, net::SocketAddr, sync::Arc};
 use tokio::sync::broadcast::error::RecvError;
@@ -380,13 +380,10 @@ impl AppState {
         data.rpc_callbacks.insert(id, tx);
         std::mem::drop(data);
 
-        let arg = Box::new(method) as Box<dyn ErasedRpcMethod>;
+        let arg = Box::new(RpcWrapper::new(method)) as Box<dyn ErasedRpcMethod>;
         let _ = self
             .sender
-            .send(ServerCommand::CallMethod {
-                id,
-                arg,
-            })
+            .send(ServerCommand::CallMethod { id, arg })
             .await;
 
         match rx.await {
