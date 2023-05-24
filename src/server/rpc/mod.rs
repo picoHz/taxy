@@ -8,13 +8,22 @@ pub mod ports;
 pub mod server_certs;
 pub mod sites;
 
-pub type RpcCallbackFunc =
-    Box<dyn Fn(&mut ServerState, Box<dyn Any>) -> Result<Box<dyn Any + Send + Sync>, Error> + Send>;
-
+#[async_trait::async_trait]
 pub trait RpcMethod: Any + Send + Sync {
-    const NAME: &'static str;
     type Output: Any + Send + Sync;
-    fn call(self, state: &mut ServerState) -> Result<Self::Output, Error>;
+    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error>;
+}
+
+#[async_trait::async_trait]
+pub trait ErasedRpcMethod: Any + Send + Sync {
+    async fn call(&self, state: &mut ServerState) -> Result<Box<dyn Any + Send + Sync>, Error>;
+}
+
+#[async_trait::async_trait]
+impl<T> ErasedRpcMethod for T where T: RpcMethod  {
+    async fn call(&self, state: &mut ServerState) -> Result<Box<dyn Any + Send + Sync>, Error> {
+        <Self as RpcMethod>::call(self, state).await.map(|r| Box::new(r) as Box<dyn Any + Send + Sync>)
+    }
 }
 
 pub struct RpcCallback {

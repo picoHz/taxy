@@ -4,6 +4,7 @@ use crate::{command::ServerCommand, error::Error, event::ServerEvent};
 use hyper::StatusCode;
 use serde_derive::{Deserialize, Serialize};
 use std::any::Any;
+use crate::server::rpc::ErasedRpcMethod;
 use std::collections::HashMap;
 use std::{convert::Infallible, net::SocketAddr, sync::Arc};
 use tokio::sync::broadcast::error::RecvError;
@@ -379,12 +380,11 @@ impl AppState {
         data.rpc_callbacks.insert(id, tx);
         std::mem::drop(data);
 
-        let arg = Box::new(method) as Box<dyn Any + Send + Sync>;
+        let arg = Box::new(method) as Box<dyn ErasedRpcMethod>;
         let _ = self
             .sender
             .send(ServerCommand::CallMethod {
                 id,
-                method: T::NAME.to_string(),
                 arg,
             })
             .await;

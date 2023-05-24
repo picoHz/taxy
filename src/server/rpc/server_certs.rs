@@ -7,11 +7,11 @@ use crate::{
 
 pub struct GetServerCertList;
 
+#[async_trait::async_trait]
 impl RpcMethod for GetServerCertList {
-    const NAME: &'static str = "get_server_cert_list";
     type Output = Vec<CertInfo>;
 
-    fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
+    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
         Ok(state.get_server_cert_list())
     }
 }
@@ -20,12 +20,12 @@ pub struct AddServerCert {
     pub cert: Cert,
 }
 
+#[async_trait::async_trait]
 impl RpcMethod for AddServerCert {
-    const NAME: &'static str = "add_server_cert";
     type Output = ();
 
-    fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.add_server_cert(self.cert)
+    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
+        state.add_server_cert(self.cert.clone())
     }
 }
 
@@ -33,11 +33,11 @@ pub struct DeleteServerCert {
     pub id: String,
 }
 
+#[async_trait::async_trait]
 impl RpcMethod for DeleteServerCert {
-    const NAME: &'static str = "delete_server_cert";
     type Output = ();
 
-    fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
+    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state.delete_server_cert(&self.id)
     }
 }

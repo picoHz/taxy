@@ -1,7 +1,6 @@
-use super::rpc;
 use super::{
     listener::TcpListenerPool,
-    rpc::{RpcCallback, RpcCallbackFunc, RpcMethod},
+    rpc::{RpcCallback},
     table::ProxyTable,
 };
 use crate::config::site::SiteEntry;
@@ -21,7 +20,7 @@ use crate::{
 };
 use hyper::server::conn::Http;
 use hyper::{service::service_fn, Body};
-use std::{any::Any, convert::Infallible};
+use std::{convert::Infallible};
 use std::{
     collections::HashMap,
     sync::Arc,
@@ -46,7 +45,6 @@ pub struct ServerState {
     command_sender: mpsc::Sender<ServerCommand>,
     br_sender: broadcast::Sender<ServerEvent>,
     callback_sender: mpsc::Sender<RpcCallback>,
-    callbacks: HashMap<String, RpcCallbackFunc>,
 }
 
 impl ServerState {
@@ -99,27 +97,7 @@ impl ServerState {
             command_sender,
             br_sender,
             callback_sender,
-            callbacks: HashMap::new(),
         };
-
-        this.register_callback::<rpc::ports::GetPortList>();
-        this.register_callback::<rpc::ports::GetPortStatus>();
-        this.register_callback::<rpc::ports::DeletePort>();
-        this.register_callback::<rpc::ports::AddPort>();
-        this.register_callback::<rpc::ports::UpdatePort>();
-        this.register_callback::<rpc::ports::ResetPort>();
-        this.register_callback::<rpc::config::GetConfig>();
-        this.register_callback::<rpc::config::SetConfig>();
-        this.register_callback::<rpc::acme::GetAcmeList>();
-        this.register_callback::<rpc::acme::AddAcme>();
-        this.register_callback::<rpc::acme::DeleteAcme>();
-        this.register_callback::<rpc::sites::GetSiteList>();
-        this.register_callback::<rpc::sites::DeleteSite>();
-        this.register_callback::<rpc::sites::AddSite>();
-        this.register_callback::<rpc::sites::UpdateSite>();
-        this.register_callback::<rpc::server_certs::GetServerCertList>();
-        this.register_callback::<rpc::server_certs::AddServerCert>();
-        this.register_callback::<rpc::server_certs::DeleteServerCert>();
 
         let _ = this.br_sender.send(ServerEvent::AcmeUpdated {
             items: this.get_acme_list(),
@@ -193,12 +171,9 @@ impl ServerState {
                 self.http_challenges.clear();
                 self.pool.update(self.table.contexts_mut()).await;
             }
-            ServerCommand::CallMethod { id, method, arg } => {
-                if let Some(cb) = self.callbacks.remove(&method) {
-                    let result = cb(self, arg);
-                    self.callbacks.insert(method, cb);
-                    let _ = self.callback_sender.send(RpcCallback { id, result }).await;
-                }
+            ServerCommand::CallMethod { id, arg } => {
+                let result = arg.call(self).await;
+                let _ = self.callback_sender.send(RpcCallback { id, result }).await;
             }
             ServerCommand::UpdatePorts => {
                 self.update_port_statuses().await;
@@ -269,23 +244,6 @@ impl ServerState {
                 PortContextKind::Reserved => (),
             }
         }
-    }
-
-    fn register_callback<M>(&mut self)
-    where
-        M: RpcMethod,
-    {
-        let func = move |this: &mut ServerState,
-                         data: Box<dyn Any>|
-              -> Result<Box<dyn Any + Send + Sync>, Error> {
-            let input = data.downcast::<M>().map_err(|_| Error::RpcError)?;
-            match input.call(this) {
-                Ok(output) => Ok(Box::new(output) as Box<dyn Any + Send + Sync>),
-                Err(err) => Err(err),
-            }
-        };
-        let func = Box::new(func) as RpcCallbackFunc;
-        self.callbacks.insert(M::NAME.to_string(), func);
     }
 
     async fn update_port_statuses(&mut self) {

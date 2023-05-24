@@ -1,4 +1,4 @@
-use super::RpcMethod;
+use super::{RpcMethod};
 use crate::{
     error::Error,
     keyring::acme::{AcmeEntry, AcmeInfo},
@@ -7,11 +7,11 @@ use crate::{
 
 pub struct GetAcmeList;
 
+#[async_trait::async_trait]
 impl RpcMethod for GetAcmeList {
-    const NAME: &'static str = "get_acme_list";
     type Output = Vec<AcmeInfo>;
 
-    fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
+    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
         Ok(state.get_acme_list())
     }
 }
@@ -20,12 +20,12 @@ pub struct AddAcme {
     pub item: AcmeEntry,
 }
 
+#[async_trait::async_trait]
 impl RpcMethod for AddAcme {
-    const NAME: &'static str = "add_acme";
     type Output = ();
 
-    fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.add_acme(self.item)
+    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
+        state.add_acme(self.item.clone())
     }
 }
 
@@ -33,11 +33,11 @@ pub struct DeleteAcme {
     pub id: String,
 }
 
+#[async_trait::async_trait]
 impl RpcMethod for DeleteAcme {
-    const NAME: &'static str = "delete_acme";
     type Output = ();
 
-    fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
+    async fn call(&self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state.delete_acme(&self.id)
     }
 }
