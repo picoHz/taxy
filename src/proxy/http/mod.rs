@@ -228,11 +228,14 @@ pub async fn start(
 
     let mut stream: Box<dyn IoStream> = Box::new(stream);
     let mut server_http2 = false;
+    let mut sni = None;
 
     if let Some(acceptor) = tls_acceptor {
         debug!(%remote, "server: tls handshake");
         let accepted = acceptor.accept(stream).await?;
-        server_http2 = accepted.get_ref().1.alpn_protocol() == Some(b"h2");
+        let tls_conn = &accepted.get_ref().1;
+        server_http2 = tls_conn.alpn_protocol() == Some(b"h2");
+        sni = tls_conn.server_name().map(|sni| sni.to_string());
         stream = Box::new(accepted);
     }
 
@@ -242,15 +245,17 @@ pub async fn start(
         let conn = conn.clone();
 
         let upgrade = req.headers().contains_key(UPGRADE);
-        let host = format!(
-            "{}:{}",
-            match &conn.name {
-                ServerName::DnsName(name) => name.as_ref().to_string(),
-                ServerName::IpAddress(addr) => addr.to_string(),
-                _ => unreachable!(),
-            },
-            conn.port
-        );
+        let hostname = match &conn.name {
+            ServerName::DnsName(name) => name.as_ref().to_string(),
+            ServerName::IpAddress(addr) => addr.to_string(),
+            _ => unreachable!(),
+        };
+        let host = format!("{}:{}", hostname, conn.port);
+        let domain_fronting = match (&sni, req.headers().get(HOST).and_then(|h| h.to_str().ok())) {
+            (Some(sni), Some(header)) => sni.eq_ignore_ascii_case(header),
+            _ => false,
+        };
+
         let uri_string = format!(
             "http://{}{}",
             host,
@@ -270,6 +275,13 @@ pub async fn start(
 
         let stop_notifier = stop_notifier_clone.clone();
         async move {
+            if domain_fronting {
+                debug!(%host, "domain fronting detected");
+                let mut res = hyper::Response::new(hyper::Body::empty());
+                *res.status_mut() = hyper::StatusCode::BAD_GATEWAY;
+                return Ok::<_, anyhow::Error>(res);
+            }
+
             let sock = if resolved.is_ipv4() {
                 TcpSocket::new_v4()
             } else {
