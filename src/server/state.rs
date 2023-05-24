@@ -1,8 +1,4 @@
-use super::{
-    listener::TcpListenerPool,
-    rpc::{RpcCallback},
-    table::ProxyTable,
-};
+use super::{listener::TcpListenerPool, rpc::RpcCallback, table::ProxyTable};
 use crate::config::site::SiteEntry;
 use crate::keyring::certs::{Cert, CertInfo};
 use crate::keyring::KeyringInfo;
@@ -20,7 +16,7 @@ use crate::{
 };
 use hyper::server::conn::Http;
 use hyper::{service::service_fn, Body};
-use std::{convert::Infallible};
+use std::convert::Infallible;
 use std::{
     collections::HashMap,
     sync::Arc,
@@ -171,7 +167,7 @@ impl ServerState {
                 self.http_challenges.clear();
                 self.pool.update(self.table.contexts_mut()).await;
             }
-            ServerCommand::CallMethod { id, arg } => {
+            ServerCommand::CallMethod { id, mut arg } => {
                 let result = arg.call(self).await;
                 let _ = self.callback_sender.send(RpcCallback { id, result }).await;
             }
