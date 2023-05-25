@@ -25,7 +25,7 @@ impl RpcMethod for AddAcme {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.add_acme(self.item)
+        state.add_acme(self.item).await
     }
 }
 
@@ -38,6 +38,6 @@ impl RpcMethod for DeleteAcme {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.delete_acme(&self.id)
+        state.delete_keyring_item(&self.id).await
     }
 }

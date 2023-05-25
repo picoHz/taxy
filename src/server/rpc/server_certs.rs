@@ -25,7 +25,7 @@ impl RpcMethod for AddServerCert {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.add_server_cert(self.cert)
+        state.add_server_cert(self.cert).await
     }
 }
 
@@ -38,6 +38,6 @@ impl RpcMethod for DeleteServerCert {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.delete_server_cert(&self.id)
+        state.delete_keyring_item(&self.id).await
     }
 }
