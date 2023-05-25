@@ -112,21 +112,6 @@ impl ServerState {
 
     pub async fn handle_command(&mut self, cmd: ServerCommand) {
         match cmd {
-            ServerCommand::SetPort { mut ctx } => {
-                let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
-                if let Err(err) = ctx.prepare(&self.config).instrument(span.clone()).await {
-                    span.in_scope(|| {
-                        error!(?err, "failed to prepare port");
-                    });
-                }
-                if let Err(err) = ctx.setup(&self.certs).instrument(span.clone()).await {
-                    span.in_scope(|| {
-                        error!(?err, "failed to setup port");
-                    });
-                }
-                self.table.set_port(ctx);
-                self.update_port_statuses().await;
-            }
             ServerCommand::AddKeyringItem { item } => {
                 match &item {
                     KeyringItem::Acme(entry) => {
@@ -145,23 +130,6 @@ impl ServerState {
                 });
                 self.start_http_challenges().await;
             }
-            ServerCommand::DeleteKeyringItem { id } => {
-                match self.certs.delete(&id) {
-                    Some(KeyringItem::Acme(_)) => {
-                        self.storage.delete_acme(&id).await;
-                    }
-                    Some(KeyringItem::ServerCert(_)) => {
-                        self.storage.delete_cert(&id).await;
-                    }
-                    _ => (),
-                }
-                let _ = self.br_sender.send(ServerEvent::AcmeUpdated {
-                    items: self.get_acme_list(),
-                });
-                let _ = self.br_sender.send(ServerEvent::ServerCertsUpdated {
-                    items: self.get_server_cert_list(),
-                });
-            }
             ServerCommand::StopHttpChallenges => {
                 self.pool.set_http_challenges(false);
                 self.http_challenges.clear();
@@ -170,9 +138,6 @@ impl ServerState {
             ServerCommand::CallMethod { id, mut arg } => {
                 let result = arg.call(self).await;
                 let _ = self.callback_sender.send(RpcCallback { id, result }).await;
-            }
-            ServerCommand::UpdatePorts => {
-                self.update_port_statuses().await;
             }
         }
     }
@@ -258,6 +223,22 @@ impl ServerState {
                 status: *ctx.status(),
             });
         }
+    }
+
+    async fn update_port_ctx(&mut self, mut ctx: PortContext) {
+        let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
+        if let Err(err) = ctx.prepare(&self.config).instrument(span.clone()).await {
+            span.in_scope(|| {
+                error!(?err, "failed to prepare port");
+            });
+        }
+        if let Err(err) = ctx.setup(&self.certs).instrument(span.clone()).await {
+            span.in_scope(|| {
+                error!(?err, "failed to setup port");
+            });
+        }
+        self.table.set_port(ctx);
+        self.update_port_statuses().await;
     }
 
     async fn handle_http_challenge(&mut self, stream: &mut BufStream<TcpStream>) -> Option<String> {
@@ -374,12 +355,13 @@ impl ServerState {
         &self.config
     }
 
-    pub fn set_config(&mut self, config: AppConfig) {
+    pub async fn set_config(&mut self, config: AppConfig) -> Result<(), Error> {
         self.config = config.clone();
         let _ = self.br_sender.send(ServerEvent::AppConfigUpdated {
             config,
             source: Source::Api,
         });
+        Ok(())
     }
 
     pub fn get_port_list(&self) -> Vec<PortEntry> {
@@ -395,31 +377,27 @@ impl ServerState {
             .ok_or_else(|| Error::IdNotFound { id: id.to_string() })
     }
 
-    pub fn add_port(&mut self, entry: PortEntry) -> Result<(), Error> {
+    pub async fn add_port(&mut self, entry: PortEntry) -> Result<(), Error> {
         if self.get_port_status(&entry.id).is_ok() {
             Err(Error::IdAlreadyExists { id: entry.id })
         } else {
-            let _ = self.command_sender.try_send(ServerCommand::SetPort {
-                ctx: PortContext::new(entry)?,
-            });
+            self.update_port_ctx(PortContext::new(entry)?).await;
             Ok(())
         }
     }
 
-    pub fn update_port(&mut self, entry: PortEntry) -> Result<(), Error> {
+    pub async fn update_port(&mut self, entry: PortEntry) -> Result<(), Error> {
         if self.get_port_status(&entry.id).is_ok() {
-            let _ = self.command_sender.try_send(ServerCommand::SetPort {
-                ctx: PortContext::new(entry)?,
-            });
+            self.update_port_ctx(PortContext::new(entry)?).await;
             Ok(())
         } else {
             Err(Error::IdNotFound { id: entry.id })
         }
     }
 
-    pub fn delete_port(&mut self, id: &str) -> Result<(), Error> {
+    pub async fn delete_port(&mut self, id: &str) -> Result<(), Error> {
         if self.table.delete_port(id) {
-            let _ = self.command_sender.try_send(ServerCommand::UpdatePorts);
+            self.update_port_statuses().await;
             Ok(())
         } else {
             Err(Error::IdNotFound { id: id.to_string() })
@@ -445,26 +423,42 @@ impl ServerState {
             .collect()
     }
 
-    pub fn add_acme(&mut self, entry: AcmeEntry) -> Result<(), Error> {
+    pub async fn add_acme(&mut self, entry: AcmeEntry) -> Result<(), Error> {
         if self.certs.iter().any(|item| item.id() == entry.id) {
             Err(Error::IdAlreadyExists { id: entry.id })
         } else {
-            let _ = self.command_sender.try_send(ServerCommand::AddKeyringItem {
-                item: KeyringItem::Acme(Arc::new(entry)),
-            });
+            let _ = self
+                .command_sender
+                .send(ServerCommand::AddKeyringItem {
+                    item: KeyringItem::Acme(Arc::new(entry)),
+                })
+                .await;
             Ok(())
         }
     }
 
-    pub fn delete_acme(&mut self, id: &str) -> Result<(), Error> {
-        if self.certs.iter().any(|item| item.id() == id) {
-            let _ = self
-                .command_sender
-                .try_send(ServerCommand::DeleteKeyringItem { id: id.to_string() });
-            Ok(())
-        } else {
-            Err(Error::IdNotFound { id: id.to_string() })
+    pub async fn delete_keyring_item(&mut self, id: &str) -> Result<(), Error> {
+        if !self.certs.iter().any(|item| item.id() == id) {
+            return Err(Error::IdNotFound { id: id.to_string() });
         }
+
+        match self.certs.delete(&id) {
+            Some(KeyringItem::Acme(_)) => {
+                self.storage.delete_acme(id).await;
+            }
+            Some(KeyringItem::ServerCert(_)) => {
+                self.storage.delete_cert(id).await;
+            }
+            _ => (),
+        }
+        let _ = self.br_sender.send(ServerEvent::AcmeUpdated {
+            items: self.get_acme_list(),
+        });
+        let _ = self.br_sender.send(ServerEvent::ServerCertsUpdated {
+            items: self.get_server_cert_list(),
+        });
+
+        Ok(())
     }
 
     pub fn get_server_cert_list(&self) -> Vec<CertInfo> {
@@ -478,27 +472,19 @@ impl ServerState {
             .collect()
     }
 
-    pub fn add_server_cert(&mut self, cert: Cert) -> Result<(), Error> {
+    pub async fn add_server_cert(&mut self, cert: Cert) -> Result<(), Error> {
         if self.certs.iter().any(|item| item.id() == cert.id()) {
             Err(Error::IdAlreadyExists {
                 id: cert.id().into(),
             })
         } else {
-            let _ = self.command_sender.try_send(ServerCommand::AddKeyringItem {
-                item: KeyringItem::ServerCert(Arc::new(cert)),
-            });
-            Ok(())
-        }
-    }
-
-    pub fn delete_server_cert(&mut self, id: &str) -> Result<(), Error> {
-        if self.certs.iter().any(|item| item.id() == id) {
             let _ = self
                 .command_sender
-                .try_send(ServerCommand::DeleteKeyringItem { id: id.into() });
+                .send(ServerCommand::AddKeyringItem {
+                    item: KeyringItem::ServerCert(Arc::new(cert)),
+                })
+                .await;
             Ok(())
-        } else {
-            Err(Error::IdNotFound { id: id.to_string() })
         }
     }
 

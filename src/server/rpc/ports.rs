@@ -34,7 +34,7 @@ impl RpcMethod for DeletePort {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.delete_port(&self.id)
+        state.delete_port(&self.id).await
     }
 }
 
@@ -47,7 +47,7 @@ impl RpcMethod for AddPort {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.add_port(self.entry)
+        state.add_port(self.entry).await
     }
 }
 
@@ -60,7 +60,7 @@ impl RpcMethod for UpdatePort {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.update_port(self.entry)
+        state.update_port(self.entry).await
     }
 }
 

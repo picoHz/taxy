@@ -21,7 +21,6 @@ impl RpcMethod for SetConfig {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.set_config(self.config);
-        Ok(())
+        state.set_config(self.config).await
     }
 }
