@@ -190,6 +190,11 @@ impl ServerState {
             ServerEvent::PortTableUpdated { entries } => {
                 self.storage.save_entries(&entries).await;
             }
+            ServerEvent::ServerCertsUpdated { .. } => {
+                for ctx in self.table.contexts_mut() {
+                    let _ = ctx.refresh(&self.certs).await;
+                }
+            }
             ServerEvent::SitesUpdated { items } => {
                 self.storage.save_sites(&items).await;
             }
