@@ -91,8 +91,19 @@ impl Keyring {
         certs
     }
 
-    pub fn find_server_cert_by_acme(&self, acme: &str) -> Vec<&Arc<Cert>> {
+    pub fn acme_entries(&self) -> Vec<&Arc<AcmeEntry>> {
         self.certs
+            .values()
+            .filter_map(|item| match item {
+                KeyringItem::Acme(acme) => Some(acme),
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+    }
+
+    pub fn find_server_certs_by_acme(&self, acme: &str) -> Vec<&Arc<Cert>> {
+        let mut certs = self
+            .certs
             .values()
             .filter_map(|item| match item {
                 KeyringItem::ServerCert(cert) => Some(cert),
@@ -103,7 +114,9 @@ impl Keyring {
                     .as_ref()
                     .map_or(false, |meta| meta.acme_id == acme)
             })
-            .collect()
+            .collect::<Vec<_>>();
+        certs.sort();
+        certs
     }
 
     pub fn add(&mut self, item: KeyringItem) {

@@ -30,6 +30,7 @@ use tokio::{
 };
 use tracing::{error, info, span, Instrument, Level};
 use warp::http::Response;
+use x509_parser::time::ASN1Time;
 
 pub struct ServerState {
     config: AppConfig,
@@ -267,19 +268,35 @@ impl ServerState {
                 });
             }
         }
+        self.remove_expired_certs();
+    }
+
+    fn remove_expired_certs(&mut self) {
+        let mut removing_items = Vec::new();
+        for acme in self.certs.acme_entries() {
+            let certs = self.certs.find_server_certs_by_acme(&acme.id);
+            let mut expired = certs
+                .iter()
+                .filter(|cert| cert.not_after < ASN1Time::now())
+                .map(|cert| cert.id.clone())
+                .collect::<Vec<_>>();
+            if expired.len() >= certs.len() {
+                expired.pop();
+            }
+            removing_items.append(&mut expired);
+        }
+        for id in &removing_items {
+            self.certs.delete(id);
+        }
     }
 
     async fn start_http_challenges(&mut self) -> JoinHandle<()> {
-        let entries = self
-            .certs
+        let entries = self.certs.acme_entries();
+        let entries = entries
             .iter()
-            .filter_map(|item| match item {
-                KeyringItem::Acme(entry) => Some(entry.clone()),
-                _ => None,
-            })
             .filter(|entry| {
                 self.certs
-                    .find_server_cert_by_acme(&entry.id)
+                    .find_server_certs_by_acme(&entry.id)
                     .iter()
                     .map(|cert| {
                         cert.metadata
