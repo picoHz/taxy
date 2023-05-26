@@ -442,7 +442,7 @@ impl ServerState {
             return Err(Error::IdNotFound { id: id.to_string() });
         }
 
-        match self.certs.delete(&id) {
+        match self.certs.delete(id) {
             Some(KeyringItem::Acme(_)) => {
                 self.storage.delete_acme(id).await;
             }
