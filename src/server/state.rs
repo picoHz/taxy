@@ -288,6 +288,11 @@ impl ServerState {
         for id in &removing_items {
             self.certs.delete(id);
         }
+        if !removing_items.is_empty() {
+            let _ = self.br_sender.send(ServerEvent::ServerCertsUpdated {
+                items: self.get_server_cert_list(),
+            });
+        }
     }
 
     async fn start_http_challenges(&mut self) -> JoinHandle<()> {
