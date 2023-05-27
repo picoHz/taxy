@@ -1,9 +1,33 @@
-use super::AppState;
+use super::{with_state, AppState};
 use crate::{
     keyring::acme::{AcmeEntry, AcmeRequest},
     server::rpc::acme::*,
 };
-use warp::{Rejection, Reply};
+use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
+
+pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
+    let acme_list = warp::get()
+        .and(warp::path::end())
+        .and(with_state(app_state.clone()).and_then(list));
+
+    let acme_add = warp::post().and(
+        with_state(app_state.clone())
+            .and(warp::body::json())
+            .and(warp::path::end())
+            .and_then(add),
+    );
+
+    let acme_delete = warp::delete().and(
+        with_state(app_state)
+            .and(warp::path::param())
+            .and(warp::path::end())
+            .and_then(delete),
+    );
+
+    warp::path("acme")
+        .and(acme_delete.or(acme_add).or(acme_list))
+        .boxed()
+}
 
 /// List ACME configurations.
 #[utoipa::path(

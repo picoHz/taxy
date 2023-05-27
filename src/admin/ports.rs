@@ -1,6 +1,59 @@
-use super::AppState;
+use super::{with_state, AppState};
 use crate::{config::port::Port, server::rpc::ports::*};
-use warp::{Rejection, Reply};
+use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
+
+pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
+    let ports_list = warp::get()
+        .and(warp::path::end())
+        .and(with_state(app_state.clone()).and_then(list));
+
+    let ports_status = warp::get()
+        .and(with_state(app_state.clone()))
+        .and(warp::path::param())
+        .and(warp::path("status"))
+        .and(warp::path::end())
+        .and_then(status);
+
+    let ports_delete = warp::delete().and(
+        with_state(app_state.clone())
+            .and(warp::path::param())
+            .and(warp::path::end())
+            .and_then(delete),
+    );
+
+    let ports_put = warp::put().and(
+        with_state(app_state.clone())
+            .and(warp::body::json())
+            .and(warp::path::param())
+            .and(warp::path::end())
+            .and_then(put),
+    );
+
+    let ports_post = warp::post().and(
+        with_state(app_state.clone())
+            .and(warp::body::json())
+            .and(warp::path::end())
+            .and_then(post),
+    );
+
+    let ports_reset = warp::get()
+        .and(with_state(app_state))
+        .and(warp::path::param())
+        .and(warp::path("reset"))
+        .and(warp::path::end())
+        .and_then(reset);
+
+    warp::path("ports")
+        .and(
+            ports_delete
+                .or(ports_put)
+                .or(ports_status)
+                .or(ports_reset)
+                .or(ports_list)
+                .or(ports_post),
+        )
+        .boxed()
+}
 
 /// Get the list of port configurations.
 #[utoipa::path(
