@@ -70,140 +70,6 @@ pub async fn start_admin(
         }
     });
 
-    let api_config_get = warp::get()
-        .and(warp::path::end())
-        .and(with_state(app_state.clone()).and_then(config::get));
-
-    let api_config_put = warp::put().and(warp::path::end()).and(
-        with_state(app_state.clone())
-            .and(warp::body::json())
-            .and_then(config::put),
-    );
-
-    let api_ports_list = warp::get()
-        .and(warp::path::end())
-        .and(with_state(app_state.clone()).and_then(ports::list));
-
-    let api_ports_status = warp::get()
-        .and(with_state(app_state.clone()))
-        .and(warp::path::param())
-        .and(warp::path("status"))
-        .and(warp::path::end())
-        .and_then(ports::status);
-
-    let api_ports_delete = warp::delete().and(
-        with_state(app_state.clone())
-            .and(warp::path::param())
-            .and(warp::path::end())
-            .and_then(ports::delete),
-    );
-
-    let api_ports_put = warp::put().and(
-        with_state(app_state.clone())
-            .and(warp::body::json())
-            .and(warp::path::param())
-            .and(warp::path::end())
-            .and_then(ports::put),
-    );
-
-    let api_ports_post = warp::post().and(
-        with_state(app_state.clone())
-            .and(warp::body::json())
-            .and(warp::path::end())
-            .and_then(ports::post),
-    );
-
-    let api_ports_reset = warp::get()
-        .and(with_state(app_state.clone()))
-        .and(warp::path::param())
-        .and(warp::path("reset"))
-        .and(warp::path::end())
-        .and_then(ports::reset);
-
-    let api_server_certs_list = warp::get()
-        .and(warp::path::end())
-        .and(with_state(app_state.clone()).and_then(server_certs::list));
-
-    let api_server_certs_self_sign = warp::post().and(warp::path("self_sign")).and(
-        with_state(app_state.clone())
-            .and(warp::body::json())
-            .and(warp::path::end())
-            .and_then(server_certs::self_sign),
-    );
-
-    let api_server_certs_upload = warp::post().and(warp::path("upload")).and(
-        with_state(app_state.clone())
-            .and(warp::multipart::form())
-            .and(warp::path::end())
-            .and_then(server_certs::upload),
-    );
-
-    let api_server_certs_delete = warp::delete().and(
-        with_state(app_state.clone())
-            .and(warp::path::param())
-            .and(warp::path::end())
-            .and_then(server_certs::delete),
-    );
-
-    let api_sites_list = warp::get()
-        .and(warp::path::end())
-        .and(with_state(app_state.clone()).and_then(sites::list));
-
-    let api_sites_delete = warp::delete().and(
-        with_state(app_state.clone())
-            .and(warp::path::param())
-            .and(warp::path::end())
-            .and_then(sites::delete),
-    );
-
-    let api_sites_put = warp::put().and(
-        with_state(app_state.clone())
-            .and(warp::body::json())
-            .and(warp::path::param())
-            .and(warp::path::end())
-            .and_then(sites::put),
-    );
-
-    let api_sites_post = warp::post().and(
-        with_state(app_state.clone())
-            .and(warp::body::json())
-            .and(warp::path::end())
-            .and_then(sites::post),
-    );
-
-    let api_acme_list = warp::get()
-        .and(warp::path::end())
-        .and(with_state(app_state.clone()).and_then(acme::list));
-
-    let api_acme_add = warp::post().and(
-        with_state(app_state.clone())
-            .and(warp::body::json())
-            .and(warp::path::end())
-            .and_then(acme::add),
-    );
-
-    let api_acme_delete = warp::delete().and(
-        with_state(app_state.clone())
-            .and(warp::path::param())
-            .and(warp::path::end())
-            .and_then(acme::delete),
-    );
-
-    let app_state_clone = app_state.clone();
-    let api_auth_login = warp::post()
-        .and(warp::path("login"))
-        .map(move || app_state_clone.clone())
-        .and(warp::body::json())
-        .and(warp::path::end())
-        .and_then(auth::login);
-
-    let api_auth_logout = warp::get().and(warp::path("logout")).and(
-        with_state(app_state.clone())
-            .and(warp::header::optional("authorization"))
-            .and(warp::path::end())
-            .and_then(auth::logout),
-    );
-
     let static_file = warp::get()
         .and(warp::path::full())
         .and_then(static_file::get);
@@ -234,49 +100,6 @@ pub async fn start_admin(
             )
         });
 
-    let app_info = warp::path("app_info").and(warp::get()).and(
-        with_state(app_state.clone())
-            .and(warp::path::end())
-            .and_then(app_info::get),
-    );
-
-    let config = warp::path("config").and(api_config_get.or(api_config_put));
-
-    let port = warp::path("ports").and(
-        api_ports_delete
-            .or(api_ports_put)
-            .or(api_ports_status)
-            .or(api_ports_reset)
-            .or(api_ports_list)
-            .or(api_ports_post),
-    );
-
-    let sites = warp::path("sites").and(
-        api_sites_delete
-            .or(api_sites_put)
-            .or(api_sites_list)
-            .or(api_sites_post),
-    );
-
-    let server_certs = warp::path("server_certs").and(
-        api_server_certs_delete
-            .or(api_server_certs_self_sign)
-            .or(api_server_certs_upload)
-            .or(api_server_certs_list),
-    );
-
-    let acme = warp::path("acme").and(api_acme_delete.or(api_acme_add).or(api_acme_list));
-
-    let log = warp::get().and(warp::path("log")).and(
-        with_state(app_state.clone())
-            .and(warp::path::param())
-            .and(warp::query())
-            .and(warp::path::end())
-            .and_then(log::get),
-    );
-
-    let auth = api_auth_login.or(api_auth_logout);
-
     let options = warp::options().map(warp::reply);
     let not_found = warp::get().and_then(handle_not_found);
 
@@ -295,15 +118,15 @@ pub async fn start_admin(
 
     let api = warp::path("api").and(
         options
-            .or(app_info)
-            .or(config)
-            .or(port)
-            .or(sites)
-            .or(server_certs)
-            .or(acme)
-            .or(log)
+            .or(app_info::api(app_state.clone()))
+            .or(config::api(app_state.clone()))
+            .or(ports::api(app_state.clone()))
+            .or(sites::api(app_state.clone()))
+            .or(server_certs::api(app_state.clone()))
+            .or(acme::api(app_state.clone()))
+            .or(auth::api(app_state.clone()))
+            .or(log::api(app_state))
             .or(api_events)
-            .or(auth)
             .or(api_doc)
             .or(not_found),
     );

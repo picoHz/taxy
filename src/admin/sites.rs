@@ -1,6 +1,38 @@
-use super::AppState;
+use super::{with_state, AppState};
 use crate::{config::site::Site, server::rpc::sites::*};
-use warp::{Rejection, Reply};
+use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
+
+pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
+    let api_list = warp::get()
+        .and(warp::path::end())
+        .and(with_state(app_state.clone()).and_then(list));
+
+    let api_delete = warp::delete().and(
+        with_state(app_state.clone())
+            .and(warp::path::param())
+            .and(warp::path::end())
+            .and_then(delete),
+    );
+
+    let api_put = warp::put().and(
+        with_state(app_state.clone())
+            .and(warp::body::json())
+            .and(warp::path::param())
+            .and(warp::path::end())
+            .and_then(put),
+    );
+
+    let api_post = warp::post().and(
+        with_state(app_state)
+            .and(warp::body::json())
+            .and(warp::path::end())
+            .and_then(post),
+    );
+
+    warp::path("sites")
+        .and(api_delete.or(api_put).or(api_list).or(api_post))
+        .boxed()
+}
 
 /// Get the list of port configurations.
 #[utoipa::path(

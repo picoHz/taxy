@@ -1,5 +1,12 @@
-use super::AppState;
-use warp::{Rejection, Reply};
+use super::{with_state, AppState};
+use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
+
+pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
+    warp::path("app_info")
+        .and(warp::get())
+        .and(with_state(app_state).and(warp::path::end()).and_then(get))
+        .boxed()
+}
 
 /// Get app info.
 #[utoipa::path(

@@ -1,4 +1,4 @@
-use super::AppState;
+use super::{with_state, AppState};
 use crate::error::Error;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -6,9 +6,28 @@ use std::{
     time::{Duration, Instant},
 };
 use utoipa::ToSchema;
-use warp::{Rejection, Reply};
+use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 const MINIMUM_SESSION_EXPIRY: Duration = Duration::from_secs(60 * 5); // 5 minutes
+
+pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
+    let app_state_clone = app_state.clone();
+    let api_login = warp::post()
+        .and(warp::path("login"))
+        .map(move || app_state_clone.clone())
+        .and(warp::body::json())
+        .and(warp::path::end())
+        .and_then(login);
+
+    let api_logout = warp::get().and(warp::path("logout")).and(
+        with_state(app_state)
+            .and(warp::header::optional("authorization"))
+            .and(warp::path::end())
+            .and_then(logout),
+    );
+
+    api_login.or(api_logout).boxed()
+}
 
 /// Login.
 #[utoipa::path(

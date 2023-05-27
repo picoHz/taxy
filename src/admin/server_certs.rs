@@ -1,4 +1,4 @@
-use super::AppState;
+use super::{with_state, AppState};
 use crate::{
     error::Error,
     keyring::certs::{Cert, SelfSignedCertRequest},
@@ -7,7 +7,38 @@ use crate::{
 use std::io::Read;
 use tokio_stream::StreamExt;
 use utoipa::ToSchema;
-use warp::{multipart::FormData, Buf, Rejection, Reply};
+use warp::{filters::BoxedFilter, multipart::FormData, Buf, Filter, Rejection, Reply};
+
+pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
+    let api_list = warp::get()
+        .and(warp::path::end())
+        .and(with_state(app_state.clone()).and_then(list));
+
+    let api_self_sign = warp::post().and(warp::path("self_sign")).and(
+        with_state(app_state.clone())
+            .and(warp::body::json())
+            .and(warp::path::end())
+            .and_then(self_sign),
+    );
+
+    let api_upload = warp::post().and(warp::path("upload")).and(
+        with_state(app_state.clone())
+            .and(warp::multipart::form())
+            .and(warp::path::end())
+            .and_then(upload),
+    );
+
+    let api_delete = warp::delete().and(
+        with_state(app_state)
+            .and(warp::path::param())
+            .and(warp::path::end())
+            .and_then(delete),
+    );
+
+    warp::path("server_certs")
+        .and(api_delete.or(api_self_sign).or(api_upload).or(api_list))
+        .boxed()
+}
 
 /// List server certificates.
 #[utoipa::path(

@@ -1,4 +1,4 @@
-use super::AppState;
+use super::{with_state, AppState};
 use crate::error::Error;
 use serde::{Deserialize, Serialize};
 use sqlx::ConnectOptions;
@@ -7,11 +7,24 @@ use std::time::Duration;
 use std::{collections::HashMap, path::Path};
 use time::OffsetDateTime;
 use utoipa::{IntoParams, ToSchema};
-use warp::{Rejection, Reply};
+use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 const REQUEST_INTERVAL: Duration = Duration::from_secs(1);
 const REQUEST_DEFAULT_LIMIT: u32 = 100;
+
+pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
+    warp::get()
+        .and(warp::path("log"))
+        .and(
+            with_state(app_state.clone())
+                .and(warp::path::param())
+                .and(warp::query())
+                .and(warp::path::end())
+                .and_then(get),
+        )
+        .boxed()
+}
 
 /// Get log.
 #[utoipa::path(
