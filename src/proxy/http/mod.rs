@@ -16,7 +16,10 @@ use std::{
     sync::Arc,
     time::SystemTime,
 };
-use tokio::net::{self, TcpSocket, TcpStream};
+use tokio::{
+    io::AsyncWriteExt,
+    net::{self, TcpSocket, TcpStream},
+};
 use tokio::{
     io::{AsyncRead, AsyncWrite, BufStream},
     sync::Notify,
@@ -53,10 +56,6 @@ impl HttpPortContext {
         info!("initializing http proxy");
 
         let listen = multiaddr_to_tcp(&entry.port.listen)?;
-
-        if entry.port.servers.is_empty() {
-            return Err(Error::EmptyBackendServers);
-        }
 
         let mut servers = Vec::new();
         for server in &entry.port.servers {
@@ -161,7 +160,12 @@ impl HttpPortContext {
         self.stop_notifier.notify_waiters();
     }
 
-    pub fn start_proxy(&mut self, stream: BufStream<TcpStream>) {
+    pub fn start_proxy(&mut self, mut stream: BufStream<TcpStream>) {
+        if self.servers.is_empty() {
+            tokio::spawn(async move { stream.get_mut().shutdown().await });
+            return;
+        }
+
         let span = self.span.clone();
         let conn = self.servers[self.round_robin_counter % self.servers.len()].clone();
 
