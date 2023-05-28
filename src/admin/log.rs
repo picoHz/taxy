@@ -17,7 +17,7 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
     warp::get()
         .and(warp::path("log"))
         .and(
-            with_state(app_state.clone())
+            with_state(app_state)
                 .and(warp::path::param())
                 .and(warp::query())
                 .and(warp::path::end())
