@@ -41,9 +41,6 @@ pub enum Error {
     #[error("certificate not found: {id}")]
     KeyringItemNotFound { id: String },
 
-    #[error("no backend servers")]
-    EmptyBackendServers,
-
     #[error("port id not found: {id}")]
     IdNotFound { id: String },
 
