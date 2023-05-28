@@ -47,7 +47,7 @@ impl TcpPortContext {
         let listen = multiaddr_to_tcp(&entry.port.listen)?;
 
         let mut servers = Vec::new();
-        for server in &entry.port.servers {
+        for server in &entry.port.opts.upstream_servers {
             let server = multiaddr_to_host(&server.addr)?;
             servers.push(server);
         }
