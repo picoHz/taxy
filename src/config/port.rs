@@ -4,7 +4,7 @@ use serde_derive::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
-pub struct BackendServer {
+pub struct UpstreamServer {
     #[schema(value_type = String, example = "/dns/example.com/tcp/8080")]
     pub addr: Multiaddr,
 }
@@ -27,7 +27,6 @@ impl From<(String, Port)> for PortEntry {
 pub struct Port {
     #[schema(value_type = String, example = "/ip4/127.0.0.1/tcp/8080")]
     pub listen: Multiaddr,
-    pub servers: Vec<BackendServer>,
     #[serde(flatten, default)]
     pub opts: PortOptions,
 }
@@ -40,6 +39,8 @@ impl From<PortEntry> for (String, Port) {
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct PortOptions {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub upstream_servers: Vec<UpstreamServer>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tls_termination: Option<TlsTermination>,
 }

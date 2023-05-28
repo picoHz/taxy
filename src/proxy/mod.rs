@@ -89,7 +89,6 @@ impl PortContext {
                 id: String::new(),
                 port: Port {
                     listen: Multiaddr::empty(),
-                    servers: vec![],
                     opts: Default::default(),
                 },
             },

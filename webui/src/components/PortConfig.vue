@@ -149,7 +149,7 @@ onMounted(() => {
         formData.ifs = host
         formData.port = port
         formData.protocol = protocol
-        formData.servers = props.entry.servers.map(s => multiaddrToServer(s.addr))
+        formData.servers = props.entry.upstream_servers.map(s => multiaddrToServer(s.addr))
         const { tls_termination } = props.entry
         if (tls_termination) {
             formData.tls_term.server_names = tls_termination.server_names.join(', ')
@@ -163,12 +163,12 @@ async function submitForm(event) {
         const entry = {};
         if (formData.protocol === 'tcp' || formData.protocol === 'tls') {
             entry.listen = serverToMultiaddrWithProtocol(formData.protocol, formData.ifs, formData.port);
-            entry.servers = formData.servers.map(s => ({
+            entry.upstream_servers = formData.servers.map(s => ({
                 addr: serverToMultiaddrWithProtocol(s.protocol, s.host, s.port),
             }));
         } else {
             entry.listen = serverUrlToMultiaddr(`${formData.protocol}://${formData.ifs}:${formData.port}`);
-            entry.servers = formData.servers.map(s => ({
+            entry.upstream_servers = formData.servers.map(s => ({
                 addr: serverUrlToMultiaddr(s.url),
             }));
         }
