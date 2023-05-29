@@ -1,4 +1,5 @@
 import portsRoutes from "./portsRoutes";
+import sitesRoutes from "./sitesRoutes";
 import certsRoutes from "./certsRoutes";
 import acmeRoutes from "./acmeRoutes";
 
@@ -9,6 +10,12 @@ const defaultLayoutRoutes = [
         alias: "/",
         component: () => import(/* webpackChunkName: "ports" */ "@/layouts/default/View.vue"),
         children: portsRoutes,
+    },
+    {
+        path: "sites",
+        name: "Sites",
+        component: () => import(/* webpackChunkName: "sites" */ "@/layouts/default/View.vue"),
+        children: sitesRoutes,
     },
     {
         path: "certs",
