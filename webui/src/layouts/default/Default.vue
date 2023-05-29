@@ -46,6 +46,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { usePortsStore } from '@/stores/ports';
+import { useSitesStore } from '@/stores/sites';
 import { useConfigStore } from '@/stores/config';
 import { useCertsStore } from '@/stores/certs';
 import { useAcmeStore } from '@/stores/acme';
@@ -73,6 +74,7 @@ const drawer = ref(undefined);
 
 onMounted(async () => {
   const portsStore = usePortsStore();
+  const sitesStore = useSitesStore();
   const configStore = useConfigStore();
   const certsStore = useCertsStore();
   const acmeStore = useAcmeStore();
@@ -111,6 +113,9 @@ onMounted(async () => {
         break;
       case 'server_certs_updated':
         certsStore.update(json.items);
+        break;
+      case 'sites_updated':
+        sitesStore.update(json.items);
         break;
       case 'acme_updated':
         acmeStore.update(json.items);

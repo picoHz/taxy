@@ -40,14 +40,14 @@
 import LogViewer from '@/components/LogViewer.vue';
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useAcmeStore } from '@/stores/acme';
+import { useSitesStore } from '@/stores/sites';
 import axios from 'axios';
 
-const acmeStore = useAcmeStore();
+const sitesStore = useSitesStore();
 const route = useRoute();
 const router = useRouter();
 
-const info = computed(() => acmeStore.getStatusbyId(route.params.id));
+const info = computed(() => sitesStore.getStatusbyId(route.params.id));
 const deleteDialog = ref(false);
 const logs = ref([]);
 

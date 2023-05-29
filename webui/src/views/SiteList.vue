@@ -9,10 +9,10 @@
     </v-toolbar>
     <v-divider></v-divider>
     <v-list>
-      <v-list-item v-if="acmeStore.list.length === 0" disabled>
+      <v-list-item v-if="sitesStore.list.length === 0" disabled>
         <v-list-item-title class="text-center">{{ $t('acme.no_items') }}</v-list-item-title>
       </v-list-item>
-      <v-list-item prepend-icon="mdi-cloud-lock" v-for="item in acmeStore.list" :key="item.id" :title="item.provider"
+      <v-list-item prepend-icon="mdi-cloud-lock" v-for="item in sitesStore.list" :key="item.id" :title="item.provider"
         :subtitle="item.identifiers.join(', ')" :to="{ path: `/sites/${item.id}` }">
       </v-list-item>
     </v-list>
@@ -71,10 +71,10 @@
 <script setup>
 import axios from 'axios';
 import { ref } from 'vue'
-import { useAcmeStore } from '@/stores/acme';
+import { useSitesStore } from '@/stores/sites';
 import LetsEncrypt from '@/acme/LetsEncrypt.vue';
 
-const acmeStore = useAcmeStore();
+const sitesStore = useSitesStore();
 const acmeDialog = ref(false);
 const loading = ref(false);
 const snackbar = ref(false);
