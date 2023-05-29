@@ -131,6 +131,9 @@ onMounted(async () => {
   const { data: config } = await axios.get(`${endpoint}/config`);
   configStore.update(config);
 
+  const { data: sites } = await axios.get(`${endpoint}/sites`);
+  sitesStore.update(sites);
+
   const { data: certs } = await axios.get(`${endpoint}/server_certs`);
   certsStore.update(certs);
 
