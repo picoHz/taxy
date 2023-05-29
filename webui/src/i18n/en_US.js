@@ -69,8 +69,8 @@ export default {
             }
         }
     },
-    server_certs: {
-        server_certs: 'Server Certificates',
+    certs: {
+        certs: 'Certificates',
         no_certs: 'No certificates found.',
         info: {
             san: 'SAN',

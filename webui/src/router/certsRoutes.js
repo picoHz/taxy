@@ -1,15 +1,15 @@
 const certsRoutes = [
     {
         path: "",
-        name: "Server Certificate List",
+        name: "Certificate List",
         component: () => import(/* webpackChunkName: "certs" */ "@/views/Certificates.vue"),
         meta: {
             breadcrumb() {
                 return [
                     {
-                        trName: "server_certs.server_certs",
+                        trName: "certs.certs",
                         disabled: false,
-                        to: { path: "/server_certs" },
+                        to: { path: "/certs" },
                     },
                 ];
             },
@@ -17,15 +17,15 @@ const certsRoutes = [
     },
     {
         path: ":id",
-        name: "Server Certificate Info",
+        name: "Certificate Info",
         component: () => import(/* webpackChunkName: "cert_info" */ "@/views/CertInfo.vue"),
         meta: {
             breadcrumb(route) {
                 return [
                     {
-                        trName: 'server_certs.server_certs',
+                        trName: 'certs.certs',
                         disabled: false,
-                        to: { path: '/server_certs' },
+                        to: { path: '/certs' },
                     },
                     {
                         title: route.params.id,
@@ -43,9 +43,9 @@ const certsRoutes = [
             breadcrumb(route) {
                 return [
                     {
-                        trName: 'server_certs.server_certs',
+                        trName: 'certs.certs',
                         disabled: false,
-                        to: { path: '/server_certs' },
+                        to: { path: '/certs' },
                     },
                     {
                         title: route.params.id,

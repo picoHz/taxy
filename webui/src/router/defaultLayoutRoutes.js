@@ -11,9 +11,9 @@ const defaultLayoutRoutes = [
         children: portsRoutes,
     },
     {
-        path: "server_certs",
-        name: "Server Certificates",
-        component: () => import(/* webpackChunkName: "server_certs" */ "@/layouts/default/View.vue"),
+        path: "certs",
+        name: "Certificates",
+        component: () => import(/* webpackChunkName: "certs" */ "@/layouts/default/View.vue"),
         children: certsRoutes,
     },
     {
