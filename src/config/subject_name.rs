@@ -10,6 +10,23 @@ pub enum SubjectName {
     IPAddress(IpAddr),
 }
 
+impl SubjectName {
+    pub fn test(&self, name: &str) -> bool {
+        match self {
+            Self::DnsName(n) => n == name,
+            Self::WildcardDnsName(n) => {
+                n == name
+                    .trim_start_matches(|c| c != '.')
+                    .trim_start_matches('.')
+            }
+            Self::IPAddress(addr) => match addr {
+                IpAddr::V4(addr) => name == addr.to_string(),
+                IpAddr::V6(addr) => name == addr.to_string(),
+            },
+        }
+    }
+}
+
 impl Serialize for SubjectName {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -78,5 +95,18 @@ mod test {
             SubjectName::from_str("127.0.0.1").unwrap(),
             SubjectName::IPAddress(IpAddr::V4([127, 0, 0, 1].into()))
         )
+    }
+
+    #[test]
+    fn test_subject_name_test() {
+        assert!(SubjectName::from_str("*.example.com")
+            .unwrap()
+            .test("example.com"));
+        assert!(SubjectName::from_str("example.com")
+            .unwrap()
+            .test("example.com"));
+        assert!(SubjectName::from_str("127.0.0.1")
+            .unwrap()
+            .test("127.0.0.1"));
     }
 }
