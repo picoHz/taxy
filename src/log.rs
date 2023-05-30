@@ -112,7 +112,7 @@ impl DatabaseLayer {
         .execute(&pool)
         .await?;
 
-        Ok(DatabaseLayer {
+        Ok(Self {
             pool,
             handle: Handle::current(),
             span_map: DashMap::new(),

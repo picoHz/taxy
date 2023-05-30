@@ -178,7 +178,7 @@ impl Cert {
             .filter(|_| chain.len() > 1)
             .map(|cert| cert.subject().to_string());
 
-        Ok(Cert {
+        Ok(Self {
             id: fingerprint[..CERT_ID_LENGTH].to_string(),
             fingerprint,
             key,
