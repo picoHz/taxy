@@ -101,7 +101,7 @@ mod test {
     fn test_subject_name_test() {
         assert!(SubjectName::from_str("*.example.com")
             .unwrap()
-            .test("example.com"));
+            .test("app.example.com"));
         assert!(SubjectName::from_str("example.com")
             .unwrap()
             .test("example.com"));
