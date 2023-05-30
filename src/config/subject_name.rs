@@ -13,15 +13,14 @@ pub enum SubjectName {
 impl SubjectName {
     pub fn test(&self, name: &str) -> bool {
         match self {
-            Self::DnsName(n) => n == name,
-            Self::WildcardDnsName(n) => {
-                n == name
-                    .trim_start_matches(|c| c != '.')
-                    .trim_start_matches('.')
-            }
+            Self::DnsName(n) => n.eq_ignore_ascii_case(&name),
+            Self::WildcardDnsName(n) => n.eq_ignore_ascii_case(
+                name.trim_start_matches(|c| c != '.')
+                    .trim_start_matches('.'),
+            ),
             Self::IPAddress(addr) => match addr {
-                IpAddr::V4(addr) => name == addr.to_string(),
-                IpAddr::V6(addr) => name == addr.to_string(),
+                IpAddr::V4(addr) => name.eq_ignore_ascii_case(&addr.to_string()),
+                IpAddr::V6(addr) => name.eq_ignore_ascii_case(&addr.to_string()),
             },
         }
     }
