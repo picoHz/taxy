@@ -34,7 +34,7 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
         .boxed()
 }
 
-/// Get the list of port configurations.
+/// Get the list of site configurations.
 #[utoipa::path(
     get,
     path = "/api/sites",
@@ -52,7 +52,7 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(&state.call(GetSiteList).await?))
 }
 
-/// Delete a port configuration.
+/// Delete a site configuration.
 #[utoipa::path(
     delete,
     path = "/api/sites/{id}",
@@ -72,7 +72,7 @@ pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection
     Ok(warp::reply::json(&state.call(DeleteSite { id }).await?))
 }
 
-/// Create a new port configuration.
+/// Create a new site configuration.
 #[utoipa::path(
     post,
     path = "/api/sites",
@@ -96,7 +96,7 @@ pub async fn post(state: AppState, entry: Site) -> Result<impl Reply, Rejection>
     ))
 }
 
-/// Update or rename a port configuration.
+/// Update a site configuration.
 #[utoipa::path(
     put,
     path = "/api/sites/{id}",
