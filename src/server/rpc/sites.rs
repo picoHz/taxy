@@ -20,7 +20,7 @@ impl RpcMethod for DeleteSite {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.delete_site(&self.id)
+        state.delete_site(&self.id).await
     }
 }
 
@@ -33,7 +33,7 @@ impl RpcMethod for AddSite {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.add_site(self.entry)
+        state.add_site(self.entry).await
     }
 }
 
@@ -46,6 +46,6 @@ impl RpcMethod for UpdateSite {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.update_site(self.entry)
+        state.update_site(self.entry).await
     }
 }

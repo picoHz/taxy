@@ -131,6 +131,8 @@ onMounted(async () => {
   const { data: acme } = await axios.get(`${endpoint}/acme`);
   acmeStore.update(acme);
 
+  await axios.get(`${endpoint}/sites`);
+
   const { data } = await axios.get(`${endpoint}/ports`);
   portsStore.updateTable(data);
 

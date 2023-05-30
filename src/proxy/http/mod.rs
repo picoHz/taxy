@@ -149,6 +149,9 @@ impl HttpPortContext {
                 }
                 self.status.state.socket = state;
             }
+            PortContextEvent::SiteTableUpdated(sites) => {
+                println!("sites: {:?}", sites);
+            }
         }
     }
 

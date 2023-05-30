@@ -136,6 +136,7 @@ impl TcpPortContext {
                 }
                 self.status.state.socket = state;
             }
+            _ => (),
         }
     }
 
