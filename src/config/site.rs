@@ -7,6 +7,7 @@ use utoipa::ToSchema;
 pub struct Site {
     #[schema(example = json!(["c56yqmqcvpmp49n14s2lexxl"]))]
     pub ports: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     #[schema(value_type = [String], example = json!(["example.com"]))]
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub vhosts: Vec<SubjectName>,
