@@ -1,3 +1,5 @@
+use self::filter::{FilteredRoute, RequestFilter};
+
 use super::{tls::TlsTermination, PortContextEvent, PortStatus, SocketState};
 use crate::{
     config::{port::PortEntry, AppConfig},
@@ -30,6 +32,7 @@ use tokio_rustls::{
 };
 use tracing::{debug, error, info, span, warn, Instrument, Level, Span};
 
+mod filter;
 mod header;
 mod upgrade;
 
@@ -43,6 +46,7 @@ pub struct HttpPortContext {
     span: Span,
     tls_termination: Option<TlsTermination>,
     tls_client_config: Option<Arc<ClientConfig>>,
+    routes: Arc<Vec<FilteredRoute>>,
     round_robin_counter: usize,
     stop_notifier: Arc<Notify>,
 }
@@ -79,6 +83,7 @@ impl HttpPortContext {
             span,
             tls_termination,
             tls_client_config: None,
+            routes: Arc::new(Vec::new()),
             round_robin_counter: 0,
             stop_notifier: Arc::new(Notify::new()),
         })
@@ -150,7 +155,18 @@ impl HttpPortContext {
                 self.status.state.socket = state;
             }
             PortContextEvent::SiteTableUpdated(sites) => {
-                println!("sites: {:?}", sites);
+                let routes = sites
+                    .into_iter()
+                    .map(|entry| {
+                        let vhosts = entry.site.vhosts;
+                        entry.site.routes.into_iter().map(move |route| {
+                            let filter = RequestFilter::new(&vhosts, &route);
+                            FilteredRoute { filter, route }
+                        })
+                    })
+                    .flatten()
+                    .collect::<Vec<_>>();
+                self.routes = Arc::new(routes);
             }
         }
     }
