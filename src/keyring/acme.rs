@@ -22,7 +22,7 @@ use utoipa::ToSchema;
 pub struct Acme {
     #[schema(example = "Let's Encrypt")]
     pub provider: String,
-    #[schema(example = "https://acme-staging-v02.api.letsencrypt.org/directory")]
+    #[schema(value_type = [String], example = json!(["example.com"]))]
     pub identifiers: Vec<SubjectName>,
     #[schema(value_type = String, example = "http-01")]
     #[serde(serialize_with = "serialize_challenge_type")]
