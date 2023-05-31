@@ -1,8 +1,9 @@
+use super::sites::SiteTable;
 use super::{listener::TcpListenerPool, rpc::RpcCallback, table::ProxyTable};
 use crate::config::site::SiteEntry;
 use crate::keyring::certs::{Cert, CertInfo};
 use crate::keyring::KeyringInfo;
-use crate::proxy::PortStatus;
+use crate::proxy::{PortContextEvent, PortStatus};
 use crate::{
     command::ServerCommand,
     config::{port::PortEntry, storage::ConfigStorage, AppConfig, Source},
@@ -36,6 +37,7 @@ pub struct ServerState {
     config: AppConfig,
     storage: ConfigStorage,
     table: ProxyTable,
+    sites: SiteTable,
     pool: TcpListenerPool,
     certs: Keyring,
     http_challenges: HashMap<String, String>,
@@ -60,12 +62,13 @@ impl ServerState {
         let certs = storage.load_keychain().await;
         let table = ProxyTable::new();
         let ports = storage.load_entries().await;
-        let _sites = storage.load_sites().await;
+        let sites = storage.load_sites().await;
 
         let mut this = Self {
             config,
             storage,
             table,
+            sites: SiteTable::new(sites),
             pool: TcpListenerPool::new(),
             certs,
             http_challenges: HashMap::new(),
@@ -152,6 +155,14 @@ impl ServerState {
             }
             ServerEvent::SitesUpdated { items } => {
                 self.storage.save_sites(&items).await;
+                for ctx in self.table.contexts_mut() {
+                    let sites = items
+                        .iter()
+                        .filter(|entry: &&SiteEntry| entry.site.ports.contains(&ctx.entry.id))
+                        .cloned()
+                        .collect();
+                    ctx.event(PortContextEvent::SiteTableUpdated(sites));
+                }
             }
             _ => (),
         }
@@ -215,6 +226,12 @@ impl ServerState {
         }
     }
 
+    async fn update_sites(&mut self) {
+        let _ = self
+            .br_sender
+            .send(ServerEvent::SitesUpdated { items: vec![] });
+    }
+
     async fn update_port_ctx(&mut self, mut ctx: PortContext) {
         let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
         if let Err(err) = ctx.prepare(&self.config).instrument(span.clone()).await {
@@ -227,6 +244,13 @@ impl ServerState {
                 error!(?err, "failed to setup port");
             });
         }
+        let sites = self
+            .sites
+            .entries()
+            .into_iter()
+            .filter(|entry: &SiteEntry| entry.site.ports.contains(&ctx.entry.id))
+            .collect();
+        ctx.event(PortContextEvent::SiteTableUpdated(sites));
         self.table.set_port(ctx);
     }
 
@@ -501,18 +525,24 @@ impl ServerState {
     }
 
     pub fn get_site_list(&self) -> Vec<SiteEntry> {
-        vec![]
+        self.sites.entries()
     }
 
-    pub fn add_site(&mut self, _entry: SiteEntry) -> Result<(), Error> {
+    pub async fn add_site(&mut self, entry: SiteEntry) -> Result<(), Error> {
+        self.sites.add(entry)?;
+        self.update_sites().await;
         Ok(())
     }
 
-    pub fn update_site(&mut self, _entry: SiteEntry) -> Result<(), Error> {
+    pub async fn update_site(&mut self, entry: SiteEntry) -> Result<(), Error> {
+        self.sites.update(entry)?;
+        self.update_sites().await;
         Ok(())
     }
 
-    pub fn delete_site(&mut self, _id: &str) -> Result<(), Error> {
+    pub async fn delete_site(&mut self, id: &str) -> Result<(), Error> {
+        self.sites.delete(id)?;
+        self.update_sites().await;
         Ok(())
     }
 }

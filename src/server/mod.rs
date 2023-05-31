@@ -8,6 +8,7 @@ use tracing::{info, warn};
 
 mod listener;
 pub mod rpc;
+mod sites;
 mod state;
 mod table;
 
