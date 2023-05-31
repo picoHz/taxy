@@ -58,31 +58,9 @@ impl ServerState {
         });
 
         let certs = storage.load_keychain().await;
-        let mut table = ProxyTable::new();
+        let table = ProxyTable::new();
         let ports = storage.load_entries().await;
         let _sites = storage.load_sites().await;
-
-        for entry in ports {
-            let span = span!(Level::INFO, "port", resource_id = entry.id);
-            match PortContext::new(entry) {
-                Ok(mut ctx) => {
-                    if let Err(err) = ctx.prepare(&config).instrument(span.clone()).await {
-                        span.in_scope(|| {
-                            error!(?err, "failed to prepare port");
-                        });
-                    }
-                    if let Err(err) = ctx.setup(&certs).instrument(span.clone()).await {
-                        span.in_scope(|| {
-                            error!(?err, "failed to setup port");
-                        });
-                    }
-                    table.set_port(ctx);
-                }
-                Err(err) => {
-                    error!(?err, "failed to create proxy state");
-                }
-            };
-        }
 
         let mut this = Self {
             config,
@@ -95,6 +73,17 @@ impl ServerState {
             br_sender,
             callback_sender,
         };
+
+        for entry in ports {
+            match PortContext::new(entry) {
+                Ok(ctx) => {
+                    this.update_port_ctx(ctx).await;
+                }
+                Err(err) => {
+                    error!(?err, "failed to create proxy state");
+                }
+            };
+        }
 
         let _ = this.br_sender.send(ServerEvent::AcmeUpdated {
             items: this.get_acme_list(),
@@ -239,7 +228,6 @@ impl ServerState {
             });
         }
         self.table.set_port(ctx);
-        self.update_port_statuses().await;
     }
 
     async fn handle_http_challenge(&mut self, stream: &mut BufStream<TcpStream>) -> Option<String> {
@@ -404,6 +392,7 @@ impl ServerState {
             Err(Error::IdAlreadyExists { id: entry.id })
         } else {
             self.update_port_ctx(PortContext::new(entry)?).await;
+            self.update_port_statuses().await;
             Ok(())
         }
     }
@@ -411,6 +400,7 @@ impl ServerState {
     pub async fn update_port(&mut self, entry: PortEntry) -> Result<(), Error> {
         if self.get_port_status(&entry.id).is_ok() {
             self.update_port_ctx(PortContext::new(entry)?).await;
+            self.update_port_statuses().await;
             Ok(())
         } else {
             Err(Error::IdNotFound { id: entry.id })
