@@ -2,6 +2,7 @@ use self::{http::HttpPortContext, tcp::TcpPortContext, tls::TlsState};
 use crate::{
     config::{
         port::{Port, PortEntry},
+        site::SiteEntry,
         AppConfig,
     },
     error::Error,
@@ -61,9 +62,10 @@ where
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PortContextEvent {
     SocketStateUpadted(SocketState),
+    SiteTableUpdated(Vec<SiteEntry>),
 }
 
 #[derive(Debug)]

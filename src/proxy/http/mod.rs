@@ -1,3 +1,4 @@
+use self::route::Router;
 use super::{tls::TlsTermination, PortContextEvent, PortStatus, SocketState};
 use crate::{
     config::{port::PortEntry, AppConfig},
@@ -30,7 +31,9 @@ use tokio_rustls::{
 };
 use tracing::{debug, error, info, span, warn, Instrument, Level, Span};
 
+mod filter;
 mod header;
+mod route;
 mod upgrade;
 
 use header::HeaderRewriter;
@@ -43,6 +46,7 @@ pub struct HttpPortContext {
     span: Span,
     tls_termination: Option<TlsTermination>,
     tls_client_config: Option<Arc<ClientConfig>>,
+    router: Arc<Router>,
     round_robin_counter: usize,
     stop_notifier: Arc<Notify>,
 }
@@ -79,14 +83,14 @@ impl HttpPortContext {
             span,
             tls_termination,
             tls_client_config: None,
+            router: Arc::new(Default::default()),
             round_robin_counter: 0,
             stop_notifier: Arc::new(Notify::new()),
         })
     }
 
     pub async fn prepare(&mut self, _config: &AppConfig) -> Result<(), Error> {
-        let use_tls = self.servers.iter().any(|server| server.tls);
-        if self.tls_client_config.is_none() && use_tls {
+        if self.tls_client_config.is_none() {
             let mut root_certs = RootCertStore::empty();
             if let Ok(certs) =
                 tokio::task::spawn_blocking(rustls_native_certs::load_native_certs).await
@@ -149,6 +153,9 @@ impl HttpPortContext {
                 }
                 self.status.state.socket = state;
             }
+            PortContextEvent::SiteTableUpdated(sites) => {
+                self.router = Arc::new(Router::new(sites));
+            }
         }
     }
 
@@ -167,13 +174,8 @@ impl HttpPortContext {
         }
 
         let span = self.span.clone();
-        let conn = self.servers[self.round_robin_counter % self.servers.len()].clone();
 
-        let tls_client_config = self
-            .tls_client_config
-            .as_ref()
-            .filter(|_| conn.tls)
-            .cloned();
+        let tls_client_config = self.tls_client_config.clone();
         let tls_acceptor = self
             .tls_termination
             .as_ref()
@@ -186,15 +188,18 @@ impl HttpPortContext {
             .build();
 
         let stop_notifier = self.stop_notifier.clone();
+        let router = self.router.clone();
+        let round_robin_counter = self.round_robin_counter;
 
         tokio::spawn(
             async move {
                 if let Err(err) = start(
                     stream,
-                    conn,
                     tls_client_config,
                     tls_acceptor,
                     header_rewriter,
+                    router,
+                    round_robin_counter,
                     stop_notifier,
                 )
                 .await
@@ -210,25 +215,15 @@ impl HttpPortContext {
 
 pub async fn start(
     stream: BufStream<TcpStream>,
-    conn: Connection,
     tls_client_config: Option<Arc<ClientConfig>>,
     tls_acceptor: Option<TlsAcceptor>,
     header_rewriter: HeaderRewriter,
+    router: Arc<Router>,
+    round_robin_counter: usize,
     stop_notifier: Arc<Notify>,
 ) -> anyhow::Result<()> {
     let remote = stream.get_ref().peer_addr()?;
     let local = stream.get_ref().local_addr()?;
-
-    let host = match conn.name.clone() {
-        ServerName::DnsName(name) => format!("{}:{}", name.as_ref(), conn.port),
-        ServerName::IpAddress(addr) => format!("{}:{}", addr, conn.port),
-        _ => unreachable!(),
-    };
-
-    let resolved = net::lookup_host(&host).await?.next().unwrap();
-    debug!(host, %resolved);
-
-    info!(target: "taxy::access_log", remote = %remote, %local, %resolved);
 
     let mut stream: Box<dyn IoStream> = Box::new(stream);
     let mut server_http2 = false;
@@ -243,35 +238,44 @@ pub async fn start(
         stream = Box::new(accepted);
     }
 
+    let router = router.clone();
     let stop_notifier_clone = stop_notifier.clone();
     let service = hyper::service::service_fn(move |mut req| {
         let tls_client_config = tls_client_config.clone();
-        let conn = conn.clone();
-
         let upgrade = req.headers().contains_key(UPGRADE);
-        let hostname = match &conn.name {
-            ServerName::DnsName(name) => name.as_ref().to_string(),
-            ServerName::IpAddress(addr) => addr.to_string(),
-            _ => unreachable!(),
-        };
-        let host = format!("{}:{}", hostname, conn.port);
+
         let domain_fronting = match (&sni, req.headers().get(HOST).and_then(|h| h.to_str().ok())) {
             (Some(sni), Some(header)) => sni.eq_ignore_ascii_case(header),
             _ => false,
         };
 
-        let uri_string = format!(
-            "http://{}{}",
-            host,
-            req.uri()
-                .path_and_query()
-                .map(|x| x.as_str())
-                .unwrap_or("/")
-        );
-        let uri = uri_string.parse().unwrap();
-        *req.uri_mut() = uri;
-        if let Some(req_host) = req.headers_mut().get_mut(HOST) {
-            *req_host = HeaderValue::from_str(&host).unwrap();
+        if domain_fronting {
+            debug!("domain fronting detected");
+        }
+
+        let mut hostname = String::new();
+        let mut host = String::new();
+
+        if let Some((route, res)) = router.get_route(&req) {
+            *req.uri_mut() = res.uri;
+            if !route.servers.is_empty() {
+                let server = &route.servers[round_robin_counter % route.servers.len()];
+
+                hostname = server
+                    .url
+                    .host()
+                    .map(|host| host.to_string())
+                    .unwrap_or_default();
+                host = format!(
+                    "{}:{}",
+                    hostname,
+                    server.url.port_or_known_default().unwrap_or_default()
+                );
+
+                if let Some(req_host) = req.headers_mut().get_mut(HOST) {
+                    *req_host = HeaderValue::from_str(&host).unwrap();
+                }
+            }
         }
 
         header_rewriter.pre_process(req.headers_mut(), remote.ip());
@@ -279,12 +283,16 @@ pub async fn start(
 
         let stop_notifier = stop_notifier_clone.clone();
         async move {
-            if domain_fronting {
-                debug!(%host, "domain fronting detected");
+            if hostname.is_empty() || domain_fronting {
                 let mut res = hyper::Response::new(hyper::Body::empty());
                 *res.status_mut() = hyper::StatusCode::BAD_GATEWAY;
                 return Ok::<_, anyhow::Error>(res);
             }
+
+            let resolved = net::lookup_host(&host).await?.next().unwrap();
+            debug!(host, %resolved);
+
+            info!(target: "taxy::access_log", remote = %remote, %local, %resolved);
 
             let sock = if resolved.is_ipv4() {
                 TcpSocket::new_v4()
@@ -301,7 +309,9 @@ pub async fn start(
             if let Some(config) = tls_client_config {
                 debug!(%resolved, "client: tls handshake");
                 let tls = TlsConnector::from(config.clone());
-                let tls_stream = tls.connect(conn.name, out).await?;
+                let tls_stream = tls
+                    .connect(ServerName::try_from(hostname.as_str()).unwrap(), out)
+                    .await?;
                 client_http2 = tls_stream.get_ref().1.alpn_protocol() == Some(b"h2");
                 out = Box::new(tls_stream);
             }
@@ -353,7 +363,6 @@ pub async fn start(
         }
     });
 
-    debug!(%resolved, "eof");
     Ok(())
 }
 
