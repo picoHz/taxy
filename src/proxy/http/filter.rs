@@ -24,7 +24,7 @@ impl RequestFilter {
     pub fn test<T>(&self, req: &Request<T>) -> Option<FilterResult> {
         let host = req.headers().get("host").and_then(|v| v.to_str().ok());
         let host_matched = match host {
-            Some(host) => self.vhosts.iter().any(|vhost| vhost.test(&host)),
+            Some(host) => self.vhosts.iter().any(|vhost| vhost.test(host)),
             None => false,
         };
         if !host_matched && !self.vhosts.is_empty() {

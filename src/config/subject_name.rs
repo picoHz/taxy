@@ -13,7 +13,7 @@ pub enum SubjectName {
 impl SubjectName {
     pub fn test(&self, name: &str) -> bool {
         match self {
-            Self::DnsName(n) => n.eq_ignore_ascii_case(&name),
+            Self::DnsName(n) => n.eq_ignore_ascii_case(name),
             Self::WildcardDnsName(n) => n.eq_ignore_ascii_case(
                 name.trim_start_matches(|c| c != '.')
                     .trim_start_matches('.'),
