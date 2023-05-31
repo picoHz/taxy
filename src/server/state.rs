@@ -244,6 +244,13 @@ impl ServerState {
                 error!(?err, "failed to setup port");
             });
         }
+        let sites = self
+            .sites
+            .entries()
+            .into_iter()
+            .filter(|entry: &SiteEntry| entry.site.ports.contains(&ctx.entry.id))
+            .collect();
+        ctx.event(PortContextEvent::SiteTableUpdated(sites));
         self.table.set_port(ctx);
     }
 
