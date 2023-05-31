@@ -12,8 +12,9 @@
       <v-list-item v-if="sitesStore.list.length === 0" disabled>
         <v-list-item-title class="text-center">{{ $t('acme.no_items') }}</v-list-item-title>
       </v-list-item>
-      <v-list-item prepend-icon="mdi-cloud-lock" v-for="item in sitesStore.list" :key="item.id" :title="item.provider"
-        :subtitle="item.identifiers.join(', ')" :to="{ path: `/sites/${item.id}` }">
+      <v-list-item prepend-icon="mdi-cloud-lock" v-for="item in sitesStore.list" :key="item.id"
+        :title="item.vhosts.join(', ')" :subtitle="item.ports.map(getPort).join(', ')"
+        :to="{ path: `/sites/${item.id}` }">
       </v-list-item>
     </v-list>
     <v-dialog v-model="error" width="auto">
@@ -72,9 +73,11 @@
 import axios from 'axios';
 import { ref } from 'vue'
 import { useSitesStore } from '@/stores/sites';
+import { usePortsStore } from '@/stores/ports';
 import LetsEncrypt from '@/acme/LetsEncrypt.vue';
 
 const sitesStore = useSitesStore();
+const portsStore = usePortsStore();
 const acmeDialog = ref(false);
 const loading = ref(false);
 const snackbar = ref(false);
@@ -87,6 +90,11 @@ const acmeProviders = [
   { title: "Let's Encrypt", value: 'letsencrypt' },
   { title: "Let's Encrypt (Staging)", value: 'letsencrypt-staging' },
 ];
+
+function getPort(portId) {
+  const port = portsStore.table.find(({ id }) => portId === id) || {};
+  return port.listen;
+}
 
 const endpoint = import.meta.env.VITE_API_ENDPOINT;
 

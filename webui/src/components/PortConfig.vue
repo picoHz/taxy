@@ -149,7 +149,7 @@ onMounted(() => {
         formData.ifs = host
         formData.port = port
         formData.protocol = protocol
-        formData.servers = props.entry.upstream_servers.map(s => multiaddrToServer(s.addr))
+        formData.servers = (props.entry.upstream_servers || []).map(s => multiaddrToServer(s.addr))
         const { tls_termination } = props.entry
         if (tls_termination) {
             formData.tls_term.server_names = tls_termination.server_names.join(', ')
