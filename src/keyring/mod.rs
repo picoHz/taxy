@@ -8,15 +8,7 @@ use std::{collections::HashMap, sync::Arc};
 use utoipa::ToSchema;
 
 pub mod acme;
-mod appkey;
-mod appkey_linux;
 pub mod certs;
-
-#[cfg(not(target_os = "linux"))]
-pub use appkey::*;
-
-#[cfg(target_os = "linux")]
-pub use appkey_linux::*;
 
 #[derive(Debug, Default)]
 pub struct Keyring {

@@ -39,8 +39,6 @@ async fn main() -> anyhow::Result<()> {
 }
 
 async fn start(args: StartArgs) -> anyhow::Result<()> {
-    crate::keyring::init_appkey(args.use_keystore)?;
-
     let log_dir = get_log_dir(args.log_dir)?;
     fs::create_dir_all(&log_dir)?;
 

@@ -124,7 +124,7 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
         }
     }
 
-    let cert = Cert::from_plain_key(chain, key)?;
+    let cert = Cert::new(chain, key)?;
     Ok(warp::reply::json(
         &state.call(AddServerCert { cert }).await?,
     ))
