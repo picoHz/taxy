@@ -9,20 +9,22 @@ RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - && \
 WORKDIR /usr/src/app
 
 # Copy the Cargo.toml and Cargo.lock files
-COPY Cargo.toml Cargo.lock build.rs ./
+# COPY taxy/Cargo.toml ./
 
 # Create a phony main.rs to build dependencies in a separate layer
-RUN mkdir src
-RUN echo "fn main() {}" > src/main.rs
+# RUN mkdir src
+# RUN echo "fn main() {}" > src/main.rs
 
 # Build the dependencies
-RUN cargo build --release
+# RUN cargo build --release
 
 # Remove the dummy main.rs
-RUN rm src/main.rs
+# RUN rm src/main.rs
 
 # Copy the actual source code
-COPY src src
+COPY Cargo.toml Cargo.lock ./
+COPY taxy taxy
+COPY taxy-api taxy-api
 COPY webui webui
 
 WORKDIR /usr/src/app/webui
