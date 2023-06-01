@@ -1,10 +1,6 @@
 use self::route::Router;
 use super::{tls::TlsTermination, PortContextEvent, PortStatus, SocketState};
-use crate::{
-    config::{port::PortEntry, AppConfig},
-    error::Error,
-    keyring::Keyring,
-};
+use crate::{config::port::PortEntry, error::Error, keyring::Keyring};
 use hyper::{
     client,
     header::{HOST, UPGRADE},
@@ -73,7 +69,7 @@ impl HttpPortContext {
         })
     }
 
-    pub async fn prepare(&mut self, _config: &AppConfig) -> Result<(), Error> {
+    pub async fn setup(&mut self, keyring: &Keyring) -> Result<(), Error> {
         if self.tls_client_config.is_none() {
             let mut root_certs = RootCertStore::empty();
             if let Ok(certs) =
@@ -99,11 +95,6 @@ impl HttpPortContext {
             config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
             self.tls_client_config = Some(Arc::new(config));
         }
-
-        Ok(())
-    }
-
-    pub async fn setup(&mut self, keyring: &Keyring) -> Result<(), Error> {
         if let Some(tls) = &mut self.tls_termination {
             self.status.state.tls = Some(tls.setup(keyring).await);
         }

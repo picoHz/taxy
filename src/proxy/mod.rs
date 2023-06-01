@@ -3,7 +3,6 @@ use crate::{
     config::{
         port::{Port, PortEntry},
         site::SiteEntry,
-        AppConfig,
     },
     error::Error,
     keyring::Keyring,
@@ -108,14 +107,6 @@ impl PortContext {
 
     pub fn kind_mut(&mut self) -> &mut PortContextKind {
         &mut self.kind
-    }
-
-    pub async fn prepare(&mut self, config: &AppConfig) -> Result<(), Error> {
-        match &mut self.kind {
-            PortContextKind::Tcp(ctx) => ctx.prepare(config).await,
-            PortContextKind::Http(ctx) => ctx.prepare(config).await,
-            PortContextKind::Reserved => Ok(()),
-        }
     }
 
     pub async fn setup(&mut self, keyring: &Keyring) -> Result<(), Error> {

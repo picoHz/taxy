@@ -1,9 +1,5 @@
 use super::{tls::TlsTermination, PortContextEvent, PortStatus, SocketState};
-use crate::{
-    config::{port::PortEntry, AppConfig},
-    error::Error,
-    keyring::Keyring,
-};
+use crate::{config::port::PortEntry, error::Error, keyring::Keyring};
 use multiaddr::{Multiaddr, Protocol};
 use std::{
     net::{IpAddr, SocketAddr},
@@ -72,7 +68,7 @@ impl TcpPortContext {
         })
     }
 
-    pub async fn prepare(&mut self, _config: &AppConfig) -> Result<(), Error> {
+    pub async fn setup(&mut self, keyring: &Keyring) -> Result<(), Error> {
         let use_tls = self.servers.iter().any(|server| server.tls);
         if self.tls_client_config.is_none() && use_tls {
             let mut root_certs = RootCertStore::empty();
@@ -99,10 +95,6 @@ impl TcpPortContext {
             self.tls_client_config = Some(Arc::new(config));
         }
 
-        Ok(())
-    }
-
-    pub async fn setup(&mut self, keyring: &Keyring) -> Result<(), Error> {
         if let Some(tls) = &mut self.tls_termination {
             self.status.state.tls = Some(tls.setup(keyring).await);
         }

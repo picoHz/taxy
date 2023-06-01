@@ -234,11 +234,6 @@ impl ServerState {
 
     async fn update_port_ctx(&mut self, mut ctx: PortContext) {
         let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
-        if let Err(err) = ctx.prepare(&self.config).instrument(span.clone()).await {
-            span.in_scope(|| {
-                error!(?err, "failed to prepare port");
-            });
-        }
         if let Err(err) = ctx.setup(&self.certs).instrument(span.clone()).await {
             span.in_scope(|| {
                 error!(?err, "failed to setup port");
