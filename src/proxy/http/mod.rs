@@ -12,15 +12,8 @@ use hyper::{
     server::conn::Http,
 };
 use multiaddr::{Multiaddr, Protocol};
-use std::{
-    net::{IpAddr, SocketAddr},
-    sync::Arc,
-    time::SystemTime,
-};
-use tokio::{
-    io::AsyncWriteExt,
-    net::{self, TcpSocket, TcpStream},
-};
+use std::{net::SocketAddr, sync::Arc, time::SystemTime};
+use tokio::net::{self, TcpSocket, TcpStream};
 use tokio::{
     io::{AsyncRead, AsyncWrite, BufStream},
     sync::Notify,
@@ -41,7 +34,6 @@ use header::HeaderRewriter;
 #[derive(Debug)]
 pub struct HttpPortContext {
     pub listen: SocketAddr,
-    servers: Vec<Connection>,
     status: PortStatus,
     span: Span,
     tls_termination: Option<TlsTermination>,
@@ -58,14 +50,7 @@ impl HttpPortContext {
         let _enter = enter.enter();
 
         info!("initializing http proxy");
-
         let listen = multiaddr_to_tcp(&entry.port.listen)?;
-
-        let mut servers = Vec::new();
-        for server in &entry.port.opts.upstream_servers {
-            let server = multiaddr_to_host(&server.addr)?;
-            servers.push(server);
-        }
 
         let tls_termination = if let Some(tls) = &entry.port.opts.tls_termination {
             let alpn = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
@@ -78,7 +63,6 @@ impl HttpPortContext {
 
         Ok(Self {
             listen,
-            servers,
             status: Default::default(),
             span,
             tls_termination,
@@ -167,12 +151,7 @@ impl HttpPortContext {
         self.stop_notifier.notify_waiters();
     }
 
-    pub fn start_proxy(&mut self, mut stream: BufStream<TcpStream>) {
-        if self.servers.is_empty() {
-            tokio::spawn(async move { stream.get_mut().shutdown().await });
-            return;
-        }
-
+    pub fn start_proxy(&mut self, stream: BufStream<TcpStream>) {
         let span = self.span.clone();
 
         let tls_client_config = self.tls_client_config.clone();
@@ -376,30 +355,6 @@ fn multiaddr_to_tcp(addr: &Multiaddr) -> Result<SocketAddr, Error> {
             Ok(SocketAddr::new(std::net::IpAddr::V6(*addr), *port))
         }
         _ => Err(Error::InvalidListeningAddress { addr: addr.clone() }),
-    }
-}
-
-fn multiaddr_to_host(addr: &Multiaddr) -> Result<Connection, Error> {
-    let stack = addr.iter().collect::<Vec<_>>();
-    let tls = stack.contains(&Protocol::Tls);
-    match stack[..] {
-        [Protocol::Ip4(addr), Protocol::Tcp(port), ..] if port > 0 => Ok(Connection {
-            name: ServerName::IpAddress(IpAddr::V4(addr)),
-            port,
-            tls,
-        }),
-        [Protocol::Ip6(addr), Protocol::Tcp(port), ..] if port > 0 => Ok(Connection {
-            name: ServerName::IpAddress(IpAddr::V6(addr)),
-            port,
-            tls,
-        }),
-        [Protocol::Dns(ref name), Protocol::Tcp(port), ..] if port > 0 => Ok(Connection {
-            name: ServerName::try_from(name.as_ref())
-                .map_err(|_| Error::InvalidServerAddress { addr: addr.clone() })?,
-            port,
-            tls,
-        }),
-        _ => Err(Error::InvalidServerAddress { addr: addr.clone() }),
     }
 }
 
