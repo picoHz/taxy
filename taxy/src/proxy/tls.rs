@@ -3,22 +3,15 @@ use crate::keyring::certs::Cert;
 use crate::keyring::Keyring;
 use crate::{config, error::Error};
 use dashmap::DashMap;
-use serde_derive::Serialize;
 use std::fmt;
 use std::str::FromStr;
 use std::sync::Arc;
+use taxy_api::tls::TlsState;
 use tokio_rustls::rustls::server::{ClientHello, ResolvesServerCert};
 use tokio_rustls::rustls::sign::CertifiedKey;
 use tokio_rustls::rustls::ServerConfig;
 use tokio_rustls::TlsAcceptor;
 use tracing::error;
-use utoipa::ToSchema;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum TlsState {
-    Active,
-}
 
 pub struct TlsTermination {
     pub server_names: Vec<SubjectName>,

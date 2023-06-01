@@ -1,4 +1,4 @@
-use self::{http::HttpPortContext, tcp::TcpPortContext, tls::TlsState};
+use self::{http::HttpPortContext, tcp::TcpPortContext};
 use crate::{
     config::{
         port::{Port, PortEntry},
@@ -11,6 +11,7 @@ use multiaddr::{Multiaddr, Protocol};
 use once_cell::sync::OnceCell;
 use serde_derive::Serialize;
 use std::time::SystemTime;
+use taxy_api::tls::TlsState;
 use utoipa::ToSchema;
 
 pub mod http;
