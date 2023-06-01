@@ -1,0 +1,12 @@
+[package]
+name = "taxy-api"
+version = "0.1.0"
+edition = "2021"
+authors = ["picoHz <picoHz@outlook.com>"]
+keywords = ["tcp", "http", "tls", "proxy", "reverse-proxy"]
+categories = ["network-programming", "web-programming", "web-programming::websocket"]
+license = "MIT"
+repository = "https://github.com/picoHz/taxy"
+homepage = "https://github.com/picoHz/taxy"
+
+[dependencies]

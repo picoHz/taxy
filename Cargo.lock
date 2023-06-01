@@ -2444,6 +2444,7 @@ dependencies = [
  "serde_qs",
  "sha2",
  "sqlx",
+ "taxy-api",
  "thiserror",
  "time",
  "tokio",
@@ -2460,6 +2461,10 @@ dependencies = [
  "warp",
  "x509-parser",
 ]
+
+[[package]]
+name = "taxy-api"
+version = "0.1.0"
 
 [[package]]
 name = "tempfile"
