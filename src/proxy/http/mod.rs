@@ -1,6 +1,10 @@
 use self::route::Router;
 use super::{tls::TlsTermination, PortContextEvent, PortStatus, SocketState};
-use crate::{config::port::PortEntry, error::Error, keyring::Keyring};
+use crate::{
+    config::{port::PortEntry, site::SiteEntry},
+    error::Error,
+    keyring::Keyring,
+};
 use hyper::{
     client,
     header::{HOST, UPGRADE},
@@ -69,7 +73,9 @@ impl HttpPortContext {
         })
     }
 
-    pub async fn setup(&mut self, keyring: &Keyring) -> Result<(), Error> {
+    pub async fn setup(&mut self, keyring: &Keyring, sites: Vec<SiteEntry>) -> Result<(), Error> {
+        self.router = Arc::new(Router::new(sites));
+
         if self.tls_client_config.is_none() {
             let mut root_certs = RootCertStore::empty();
             if let Ok(certs) =
@@ -127,9 +133,6 @@ impl HttpPortContext {
                     };
                 }
                 self.status.state.socket = state;
-            }
-            PortContextEvent::SiteTableUpdated(sites) => {
-                self.router = Arc::new(Router::new(sites));
             }
         }
     }

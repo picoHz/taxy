@@ -1,5 +1,9 @@
 use super::{tls::TlsTermination, PortContextEvent, PortStatus, SocketState};
-use crate::{config::port::PortEntry, error::Error, keyring::Keyring};
+use crate::{
+    config::{port::PortEntry, site::SiteEntry},
+    error::Error,
+    keyring::Keyring,
+};
 use multiaddr::{Multiaddr, Protocol};
 use std::{
     net::{IpAddr, SocketAddr},
@@ -68,7 +72,7 @@ impl TcpPortContext {
         })
     }
 
-    pub async fn setup(&mut self, keyring: &Keyring) -> Result<(), Error> {
+    pub async fn setup(&mut self, keyring: &Keyring, _sites: Vec<SiteEntry>) -> Result<(), Error> {
         let use_tls = self.servers.iter().any(|server| server.tls);
         if self.tls_client_config.is_none() && use_tls {
             let mut root_certs = RootCertStore::empty();
@@ -117,15 +121,17 @@ impl TcpPortContext {
     }
 
     pub fn event(&mut self, event: PortContextEvent) {
-        if let PortContextEvent::SocketStateUpadted(state) = event {
-            if self.status.state.socket != state {
-                self.status.started_at = if state == SocketState::Listening {
-                    Some(SystemTime::now())
-                } else {
-                    None
-                };
+        match event {
+            PortContextEvent::SocketStateUpadted(state) => {
+                if self.status.state.socket != state {
+                    self.status.started_at = if state == SocketState::Listening {
+                        Some(SystemTime::now())
+                    } else {
+                        None
+                    };
+                }
+                self.status.state.socket = state;
             }
-            self.status.state.socket = state;
         }
     }
 

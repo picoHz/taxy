@@ -64,7 +64,6 @@ where
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PortContextEvent {
     SocketStateUpadted(SocketState),
-    SiteTableUpdated(Vec<SiteEntry>),
 }
 
 #[derive(Debug)]
@@ -109,10 +108,10 @@ impl PortContext {
         &mut self.kind
     }
 
-    pub async fn setup(&mut self, keyring: &Keyring) -> Result<(), Error> {
+    pub async fn setup(&mut self, keyring: &Keyring, sites: Vec<SiteEntry>) -> Result<(), Error> {
         match &mut self.kind {
-            PortContextKind::Tcp(ctx) => ctx.setup(keyring).await,
-            PortContextKind::Http(ctx) => ctx.setup(keyring).await,
+            PortContextKind::Tcp(ctx) => ctx.setup(keyring, sites).await,
+            PortContextKind::Http(ctx) => ctx.setup(keyring, sites).await,
             PortContextKind::Reserved => Ok(()),
         }
     }

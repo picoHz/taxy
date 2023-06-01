@@ -3,7 +3,7 @@ use super::{listener::TcpListenerPool, rpc::RpcCallback, table::ProxyTable};
 use crate::config::site::SiteEntry;
 use crate::keyring::certs::{Cert, CertInfo};
 use crate::keyring::KeyringInfo;
-use crate::proxy::{PortContextEvent, PortStatus};
+use crate::proxy::PortStatus;
 use crate::{
     command::ServerCommand,
     config::{port::PortEntry, storage::ConfigStorage, AppConfig, Source},
@@ -161,7 +161,12 @@ impl ServerState {
                         .filter(|entry: &&SiteEntry| entry.site.ports.contains(&ctx.entry.id))
                         .cloned()
                         .collect();
-                    ctx.event(PortContextEvent::SiteTableUpdated(sites));
+                    let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
+                    if let Err(err) = ctx.setup(&self.certs, sites).instrument(span.clone()).await {
+                        span.in_scope(|| {
+                            error!(?err, "failed to setup port");
+                        });
+                    }
                 }
             }
             _ => (),
@@ -233,19 +238,18 @@ impl ServerState {
     }
 
     async fn update_port_ctx(&mut self, mut ctx: PortContext) {
-        let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
-        if let Err(err) = ctx.setup(&self.certs).instrument(span.clone()).await {
-            span.in_scope(|| {
-                error!(?err, "failed to setup port");
-            });
-        }
         let sites = self
             .sites
             .entries()
             .into_iter()
             .filter(|entry: &SiteEntry| entry.site.ports.contains(&ctx.entry.id))
             .collect();
-        ctx.event(PortContextEvent::SiteTableUpdated(sites));
+        let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
+        if let Err(err) = ctx.setup(&self.certs, sites).instrument(span.clone()).await {
+            span.in_scope(|| {
+                error!(?err, "failed to setup port");
+            });
+        }
         self.table.set_port(ctx);
     }
 
