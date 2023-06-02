@@ -2,7 +2,6 @@ use multiaddr::Multiaddr;
 use serde_derive::Serialize;
 use thiserror::Error;
 use utoipa::ToSchema;
-use warp::reject::Reject;
 
 #[derive(Debug, Clone, Error, Serialize, ToSchema)]
 #[serde(rename_all = "snake_case", tag = "message")]
@@ -74,7 +73,8 @@ pub enum Error {
     FailedToDecryptPrivateKey,
 }
 
-impl Reject for Error {}
+#[cfg(feature = "warp")]
+impl warp::reject::Reject for Error {}
 
 impl Error {
     pub fn status_code(&self) -> u16 {
