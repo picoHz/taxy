@@ -1,10 +1,12 @@
 #![recursion_limit = "1024"]
 
 use console_error_panic_hook::set_once as set_panic_hook;
+use serde_derive::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 use ybc::TileCtx::{Ancestor, Child, Parent};
 use yew::prelude::*;
 use yew_router::prelude::*;
+use yewdux::prelude::*;
 
 mod login;
 
@@ -19,6 +21,12 @@ enum Route {
     NotFound,
 }
 
+#[derive(Default, PartialEq, Serialize, Deserialize, Store)]
+#[store(storage = "local")]
+struct UserSession {
+    token: String,
+}
+
 fn switch(routes: Route) -> Html {
     match routes {
         Route::Home => html! { <h1>{ "Home" }</h1> },
@@ -31,6 +39,7 @@ fn switch(routes: Route) -> Html {
 
 #[function_component(App)]
 pub fn app() -> Html {
+    let (counter, _) = use_store::<UserSession>();
     html! {
         <>
         <ybc::Navbar
@@ -56,7 +65,7 @@ pub fn app() -> Html {
                 </ybc::NavbarItem>
                 <ybc::NavbarItem>
                     <ybc::ButtonAnchor classes={classes!("is-black", "is-outlined")} rel={String::from("noopener noreferrer")} target={String::from("_blank")} href="https://github.com/thedodd/ybc">
-                        {"YBC"}
+                        {counter.token.clone()}
                     </ybc::ButtonAnchor>
                 </ybc::NavbarItem>
                 </>
