@@ -1,7 +1,6 @@
 use crate::error::Error;
 use serde::{Deserialize, Serialize};
 use std::{net::IpAddr, str::FromStr};
-use tokio_rustls::rustls::ServerName;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SubjectName {
@@ -60,18 +59,17 @@ impl FromStr for SubjectName {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let wildcard = s.starts_with("*.");
-        let name = ServerName::try_from(s.trim_start_matches("*."))
-            .map_err(|_| Error::InvalidSubjectName { name: s.to_owned() })?;
-        match name {
-            ServerName::DnsName(name) => {
+        let name = s.trim_start_matches("*.");
+        let ipaddr: Result<IpAddr, _> = name.parse();
+        match ipaddr {
+            Ok(addr) => Ok(Self::IPAddress(addr)),
+            _ => {
                 if wildcard {
-                    Ok(Self::WildcardDnsName(name.as_ref().to_string()))
+                    Ok(Self::WildcardDnsName(name.to_string()))
                 } else {
-                    Ok(Self::DnsName(name.as_ref().to_string()))
+                    Ok(Self::DnsName(name.to_string()))
                 }
             }
-            ServerName::IpAddress(addr) => Ok(Self::IPAddress(addr)),
-            _ => Err(Error::InvalidSubjectName { name: s.to_owned() }),
         }
     }
 }
