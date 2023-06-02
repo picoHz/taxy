@@ -2807,6 +2807,7 @@ dependencies = [
  "wasm-bindgen",
  "ybc",
  "yew",
+ "yew-router",
 ]
 
 [[package]]

@@ -4,6 +4,30 @@ use console_error_panic_hook::set_once as set_panic_hook;
 use wasm_bindgen::prelude::*;
 use ybc::TileCtx::{Ancestor, Child, Parent};
 use yew::prelude::*;
+use yew_router::prelude::*;
+
+mod login;
+
+#[derive(Clone, Routable, PartialEq)]
+enum Route {
+    #[at("/")]
+    Home,
+    #[at("/secure")]
+    Secure,
+    #[not_found]
+    #[at("/404")]
+    NotFound,
+}
+
+fn switch(routes: Route) -> Html {
+    match routes {
+        Route::Home => html! { <h1>{ "Home" }</h1> },
+        Route::Secure => html! {
+            <login::Secure />
+        },
+        Route::NotFound => html! { <h1>{ "404" }</h1> },
+    }
+}
 
 #[function_component(App)]
 pub fn app() -> Html {
@@ -38,6 +62,9 @@ pub fn app() -> Html {
                 </>
             }}
         />
+        <BrowserRouter>
+            <Switch<Route> render={switch} />
+        </BrowserRouter>
 
         <ybc::Hero
             classes={classes!("is-light")}
