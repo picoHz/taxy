@@ -11,6 +11,7 @@ categories = ["network-programming", "web-programming", "web-programming::websoc
 license = "MIT"
 repository = "https://github.com/picoHz/taxy"
 homepage = "https://github.com/picoHz/taxy"
+default-run = "taxy"
 
 [dependencies]
 anyhow = "1.0.71"
