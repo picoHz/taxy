@@ -1,4 +1,3 @@
-use hyper::StatusCode;
 use multiaddr::Multiaddr;
 use serde_derive::Serialize;
 use thiserror::Error;
@@ -78,12 +77,12 @@ pub enum Error {
 impl Reject for Error {}
 
 impl Error {
-    pub fn status_code(&self) -> StatusCode {
+    pub fn status_code(&self) -> u16 {
         match self {
-            Self::KeyringItemNotFound { .. } | Self::IdNotFound { .. } => StatusCode::NOT_FOUND,
-            Self::Unauthorized => StatusCode::UNAUTHORIZED,
-            Self::WaitingLogTimedOut => StatusCode::REQUEST_TIMEOUT,
-            _ => StatusCode::BAD_REQUEST,
+            Self::KeyringItemNotFound { .. } | Self::IdNotFound { .. } => 404,
+            Self::Unauthorized => 401,
+            Self::WaitingLogTimedOut => 408,
+            _ => 400,
         }
     }
 }
