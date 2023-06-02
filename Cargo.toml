@@ -1,5 +1,5 @@
 [workspace]
-members = ["taxy", "taxy-api"]
+members = ["taxy", "taxy-api", "taxy-webui"]
 resolver = "2"
 
 [profile.release]

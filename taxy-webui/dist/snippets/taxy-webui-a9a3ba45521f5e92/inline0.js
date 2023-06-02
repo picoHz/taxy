@@ -1,0 +1,1 @@
+export function snippetTest() { console.log('Hello from JS FFI!'); }
