@@ -1,6 +1,5 @@
 use crate::subject_name::SubjectName;
 use base64::{engine::general_purpose, Engine as _};
-use instant_acme::ChallengeType;
 use serde_derive::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -11,8 +10,7 @@ pub struct Acme {
     #[schema(value_type = [String], example = json!(["example.com"]))]
     pub identifiers: Vec<SubjectName>,
     #[schema(value_type = String, example = "http-01")]
-    #[serde(serialize_with = "serialize_challenge_type")]
-    pub challenge_type: ChallengeType,
+    pub challenge_type: String,
     #[schema(example = "60")]
     #[serde(default = "default_renewal_days")]
     pub renewal_days: u64,
@@ -24,20 +22,6 @@ fn default_renewal_days() -> u64 {
     60
 }
 
-fn serialize_challenge_type<S>(
-    challenge_type: &ChallengeType,
-    serializer: S,
-) -> Result<S::Ok, S::Error>
-where
-    S: serde::Serializer,
-{
-    serializer.serialize_str(match challenge_type {
-        ChallengeType::Http01 => "http-01",
-        ChallengeType::Dns01 => "dns-01",
-        ChallengeType::TlsAlpn01 => "tls-alpn-01",
-    })
-}
-
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct AcmeInfo {
     pub id: String,
@@ -45,9 +29,8 @@ pub struct AcmeInfo {
     pub provider: String,
     #[schema(example = json!(["example.com"]))]
     pub identifiers: Vec<String>,
-    #[serde(serialize_with = "serialize_challenge_type")]
     #[schema(value_type = String, example = "http-01")]
-    pub challenge_type: ChallengeType,
+    pub challenge_type: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, ToSchema)]

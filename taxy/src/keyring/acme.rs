@@ -88,7 +88,7 @@ impl AcmeEntry {
                 .iter()
                 .map(|id| id.to_string())
                 .collect(),
-            challenge_type: self.acme.challenge_type,
+            challenge_type: self.acme.challenge_type.clone(),
         }
     }
 }
@@ -181,9 +181,13 @@ impl AcmeOrder {
             );
             challenges.push((identifier.to_string(), challenge.url.to_string()));
         }
+        let challenge_type = match entry.acme.challenge_type.as_str() {
+            "http-01" => ChallengeType::Http01,
+            _ => bail!("challenge type is not supported"),
+        };
         Ok(Self {
             id: entry.id.clone(),
-            challenge_type: entry.acme.challenge_type,
+            challenge_type,
             identifiers,
             http_challenges,
             challenges,
