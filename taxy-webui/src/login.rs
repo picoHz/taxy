@@ -1,36 +1,50 @@
 use crate::Route;
 use gloo_net::http::Request;
-use taxy_api::auth::LoginRequest;
+use serde_derive::Deserialize;
+use taxy_api::auth::{LoginRequest, LoginResult};
 use ybc::TileCtx::{Ancestor, Parent};
 use yew::prelude::*;
 use yew_router::prelude::*;
+
+#[derive(Deserialize)]
+struct Er {
+    message: String,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum Res<T, E> {
+    Ok(T),
+    Err(E),
+}
 
 #[function_component(Secure)]
 pub fn secure() -> Html {
     let navigator = use_navigator().unwrap();
 
-    use_effect_with_deps(
-        move |_| {
-            wasm_bindgen_futures::spawn_local(async move {
-                let _login: LoginRequest = Request::post("http://127.0.0.1:46492/api/login")
-                    .json(&LoginRequest {
-                        username: "admin".to_string(),
-                        password: "passw0rd".to_string(),
-                    })
-                    .unwrap()
-                    .send()
-                    .await
-                    .unwrap()
-                    .json()
-                    .await
-                    .unwrap();
-            });
-            || ()
-        },
-        (),
-    );
+    let onclick: Callback<_> = Callback::from(move |_| {
+        let navigator = navigator.clone();
+        wasm_bindgen_futures::spawn_local(async move {
+            let login: Res<LoginResult, Er> = Request::post("http://127.0.0.1:46492/api/login")
+                .json(&LoginRequest {
+                    username: "admin".to_string(),
+                    password: "adminx".to_string(),
+                })
+                .unwrap()
+                .send()
+                .await
+                .unwrap()
+                .json()
+                .await
+                .unwrap();
+            if let Res::Ok(login) = login {
+                gloo_console::log!(login.token);
+                navigator.push(&Route::Home);
+            }
+            navigator.push(&Route::Home);
+        });
+    });
 
-    let onclick = Callback::from(move |_| navigator.push(&Route::Home));
     html! {
         <ybc::Container classes={classes!("is-centered")}>
         <ybc::Tile ctx={Ancestor}>
