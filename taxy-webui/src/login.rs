@@ -1,16 +1,9 @@
 use crate::Route;
 use gloo_net::http::Request;
-use serde_derive::{Deserialize, Serialize};
-// use taxy_api::auth::LoginRequest;
+use taxy_api::auth::LoginRequest;
 use ybc::TileCtx::{Ancestor, Parent};
 use yew::prelude::*;
 use yew_router::prelude::*;
-
-#[derive(Clone, Serialize, Deserialize)]
-pub struct LoginRequest {
-    pub username: String,
-    pub password: String,
-}
 
 #[function_component(Secure)]
 pub fn secure() -> Html {
