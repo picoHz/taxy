@@ -21,10 +21,11 @@ enum Res<T, E> {
 
 #[hook]
 pub fn use_x() {
+    if let Some(route) = use_route::<Route>() {
+        gloo_console::log!(&format!("{:?}", route));
+    }
     let (_, dispatch) = use_store::<UserSession>();
     let navigator = use_navigator().unwrap();
-    let route = use_location().unwrap();
-    gloo_console::log!(&format!("{:?}", route.path()));
 
     use_effect_with_deps(
         move |_| {
@@ -44,7 +45,7 @@ pub fn use_x() {
                     .unwrap();
                 if let Res::Ok(login) = login {
                     gloo_console::log!(&login.token);
-                    dispatch.set(UserSession { token: login.token });
+                    // dispatch.set(UserSession { token: login.token });
                 }
             });
         },
@@ -52,8 +53,8 @@ pub fn use_x() {
     );
 }
 
-#[function_component(Secure)]
-pub fn secure() -> Html {
+#[function_component(Login)]
+pub fn login() -> Html {
     use_x();
 
     let (_, dispatch) = use_store::<UserSession>();
@@ -79,7 +80,7 @@ pub fn secure() -> Html {
                 gloo_console::log!(&login.token);
                 dispatch.set(UserSession { token: login.token });
             }
-            navigator.push(&Route::Secure);
+            navigator.push(&Route::Login);
         });
     });
 

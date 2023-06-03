@@ -8,14 +8,18 @@ use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
 
+mod home;
 mod login;
+mod logout;
 
 #[derive(Clone, Debug, Routable, PartialEq)]
 enum Route {
     #[at("/")]
     Home,
-    #[at("/secure")]
-    Secure,
+    #[at("/login")]
+    Login,
+    #[at("/logout")]
+    Logout,
     #[at("/ports")]
     Ports,
     #[not_found]
@@ -31,13 +35,10 @@ struct UserSession {
 
 fn switch(routes: Route) -> Html {
     match routes {
-        Route::Home => html! { <h1>{ "Home" }</h1> },
-        Route::Secure => html! {
-            <login::Secure />
-        },
-        Route::Ports => html! {
-            <login::Secure />
-        },
+        Route::Home => html! { <home::Home /> },
+        Route::Login => html! { <login::Login /> },
+        Route::Logout => html! { <logout::Logout /> },
+        Route::Ports => html! { <login::Login /> },
         Route::NotFound => html! { <h1>{ "404" }</h1> },
     }
 }
