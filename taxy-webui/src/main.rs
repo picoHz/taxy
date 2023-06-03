@@ -13,6 +13,11 @@ mod home;
 mod login;
 mod logout;
 
+#[cfg(debug_assertions)]
+const API_ENDPOINT: &str = "http://127.0.0.1:46492/";
+#[cfg(not(debug_assertions))]
+const API_ENDPOINT: &str = "/";
+
 #[derive(Clone, Debug, Routable, PartialEq)]
 enum Route {
     #[at("/")]
@@ -28,10 +33,10 @@ enum Route {
     NotFound,
 }
 
-#[derive(Default, PartialEq, Serialize, Deserialize, Store)]
+#[derive(Default, Clone, PartialEq, Serialize, Deserialize, Store)]
 #[store(storage = "local")]
 struct UserSession {
-    token: String,
+    token: Option<String>,
 }
 
 fn switch(routes: Route) -> Html {

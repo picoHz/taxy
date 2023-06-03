@@ -6,9 +6,7 @@ use yewdux::prelude::*;
 #[function_component(Logout)]
 pub fn logout() -> Html {
     let (_, dispatch) = use_store::<UserSession>();
-    dispatch.set(UserSession {
-        token: "".to_string(),
-    });
+    dispatch.set(UserSession { token: None });
 
     html! {
         <Redirect<Route> to={Route::Login}/>

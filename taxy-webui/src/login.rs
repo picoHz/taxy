@@ -78,7 +78,9 @@ pub fn login() -> Html {
                 .unwrap();
             if let Res::Ok(login) = login {
                 gloo_console::log!(&login.token);
-                dispatch.set(UserSession { token: login.token });
+                dispatch.set(UserSession {
+                    token: Some(login.token),
+                });
             }
             navigator.push(&Route::Login);
         });
