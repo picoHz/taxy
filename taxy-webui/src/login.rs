@@ -19,9 +19,44 @@ enum Res<T, E> {
     Err(E),
 }
 
+#[hook]
+pub fn use_x() {
+    let (_, dispatch) = use_store::<UserSession>();
+    let navigator = use_navigator().unwrap();
+    let route = use_location().unwrap();
+    gloo_console::log!(&format!("{:?}", route.path()));
+
+    use_effect_with_deps(
+        move |_| {
+            let dispatch = dispatch.clone();
+            wasm_bindgen_futures::spawn_local(async move {
+                let login: Res<LoginResult, Er> = Request::post("http://127.0.0.1:46492/api/login")
+                    .json(&LoginRequest {
+                        username: "admin".to_string(),
+                        password: "admin".to_string(),
+                    })
+                    .unwrap()
+                    .send()
+                    .await
+                    .unwrap()
+                    .json()
+                    .await
+                    .unwrap();
+                if let Res::Ok(login) = login {
+                    gloo_console::log!(&login.token);
+                    dispatch.set(UserSession { token: login.token });
+                }
+            });
+        },
+        (),
+    );
+}
+
 #[function_component(Secure)]
 pub fn secure() -> Html {
-    let (counter, dispatch) = use_store::<UserSession>();
+    use_x();
+
+    let (_, dispatch) = use_store::<UserSession>();
     let navigator = use_navigator().unwrap();
 
     let onclick: Callback<_> = Callback::from(move |_| {
@@ -42,11 +77,15 @@ pub fn secure() -> Html {
                 .unwrap();
             if let Res::Ok(login) = login {
                 gloo_console::log!(&login.token);
-                dispatch.reduce(|_| UserSession { token: login.token }.into());
-                navigator.push(&Route::Home);
+                dispatch.set(UserSession { token: login.token });
             }
-            navigator.push(&Route::Home);
+            navigator.push(&Route::Secure);
         });
+    });
+
+    let navigator = use_navigator().unwrap();
+    let onclick2: Callback<_> = Callback::from(move |_| {
+        navigator.push(&Route::Ports);
     });
 
     html! {
@@ -65,6 +104,9 @@ pub fn secure() -> Html {
                         </div>
                         <div class={classes!("control")}>
                             <button class={classes!("button", "is-primary")} {onclick}>{ "Go Home" }</button>
+                        </div>
+                        <div class={classes!("control")}>
+                            <button class={classes!("button", "is-primary")} onclick={onclick2}>{ "Go Home" }</button>
                         </div>
                     </ybc::Field>
                 </ybc::Tile>

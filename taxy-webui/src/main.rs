@@ -10,12 +10,14 @@ use yewdux::prelude::*;
 
 mod login;
 
-#[derive(Clone, Routable, PartialEq)]
+#[derive(Clone, Debug, Routable, PartialEq)]
 enum Route {
     #[at("/")]
     Home,
     #[at("/secure")]
     Secure,
+    #[at("/ports")]
+    Ports,
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -31,6 +33,9 @@ fn switch(routes: Route) -> Html {
     match routes {
         Route::Home => html! { <h1>{ "Home" }</h1> },
         Route::Secure => html! {
+            <login::Secure />
+        },
+        Route::Ports => html! {
             <login::Secure />
         },
         Route::NotFound => html! { <h1>{ "404" }</h1> },
@@ -54,7 +59,7 @@ pub fn app() -> Html {
             navend={html!{
                 <>
                 <ybc::NavbarItem>
-                    <ybc::ButtonAnchor classes={classes!("is-black", "is-outlined")} rel={String::from("noopener noreferrer")} target={String::from("_blank")} href="https://github.com/thedodd/trunk">
+                    <ybc::ButtonAnchor classes={classes!("is-black", "is-outlined")} rel={String::from("noopener noreferrer")} target={String::from("_blank")}>
                         {"Trunk"}
                     </ybc::ButtonAnchor>
                 </ybc::NavbarItem>
