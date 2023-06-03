@@ -1,62 +1,24 @@
-use crate::{Route, UserSession};
+use crate::{Route, UserSession, API_ENDPOINT};
 use gloo_net::http::Request;
 use serde_derive::Deserialize;
-use taxy_api::auth::{LoginRequest, LoginResult};
+use taxy_api::{
+    auth::{LoginRequest, LoginResult},
+    error::ErrorMessage,
+};
 use ybc::TileCtx::{Ancestor, Parent};
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
 
 #[derive(Deserialize)]
-struct Er {
-    message: String,
-}
-
-#[derive(Deserialize)]
 #[serde(untagged)]
-enum Res<T, E> {
+enum ApiResult<T> {
     Ok(T),
-    Err(E),
-}
-
-#[hook]
-pub fn use_x() {
-    if let Some(route) = use_route::<Route>() {
-        gloo_console::log!(&format!("{:?}", route));
-    }
-    let (_, dispatch) = use_store::<UserSession>();
-    let navigator = use_navigator().unwrap();
-
-    use_effect_with_deps(
-        move |_| {
-            let dispatch = dispatch.clone();
-            wasm_bindgen_futures::spawn_local(async move {
-                let login: Res<LoginResult, Er> = Request::post("http://127.0.0.1:46492/api/login")
-                    .json(&LoginRequest {
-                        username: "admin".to_string(),
-                        password: "admin".to_string(),
-                    })
-                    .unwrap()
-                    .send()
-                    .await
-                    .unwrap()
-                    .json()
-                    .await
-                    .unwrap();
-                if let Res::Ok(login) = login {
-                    gloo_console::log!(&login.token);
-                    // dispatch.set(UserSession { token: login.token });
-                }
-            });
-        },
-        (),
-    );
+    Err(ErrorMessage),
 }
 
 #[function_component(Login)]
 pub fn login() -> Html {
-    use_x();
-
     let (_, dispatch) = use_store::<UserSession>();
     let navigator = use_navigator().unwrap();
 
@@ -64,10 +26,10 @@ pub fn login() -> Html {
         let navigator = navigator.clone();
         let dispatch = dispatch.clone();
         wasm_bindgen_futures::spawn_local(async move {
-            let login: Res<LoginResult, Er> = Request::post("http://127.0.0.1:46492/api/login")
+            let login: ApiResult<LoginResult> = Request::post(&format!("{API_ENDPOINT}api/login"))
                 .json(&LoginRequest {
                     username: "admin".to_string(),
-                    password: "admin".to_string(),
+                    password: "adminx".to_string(),
                 })
                 .unwrap()
                 .send()
@@ -76,11 +38,16 @@ pub fn login() -> Html {
                 .json()
                 .await
                 .unwrap();
-            if let Res::Ok(login) = login {
-                gloo_console::log!(&login.token);
-                dispatch.set(UserSession {
-                    token: Some(login.token),
-                });
+            match login {
+                ApiResult::Ok(login) => {
+                    gloo_console::log!(&login.token);
+                    dispatch.set(UserSession {
+                        token: Some(login.token),
+                    });
+                }
+                ApiResult::Err(err) => {
+                    gloo_console::log!(&format!("{:?}", err.error));
+                }
             }
             navigator.push(&Route::Login);
         });
