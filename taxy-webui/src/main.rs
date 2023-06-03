@@ -8,6 +8,7 @@ use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
 
+mod auth;
 mod home;
 mod login;
 mod logout;
