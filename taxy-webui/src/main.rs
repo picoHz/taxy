@@ -3,7 +3,6 @@
 use console_error_panic_hook::set_once as set_panic_hook;
 use serde_derive::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
-use ybc::TileCtx::{Ancestor, Child, Parent};
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
@@ -54,72 +53,38 @@ pub fn app() -> Html {
     let (counter, _) = use_store::<UserSession>();
     html! {
         <>
-        <ybc::Navbar
-            classes={classes!("is-success")}
-            padded=true
-            navbrand={html!{
-                <ybc::NavbarItem>
-                    <ybc::Title classes={classes!("has-text-white")} size={ybc::HeaderSize::Is4}>{"Trunk | Yew | YBC"}</ybc::Title>
-                </ybc::NavbarItem>
-            }}
-            navstart={html!{}}
-            navend={html!{
-                <>
-                <ybc::NavbarItem>
-                    <ybc::ButtonAnchor classes={classes!("is-black", "is-outlined")} rel={String::from("noopener noreferrer")} target={String::from("_blank")}>
-                        {"Trunk"}
-                    </ybc::ButtonAnchor>
-                </ybc::NavbarItem>
-                <ybc::NavbarItem>
-                    <ybc::ButtonAnchor classes={classes!("is-black", "is-outlined")} rel={String::from("noopener noreferrer")} target={String::from("_blank")} href="https://yew.rs">
-                        {"Yew"}
-                    </ybc::ButtonAnchor>
-                </ybc::NavbarItem>
-                <ybc::NavbarItem>
-                    <ybc::ButtonAnchor classes={classes!("is-black", "is-outlined")} rel={String::from("noopener noreferrer")} target={String::from("_blank")} href="https://github.com/thedodd/ybc">
-                        {counter.token.clone()}
-                    </ybc::ButtonAnchor>
-                </ybc::NavbarItem>
-                </>
-            }}
-        />
         <BrowserRouter>
+            <ybc::Navbar
+                classes={classes!("is-success")}
+                padded=true
+                navbrand={html!{
+                    <ybc::NavbarItem>
+                        <ybc::Title classes={classes!("has-text-white")} size={ybc::HeaderSize::Is4}>{"Trunk | Yew | YBC"}</ybc::Title>
+                    </ybc::NavbarItem>
+                }}
+                navstart={html!{}}
+                navend={html!{
+                    <>
+                    <ybc::NavbarItem>
+                        <ybc::ButtonAnchor classes={classes!("is-inverted")} rel={String::from("noopener noreferrer")} target={String::from("_blank")}>
+                            {"Trunk"}
+                        </ybc::ButtonAnchor>
+                    </ybc::NavbarItem>
+                    <ybc::NavbarItem>
+                        <ybc::ButtonAnchor classes={classes!("is-inverted")} rel={String::from("noopener noreferrer")} target={String::from("_blank")} href="https://yew.rs">
+                            {"Yew"}
+                        </ybc::ButtonAnchor>
+                    </ybc::NavbarItem>
+                    <ybc::NavbarItem>
+                        <ybc::ButtonAnchor classes={classes!("is-inverted")} rel={String::from("noopener noreferrer")} target={String::from("_blank")} href="https://github.com/thedodd/ybc">
+                            {counter.token.clone()}
+                        </ybc::ButtonAnchor>
+                    </ybc::NavbarItem>
+                    </>
+                }}
+            />
             <Switch<Route> render={switch} />
         </BrowserRouter>
-
-        <ybc::Hero
-            classes={classes!("is-light")}
-            size={ybc::HeroSize::FullheightWithNavbar}
-            body={html!{
-                <ybc::Container classes={classes!("is-centered")}>
-                <ybc::Tile ctx={Ancestor}>
-                    <ybc::Tile ctx={Parent} size={ybc::TileSize::Twelve}>
-                        <ybc::Tile ctx={Parent}>
-                            <ybc::Tile ctx={Child} classes={classes!("notification", "is-success")}>
-                                <ybc::Subtitle size={ybc::HeaderSize::Is3} classes={classes!("has-text-white")}>{"Trunk"}</ybc::Subtitle>
-                                <p>{"Trunk is a WASM web application bundler for Rust."}</p>
-                            </ybc::Tile>
-                        </ybc::Tile>
-                        <ybc::Tile ctx={Parent}>
-                            <ybc::Tile ctx={Child} classes={classes!("notification", "is-success")}>
-                                <ybc::Icon size={ybc::Size::Large} classes={classes!("is-pulled-right")}><img src="yew.svg"/></ybc::Icon>
-                                <ybc::Subtitle size={ybc::HeaderSize::Is3} classes={classes!("has-text-white")}>
-                                    {"Yew"}
-                                </ybc::Subtitle>
-                                <p>{"Yew is a modern Rust framework for creating multi-threaded front-end web apps with WebAssembly."}</p>
-                            </ybc::Tile>
-                        </ybc::Tile>
-                        <ybc::Tile ctx={Parent}>
-                            <ybc::Tile ctx={Child} classes={classes!("notification", "is-success")}>
-                                <ybc::Subtitle size={ybc::HeaderSize::Is3} classes={classes!("has-text-white")}>{"YBC"}</ybc::Subtitle>
-                                <p>{"A Yew component library based on the Bulma CSS framework."}</p>
-                            </ybc::Tile>
-                        </ybc::Tile>
-                    </ybc::Tile>
-                </ybc::Tile>
-                </ybc::Container>
-            }}>
-        </ybc::Hero>
         </>
     }
 }
