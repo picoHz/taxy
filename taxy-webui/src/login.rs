@@ -5,10 +5,9 @@ use taxy_api::{
     auth::{LoginRequest, LoginResult},
     error::ErrorMessage,
 };
-use wasm_bindgen::{UnwrapThrowExt, JsCast};
-use ybc::TileCtx::{Ancestor, Parent};
-use yew::prelude::*;
+use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use web_sys::HtmlInputElement;
+use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
 
@@ -50,7 +49,7 @@ pub fn login() -> Html {
             password.set(target.value());
         }
     });
-   
+
     let onclick: Callback<_> = Callback::from(move |_| {
         let navigator = navigator.clone();
         let dispatch = dispatch.clone();
@@ -83,29 +82,24 @@ pub fn login() -> Html {
             navigator.push(&Route::Login);
         });
     });
-    
 
     html! {
-        <ybc::Container classes={classes!("is-centered")}>
-        <ybc::Tile ctx={Ancestor}>
-            <ybc::Tile ctx={Parent} size={ybc::TileSize::Twelve}>
-                <ybc::Tile ctx={Parent}>
-                    <ybc::Field>
-                        <label class={classes!("label")}>{ "Username" }</label>
-                        <div class={classes!("control")}>
-                            <input class="input" type="text" oninput={oninput_username} />
-                        </div>
-                        <label class={classes!("label")}>{ "Password" }</label>
-                        <div class={classes!("control")}>
-                            <input class="input" type="password" oninput={oninput_password} />
-                        </div>
-                        <div class={classes!("control")}>
-                            <button class={classes!("button", "is-primary")} {onclick}>{ "Go Home" }</button>
-                        </div>
-                    </ybc::Field>
-                </ybc::Tile>
-            </ybc::Tile>
-        </ybc::Tile>
-        </ybc::Container>
+        <ybc::Columns classes={classes!("is-centered", "m-5")}>
+            <ybc::Column classes={classes!("is-4")}>
+                <ybc::Field>
+                    <label class={classes!("label", "mt-5")}>{ "Username" }</label>
+                    <div class={classes!("control")}>
+                        <input class="input" type="text" oninput={oninput_username} />
+                    </div>
+                    <label class={classes!("label", "mt-5")}>{ "Password" }</label>
+                    <div class={classes!("control")}>
+                        <input class="input" type="password" oninput={oninput_password} />
+                    </div>
+                    <div class={classes!("control", "mt-5")}>
+                        <button class={classes!("button", "is-primary", "is-fullwidth")} {onclick}>{ "Login" }</button>
+                    </div>
+                </ybc::Field>
+            </ybc::Column>
+        </ybc::Columns>
     }
 }
