@@ -8,13 +8,14 @@ use yew_router::prelude::*;
 use yewdux::prelude::*;
 
 mod auth;
+mod event;
 mod navbar;
 mod pages;
 
 #[cfg(debug_assertions)]
-const API_ENDPOINT: &str = "http://127.0.0.1:46492/";
+const API_ENDPOINT: &str = "http://127.0.0.1:46492/api";
 #[cfg(not(debug_assertions))]
-const API_ENDPOINT: &str = "/";
+const API_ENDPOINT: &str = "/api";
 
 #[derive(Default, Clone, PartialEq, Serialize, Deserialize, Store)]
 #[store(storage = "local")]
@@ -24,6 +25,7 @@ struct UserSession {
 
 #[function_component(App)]
 pub fn app() -> Html {
+    event::use_event_subscriber();
     html! {
         <>
         <BrowserRouter>

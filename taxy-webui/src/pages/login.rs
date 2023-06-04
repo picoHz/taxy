@@ -58,7 +58,7 @@ pub fn login() -> Html {
         let username = username.clone();
         let password = password.clone();
         wasm_bindgen_futures::spawn_local(async move {
-            let login: ApiResult<LoginResult> = Request::post(&format!("{API_ENDPOINT}api/login"))
+            let login: ApiResult<LoginResult> = Request::post(&format!("{API_ENDPOINT}/login"))
                 .json(&LoginRequest {
                     username: username.to_string(),
                     password: password.to_string(),

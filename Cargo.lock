@@ -2820,6 +2820,7 @@ name = "taxy-webui"
 version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
+ "futures",
  "gloo-console",
  "gloo-net",
  "gloo-utils",
