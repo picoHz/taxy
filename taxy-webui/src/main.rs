@@ -8,45 +8,18 @@ use yew_router::prelude::*;
 use yewdux::prelude::*;
 
 mod auth;
-mod home;
-mod login;
-mod logout;
 mod navbar;
+mod pages;
 
 #[cfg(debug_assertions)]
 const API_ENDPOINT: &str = "http://127.0.0.1:46492/";
 #[cfg(not(debug_assertions))]
 const API_ENDPOINT: &str = "/";
 
-#[derive(Clone, Debug, Routable, PartialEq)]
-enum Route {
-    #[at("/")]
-    Home,
-    #[at("/login")]
-    Login,
-    #[at("/logout")]
-    Logout,
-    #[at("/ports")]
-    Ports,
-    #[not_found]
-    #[at("/404")]
-    NotFound,
-}
-
 #[derive(Default, Clone, PartialEq, Serialize, Deserialize, Store)]
 #[store(storage = "local")]
 struct UserSession {
     token: Option<String>,
-}
-
-fn switch(routes: Route) -> Html {
-    match routes {
-        Route::Home => html! { <home::Home /> },
-        Route::Login => html! { <login::Login /> },
-        Route::Logout => html! { <logout::Logout /> },
-        Route::Ports => html! { <login::Login /> },
-        Route::NotFound => html! { <h1>{ "404" }</h1> },
-    }
 }
 
 #[function_component(App)]
@@ -55,7 +28,7 @@ pub fn app() -> Html {
         <>
         <BrowserRouter>
             <navbar::Navbar />
-            <Switch<Route> render={switch} />
+            <Switch<pages::Route> render={pages::switch} />
         </BrowserRouter>
         </>
     }
