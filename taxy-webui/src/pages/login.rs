@@ -23,8 +23,8 @@ pub fn login() -> Html {
     let (_, dispatch) = use_store::<UserSession>();
     let navigator = use_navigator().unwrap();
 
-    let username = use_state(|| String::new());
-    let password = use_state(|| String::new());
+    let username = use_state(String::new);
+    let password = use_state(String::new);
 
     let oninput_username = Callback::from({
         let username = username.clone();

@@ -1,11 +1,10 @@
 #![recursion_limit = "1024"]
 
 use console_error_panic_hook::set_once as set_panic_hook;
-use serde_derive::{Deserialize, Serialize};
+
 use wasm_bindgen::prelude::*;
 use yew::prelude::*;
 use yew_router::prelude::*;
-use yewdux::prelude::*;
 
 mod auth;
 mod event;
