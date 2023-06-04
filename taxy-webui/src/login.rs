@@ -76,12 +76,12 @@ pub fn login() -> Html {
                     dispatch.set(UserSession {
                         token: Some(login.token),
                     });
+                    navigator.push(&Route::Home);
                 }
                 ApiResult::Err(err) => {
                     gloo_console::log!(&format!("{:?}", err.error));
                 }
             }
-            navigator.push(&Route::Login);
         });
     });
 

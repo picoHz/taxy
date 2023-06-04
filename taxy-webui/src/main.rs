@@ -11,6 +11,7 @@ mod auth;
 mod home;
 mod login;
 mod logout;
+mod navbar;
 
 #[cfg(debug_assertions)]
 const API_ENDPOINT: &str = "http://127.0.0.1:46492/";
@@ -50,39 +51,10 @@ fn switch(routes: Route) -> Html {
 
 #[function_component(App)]
 pub fn app() -> Html {
-    let (counter, _) = use_store::<UserSession>();
     html! {
         <>
         <BrowserRouter>
-            <ybc::Navbar
-                classes={classes!("is-success")}
-                padded=true
-                navbrand={html!{
-                    <ybc::NavbarItem>
-                        <ybc::Title classes={classes!("has-text-white")} size={ybc::HeaderSize::Is4}>{"Trunk | Yew | YBC"}</ybc::Title>
-                    </ybc::NavbarItem>
-                }}
-                navstart={html!{}}
-                navend={html!{
-                    <>
-                    <ybc::NavbarItem>
-                        <ybc::ButtonAnchor classes={classes!("is-inverted")} rel={String::from("noopener noreferrer")} target={String::from("_blank")}>
-                            {"Trunk"}
-                        </ybc::ButtonAnchor>
-                    </ybc::NavbarItem>
-                    <ybc::NavbarItem>
-                        <ybc::ButtonAnchor classes={classes!("is-inverted")} rel={String::from("noopener noreferrer")} target={String::from("_blank")} href="https://yew.rs">
-                            {"Yew"}
-                        </ybc::ButtonAnchor>
-                    </ybc::NavbarItem>
-                    <ybc::NavbarItem>
-                        <ybc::ButtonAnchor classes={classes!("is-inverted")} rel={String::from("noopener noreferrer")} target={String::from("_blank")} href="https://github.com/thedodd/ybc">
-                            {counter.token.clone()}
-                        </ybc::ButtonAnchor>
-                    </ybc::NavbarItem>
-                    </>
-                }}
-            />
+            <navbar::Navbar />
             <Switch<Route> render={switch} />
         </BrowserRouter>
         </>
