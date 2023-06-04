@@ -4,6 +4,7 @@ use yew_router::prelude::*;
 mod home;
 mod login;
 mod logout;
+mod port_view;
 
 #[derive(Clone, Debug, Routable, PartialEq)]
 pub enum Route {
@@ -15,6 +16,8 @@ pub enum Route {
     Logout,
     #[at("/ports")]
     Ports,
+    #[at("/ports/:id")]
+    PortView { id: String },
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -26,6 +29,7 @@ pub fn switch(routes: Route) -> Html {
         Route::Login => html! { <login::Login /> },
         Route::Logout => html! { <logout::Logout /> },
         Route::Ports => html! { <login::Login /> },
-        Route::NotFound => html! { <h1>{ "404" }</h1> },
+        Route::PortView { id } => html! { <port_view::PortView {id} /> },
+        Route::NotFound => html! { <Redirect<Route> to={Route::Home}/> },
     }
 }
