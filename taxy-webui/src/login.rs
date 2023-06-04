@@ -50,7 +50,9 @@ pub fn login() -> Html {
         }
     });
 
-    let onclick: Callback<_> = Callback::from(move |_| {
+    let onsubmit = Callback::from(move |event: SubmitEvent| {
+        event.prevent_default();
+
         let navigator = navigator.clone();
         let dispatch = dispatch.clone();
         let username = username.clone();
@@ -87,17 +89,19 @@ pub fn login() -> Html {
         <ybc::Columns classes={classes!("is-centered", "m-5")}>
             <ybc::Column classes={classes!("is-4")}>
                 <ybc::Field>
-                    <label class={classes!("label", "mt-5")}>{ "Username" }</label>
-                    <div class={classes!("control")}>
-                        <input class="input" type="text" oninput={oninput_username} />
-                    </div>
-                    <label class={classes!("label", "mt-5")}>{ "Password" }</label>
-                    <div class={classes!("control")}>
-                        <input class="input" type="password" oninput={oninput_password} />
-                    </div>
-                    <div class={classes!("control", "mt-5")}>
-                        <button class={classes!("button", "is-primary", "is-fullwidth")} {onclick}>{ "Login" }</button>
-                    </div>
+                    <form {onsubmit}>
+                        <label class={classes!("label", "mt-5")}>{ "Username" }</label>
+                        <div class={classes!("control")}>
+                            <input class="input" type="text" oninput={oninput_username} />
+                        </div>
+                        <label class={classes!("label", "mt-5")}>{ "Password" }</label>
+                        <div class={classes!("control")}>
+                            <input class="input" type="password" oninput={oninput_password} />
+                        </div>
+                        <div class={classes!("control", "mt-5")}>
+                            <input type="submit" value={"Login"} class={classes!("button", "is-primary", "is-fullwidth")} />
+                        </div>
+                    </form>
                 </ybc::Field>
             </ybc::Column>
         </ybc::Columns>
