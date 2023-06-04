@@ -2830,6 +2830,7 @@ dependencies = [
  "taxy-api",
  "wasm-bindgen",
  "wasm-bindgen-futures",
+ "web-sys",
  "ybc",
  "yew",
  "yew-router",

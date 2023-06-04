@@ -5,8 +5,10 @@ use taxy_api::{
     auth::{LoginRequest, LoginResult},
     error::ErrorMessage,
 };
+use wasm_bindgen::{UnwrapThrowExt, JsCast};
 use ybc::TileCtx::{Ancestor, Parent};
 use yew::prelude::*;
+use web_sys::HtmlInputElement;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
 
@@ -21,14 +23,17 @@ enum ApiResult<T> {
 pub fn login() -> Html {
     let (_, dispatch) = use_store::<UserSession>();
     let navigator = use_navigator().unwrap();
-
+    let name = use_state(|| String::new());
+   
+    let name_clone = name.clone();
     let onclick: Callback<_> = Callback::from(move |_| {
         let navigator = navigator.clone();
         let dispatch = dispatch.clone();
+        let name_clone = name_clone.clone();
         wasm_bindgen_futures::spawn_local(async move {
             let login: ApiResult<LoginResult> = Request::post(&format!("{API_ENDPOINT}api/login"))
                 .json(&LoginRequest {
-                    username: "admin".to_string(),
+                    username: name_clone.to_string(),
                     password: "adminx".to_string(),
                 })
                 .unwrap()
@@ -53,10 +58,19 @@ pub fn login() -> Html {
         });
     });
 
-    let navigator = use_navigator().unwrap();
-    let onclick2: Callback<_> = Callback::from(move |_| {
-        navigator.push(&Route::Ports);
+    let oninput = Callback::from({
+        let name = name.clone();
+        move |input_event: InputEvent| {
+            let target: HtmlInputElement = input_event
+                .target()
+                .unwrap_throw()
+                .dyn_into()
+                .unwrap_throw();
+            gloo_console::log!(&format!("{:?}", target.value()));
+            name.set(target.value());
+        }
     });
+    
 
     html! {
         <ybc::Container classes={classes!("is-centered")}>
@@ -66,7 +80,7 @@ pub fn login() -> Html {
                     <ybc::Field>
                         <label class={classes!("label")}>{ "Username" }</label>
                         <div class={classes!("control")}>
-                            <input class="input" type="text" />
+                            <input class="input" type="text" {oninput} />
                         </div>
                         <label class={classes!("label")}>{ "Password" }</label>
                         <div class={classes!("control")}>
@@ -74,9 +88,6 @@ pub fn login() -> Html {
                         </div>
                         <div class={classes!("control")}>
                             <button class={classes!("button", "is-primary")} {onclick}>{ "Go Home" }</button>
-                        </div>
-                        <div class={classes!("control")}>
-                            <button class={classes!("button", "is-primary")} onclick={onclick2}>{ "Go Home" }</button>
                         </div>
                     </ybc::Field>
                 </ybc::Tile>
