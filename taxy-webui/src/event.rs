@@ -1,4 +1,4 @@
-use crate::{UserSession, API_ENDPOINT};
+use crate::{auth::UserSession, API_ENDPOINT};
 use futures::StreamExt;
 use gloo_net::eventsource::futures::EventSource;
 use serde_derive::{Deserialize, Serialize};

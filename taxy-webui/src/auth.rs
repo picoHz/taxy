@@ -1,8 +1,15 @@
-use crate::{pages::Route, UserSession, API_ENDPOINT};
+use crate::{pages::Route, API_ENDPOINT};
 use gloo_net::http::Request;
+use serde_derive::{Deserialize, Serialize};
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
+
+#[derive(Default, Clone, PartialEq, Serialize, Deserialize, Store)]
+#[store(storage = "local")]
+pub struct UserSession {
+    pub token: Option<String>,
+}
 
 #[hook]
 pub fn use_ensure_auth() {
