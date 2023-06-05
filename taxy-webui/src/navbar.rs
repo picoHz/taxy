@@ -17,26 +17,24 @@ pub fn navbar() -> Html {
                     <ybc::Title classes={classes!("has-text-white")} size={ybc::HeaderSize::Is4}>{"Taxy"}</ybc::Title>
                 </ybc::NavbarItem>
             }}
-            navstart={html!{}}
-            navend={html!{
+            navstart={html!{
                 <>
-                <ybc::NavbarItem>
-                    <ybc::ButtonAnchor classes={classes!("is-inverted")} rel={String::from("noopener noreferrer")} target={String::from("_blank")}>
-                        {"Trunk"}
-                    </ybc::ButtonAnchor>
+                <ybc::NavbarItem tag={ybc::NavbarItemTag::A}>
+                    <span class="icon-text">
+                        <span class="icon">
+                            <ion-icon name="wifi"></ion-icon>
+                        </span>
+                        <span>{"Ports"}</span>
+                    </span>
                 </ybc::NavbarItem>
                 <ybc::NavbarItem>
-                    <ybc::ButtonAnchor classes={classes!("is-inverted")} rel={String::from("noopener noreferrer")} target={String::from("_blank")} href="https://yew.rs">
+                    <ybc::ButtonAnchor classes={classes!("is-text")} rel={String::from("noopener noreferrer")} target={String::from("_blank")} href="https://yew.rs">
                         {"Yew"}
-                    </ybc::ButtonAnchor>
-                </ybc::NavbarItem>
-                <ybc::NavbarItem>
-                    <ybc::ButtonAnchor classes={classes!("is-inverted")} rel={String::from("noopener noreferrer")} target={String::from("_blank")} href="https://github.com/thedodd/ybc">
-
                     </ybc::ButtonAnchor>
                 </ybc::NavbarItem>
                 </>
             }}
+            navend={html!{}}
         />
     }
 }
