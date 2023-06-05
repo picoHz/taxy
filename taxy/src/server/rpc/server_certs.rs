@@ -13,6 +13,19 @@ impl RpcMethod for GetServerCertList {
     }
 }
 
+pub struct GetServerCert {
+    pub id: String,
+}
+
+#[async_trait::async_trait]
+impl RpcMethod for GetServerCert {
+    type Output = CertInfo;
+
+    async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
+        state.get_server_cert(&self.id)
+    }
+}
+
 pub struct AddServerCert {
     pub cert: Cert,
 }

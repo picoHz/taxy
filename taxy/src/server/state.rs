@@ -458,6 +458,18 @@ impl ServerState {
             .collect()
     }
 
+    pub fn get_acme(&self, id: &str) -> Result<AcmeInfo, Error> {
+        self.certs
+            .list()
+            .into_iter()
+            .find(|item| item.id() == id)
+            .map(|item| match item {
+                KeyringInfo::Acme(acme) => Ok(acme),
+                _ => Err(Error::IdNotFound { id: id.to_string() }),
+            })
+            .unwrap_or_else(|| Err(Error::IdNotFound { id: id.to_string() }))
+    }
+
     pub async fn add_acme(&mut self, entry: AcmeEntry) -> Result<(), Error> {
         if self.certs.iter().any(|item| item.id() == entry.id) {
             Err(Error::IdAlreadyExists { id: entry.id })
@@ -505,6 +517,18 @@ impl ServerState {
                 _ => None,
             })
             .collect()
+    }
+
+    pub fn get_server_cert(&self, id: &str) -> Result<CertInfo, Error> {
+        self.certs
+            .list()
+            .into_iter()
+            .find(|item| item.id() == id)
+            .map(|item| match item {
+                KeyringInfo::ServerCert(cert) => Ok(cert),
+                _ => Err(Error::IdNotFound { id: id.to_string() }),
+            })
+            .unwrap_or_else(|| Err(Error::IdNotFound { id: id.to_string() }))
     }
 
     pub async fn add_server_cert(&mut self, cert: Cert) -> Result<(), Error> {

@@ -13,6 +13,19 @@ impl RpcMethod for GetAcmeList {
     }
 }
 
+pub struct GetAcme {
+    pub id: String,
+}
+
+#[async_trait::async_trait]
+impl RpcMethod for GetAcme {
+    type Output = AcmeInfo;
+
+    async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
+        state.get_acme(&self.id)
+    }
+}
+
 pub struct AddAcme {
     pub item: AcmeEntry,
 }

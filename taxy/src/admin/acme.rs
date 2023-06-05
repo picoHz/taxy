@@ -8,6 +8,13 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
         .and(warp::path::end())
         .and(with_state(app_state.clone()).and_then(list));
 
+    let acme_get = warp::get().and(
+        with_state(app_state.clone())
+            .and(warp::path::param())
+            .and(warp::path::end())
+            .and_then(get),
+    );
+
     let acme_add = warp::post().and(
         with_state(app_state.clone())
             .and(warp::body::json())
@@ -23,7 +30,7 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
     );
 
     warp::path("acme")
-        .and(acme_delete.or(acme_add).or(acme_list))
+        .and(acme_delete.or(acme_get).or(acme_add).or(acme_list))
         .boxed()
 }
 
@@ -41,6 +48,26 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
 )]
 pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(&state.call(GetAcmeList).await?))
+}
+
+/// Get an ACME configuration.
+#[utoipa::path(
+    get,
+    path = "/api/acme/{id}",
+    params(
+        ("id" = String, Path, description = "ACME ID")
+    ),
+    responses(
+        (status = 200, body = [AcmeInfo]),
+        (status = 404),
+        (status = 401),
+    ),
+    security(
+        ("authorization"=[])
+    )
+)]
+pub async fn get(state: AppState, id: String) -> Result<impl Reply, Rejection> {
+    Ok(warp::reply::json(&state.call(GetAcme { id }).await?))
 }
 
 /// Register an ACME configuration.
