@@ -14,6 +14,19 @@ impl RpcMethod for GetSiteList {
     }
 }
 
+pub struct GetSite {
+    pub id: String,
+}
+
+#[async_trait::async_trait]
+impl RpcMethod for GetSite {
+    type Output = SiteEntry;
+
+    async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
+        state.get_site(&self.id)
+    }
+}
+
 pub struct DeleteSite {
     pub id: String,
 }

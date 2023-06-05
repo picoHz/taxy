@@ -8,6 +8,12 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
         .and(warp::path::end())
         .and(with_state(app_state.clone()).and_then(list));
 
+    let ports_get = warp::get()
+        .and(with_state(app_state.clone()))
+        .and(warp::path::param())
+        .and(warp::path::end())
+        .and_then(get);
+
     let ports_status = warp::get()
         .and(with_state(app_state.clone()))
         .and(warp::path::param())
@@ -47,6 +53,7 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
     warp::path("ports")
         .and(
             ports_delete
+                .or(ports_get)
                 .or(ports_put)
                 .or(ports_status)
                 .or(ports_reset)
@@ -72,6 +79,26 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
 )]
 pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(&state.call(GetPortList).await?))
+}
+
+/// Get a port configuration.
+#[utoipa::path(
+    get,
+    path = "/api/ports/{id}/status",
+    params(
+        ("id" = String, Path, description = "Port configuration id")
+    ),
+    responses(
+        (status = 200, body = PortEntry),
+        (status = 404),
+        (status = 401),
+    ),
+    security(
+        ("authorization"=[])
+    )
+)]
+pub async fn get(state: AppState, id: String) -> Result<impl Reply, Rejection> {
+    Ok(warp::reply::json(&state.call(GetPort { id }).await?))
 }
 
 /// Get the status of a port.

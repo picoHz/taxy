@@ -401,6 +401,15 @@ impl ServerState {
         self.table.entries()
     }
 
+    pub fn get_port(&self, id: &str) -> Result<PortEntry, Error> {
+        self.table
+            .entries()
+            .iter()
+            .find(|entry| entry.id == id)
+            .cloned()
+            .ok_or_else(|| Error::IdNotFound { id: id.to_string() })
+    }
+
     pub fn get_port_status(&self, id: &str) -> Result<PortStatus, Error> {
         self.table
             .contexts()
@@ -549,6 +558,15 @@ impl ServerState {
 
     pub fn get_site_list(&self) -> Vec<SiteEntry> {
         self.sites.entries()
+    }
+
+    pub fn get_site(&self, id: &str) -> Result<SiteEntry, Error> {
+        self.sites
+            .entries()
+            .iter()
+            .find(|entry| entry.id == id)
+            .cloned()
+            .ok_or_else(|| Error::IdNotFound { id: id.to_string() })
     }
 
     pub async fn add_site(&mut self, entry: SiteEntry) -> Result<(), Error> {

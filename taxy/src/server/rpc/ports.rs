@@ -14,6 +14,19 @@ impl RpcMethod for GetPortList {
     }
 }
 
+pub struct GetPort {
+    pub id: String,
+}
+
+#[async_trait::async_trait]
+impl RpcMethod for GetPort {
+    type Output = PortEntry;
+
+    async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
+        state.get_port(&self.id)
+    }
+}
+
 pub struct GetPortStatus {
     pub id: String,
 }

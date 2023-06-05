@@ -8,6 +8,13 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
         .and(warp::path::end())
         .and(with_state(app_state.clone()).and_then(list));
 
+    let api_get = warp::get().and(
+        with_state(app_state.clone())
+            .and(warp::path::param())
+            .and(warp::path::end())
+            .and_then(get),
+    );
+
     let api_delete = warp::delete().and(
         with_state(app_state.clone())
             .and(warp::path::param())
@@ -31,7 +38,7 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
     );
 
     warp::path("sites")
-        .and(api_delete.or(api_put).or(api_list).or(api_post))
+        .and(api_delete.or(api_get).or(api_put).or(api_list).or(api_post))
         .boxed()
 }
 
@@ -51,6 +58,26 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
 )]
 pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(&state.call(GetSiteList).await?))
+}
+
+/// Get a site configuration.
+#[utoipa::path(
+    get,
+    path = "/api/sites/{id}",
+    params(
+        ("id" = String, Path, description = "Port configuration id")
+    ),
+    responses(
+        (status = 200, body = SiteEntry),
+        (status = 404),
+        (status = 401),
+    ),
+    security(
+        ("authorization"=[])
+    )
+)]
+pub async fn get(state: AppState, id: String) -> Result<impl Reply, Rejection> {
+    Ok(warp::reply::json(&state.call(GetSite { id }).await?))
 }
 
 /// Delete a site configuration.
