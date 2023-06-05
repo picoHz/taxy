@@ -14,7 +14,7 @@ pub fn navbar() -> Html {
             padded=true
             navbrand={html!{
                 <ybc::NavbarItem>
-                    <ybc::Title classes={classes!("has-text-white")} size={ybc::HeaderSize::Is4}>{"Trunk | Yew | YBC"}</ybc::Title>
+                    <ybc::Title classes={classes!("has-text-white")} size={ybc::HeaderSize::Is4}>{"Taxy"}</ybc::Title>
                 </ybc::NavbarItem>
             }}
             navstart={html!{}}

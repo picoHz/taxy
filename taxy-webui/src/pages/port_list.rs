@@ -1,8 +1,10 @@
 use crate::auth::{use_ensure_auth, UserSession};
+use crate::pages::Route;
 use crate::API_ENDPOINT;
 use gloo_net::http::Request;
 use taxy_api::port::PortEntry;
 use yew::prelude::*;
+use yew_router::prelude::*;
 use yewdux::prelude::*;
 
 #[function_component(PortList)]
@@ -26,16 +28,29 @@ pub fn port_view() -> Html {
         session.clone(),
     );
 
+    let navigator = use_navigator().unwrap();
+    let list = list.to_vec();
     html! {
-        <ul class="item-list">
-            { list.iter().map(|entry| {
-                html! {
-                    <li>
-                        <span>{ &entry.id }</span>
-                    </li>
-                }
-            }).collect::<Html>() }
-        </ul>
+        <ybc::Columns classes={classes!("is-centered", "m-5")}>
+            <ybc::Column classes={classes!("is-three-fifths-desktop")}>
+                <ybc::Panel heading={html!("Ports")}>
+                    { list.into_iter().map(|entry| {
+                        let navigator = navigator.clone();
+                        let onclick = Callback::from(move |_|  {
+                            navigator.push(&Route::PortView {id: entry.id.clone()});
+                        });
+                        html! {
+                            <a class="panel-block" {onclick}>{&entry.port.listen}</a>
+                        }
+                    }).collect::<Html>() }
+                    <div class="panel-block">
+                        <button class="button is-link is-outlined is-fullwidth">
+                        {"Add Port"}
+                        </button>
+                    </div>
+                </ybc::Panel>
+            </ybc::Column>
+        </ybc::Columns>
     }
 }
 
