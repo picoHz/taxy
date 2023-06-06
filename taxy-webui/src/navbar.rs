@@ -32,9 +32,6 @@ const ITEMS: &[MenuItem] = {
 pub fn navbar() -> Html {
     let navigator = use_navigator().unwrap();
     let route = use_route::<Route>().unwrap();
-    if route == Route::Login {
-        return html! {};
-    }
 
     let navigator_cloned = navigator.clone();
     let home_onclick = Callback::from(move |e: MouseEvent| {
@@ -52,41 +49,46 @@ pub fn navbar() -> Html {
         <ybc::Navbar
             classes={classes!("is-light")}
             padded=true
+            navburger={route != Route::Login}
             navbrand={html!{
                 <a class="navbar-item" onclick={home_onclick}>
                     <ybc::Title size={ybc::HeaderSize::Is4}>{"Taxy"}</ybc::Title>
                 </a>
             }}
             navstart={html!{
-                <>
-                { ITEMS.iter().map(|entry| {
-                    let navigator = navigator.clone();
-                    let onclick = Callback::from(move |e: MouseEvent|  {
-                        e.prevent_default();
-                        navigator.push(&entry.route);
-                    });
-                    html! {
-                        <a class="navbar-item" {onclick}>
-                            <span class="icon-text">
-                                <span class="icon">
-                                    <ion-icon name={entry.icon}></ion-icon>
+                if route != Route::Login {
+                    <>
+                    { ITEMS.iter().map(|entry| {
+                        let navigator = navigator.clone();
+                        let onclick = Callback::from(move |e: MouseEvent|  {
+                            e.prevent_default();
+                            navigator.push(&entry.route);
+                        });
+                        html! {
+                            <a class="navbar-item" {onclick}>
+                                <span class="icon-text">
+                                    <span class="icon">
+                                        <ion-icon name={entry.icon}></ion-icon>
+                                    </span>
+                                    <span>{entry.name}</span>
                                 </span>
-                                <span>{entry.name}</span>
-                            </span>
-                        </a>
-                    }
-                }).collect::<Html>() }
-                </>
+                            </a>
+                        }
+                    }).collect::<Html>() }
+                    </>
+                }
             }}
             navend={html!{
-                <a class="navbar-item" onclick={logout_onclick}>
-                    <span class="icon-text">
-                        <span class="icon">
-                            <ion-icon name="exit"></ion-icon>
+                if route != Route::Login {
+                    <a class="navbar-item" onclick={logout_onclick}>
+                        <span class="icon-text">
+                            <span class="icon">
+                                <ion-icon name="exit"></ion-icon>
+                            </span>
+                            <span>{"Logout"}</span>
                         </span>
-                        <span>{"Logout"}</span>
-                    </span>
-                </a>
+                    </a>
+                }
             }}
         />
     }

@@ -47,7 +47,7 @@ pub fn port_view() -> Html {
                                 <div class="list-item-title">{&entry.port.listen}</div>
                                 <div class="list-item-description">{&entry.id}</div>
                             </div>
-                    
+
                             <div class="list-item-controls">
                                 <div class="buttons is-right">
                                     <button class="button" {onclick}>
@@ -56,12 +56,28 @@ pub fn port_view() -> Html {
                                         </span>
                                         <span>{"Config"}</span>
                                     </button>
-                            
-                                    <button class="button">
-                                        <span class="icon is-small">
-                                            <ion-icon name="ellipsis-horizontal"></ion-icon>
-                                        </span>
-                                    </button>
+
+                                    <div class="dropdown is-right is-hoverable">
+                                        <div class="dropdown-trigger">
+                                            <button class="button">
+                                                <span class="icon is-small">
+                                                    <ion-icon name="ellipsis-horizontal"></ion-icon>
+                                                </span>
+                                            </button>
+                                        </div>
+                                        <div class="dropdown-menu" id="dropdown-menu" role="menu">
+                                            <div class="dropdown-content">
+                                                <a href="#" class="dropdown-item">
+                                                    <span class="icon-text">
+                                                        <span class="icon">
+                                                            <ion-icon name="trash"></ion-icon>
+                                                        </span>
+                                                        <span>{"Delete"}</span>
+                                                    </span>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
