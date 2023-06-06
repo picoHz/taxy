@@ -86,8 +86,8 @@ pub fn login() -> Html {
     });
 
     html! {
-        <ybc::Columns classes={classes!("is-centered", "m-5")}>
-            <ybc::Column classes={classes!("is-4")}>
+        <ybc::Columns classes={classes!("is-centered")}>
+            <ybc::Column classes={classes!("is-half")}>
                 <ybc::Field>
                     <form {onsubmit}>
                         <label class={classes!("label", "mt-5")}>{ "Username" }</label>

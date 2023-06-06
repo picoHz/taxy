@@ -33,6 +33,15 @@ pub fn port_view() -> Html {
     html! {
         <>
             <ybc::Card>
+            <ybc::CardHeader>
+                <p class="card-header-title">
+                    <ybc::Breadcrumb>
+                        <ul>
+                            <li><a>{"Ports"}</a></li>
+                        </ul>
+                    </ybc::Breadcrumb>
+                </p>
+            </ybc::CardHeader>
             <div class="list has-visible-pointer-controls">
             { list.into_iter().map(|entry| {
                 let navigator = navigator.clone();
