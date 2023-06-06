@@ -54,7 +54,7 @@ impl Route {
                 route: Route::Sites,
             }],
             Route::Certs => vec![BreadcrumbItem {
-                name: "Certs".into(),
+                name: "Certificates".into(),
                 route: Route::Certs,
             }],
             Route::PortView { id } => vec![

@@ -21,7 +21,7 @@ const ITEMS: &[MenuItem] = {
             route: Route::Sites,
         },
         MenuItem {
-            name: "Certs",
+            name: "Certificates",
             icon: "ribbon",
             route: Route::Certs,
         },
