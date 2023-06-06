@@ -1,4 +1,4 @@
-use crate::{auth::UserSession, pages::Route, API_ENDPOINT};
+use crate::{pages::Route, store::UserSession, API_ENDPOINT};
 use gloo_net::http::Request;
 use serde_derive::Deserialize;
 use taxy_api::{

@@ -1,4 +1,4 @@
-use crate::{auth::UserSession, pages::Route};
+use crate::{pages::Route, store::UserSession};
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;

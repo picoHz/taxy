@@ -10,6 +10,7 @@ mod auth;
 mod event;
 mod navbar;
 mod pages;
+mod store;
 
 #[cfg(debug_assertions)]
 const API_ENDPOINT: &str = "http://127.0.0.1:46492/api";
