@@ -8,6 +8,7 @@ mod login;
 mod logout;
 mod port_list;
 mod port_view;
+mod site_list;
 
 #[derive(Clone, Debug, Routable, PartialEq)]
 pub enum Route {
@@ -25,6 +26,8 @@ pub enum Route {
     Certs,
     #[at("/ports/:id")]
     PortView { id: String },
+    #[at("/sites/:id")]
+    SiteView { id: String },
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -67,6 +70,16 @@ impl Route {
                     route: Route::PortView { id: id.clone() },
                 },
             ],
+            Route::SiteView { id } => vec![
+                BreadcrumbItem {
+                    name: "Sites".into(),
+                    route: Route::Sites,
+                },
+                BreadcrumbItem {
+                    name: id.clone().into(),
+                    route: Route::SiteView { id: id.clone() },
+                },
+            ],
             Route::NotFound => vec![],
         }
     }
@@ -84,7 +97,8 @@ pub fn switch(routes: Route) -> Html {
         Route::Logout => html! { <logout::Logout /> },
         Route::Ports => html! { <port_list::PortList /> },
         Route::PortView { id } => html! { <port_view::PortView {id} /> },
-        Route::Sites => html! { <port_list::PortList /> },
+        Route::Sites => html! { <site_list::SiteList /> },
+        Route::SiteView { id } => html! { <port_view::PortView {id} /> },
         Route::Certs => html! { <port_list::PortList /> },
         Route::NotFound => html! { <Redirect<Route> to={Route::Home}/> },
     }

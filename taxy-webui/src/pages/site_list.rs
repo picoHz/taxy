@@ -1,27 +1,28 @@
 use crate::breadcrumb::Breadcrumb;
 use crate::pages::Route;
-use crate::store::PortStore;
+use crate::store::{PortStore, SiteStore};
 use crate::API_ENDPOINT;
 use crate::{auth::use_ensure_auth, store::SessionStore};
 use gloo_net::http::Request;
-use taxy_api::port::PortEntry;
+use taxy_api::site::SiteEntry;
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
 
-#[function_component(PortList)]
-pub fn post_list() -> Html {
+#[function_component(SiteList)]
+pub fn site_list() -> Html {
     use_ensure_auth();
 
     let (session, _) = use_store::<SessionStore>();
-    let (ports, dispatcher) = use_store::<PortStore>();
+    let (ports, _) = use_store::<PortStore>();
+    let (sites, dispatcher) = use_store::<SiteStore>();
     let token = session.token.clone();
     use_effect_with_deps(
         move |_| {
             if let Some(token) = token {
                 wasm_bindgen_futures::spawn_local(async move {
                     if let Ok(res) = get_list(&token).await {
-                        dispatcher.set(PortStore { entries: res });
+                        dispatcher.set(SiteStore { entries: res });
                     }
                 });
             }
@@ -30,7 +31,7 @@ pub fn post_list() -> Html {
     );
 
     let navigator = use_navigator().unwrap();
-    let list = ports.entries.clone();
+    let list = sites.entries.clone();
     html! {
         <>
             <ybc::Card>
@@ -45,13 +46,16 @@ pub fn post_list() -> Html {
                 let id = entry.id.clone();
                 let onclick = Callback::from(move |_|  {
                     let id = id.clone();
-                    navigator.push(&Route::PortView {id});
+                    navigator.push(&Route::SiteView {id});
                 });
+                let ports = entry.site.ports.iter().filter_map(|port| {
+                    ports.entries.iter().find(|p| p.id == *port)
+                }).map(|entry| entry.port.listen.to_string()).collect::<Vec<_>>().join(",");
                 html! {
                     <div class="list-item">
                         <div class="list-item-content">
-                            <div class="list-item-title">{&entry.port.listen}</div>
-                            <div class="list-item-description">{&entry.id}</div>
+                            <div class="list-item-title">{&entry.id}</div>
+                            <div class="list-item-description">{ports}</div>
                         </div>
 
                         <div class="list-item-controls">
@@ -96,7 +100,7 @@ pub fn post_list() -> Html {
                     <span class="icon">
                         <ion-icon name="add"></ion-icon>
                     </span>
-                    <span>{"New Port"}</span>
+                    <span>{"New Site"}</span>
                     </span>
                 </a>
             </ybc::CardFooter>
@@ -105,8 +109,8 @@ pub fn post_list() -> Html {
     }
 }
 
-async fn get_list(token: &str) -> Result<Vec<PortEntry>, gloo_net::Error> {
-    Request::get(&format!("{API_ENDPOINT}/ports"))
+async fn get_list(token: &str) -> Result<Vec<SiteEntry>, gloo_net::Error> {
+    Request::get(&format!("{API_ENDPOINT}/sites"))
         .header("Authorization", &format!("Bearer {token}"))
         .send()
         .await?
