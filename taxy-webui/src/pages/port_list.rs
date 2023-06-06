@@ -31,24 +31,43 @@ pub fn port_view() -> Html {
     let navigator = use_navigator().unwrap();
     let list = ports.entries.clone();
     html! {
-        <ybc::Columns classes={classes!("is-centered", "m-5")}>
+        <ybc::Columns classes={classes!("is-centered")}>
             <ybc::Column classes={classes!("is-three-fifths-desktop")}>
-                <ybc::Panel heading={html!("Ports")}>
-                    { list.into_iter().map(|entry| {
-                        let navigator = navigator.clone();
-                        let onclick = Callback::from(move |_|  {
-                            navigator.push(&Route::PortView {id: entry.id.clone()});
-                        });
-                        html! {
-                            <a class="panel-block" {onclick}>{&entry.port.listen}</a>
-                        }
-                    }).collect::<Html>() }
-                    <div class="panel-block">
-                        <button class="button is-link is-outlined is-fullwidth">
-                        {"Add Port"}
-                        </button>
-                    </div>
-                </ybc::Panel>
+                <div class="list has-visible-pointer-controls">
+                { list.into_iter().map(|entry| {
+                    let navigator = navigator.clone();
+                    let id = entry.id.clone();
+                    let onclick = Callback::from(move |_|  {
+                        let id = id.clone();
+                        navigator.push(&Route::PortView {id});
+                    });
+                    html! {
+                        <div class="list-item">
+                            <div class="list-item-content">
+                                <div class="list-item-title">{&entry.port.listen}</div>
+                                <div class="list-item-description">{&entry.id}</div>
+                            </div>
+                    
+                            <div class="list-item-controls">
+                                <div class="buttons is-right">
+                                    <button class="button" {onclick}>
+                                        <span class="icon is-small">
+                                            <ion-icon name="settings"></ion-icon>
+                                        </span>
+                                        <span>{"Config"}</span>
+                                    </button>
+                            
+                                    <button class="button">
+                                        <span class="icon is-small">
+                                            <ion-icon name="ellipsis-horizontal"></ion-icon>
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }).collect::<Html>() }
+                </div>
             </ybc::Column>
         </ybc::Columns>
     }
