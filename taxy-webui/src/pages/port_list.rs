@@ -25,7 +25,7 @@ pub fn port_view() -> Html {
                 });
             }
         },
-        session.clone(),
+        session,
     );
 
     let navigator = use_navigator().unwrap();

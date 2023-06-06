@@ -42,7 +42,7 @@ pub fn navbar() -> Html {
             }}
             navstart={html!{
                 <>
-                { ITEMS.into_iter().map(|entry| {
+                { ITEMS.iter().map(|entry| {
                     let navigator = navigator.clone();
                     let onclick = Callback::from(move |e: MouseEvent|  {
                         e.prevent_default();
