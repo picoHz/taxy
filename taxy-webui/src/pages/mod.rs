@@ -17,6 +17,10 @@ pub enum Route {
     Logout,
     #[at("/ports")]
     Ports,
+    #[at("/sites")]
+    Sites,
+    #[at("/certs")]
+    Certs,
     #[at("/ports/:id")]
     PortView { id: String },
     #[not_found]
@@ -31,6 +35,8 @@ pub fn switch(routes: Route) -> Html {
         Route::Logout => html! { <logout::Logout /> },
         Route::Ports => html! { <port_list::PortList /> },
         Route::PortView { id } => html! { <port_view::PortView {id} /> },
+        Route::Sites => html! { <port_list::PortList /> },
+        Route::Certs => html! { <port_list::PortList /> },
         Route::NotFound => html! { <Redirect<Route> to={Route::Home}/> },
     }
 }

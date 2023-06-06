@@ -9,12 +9,23 @@ struct MenuItem {
 }
 
 const ITEMS: &[MenuItem] = {
-    use Route::*;
-    &[MenuItem {
-        name: "Ports",
-        icon: "wifi",
-        route: Ports,
-    }]
+    &[
+        MenuItem {
+            name: "Ports",
+            icon: "wifi",
+            route: Route::Ports,
+        },
+        MenuItem {
+            name: "Sites",
+            icon: "globe",
+            route: Route::Sites,
+        },
+        MenuItem {
+            name: "Certs",
+            icon: "ribbon",
+            route: Route::Certs,
+        },
+    ]
 };
 
 #[function_component(Navbar)]
@@ -26,18 +37,24 @@ pub fn navbar() -> Html {
     }
 
     let navigator_cloned = navigator.clone();
-    let onclick = Callback::from(move |e: MouseEvent| {
+    let home_onclick = Callback::from(move |e: MouseEvent| {
         e.prevent_default();
         navigator_cloned.push(&Route::Home);
     });
 
+    let navigator_cloned = navigator.clone();
+    let logout_onclick = Callback::from(move |e: MouseEvent| {
+        e.prevent_default();
+        navigator_cloned.push(&Route::Logout);
+    });
+
     html! {
         <ybc::Navbar
-            classes={classes!("is-success")}
+            classes={classes!("is-light")}
             padded=true
             navbrand={html!{
-                <a class="navbar-item" {onclick}>
-                    <ybc::Title classes={classes!("has-text-white")} size={ybc::HeaderSize::Is4}>{"Taxy"}</ybc::Title>
+                <a class="navbar-item" onclick={home_onclick}>
+                    <ybc::Title size={ybc::HeaderSize::Is4}>{"Taxy"}</ybc::Title>
                 </a>
             }}
             navstart={html!{
@@ -59,22 +76,18 @@ pub fn navbar() -> Html {
                         </a>
                     }
                 }).collect::<Html>() }
-                <ybc::NavbarItem tag={ybc::NavbarItemTag::A}>
-                    <span class="icon-text">
-                        <span class="icon">
-                            <ion-icon name="wifi"></ion-icon>
-                        </span>
-                        <span>{"Ports"}</span>
-                    </span>
-                </ybc::NavbarItem>
-                <ybc::NavbarItem>
-                    <ybc::ButtonAnchor classes={classes!("is-text")} rel={String::from("noopener noreferrer")} target={String::from("_blank")} href="https://yew.rs">
-                        {"Yew"}
-                    </ybc::ButtonAnchor>
-                </ybc::NavbarItem>
                 </>
             }}
-            navend={html!{}}
+            navend={html!{
+                <a class="navbar-item" onclick={logout_onclick}>
+                    <span class="icon-text">
+                        <span class="icon">
+                            <ion-icon name="exit"></ion-icon>
+                        </span>
+                        <span>{"Logout"}</span>
+                    </span>
+                </a>
+            }}
         />
     }
 }
