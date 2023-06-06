@@ -1,4 +1,4 @@
-use crate::{pages::Route, store::UserSession, API_ENDPOINT};
+use crate::{pages::Route, store::SessionStore, API_ENDPOINT};
 use gloo_net::http::Request;
 use serde_derive::Deserialize;
 use taxy_api::{
@@ -20,7 +20,7 @@ enum ApiResult<T> {
 
 #[function_component(Login)]
 pub fn login() -> Html {
-    let (_, dispatch) = use_store::<UserSession>();
+    let (_, dispatch) = use_store::<SessionStore>();
     let navigator = use_navigator().unwrap();
 
     let username = use_state(String::new);
@@ -73,7 +73,7 @@ pub fn login() -> Html {
             match login {
                 ApiResult::Ok(login) => {
                     gloo_console::log!(&login.token);
-                    dispatch.set(UserSession {
+                    dispatch.set(SessionStore {
                         token: Some(login.token),
                     });
                     navigator.push(&Route::Home);

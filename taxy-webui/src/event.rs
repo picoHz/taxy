@@ -1,4 +1,4 @@
-use crate::{store::UserSession, API_ENDPOINT};
+use crate::{store::SessionStore, API_ENDPOINT};
 use futures::StreamExt;
 use gloo_net::eventsource::futures::EventSource;
 use serde_derive::{Deserialize, Serialize};
@@ -13,7 +13,7 @@ struct EventSession {
 
 #[hook]
 pub fn use_event_subscriber() {
-    let (session, _) = use_store::<UserSession>();
+    let (session, _) = use_store::<SessionStore>();
     let (event, dispatcher) = use_store::<EventSession>();
     if !event.active {
         if let Some(token) = &session.token {

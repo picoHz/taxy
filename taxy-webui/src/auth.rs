@@ -1,4 +1,4 @@
-use crate::{pages::Route, store::UserSession, API_ENDPOINT};
+use crate::{pages::Route, store::SessionStore, API_ENDPOINT};
 use gloo_net::http::Request;
 use yew::prelude::*;
 use yew_router::prelude::*;
@@ -7,7 +7,7 @@ use yewdux::prelude::*;
 #[hook]
 pub fn use_ensure_auth() {
     let navigator = use_navigator().unwrap();
-    let (session, dispatcher) = use_store::<UserSession>();
+    let (session, dispatcher) = use_store::<SessionStore>();
     if let Some(token) = session.token.clone() {
         wasm_bindgen_futures::spawn_local(async move {
             if !test_token(&token).await {

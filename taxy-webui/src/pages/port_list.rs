@@ -1,6 +1,7 @@
 use crate::pages::Route;
+use crate::store::PortStore;
 use crate::API_ENDPOINT;
-use crate::{auth::use_ensure_auth, store::UserSession};
+use crate::{auth::use_ensure_auth, store::SessionStore};
 use gloo_net::http::Request;
 use taxy_api::port::PortEntry;
 use yew::prelude::*;
@@ -9,18 +10,17 @@ use yewdux::prelude::*;
 
 #[function_component(PortList)]
 pub fn port_view() -> Html {
-    let list = use_state::<Vec<PortEntry>, _>(Vec::new);
     use_ensure_auth();
 
-    let (session, _) = use_store::<UserSession>();
+    let (session, _) = use_store::<SessionStore>();
+    let (ports, dispatcher) = use_store::<PortStore>();
     let token = session.token.clone();
-    let list_cloned = list.clone();
     use_effect_with_deps(
         move |_| {
             if let Some(token) = token {
                 wasm_bindgen_futures::spawn_local(async move {
                     if let Ok(res) = get_list(&token).await {
-                        list_cloned.set(res);
+                        dispatcher.set(PortStore { entries: res });
                     }
                 });
             }
@@ -29,7 +29,7 @@ pub fn port_view() -> Html {
     );
 
     let navigator = use_navigator().unwrap();
-    let list = list.to_vec();
+    let list = ports.entries.clone();
     html! {
         <ybc::Columns classes={classes!("is-centered", "m-5")}>
             <ybc::Column classes={classes!("is-three-fifths-desktop")}>
