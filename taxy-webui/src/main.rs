@@ -7,6 +7,7 @@ use yew::prelude::*;
 use yew_router::prelude::*;
 
 mod auth;
+mod breadcrumb;
 mod event;
 mod navbar;
 mod pages;

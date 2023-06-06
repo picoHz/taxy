@@ -1,3 +1,4 @@
+use crate::breadcrumb::Breadcrumb;
 use crate::pages::Route;
 use crate::store::PortStore;
 use crate::API_ENDPOINT;
@@ -35,11 +36,7 @@ pub fn port_view() -> Html {
             <ybc::Card>
             <ybc::CardHeader>
                 <p class="card-header-title">
-                    <ybc::Breadcrumb>
-                        <ul>
-                            <li><a>{"Ports"}</a></li>
-                        </ul>
-                    </ybc::Breadcrumb>
+                    <Breadcrumb />
                 </p>
             </ybc::CardHeader>
             <div class="list has-visible-pointer-controls">

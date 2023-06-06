@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use yew::prelude::*;
 use yew_router::prelude::*;
 
@@ -26,6 +28,53 @@ pub enum Route {
     #[not_found]
     #[at("/404")]
     NotFound,
+}
+
+impl Route {
+    pub fn breadcrumb(&self) -> Vec<BreadcrumbItem> {
+        match self {
+            Route::Home => vec![BreadcrumbItem {
+                name: "Home".into(),
+                route: Route::Home,
+            }],
+            Route::Login => vec![BreadcrumbItem {
+                name: "Login".into(),
+                route: Route::Login,
+            }],
+            Route::Logout => vec![BreadcrumbItem {
+                name: "Logout".into(),
+                route: Route::Logout,
+            }],
+            Route::Ports => vec![BreadcrumbItem {
+                name: "Ports".into(),
+                route: Route::Ports,
+            }],
+            Route::Sites => vec![BreadcrumbItem {
+                name: "Sites".into(),
+                route: Route::Sites,
+            }],
+            Route::Certs => vec![BreadcrumbItem {
+                name: "Certs".into(),
+                route: Route::Certs,
+            }],
+            Route::PortView { id } => vec![
+                BreadcrumbItem {
+                    name: "Ports".into(),
+                    route: Route::Ports,
+                },
+                BreadcrumbItem {
+                    name: id.clone().into(),
+                    route: Route::PortView { id: id.clone() },
+                },
+            ],
+            Route::NotFound => vec![],
+        }
+    }
+}
+
+pub struct BreadcrumbItem {
+    pub name: Cow<'static, str>,
+    pub route: Route,
 }
 
 pub fn switch(routes: Route) -> Html {
