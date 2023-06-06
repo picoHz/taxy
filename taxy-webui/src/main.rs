@@ -24,7 +24,11 @@ pub fn app() -> Html {
         <>
         <BrowserRouter>
             <navbar::Navbar />
-            <Switch<pages::Route> render={pages::switch} />
+            <ybc::Columns classes={classes!("is-centered")}>
+                <ybc::Column classes={classes!("is-three-fifths-desktop", "m-5")}>
+                    <Switch<pages::Route> render={pages::switch} />
+                </ybc::Column>
+            </ybc::Columns>
         </BrowserRouter>
         </>
     }
