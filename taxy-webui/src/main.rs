@@ -7,11 +7,12 @@ use yew::prelude::*;
 use yew_router::prelude::*;
 
 mod auth;
-mod breadcrumb;
+mod components;
 mod event;
-mod navbar;
 mod pages;
 mod store;
+
+use components::navbar::Navbar;
 
 #[cfg(debug_assertions)]
 const API_ENDPOINT: &str = "http://127.0.0.1:46492/api";
@@ -24,7 +25,7 @@ pub fn app() -> Html {
     html! {
         <>
         <BrowserRouter>
-            <navbar::Navbar />
+            <Navbar />
             <ybc::Columns classes={classes!("is-centered")}>
                 <ybc::Column classes={classes!("is-three-fifths-desktop", "m-5")}>
                     <Switch<pages::Route> render={pages::switch} />

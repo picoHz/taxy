@@ -1,4 +1,4 @@
-use crate::breadcrumb::Breadcrumb;
+use crate::components::breadcrumb::Breadcrumb;
 use crate::pages::Route;
 use crate::store::{PortStore, SiteStore};
 use crate::API_ENDPOINT;

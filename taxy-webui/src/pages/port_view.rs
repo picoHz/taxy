@@ -1,4 +1,4 @@
-use crate::{auth::use_ensure_auth, breadcrumb::Breadcrumb};
+use crate::{auth::use_ensure_auth, components::breadcrumb::Breadcrumb};
 use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
