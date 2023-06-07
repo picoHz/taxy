@@ -6,6 +6,7 @@ use yew_router::prelude::*;
 mod home;
 mod login;
 mod logout;
+mod new_port;
 mod port_list;
 mod port_view;
 mod site_list;
@@ -20,12 +21,14 @@ pub enum Route {
     Logout,
     #[at("/ports")]
     Ports,
+    #[at("/ports/new")]
+    NewPort,
+    #[at("/ports/:id")]
+    PortView { id: String },
     #[at("/sites")]
     Sites,
     #[at("/certs")]
     Certs,
-    #[at("/ports/:id")]
-    PortView { id: String },
     #[at("/sites/:id")]
     SiteView { id: String },
     #[not_found]
@@ -52,6 +55,16 @@ impl Route {
                 name: "Ports".into(),
                 route: Route::Ports,
             }],
+            Route::NewPort => vec![
+                BreadcrumbItem {
+                    name: "Ports".into(),
+                    route: Route::Ports,
+                },
+                BreadcrumbItem {
+                    name: "New Port".into(),
+                    route: Route::NewPort,
+                },
+            ],
             Route::Sites => vec![BreadcrumbItem {
                 name: "Sites".into(),
                 route: Route::Sites,
@@ -96,6 +109,7 @@ pub fn switch(routes: Route) -> Html {
         Route::Login => html! { <login::Login /> },
         Route::Logout => html! { <logout::Logout /> },
         Route::Ports => html! { <port_list::PortList /> },
+        Route::NewPort => html! { <new_port::NewPort /> },
         Route::PortView { id } => html! { <port_view::PortView {id} /> },
         Route::Sites => html! { <site_list::SiteList /> },
         Route::SiteView { id } => html! { <port_view::PortView {id} /> },

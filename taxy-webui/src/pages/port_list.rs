@@ -31,6 +31,12 @@ pub fn post_list() -> Html {
     );
 
     let navigator = use_navigator().unwrap();
+
+    let navigator_cloned = navigator.clone();
+    let new_port_onclick = Callback::from(move |_| {
+        navigator_cloned.push(&Route::NewPort);
+    });
+
     let list = ports.entries.clone();
     let active_index = use_state(|| -1);
     html! {
@@ -150,7 +156,7 @@ pub fn post_list() -> Html {
             }).collect::<Html>() }
             </div>
             <ybc::CardFooter>
-                <a href="#" class="card-footer-item">
+                <a class="card-footer-item" onclick={new_port_onclick}>
                     <span class="icon-text">
                     <span class="icon">
                         <ion-icon name="add"></ion-icon>
