@@ -1,7 +1,13 @@
-use crate::{store::SessionStore, API_ENDPOINT};
+use crate::{
+    store::{PortStore, SessionStore},
+    API_ENDPOINT,
+};
 use futures::StreamExt;
 use gloo_net::eventsource::futures::EventSource;
+use gloo_timers::callback::Timeout;
+use gloo_utils::format::JsValueSerdeExt;
 use serde_derive::{Deserialize, Serialize};
+use taxy_api::event::ServerEvent;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 use yewdux::prelude::*;
@@ -15,6 +21,7 @@ struct EventSession {
 pub fn use_event_subscriber() {
     let (session, _) = use_store::<SessionStore>();
     let (event, dispatcher) = use_store::<EventSession>();
+    let (_, ports) = use_store::<PortStore>();
     if !event.active {
         if let Some(token) = &session.token {
             let mut es = EventSource::new(&format!("{API_ENDPOINT}/events?token={token}")).unwrap();
@@ -23,11 +30,23 @@ pub fn use_event_subscriber() {
             dispatcher.set(EventSession { active: true });
             spawn_local(async move {
                 let _es = es;
-                while let Some(Ok((event_type, msg))) = stream.next().await {
-                    gloo_console::log!(&format!("1. {}: {:?}", event_type, msg))
+                while let Some(Ok((_, msg))) = stream.next().await {
+                    if let Ok(s) = msg.data().into_serde::<String>() {
+                        if let Ok(event) = serde_json::from_str::<ServerEvent>(&s) {
+                            match event {
+                                ServerEvent::PortTableUpdated { entries } => {
+                                    ports.set(PortStore { entries });
+                                }
+                                _ => (),
+                            }
+                        }
+                    }
                 }
                 gloo_console::log!("EventSource Closed");
-                dispatcher.set(EventSession { active: false });
+                Timeout::new(5000, move || {
+                    dispatcher.set(EventSession { active: false });
+                })
+                .forget();
             })
         }
     }

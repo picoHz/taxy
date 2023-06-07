@@ -25,6 +25,7 @@ pub fn login() -> Html {
 
     let username = use_state(String::new);
     let password = use_state(String::new);
+    let error: UseStateHandle<Option<ErrorMessage>> = use_state(|| Option::<ErrorMessage>::None);
 
     let oninput_username = Callback::from({
         let username = username.clone();
@@ -50,6 +51,7 @@ pub fn login() -> Html {
         }
     });
 
+    let error_cloned = error.clone();
     let onsubmit = Callback::from(move |event: SubmitEvent| {
         event.prevent_default();
 
@@ -57,6 +59,7 @@ pub fn login() -> Html {
         let dispatch = dispatch.clone();
         let username = username.clone();
         let password = password.clone();
+        let error = error_cloned.clone();
         wasm_bindgen_futures::spawn_local(async move {
             let login: ApiResult<LoginResult> = Request::post(&format!("{API_ENDPOINT}/login"))
                 .json(&LoginRequest {
@@ -79,7 +82,7 @@ pub fn login() -> Html {
                     navigator.push(&Route::Home);
                 }
                 ApiResult::Err(err) => {
-                    gloo_console::log!(&format!("{:?}", err.error));
+                    error.set(Some(err));
                 }
             }
         });
@@ -89,6 +92,16 @@ pub fn login() -> Html {
         <ybc::Columns classes={classes!("is-centered")}>
             <ybc::Column classes={classes!("is-half")}>
                 <ybc::Field>
+                    if let Some(err) = &*error {
+                        <article class="message is-danger">
+                            <div class="message-header">
+                                <p>{"Error"}</p>
+                            </div>
+                            <div class="message-body">
+                                {&err.message}
+                            </div>
+                        </article>
+                    }
                     <form {onsubmit}>
                         <label class={classes!("label", "mt-5")}>{ "Username" }</label>
                         <div class={classes!("control")}>
