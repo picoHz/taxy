@@ -147,6 +147,67 @@ pub fn port_config(props: &Props) -> Html {
                     </div>
                 </div>
             }
+
+            <div class="field is-horizontal m-5">
+                <div class="field-label is-normal">
+                <label class="label">{"Upstream Servers"}</label>
+                </div>
+
+                <div class="is-flex-grow-5" style="flex-basis: 0">
+
+                <div class="field-body">
+                    <div class="field has-addons">
+                        <div class="control is-expanded">
+                            <input class="input" type="text" placeholder="Host" />
+                        </div>
+                        <div class="control">
+                            <input class="input" type="number" placeholder="Port" max="65535" min="1" />
+                        </div>
+                        <div class="control">
+                            <button class="button">
+                                <span class="icon">
+                                    <ion-icon name="add"></ion-icon>
+                                </span>
+                            </button>
+                        </div>
+                        <div class="control">
+                            <button class="button">
+                                <span class="icon">
+                                    <ion-icon name="remove"></ion-icon>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field-body mt-3">
+                    <div class="field has-addons">
+                        <div class="control is-expanded">
+                            <input class="input" type="text" placeholder="Host" />
+                        </div>
+                        <div class="control">
+                            <input class="input" type="number" placeholder="Port" max="65535" min="1" />
+                        </div>
+                        <div class="control">
+                            <button class="button">
+                                <span class="icon">
+                                    <ion-icon name="add"></ion-icon>
+                                </span>
+                            </button>
+                        </div>
+                        <div class="control">
+                            <button class="button">
+                                <span class="icon">
+                                    <ion-icon name="remove"></ion-icon>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                </div>
+            </div>
+
         </>
     }
 }
