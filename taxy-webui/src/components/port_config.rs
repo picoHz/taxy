@@ -63,6 +63,9 @@ pub fn port_config(props: &Props) -> Html {
                         <p class="control is-expanded">
                         <input class="input" type="text" placeholder="Interface" value={interface} />
                         </p>
+                        <p class="help is-danger">
+                          {"This interface is not available on the server."}
+                        </p>
                     </div>
                     <div class="field">
                         <p class="control is-expanded">
