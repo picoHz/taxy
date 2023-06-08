@@ -1,7 +1,7 @@
 use multiaddr::Protocol;
 use taxy_api::port::Port;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
-use web_sys::HtmlSelectElement;
+use web_sys::{HtmlInputElement, HtmlSelectElement};
 use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
@@ -43,12 +43,29 @@ pub fn port_config(props: &Props) -> Html {
     };
 
     let protocol = use_state(|| protocol.to_string());
-
     let protocol_onchange = Callback::from({
         let protocol = protocol.clone();
         move |event: Event| {
             let target: HtmlSelectElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
             protocol.set(target.value());
+        }
+    });
+
+    let interface = use_state(|| interface);
+    let interface_oninput = Callback::from({
+        let interface = interface.clone();
+        move |event: InputEvent| {
+            let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
+            interface.set(target.value());
+        }
+    });
+
+    let port = use_state(|| port);
+    let port_oninput = Callback::from({
+        let port = port.clone();
+        move |event: InputEvent| {
+            let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
+            port.set(target.value().parse().unwrap_or(1));
         }
     });
 
@@ -61,7 +78,7 @@ pub fn port_config(props: &Props) -> Html {
                 <div class="field-body">
                     <div class="field">
                         <p class="control is-expanded">
-                        <input class="input" type="text" placeholder="Interface" value={interface} />
+                        <input class="input" type="text" placeholder="Interface" oninput={interface_oninput} value={interface.to_string()} />
                         </p>
                         <p class="help is-danger">
                           {"This interface is not available on the server."}
@@ -69,7 +86,7 @@ pub fn port_config(props: &Props) -> Html {
                     </div>
                     <div class="field">
                         <p class="control is-expanded">
-                        <input class="input" type="number" placeholder="Port" value={port.to_string()} max="65535" min="1" />
+                        <input class="input" type="number" placeholder="Port" oninput={port_oninput} value={port.to_string()} max="65535" min="1" />
                         </p>
                     </div>
                 </div>
