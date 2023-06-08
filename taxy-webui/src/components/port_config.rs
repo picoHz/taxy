@@ -1,6 +1,20 @@
+use taxy_api::port::Port;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use web_sys::HtmlSelectElement;
 use yew::prelude::*;
+
+#[derive(Properties, PartialEq)]
+pub struct Props {
+    #[prop_or_else(create_default_port)]
+    pub port: Port,
+}
+
+fn create_default_port() -> Port {
+    Port {
+        listen: "/ip4/0.0.0.0/tcp/8080".parse().unwrap(),
+        opts: Default::default(),
+    }
+}
 
 const PROTOCOLS: &[(&str, &str)] = &[
     ("tcp", "TCP"),
@@ -10,7 +24,7 @@ const PROTOCOLS: &[(&str, &str)] = &[
 ];
 
 #[function_component(PortConfig)]
-pub fn port_config() -> Html {
+pub fn port_config(_props: &Props) -> Html {
     let protocol = use_state(|| "tcp".to_string());
 
     let protocol_onchange = Callback::from({
