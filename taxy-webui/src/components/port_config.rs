@@ -69,6 +69,23 @@ pub fn port_config(props: &Props) -> Html {
         }
     });
 
+    let tls_server_names = use_state(|| {
+        props
+            .port
+            .opts
+            .tls_termination
+            .as_ref()
+            .map(|tls| tls.server_names.join(", "))
+            .unwrap_or_default()
+    });
+    let tls_server_names_oninput = Callback::from({
+        let tls_server_names = tls_server_names.clone();
+        move |event: InputEvent| {
+            let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
+            tls_server_names.set(target.value());
+        }
+    });
+
     html! {
         <>
             <div class="field is-horizontal m-5">
@@ -121,7 +138,7 @@ pub fn port_config(props: &Props) -> Html {
                     <div class="field-body">
                         <div class="field">
                             <p class="control is-expanded">
-                            <input class="input" type="text" placeholder="Server Names" />
+                            <input class="input" type="text" placeholder="Server Names" value={tls_server_names.to_string()} oninput={tls_server_names_oninput} />
                             </p>
                             <p class="help">
                             {"You can use commas to list multiple names, e.g, example.com, *.test.examle.com."}
