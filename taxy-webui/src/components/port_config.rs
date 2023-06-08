@@ -1,3 +1,4 @@
+use multiaddr::Protocol;
 use taxy_api::port::Port;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use web_sys::HtmlSelectElement;
@@ -24,8 +25,24 @@ const PROTOCOLS: &[(&str, &str)] = &[
 ];
 
 #[function_component(PortConfig)]
-pub fn port_config(_props: &Props) -> Html {
-    let protocol = use_state(|| "tcp".to_string());
+pub fn port_config(props: &Props) -> Html {
+    let stack = props.port.listen.iter().collect::<Vec<_>>();
+    let tls = stack.iter().any(|p| matches!(p, Protocol::Tls));
+    let http = stack.iter().any(|p| matches!(p, Protocol::Http));
+    let (interface, port) = match &stack[..] {
+        [Protocol::Ip4(addr), Protocol::Tcp(port), ..] => (addr.to_string(), *port),
+        [Protocol::Ip6(addr), Protocol::Tcp(port), ..] => (addr.to_string(), *port),
+        _ => ("0.0.0.0".to_string(), 8080),
+    };
+
+    let protocol = match (tls, http) {
+        (true, true) => "https",
+        (true, false) => "tls",
+        (false, true) => "http",
+        (false, false) => "tcp",
+    };
+
+    let protocol = use_state(|| protocol.to_string());
 
     let protocol_onchange = Callback::from({
         let protocol = protocol.clone();
@@ -44,12 +61,12 @@ pub fn port_config(_props: &Props) -> Html {
                 <div class="field-body">
                     <div class="field">
                         <p class="control is-expanded">
-                        <input class="input" type="text" placeholder="Interface" value="0.0.0.0" />
+                        <input class="input" type="text" placeholder="Interface" value={interface} />
                         </p>
                     </div>
                     <div class="field">
                         <p class="control is-expanded">
-                        <input class="input" type="number" placeholder="Port" value="8080" max="65535" min="1" />
+                        <input class="input" type="number" placeholder="Port" value={port.to_string()} max="65535" min="1" />
                         </p>
                     </div>
                 </div>
