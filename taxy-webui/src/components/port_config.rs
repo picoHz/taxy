@@ -112,6 +112,24 @@ pub fn port_config(props: &Props) -> Html {
                     </div>
                 </div>
             </div>
+
+            if &*protocol == "tls" || &*protocol == "https" {
+                <div class="field is-horizontal m-5">
+                    <div class="field-label is-normal">
+                    <label class="label">{"TLS Server Names"}</label>
+                    </div>
+                    <div class="field-body">
+                        <div class="field">
+                            <p class="control is-expanded">
+                            <input class="input" type="text" placeholder="Server Names" />
+                            </p>
+                            <p class="help">
+                            {"You can use commas to list multiple names, e.g, example.com, *.test.examle.com."}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            }
         </>
     }
 }
