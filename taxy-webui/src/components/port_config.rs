@@ -25,6 +25,24 @@ pub fn port_config() -> Html {
         <>
             <div class="field is-horizontal m-5">
                 <div class="field-label is-normal">
+                <label class="label">{"Listener"}</label>
+                </div>
+                <div class="field-body">
+                    <div class="field">
+                        <p class="control is-expanded">
+                        <input class="input" type="text" placeholder="Interface" value="0.0.0.0" />
+                        </p>
+                    </div>
+                    <div class="field">
+                        <p class="control is-expanded">
+                        <input class="input" type="number" placeholder="Port" value="8080" max="65535" min="1" />
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field is-horizontal m-5">
+                <div class="field-label is-normal">
                     <label class="label">{"Protocol"}</label>
                 </div>
                 <div class="field-body">
