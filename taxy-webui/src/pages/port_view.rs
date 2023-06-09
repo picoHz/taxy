@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     auth::use_ensure_auth,
     components::{breadcrumb::Breadcrumb, port_config::PortConfig},
@@ -6,7 +8,7 @@ use crate::{
     API_ENDPOINT,
 };
 use gloo_net::http::Request;
-use taxy_api::port::PortEntry;
+use taxy_api::port::{Port, PortEntry};
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
@@ -46,6 +48,12 @@ pub fn port_view(props: &Props) -> Html {
         navigator_cloned.push(&Route::Ports);
     });
 
+    let entry = use_state::<Result<Port, HashMap<String, String>>, _>(|| Err(Default::default()));
+    let on_changed: Callback<Result<Port, HashMap<String, String>>> =
+        Callback::from(move |updated| {
+            entry.set(updated);
+        });
+
     html! {
         <>
             <ybc::Card>
@@ -56,7 +64,7 @@ pub fn port_view(props: &Props) -> Html {
             </ybc::CardHeader>
 
             if let Some(entry) = &*port {
-                <PortConfig port={entry.port.clone()} />
+                <PortConfig port={entry.port.clone()} {on_changed} />
 
                 <ybc::CardFooter>
                     <a class="card-footer-item" onclick={cancel_onclick}>

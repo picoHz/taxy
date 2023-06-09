@@ -1,8 +1,11 @@
+use std::collections::HashMap;
+
 use crate::{
     auth::use_ensure_auth,
     components::{breadcrumb::Breadcrumb, port_config::PortConfig},
     pages::Route,
 };
+use taxy_api::port::Port;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
@@ -17,35 +20,37 @@ pub fn new_port() -> Html {
         navigator_cloned.push(&Route::Ports);
     });
 
+    let entry = use_state::<Result<Port, HashMap<String, String>>, _>(|| Err(Default::default()));
+    let entry_cloned = entry.clone();
+    let on_changed: Callback<Result<Port, HashMap<String, String>>> =
+        Callback::from(move |updated| {
+            gloo_console::log!(&format!("updated: {:?}", updated));
+            entry_cloned.set(updated);
+        });
+
     html! {
         <>
-            <ybc::Card>
+            <ybc::Card classes="py-5">
             <ybc::CardHeader>
                 <p class="card-header-title">
                     <Breadcrumb />
                 </p>
             </ybc::CardHeader>
 
-            <PortConfig />
+            <PortConfig {on_changed} />
 
-            <ybc::CardFooter>
-                <a class="card-footer-item" onclick={cancel_onclick}>
-                    <span class="icon-text">
-                    <span class="icon">
-                        <ion-icon name="close"></ion-icon>
-                    </span>
-                    <span>{"Cancel"}</span>
-                    </span>
-                </a>
-                <a class="card-footer-item">
-                    <span class="icon-text">
-                    <span class="icon">
-                        <ion-icon name="checkmark"></ion-icon>
-                    </span>
-                    <span>{"Create"}</span>
-                    </span>
-                </a>
-            </ybc::CardFooter>
+            <div class="field is-grouped is-grouped-right mx-5">
+                <p class="control">
+                    <button class="button is-light" onclick={cancel_onclick}>
+                    {"Cancel"}
+                    </button>
+                </p>
+                <p class="control">
+                    <button class="button is-primary" disabled={entry.is_err()}>
+                    {"Create"}
+                    </button>
+                </p>
+            </div>
             </ybc::Card>
         </>
     }

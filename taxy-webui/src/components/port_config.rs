@@ -1,7 +1,12 @@
-use std::net::{Ipv4Addr, Ipv6Addr};
-
 use multiaddr::{Multiaddr, Protocol};
-use taxy_api::port::{Port, UpstreamServer};
+use std::{
+    collections::HashMap,
+    net::{Ipv4Addr, Ipv6Addr},
+};
+use taxy_api::{
+    port::{Port, UpstreamServer},
+    tls::TlsTermination,
+};
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use web_sys::{HtmlInputElement, HtmlSelectElement};
 use yew::prelude::*;
@@ -10,6 +15,7 @@ use yew::prelude::*;
 pub struct Props {
     #[prop_or_else(create_default_port)]
     pub port: Port,
+    pub on_changed: Callback<Result<Port, HashMap<String, String>>>,
 }
 
 fn create_default_port() -> Port {
@@ -95,6 +101,24 @@ pub fn port_config(props: &Props) -> Html {
         upstream_servers.set(Vec::new());
     }
 
+    let prev_entry =
+        use_state::<Result<Port, HashMap<String, String>>, _>(|| Err(Default::default()));
+    let entry = get_port(
+        &*protocol,
+        &*interface,
+        *port,
+        &*tls_server_names,
+        &*upstream_servers,
+    );
+    if entry != *prev_entry {
+        prev_entry.set(entry.clone());
+        props.on_changed.emit(entry);
+    }
+
+    let err = Default::default();
+    let errors = prev_entry.as_ref().err().unwrap_or(&err);
+    let interface_err = errors.get("interface").map(|s| s.as_str());
+
     html! {
         <>
             <div class="field is-horizontal m-5">
@@ -104,11 +128,11 @@ pub fn port_config(props: &Props) -> Html {
                 <div class="field-body">
                     <div class="field">
                         <p class="control is-expanded">
-                        <input class="input" type="text" placeholder="Interface" oninput={interface_oninput} value={interface.to_string()} />
+                        <input class={classes!("input", interface_err.map(|_| "is-danger"))} type="text" placeholder="Interface" oninput={interface_oninput} value={interface.to_string()} />
                         </p>
-                        <p class="help is-danger">
-                          {"This interface is not available on the server."}
-                        </p>
+                        if let Some(err) = interface_err {
+                            <p class="help is-danger">{err}</p>
+                        }
                     </div>
                     <div class="field">
                         <p class="control is-expanded">
@@ -204,8 +228,10 @@ pub fn port_config(props: &Props) -> Html {
                             upstream_servers_cloned.set(servers);
                         });
 
+                        let not_first = i > 0;
+
                         html! {
-                            <div class="field-body mt-3">
+                            <div class={classes!("field-body", not_first.then_some("mt-3"))}>
                             <div class="field has-addons">
                                 <div class="control is-expanded">
                                     <input class="input" type="text" placeholder="Host" oninput={host_oninput} value={host} />
@@ -244,8 +270,9 @@ fn extract_host_port(addr: &Multiaddr) -> (String, u16) {
     let host = addr
         .iter()
         .find_map(|p| match p {
-            Protocol::Dns4(host) => Some(host.to_string()),
-            Protocol::Dns6(host) => Some(host.to_string()),
+            Protocol::Dns(host) | Protocol::Dns4(host) | Protocol::Dns6(host) => {
+                Some(host.to_string())
+            }
             Protocol::Ip4(host) => Some(host.to_string()),
             Protocol::Ip6(host) => Some(host.to_string()),
             _ => None,
@@ -284,4 +311,69 @@ fn set_host_port(addr: &Multiaddr, host: Option<&String>, port: Option<u16>) -> 
             _ => p,
         })
         .collect()
+}
+
+fn get_port(
+    protocol: &str,
+    interface: &str,
+    port: u16,
+    tls_server_names: &str,
+    upstream_servers: &[UpstreamServer],
+) -> Result<Port, HashMap<String, String>> {
+    let mut errors = HashMap::new();
+    let mut addr = Multiaddr::empty();
+    match protocol {
+        "tcp" => {
+            addr.push(Protocol::Tcp(port));
+        }
+        "tls" => {
+            addr.push(Protocol::Tls);
+            addr.push(Protocol::Tcp(port));
+        }
+        "http" => {
+            addr.push(Protocol::Http);
+            addr.push(Protocol::Tcp(port));
+        }
+        "https" => {
+            addr.push(Protocol::Https);
+            addr.push(Protocol::Tcp(port));
+        }
+        _ => {
+            errors.insert("protocol".into(), "Invalid protocol".into());
+        }
+    }
+
+    let interface = interface.trim();
+    if interface.is_empty() {
+        errors.insert("interface".into(), "Interface is required".into());
+    } else if let Ok(ip) = interface.parse::<Ipv4Addr>() {
+        addr.push(Protocol::Ip4(ip));
+    } else if let Ok(ip) = interface.parse::<Ipv6Addr>() {
+        addr.push(Protocol::Ip6(ip));
+    } else {
+        addr.push(Protocol::Dns(interface.into()));
+    }
+
+    let mut opts = Port {
+        listen: addr,
+        opts: Default::default(),
+    };
+    if protocol == "tls" || protocol == "https" {
+        opts.opts.tls_termination = Some(TlsTermination {
+            server_names: tls_server_names
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect(),
+        });
+    }
+    if protocol == "tcp" || protocol == "tls" {
+        opts.opts.upstream_servers = upstream_servers.to_vec();
+    }
+
+    if errors.is_empty() {
+        Ok(opts)
+    } else {
+        Err(errors)
+    }
 }

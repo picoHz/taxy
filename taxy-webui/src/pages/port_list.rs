@@ -99,11 +99,7 @@ pub fn post_list() -> Html {
                 let dropdown_onfocusout = Callback::from(move |_|  {
                     active_index_cloned.set(-1);
                 });
-                let classes = if *active_index == i as i32 {
-                    "dropdown is-right is-active"
-                } else {
-                    "dropdown is-right"
-                };
+                let is_active = *active_index == i as i32;
                 html! {
                     <div class="list-item">
                         <div class="list-item-content">
@@ -120,7 +116,7 @@ pub fn post_list() -> Html {
                                     <span>{"Config"}</span>
                                 </button>
 
-                                <div class={classes!(classes)}>
+                                <div class={classes!("dropdown", "is-right", is_active.then_some("is-active"))}>
                                     <div class="dropdown-trigger" onfocusout={dropdown_onfocusout}>
                                         <button class="button" onclick={dropdown_onclick}>
                                             <span class="icon is-small">
