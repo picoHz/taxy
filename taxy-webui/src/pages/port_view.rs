@@ -38,21 +38,39 @@ pub fn port_view(props: &Props) -> Html {
                 });
             }
         },
-        session,
+        session.clone(),
     );
 
     let navigator = use_navigator().unwrap();
 
-    let navigator_cloned = navigator;
+    let navigator_cloned = navigator.clone();
     let cancel_onclick = Callback::from(move |_| {
         navigator_cloned.push(&Route::Ports);
     });
 
     let entry = use_state::<Result<Port, HashMap<String, String>>, _>(|| Err(Default::default()));
+    let entry_cloned = entry.clone();
     let on_changed: Callback<Result<Port, HashMap<String, String>>> =
         Callback::from(move |updated| {
-            entry.set(updated);
+            entry_cloned.set(updated);
         });
+
+    let entry_cloned = entry.clone();
+    let id = props.id.clone();
+    let token = session.token.clone();
+    let create_onclick = Callback::from(move |_| {
+        let navigator = navigator.clone();
+        let id = id.clone();
+        if let Some(token) = token.clone() {
+            if let Ok(entry) = (*entry_cloned).clone() {
+                wasm_bindgen_futures::spawn_local(async move {
+                    if update_port(&token, &id, &entry).await.is_ok() {
+                        navigator.push(&Route::Ports);
+                    }
+                });
+            }
+        }
+    });
 
     html! {
         <>
@@ -75,7 +93,7 @@ pub fn port_view(props: &Props) -> Html {
                         <span>{"Cancel"}</span>
                         </span>
                     </a>
-                    <a class="card-footer-item">
+                    <a class="card-footer-item" onclick={create_onclick}>
                         <span class="icon-text">
                         <span class="icon">
                             <ion-icon name="checkmark"></ion-icon>
@@ -102,6 +120,16 @@ pub fn port_view(props: &Props) -> Html {
 async fn get_port(token: &str, id: &str) -> Result<PortEntry, gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/ports/{id}"))
         .header("Authorization", &format!("Bearer {token}"))
+        .send()
+        .await?
+        .json()
+        .await
+}
+
+async fn update_port(token: &str, id: &str, entry: &Port) -> Result<(), gloo_net::Error> {
+    Request::put(&format!("{API_ENDPOINT}/ports/{id}"))
+        .header("Authorization", &format!("Bearer {token}"))
+        .json(entry)?
         .send()
         .await?
         .json()
