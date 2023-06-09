@@ -296,17 +296,14 @@ fn extract_host_port(addr: &Multiaddr) -> (String, u16) {
     (host, port)
 }
 
-fn set_host_port(addr: &Multiaddr, host: Option<&String>, port: Option<u16>) -> Multiaddr {
+fn set_host_port(addr: &Multiaddr, host: &str, port: u16) -> Multiaddr {
     addr.iter()
         .map(|p| match p {
             Protocol::Dns(_)
             | Protocol::Dns4(_)
             | Protocol::Dns6(_)
             | Protocol::Ip4(_)
-            | Protocol::Ip6(_)
-                if host.is_some() =>
-            {
-                let host = host.unwrap();
+            | Protocol::Ip6(_) => {
                 if let Ok(addr) = host.parse::<Ipv4Addr>() {
                     Protocol::Ip4(addr)
                 } else if let Ok(addr) = host.parse::<Ipv6Addr>() {
@@ -315,7 +312,7 @@ fn set_host_port(addr: &Multiaddr, host: Option<&String>, port: Option<u16>) -> 
                     Protocol::Dns(host.into())
                 }
             }
-            Protocol::Tcp(_) if port.is_some() => Protocol::Tcp(port.unwrap()),
+            Protocol::Tcp(_) => Protocol::Tcp(port),
             _ => p,
         })
         .collect()
@@ -330,26 +327,6 @@ fn get_port(
 ) -> Result<Port, HashMap<String, String>> {
     let mut errors = HashMap::new();
     let mut addr = Multiaddr::empty();
-    match protocol {
-        "tcp" => {
-            addr.push(Protocol::Tcp(port));
-        }
-        "tls" => {
-            addr.push(Protocol::Tls);
-            addr.push(Protocol::Tcp(port));
-        }
-        "http" => {
-            addr.push(Protocol::Http);
-            addr.push(Protocol::Tcp(port));
-        }
-        "https" => {
-            addr.push(Protocol::Https);
-            addr.push(Protocol::Tcp(port));
-        }
-        _ => {
-            errors.insert("protocol".into(), "Invalid protocol".into());
-        }
-    }
 
     let interface = interface.trim();
     if interface.is_empty() {
@@ -360,6 +337,27 @@ fn get_port(
         addr.push(Protocol::Ip6(ip));
     } else {
         addr.push(Protocol::Dns(interface.into()));
+    }
+
+    match protocol {
+        "tcp" => {
+            addr.push(Protocol::Tcp(port));
+        }
+        "tls" => {
+            addr.push(Protocol::Tcp(port));
+            addr.push(Protocol::Tls);
+        }
+        "http" => {
+            addr.push(Protocol::Tcp(port));
+            addr.push(Protocol::Http);
+        }
+        "https" => {
+            addr.push(Protocol::Tcp(port));
+            addr.push(Protocol::Https);
+        }
+        _ => {
+            errors.insert("protocol".into(), "Invalid protocol".into());
+        }
     }
 
     let mut opts = Port {
@@ -380,9 +378,8 @@ fn get_port(
             if host.is_empty() {
                 errors.insert(format!("upstream_servers_{i}"), "Host is required".into());
             } else {
-                let mut addr: Multiaddr = "/dns/example.com/tcp/8080".parse().unwrap();
-                addr.push(Protocol::Tcp(*port));
-                addr = set_host_port(&addr, Some(host), Some(*port));
+                let addr: Multiaddr = "/dns/example.com/tcp/8080".parse().unwrap();
+                let addr = set_host_port(&addr, &host, *port);
                 opts.opts.upstream_servers.push(UpstreamServer { addr });
             }
         }

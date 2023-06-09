@@ -1,24 +1,24 @@
-use std::collections::HashMap;
-
 use crate::{
     auth::use_ensure_auth,
     components::{breadcrumb::Breadcrumb, port_config::PortConfig},
     pages::Route,
+    store::SessionStore,
+    API_ENDPOINT,
 };
+use gloo_net::http::Request;
+use std::collections::HashMap;
 use taxy_api::port::Port;
 use yew::prelude::*;
 use yew_router::prelude::*;
+use yewdux::prelude::*;
 
 #[function_component(NewPort)]
 pub fn new_port() -> Html {
     use_ensure_auth();
 
     let navigator = use_navigator().unwrap();
-
-    let navigator_cloned = navigator;
-    let cancel_onclick = Callback::from(move |_| {
-        navigator_cloned.push(&Route::Ports);
-    });
+    let (session, _) = use_store::<SessionStore>();
+    let token = session.token.clone();
 
     let entry = use_state::<Result<Port, HashMap<String, String>>, _>(|| Err(Default::default()));
     let entry_cloned = entry.clone();
@@ -27,6 +27,27 @@ pub fn new_port() -> Html {
             gloo_console::log!(&format!("updated: {:?}", updated));
             entry_cloned.set(updated);
         });
+
+    let navigator_cloned = navigator.clone();
+    let cancel_onclick = Callback::from(move |_| {
+        navigator_cloned.push(&Route::Ports);
+    });
+
+    let navigator_cloned = navigator.clone();
+    let entry_cloned = entry.clone();
+    let token_cloned = token.clone();
+    let create_onclick = Callback::from(move |_| {
+        let navigator = navigator_cloned.clone();
+        if let Some(token) = token_cloned.clone() {
+            if let Ok(entry) = (*entry_cloned).clone() {
+                wasm_bindgen_futures::spawn_local(async move {
+                    if create_port(&token, &entry).await.is_ok() {
+                        navigator.push(&Route::Ports);
+                    }
+                });
+            }
+        }
+    });
 
     html! {
         <>
@@ -46,7 +67,7 @@ pub fn new_port() -> Html {
                     </button>
                 </p>
                 <p class="control">
-                    <button class="button is-primary" disabled={entry.is_err()}>
+                    <button class="button is-primary" onclick={create_onclick} disabled={entry.is_err()}>
                     {"Create"}
                     </button>
                 </p>
@@ -54,4 +75,14 @@ pub fn new_port() -> Html {
             </ybc::Card>
         </>
     }
+}
+
+async fn create_port(token: &str, entry: &Port) -> Result<(), gloo_net::Error> {
+    Request::post(&format!("{API_ENDPOINT}/ports"))
+        .header("Authorization", &format!("Bearer {token}"))
+        .json(entry)?
+        .send()
+        .await?
+        .json()
+        .await
 }
