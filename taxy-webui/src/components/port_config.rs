@@ -110,11 +110,11 @@ pub fn port_config(props: &Props) -> Html {
     let prev_entry =
         use_state::<Result<Port, HashMap<String, String>>, _>(|| Err(Default::default()));
     let entry = get_port(
-        &*protocol,
-        &*interface,
+        &protocol,
+        &interface,
         *port,
-        &*tls_server_names,
-        &*upstream_servers,
+        &tls_server_names,
+        &upstream_servers,
     );
     if entry != *prev_entry {
         prev_entry.set(entry.clone());
@@ -374,12 +374,12 @@ fn get_port(
         });
     }
     if protocol == "tcp" || protocol == "tls" {
-        for (i, (host, port)) in upstream_servers.into_iter().enumerate() {
+        for (i, (host, port)) in upstream_servers.iter().enumerate() {
             if host.is_empty() {
                 errors.insert(format!("upstream_servers_{i}"), "Host is required".into());
             } else {
                 let addr: Multiaddr = "/dns/example.com/tcp/8080".parse().unwrap();
-                let addr = set_host_port(&addr, &host, *port);
+                let addr = set_host_port(&addr, host, *port);
                 opts.opts.upstream_servers.push(UpstreamServer { addr });
             }
         }

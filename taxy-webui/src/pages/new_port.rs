@@ -33,12 +33,11 @@ pub fn new_port() -> Html {
         navigator_cloned.push(&Route::Ports);
     });
 
-    let navigator_cloned = navigator.clone();
+    let navigator_cloned = navigator;
     let entry_cloned = entry.clone();
-    let token_cloned = token.clone();
     let create_onclick = Callback::from(move |_| {
         let navigator = navigator_cloned.clone();
-        if let Some(token) = token_cloned.clone() {
+        if let Some(token) = token.clone() {
             if let Ok(entry) = (*entry_cloned).clone() {
                 wasm_bindgen_futures::spawn_local(async move {
                     if create_port(&token, &entry).await.is_ok() {
