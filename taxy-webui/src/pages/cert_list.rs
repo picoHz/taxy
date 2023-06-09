@@ -1,10 +1,12 @@
 use crate::components::breadcrumb::Breadcrumb;
+use crate::pages::Route;
 use crate::store::CertStore;
 use crate::API_ENDPOINT;
 use crate::{auth::use_ensure_auth, store::SessionStore};
 use gloo_net::http::Request;
 use taxy_api::cert::CertInfo;
 use yew::prelude::*;
+use yew_router::prelude::*;
 use yewdux::prelude::*;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -46,6 +48,18 @@ pub fn cert_list() -> Html {
         },
         session,
     );
+
+    let navigator = use_navigator().unwrap();
+
+    let navigator_cloned = navigator.clone();
+    let self_sign_onclick = Callback::from(move |_| {
+        navigator_cloned.push(&Route::SelfSign);
+    });
+
+    let navigator_cloned = navigator.clone();
+    let upload_onclick = Callback::from(move |_| {
+        navigator_cloned.push(&Route::SelfSign);
+    });
 
     let list = certs.entries.clone();
     let active_index = use_state(|| -1);
@@ -134,7 +148,7 @@ pub fn cert_list() -> Html {
             }).collect::<Html>() }
             </div>
             <ybc::CardFooter>
-                <a href="#" class="card-footer-item">
+                <a class="card-footer-item" onclick={self_sign_onclick}>
                     <span class="icon-text">
                     <span class="icon">
                         <ion-icon name="create"></ion-icon>
@@ -142,7 +156,7 @@ pub fn cert_list() -> Html {
                     <span>{"Self-sign"}</span>
                     </span>
                 </a>
-                <a href="#" class="card-footer-item">
+                <a class="card-footer-item" onclick={upload_onclick}>
                     <span class="icon-text">
                     <span class="icon">
                         <ion-icon name="cloud-upload"></ion-icon>

@@ -10,6 +10,7 @@ mod logout;
 mod new_port;
 mod port_list;
 mod port_view;
+mod self_sign;
 mod site_list;
 
 #[derive(Clone, Debug, Routable, PartialEq)]
@@ -30,6 +31,8 @@ pub enum Route {
     Sites,
     #[at("/certs")]
     Certs,
+    #[at("/certs/self_sign")]
+    SelfSign,
     #[at("/sites/:id")]
     SiteView { id: String },
     #[not_found]
@@ -74,6 +77,16 @@ impl Route {
                 name: "Certificates".into(),
                 route: Route::Certs,
             }],
+            Route::SelfSign => vec![
+                BreadcrumbItem {
+                    name: "Certificates".into(),
+                    route: Route::Certs,
+                },
+                BreadcrumbItem {
+                    name: "Self Sign".into(),
+                    route: Route::SelfSign,
+                },
+            ],
             Route::PortView { id } => vec![
                 BreadcrumbItem {
                     name: "Ports".into(),
@@ -115,6 +128,7 @@ pub fn switch(routes: Route) -> Html {
         Route::Sites => html! { <site_list::SiteList /> },
         Route::SiteView { id } => html! { <port_view::PortView {id} /> },
         Route::Certs => html! { <cert_list::CertList /> },
+        Route::SelfSign => html! { <self_sign::SelfSign /> },
         Route::NotFound => html! { <Redirect<Route> to={Route::Home}/> },
     }
 }
