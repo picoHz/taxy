@@ -3,6 +3,7 @@ use std::borrow::Cow;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+mod cert_list;
 mod home;
 mod login;
 mod logout;
@@ -113,7 +114,7 @@ pub fn switch(routes: Route) -> Html {
         Route::PortView { id } => html! { <port_view::PortView {id} /> },
         Route::Sites => html! { <site_list::SiteList /> },
         Route::SiteView { id } => html! { <port_view::PortView {id} /> },
-        Route::Certs => html! { <port_list::PortList /> },
+        Route::Certs => html! { <cert_list::CertList /> },
         Route::NotFound => html! { <Redirect<Route> to={Route::Home}/> },
     }
 }
