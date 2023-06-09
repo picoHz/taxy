@@ -57,11 +57,12 @@ pub fn port_view(props: &Props) -> Html {
 
     let id = props.id.clone();
     let token = session.token.clone();
-    let create_onclick = Callback::from(move |_| {
+    let entry_cloned = entry.clone();
+    let update_onclick = Callback::from(move |_| {
         let navigator = navigator.clone();
         let id = id.clone();
         if let Some(token) = token.clone() {
-            if let Ok(entry) = (*entry).clone() {
+            if let Ok(entry) = (*entry_cloned).clone() {
                 wasm_bindgen_futures::spawn_local(async move {
                     if update_port(&token, &id, &entry).await.is_ok() {
                         navigator.push(&Route::Ports);
@@ -73,34 +74,28 @@ pub fn port_view(props: &Props) -> Html {
 
     html! {
         <>
-            <ybc::Card>
+            <ybc::Card classes="py-5">
             <ybc::CardHeader>
                 <p class="card-header-title">
                     <Breadcrumb />
                 </p>
             </ybc::CardHeader>
 
-            if let Some(entry) = &*port {
-                <PortConfig port={entry.port.clone()} {on_changed} />
+            if let Some(port_entry) = &*port {
+                <PortConfig port={port_entry.port.clone()} {on_changed} />
 
-                <ybc::CardFooter>
-                    <a class="card-footer-item" onclick={cancel_onclick}>
-                        <span class="icon-text">
-                        <span class="icon">
-                            <ion-icon name="close"></ion-icon>
-                        </span>
-                        <span>{"Cancel"}</span>
-                        </span>
-                    </a>
-                    <a class="card-footer-item" onclick={create_onclick}>
-                        <span class="icon-text">
-                        <span class="icon">
-                            <ion-icon name="checkmark"></ion-icon>
-                        </span>
-                        <span>{"Update"}</span>
-                        </span>
-                    </a>
-                </ybc::CardFooter>
+                <div class="field is-grouped is-grouped-right mx-5">
+                    <p class="control">
+                        <button class="button is-light" onclick={cancel_onclick}>
+                        {"Cancel"}
+                        </button>
+                    </p>
+                    <p class="control">
+                        <button class="button is-primary" onclick={update_onclick} disabled={entry.is_err()}>
+                        {"Update"}
+                        </button>
+                    </p>
+                </div>
             } else {
                 <ybc::Hero body={
                     html! {
