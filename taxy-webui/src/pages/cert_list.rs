@@ -1,12 +1,10 @@
 use crate::components::breadcrumb::Breadcrumb;
-use crate::pages::Route;
 use crate::store::CertStore;
 use crate::API_ENDPOINT;
 use crate::{auth::use_ensure_auth, store::SessionStore};
 use gloo_net::http::Request;
 use taxy_api::cert::CertInfo;
 use yew::prelude::*;
-use yew_router::prelude::*;
 use yewdux::prelude::*;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -49,8 +47,8 @@ pub fn cert_list() -> Html {
         session,
     );
 
-    let navigator = use_navigator().unwrap();
     let list = certs.entries.clone();
+    let active_index = use_state(|| -1);
     html! {
         <>
             <ybc::Card>
@@ -78,13 +76,7 @@ pub fn cert_list() -> Html {
             </div>
             if *tab == Tab::ServerCerts {
             <div class="list has-visible-pointer-controls">
-            { list.into_iter().map(|entry| {
-                let navigator = navigator.clone();
-                let id = entry.id.clone();
-                let onclick = Callback::from(move |_|  {
-                    let id = id.clone();
-                    navigator.push(&Route::SiteView {id});
-                });
+            { list.into_iter().enumerate().map(|(i, entry)| {
                 let subject_names = entry
                     .san
                     .iter()
@@ -93,6 +85,17 @@ pub fn cert_list() -> Html {
                     .join(", ");
                 let issuer = entry.issuer.to_string();
                 let title = format!("{} ({})", subject_names, issuer);
+
+                let active_index_cloned = active_index.clone();
+                let dropdown_onclick = Callback::from(move |_|  {
+                    active_index_cloned.set(i as i32);
+                });
+                let active_index_cloned = active_index.clone();
+                let dropdown_onfocusout = Callback::from(move |_|  {
+                    active_index_cloned.set(-1);
+                });
+                let is_active = *active_index == i as i32;
+
                 html! {
                     <div class="list-item">
                         <div class="list-item-content">
@@ -102,16 +105,10 @@ pub fn cert_list() -> Html {
 
                         <div class="list-item-controls">
                             <div class="buttons is-right">
-                                <button class="button" {onclick}>
-                                    <span class="icon is-small">
-                                        <ion-icon name="settings"></ion-icon>
-                                    </span>
-                                    <span>{"Config"}</span>
-                                </button>
 
-                                <div class="dropdown is-right is-hoverable">
-                                    <div class="dropdown-trigger">
-                                        <button class="button">
+                                <div class={classes!("dropdown", "is-right", is_active.then_some("is-active"))}>
+                                    <div class="dropdown-trigger" onfocusout={dropdown_onfocusout}>
+                                        <button class="button" onclick={dropdown_onclick}>
                                             <span class="icon is-small">
                                                 <ion-icon name="ellipsis-horizontal"></ion-icon>
                                             </span>
