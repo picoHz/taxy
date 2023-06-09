@@ -1,3 +1,5 @@
+use std::net::{Ipv4Addr, Ipv6Addr};
+
 use multiaddr::{Multiaddr, Protocol};
 use taxy_api::port::{Port, UpstreamServer};
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
@@ -165,13 +167,12 @@ pub fn port_config(props: &Props) -> Html {
 
                     { upstream_servers.iter().enumerate().map(|(i, server)| {
                         let (host, port) = extract_host_port(&server.addr);
-
                         let servers_len = upstream_servers.len();
 
                         let upstream_servers_cloned = upstream_servers.clone();
                         let add_onclick = Callback::from(move |_| {
                             let mut servers = (*upstream_servers_cloned).clone();
-                            servers.insert(i,
+                            servers.insert(i + 1,
                                 UpstreamServer {
                                     addr: "/dns/example.com/tcp/8080".parse().unwrap(),
                                 });
@@ -180,8 +181,26 @@ pub fn port_config(props: &Props) -> Html {
 
                         let upstream_servers_cloned = upstream_servers.clone();
                         let remove_onclick = Callback::from(move |_| {
+                            if servers_len > 1 {
+                                let mut servers = (*upstream_servers_cloned).clone();
+                                servers.remove(i);
+                                upstream_servers_cloned.set(servers);
+                            }
+                        });
+
+                        let upstream_servers_cloned = upstream_servers.clone();
+                        let host_oninput = Callback::from(move |event: InputEvent| {
+                            let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
                             let mut servers = (*upstream_servers_cloned).clone();
-                            servers.remove(i);
+                            servers[i].addr = set_host_port(&mut servers[i].addr, Some(&target.value()), None);
+                            upstream_servers_cloned.set(servers);
+                        });
+
+                        let upstream_servers_cloned = upstream_servers.clone();
+                        let port_oninput = Callback::from(move |event: InputEvent| {
+                            let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
+                            let mut servers = (*upstream_servers_cloned).clone();
+                            servers[i].addr = set_host_port(&mut servers[i].addr, None, Some(target.value().parse().unwrap()));
                             upstream_servers_cloned.set(servers);
                         });
 
@@ -189,10 +208,10 @@ pub fn port_config(props: &Props) -> Html {
                             <div class="field-body mt-3">
                             <div class="field has-addons">
                                 <div class="control is-expanded">
-                                    <input class="input" type="text" placeholder="Host" value={host} />
+                                    <input class="input" type="text" placeholder="Host" oninput={host_oninput} value={host} />
                                 </div>
                                 <div class="control">
-                                    <input class="input" type="number" placeholder="Port" max="65535" min="1" value={port.to_string()} />
+                                    <input class="input" type="number" placeholder="Port" max="65535" min="1" oninput={port_oninput} value={port.to_string()} />
                                 </div>
                                 <div class="control">
                                     <button class="button" onclick={add_onclick}>
@@ -222,8 +241,8 @@ pub fn port_config(props: &Props) -> Html {
 }
 
 fn extract_host_port(addr: &Multiaddr) -> (String, u16) {
-    let mut iter = addr.iter();
-    let host = iter
+    let host = addr
+        .iter()
         .find_map(|p| match p {
             Protocol::Dns4(host) => Some(host.to_string()),
             Protocol::Dns6(host) => Some(host.to_string()),
@@ -232,11 +251,37 @@ fn extract_host_port(addr: &Multiaddr) -> (String, u16) {
             _ => None,
         })
         .unwrap_or_else(|| "127.0.0.1".into());
-    let port = iter
+    let port = addr
+        .iter()
         .find_map(|p| match p {
             Protocol::Tcp(port) => Some(port),
             _ => None,
         })
         .unwrap_or(8080);
     (host, port)
+}
+
+fn set_host_port(addr: &Multiaddr, host: Option<&String>, port: Option<u16>) -> Multiaddr {
+    addr.iter()
+        .map(|p| match p {
+            Protocol::Dns(_)
+            | Protocol::Dns4(_)
+            | Protocol::Dns6(_)
+            | Protocol::Ip4(_)
+            | Protocol::Ip6(_)
+                if host.is_some() =>
+            {
+                let host = host.unwrap();
+                if let Ok(addr) = host.parse::<Ipv4Addr>() {
+                    Protocol::Ip4(addr)
+                } else if let Ok(addr) = host.parse::<Ipv6Addr>() {
+                    Protocol::Ip6(addr)
+                } else {
+                    Protocol::Dns(host.into())
+                }
+            }
+            Protocol::Tcp(_) if port.is_some() => Protocol::Tcp(port.unwrap()),
+            _ => p.clone(),
+        })
+        .collect()
 }
