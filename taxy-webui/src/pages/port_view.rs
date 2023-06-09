@@ -55,14 +55,13 @@ pub fn port_view(props: &Props) -> Html {
             entry_cloned.set(updated);
         });
 
-    let entry_cloned = entry.clone();
     let id = props.id.clone();
     let token = session.token.clone();
     let create_onclick = Callback::from(move |_| {
         let navigator = navigator.clone();
         let id = id.clone();
         if let Some(token) = token.clone() {
-            if let Ok(entry) = (*entry_cloned).clone() {
+            if let Ok(entry) = (*entry).clone() {
                 wasm_bindgen_futures::spawn_local(async move {
                     if update_port(&token, &id, &entry).await.is_ok() {
                         navigator.push(&Route::Ports);
