@@ -90,12 +90,18 @@ pub fn port_config(props: &Props) -> Html {
         }
     });
 
-    let upstream_servers = use_state(|| props.port.opts.upstream_servers.clone());
+    let upstream_servers = use_state(|| {
+        props
+            .port
+            .opts
+            .upstream_servers
+            .iter()
+            .map(|server| extract_host_port(&server.addr))
+            .collect::<Vec<_>>()
+    });
     if &*protocol == "tcp" || &*protocol == "tls" {
         if upstream_servers.is_empty() {
-            upstream_servers.set(vec![UpstreamServer {
-                addr: "/dns/example.com/tcp/8080".parse().unwrap(),
-            }]);
+            upstream_servers.set(vec![("example.com".into(), 8080)]);
         }
     } else if !upstream_servers.is_empty() {
         upstream_servers.set(Vec::new());
@@ -189,18 +195,14 @@ pub fn port_config(props: &Props) -> Html {
 
                     <div class="is-flex-grow-5" style="flex-basis: 0">
 
-                    { upstream_servers.iter().enumerate().map(|(i, server)| {
-                        let (host, port) = extract_host_port(&server.addr);
+                    { upstream_servers.iter().enumerate().map(|(i, (host, port))| {
                         let servers_len = upstream_servers.len();
 
                         let upstream_servers_cloned = upstream_servers.clone();
                         let add_onclick = Callback::from(move |_| {
                             let mut servers = (*upstream_servers_cloned).clone();
-                            servers.insert(i + 1,
-                                UpstreamServer {
-                                    addr: "/dns/example.com/tcp/8080".parse().unwrap(),
-                                });
-                                upstream_servers_cloned.set(servers);
+                            servers.insert(i + 1, ("example.com".into(), 8080));
+                            upstream_servers_cloned.set(servers);
                         });
 
                         let upstream_servers_cloned = upstream_servers.clone();
@@ -216,7 +218,7 @@ pub fn port_config(props: &Props) -> Html {
                         let host_oninput = Callback::from(move |event: InputEvent| {
                             let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
                             let mut servers = (*upstream_servers_cloned).clone();
-                            servers[i].addr = set_host_port(&mut servers[i].addr, Some(&target.value()), None);
+                            servers[i].0 = target.value();
                             upstream_servers_cloned.set(servers);
                         });
 
@@ -224,36 +226,42 @@ pub fn port_config(props: &Props) -> Html {
                         let port_oninput = Callback::from(move |event: InputEvent| {
                             let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
                             let mut servers = (*upstream_servers_cloned).clone();
-                            servers[i].addr = set_host_port(&mut servers[i].addr, None, Some(target.value().parse().unwrap()));
+                            servers[i].1 = target.value().parse().unwrap();
                             upstream_servers_cloned.set(servers);
                         });
 
                         let not_first = i > 0;
+                        let err = errors.get(&format!("upstream_servers_{}", i)).map(|s| s.as_str());
 
                         html! {
-                            <div class={classes!("field-body", not_first.then_some("mt-3"))}>
-                            <div class="field has-addons">
-                                <div class="control is-expanded">
-                                    <input class="input" type="text" placeholder="Host" oninput={host_oninput} value={host} />
-                                </div>
-                                <div class="control">
-                                    <input class="input" type="number" placeholder="Port" max="65535" min="1" oninput={port_oninput} value={port.to_string()} />
-                                </div>
-                                <div class="control">
-                                    <button class="button" onclick={add_onclick}>
-                                        <span class="icon">
-                                            <ion-icon name="add"></ion-icon>
-                                        </span>
-                                    </button>
-                                </div>
-                                <div class="control">
-                                    <button class="button" onclick={remove_onclick} disabled={servers_len <= 1}>
-                                        <span class="icon">
-                                            <ion-icon name="remove"></ion-icon>
-                                        </span>
-                                    </button>
+                            <div class={classes!(not_first.then_some("mt-3"))}>
+                                <div class={classes!("field-body")}>
+                                <div class="field has-addons">
+                                    <div class="control is-expanded">
+                                        <input class={classes!("input", err.map(|_| "is-danger"))} type="text" placeholder="Host" oninput={host_oninput} value={host.clone()} />
+                                    </div>
+                                    <div class="control">
+                                        <input class={classes!("input", err.map(|_| "is-danger"))} type="number" placeholder="Port" max="65535" min="1" oninput={port_oninput} value={port.to_string()} />
+                                    </div>
+                                    <div class="control">
+                                        <button class={classes!("button", err.map(|_| "is-danger"))} onclick={add_onclick}>
+                                            <span class="icon">
+                                                <ion-icon name="add"></ion-icon>
+                                            </span>
+                                        </button>
+                                    </div>
+                                    <div class="control">
+                                        <button class={classes!("button", err.map(|_| "is-danger"))} onclick={remove_onclick} disabled={servers_len <= 1}>
+                                            <span class="icon">
+                                                <ion-icon name="remove"></ion-icon>
+                                            </span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
+                            if let Some(err) = err {
+                                <p class="help is-danger">{err}</p>
+                            }
                         </div>
                         }
                     }).collect::<Html>() }
@@ -318,7 +326,7 @@ fn get_port(
     interface: &str,
     port: u16,
     tls_server_names: &str,
-    upstream_servers: &[UpstreamServer],
+    upstream_servers: &[(String, u16)],
 ) -> Result<Port, HashMap<String, String>> {
     let mut errors = HashMap::new();
     let mut addr = Multiaddr::empty();
@@ -368,7 +376,16 @@ fn get_port(
         });
     }
     if protocol == "tcp" || protocol == "tls" {
-        opts.opts.upstream_servers = upstream_servers.to_vec();
+        for (i, (host, port)) in upstream_servers.into_iter().enumerate() {
+            if host.is_empty() {
+                errors.insert(format!("upstream_servers_{i}"), "Host is required".into());
+            } else {
+                let mut addr: Multiaddr = "/dns/example.com/tcp/8080".parse().unwrap();
+                addr.push(Protocol::Tcp(*port));
+                addr = set_host_port(&addr, Some(host), Some(*port));
+                opts.opts.upstream_servers.push(UpstreamServer { addr });
+            }
+        }
     }
 
     if errors.is_empty() {
