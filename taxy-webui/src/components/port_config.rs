@@ -127,7 +127,7 @@ pub fn port_config(props: &Props) -> Html {
                     <div class="control">
                         <div class="select is-fullwidth">
                         <select onchange={protocol_onchange}>
-                            { PROTOCOLS.into_iter().map(|(value, label)| {
+                            { PROTOCOLS.iter().map(|(value, label)| {
                                 html! {
                                     <option selected={&*protocol == value} value={*value}>{label}</option>
                                 }
@@ -281,7 +281,7 @@ fn set_host_port(addr: &Multiaddr, host: Option<&String>, port: Option<u16>) -> 
                 }
             }
             Protocol::Tcp(_) if port.is_some() => Protocol::Tcp(port.unwrap()),
-            _ => p.clone(),
+            _ => p,
         })
         .collect()
 }

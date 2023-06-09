@@ -41,7 +41,7 @@ pub fn port_view(props: &Props) -> Html {
 
     let navigator = use_navigator().unwrap();
 
-    let navigator_cloned = navigator.clone();
+    let navigator_cloned = navigator;
     let cancel_onclick = Callback::from(move |_| {
         navigator_cloned.push(&Route::Ports);
     });
