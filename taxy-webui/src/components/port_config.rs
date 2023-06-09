@@ -163,10 +163,30 @@ pub fn port_config(props: &Props) -> Html {
 
                     <div class="is-flex-grow-5" style="flex-basis: 0">
 
-                    { upstream_servers.iter().map(|server| {
+                    { upstream_servers.iter().enumerate().map(|(i, server)| {
                         let (host, port) = extract_host_port(&server.addr);
+
+                        let servers_len = upstream_servers.len();
+
+                        let upstream_servers_cloned = upstream_servers.clone();
+                        let add_onclick = Callback::from(move |_| {
+                            let mut servers = (*upstream_servers_cloned).clone();
+                            servers.insert(i,
+                                UpstreamServer {
+                                    addr: "/dns/example.com/tcp/8080".parse().unwrap(),
+                                });
+                                upstream_servers_cloned.set(servers);
+                        });
+
+                        let upstream_servers_cloned = upstream_servers.clone();
+                        let remove_onclick = Callback::from(move |_| {
+                            let mut servers = (*upstream_servers_cloned).clone();
+                            servers.remove(i);
+                            upstream_servers_cloned.set(servers);
+                        });
+
                         html! {
-                            <div class="field-body">
+                            <div class="field-body mt-3">
                             <div class="field has-addons">
                                 <div class="control is-expanded">
                                     <input class="input" type="text" placeholder="Host" value={host} />
@@ -175,14 +195,14 @@ pub fn port_config(props: &Props) -> Html {
                                     <input class="input" type="number" placeholder="Port" max="65535" min="1" value={port.to_string()} />
                                 </div>
                                 <div class="control">
-                                    <button class="button">
+                                    <button class="button" onclick={add_onclick}>
                                         <span class="icon">
                                             <ion-icon name="add"></ion-icon>
                                         </span>
                                     </button>
                                 </div>
                                 <div class="control">
-                                    <button class="button">
+                                    <button class="button" onclick={remove_onclick} disabled={servers_len <= 1}>
                                         <span class="icon">
                                             <ion-icon name="remove"></ion-icon>
                                         </span>
