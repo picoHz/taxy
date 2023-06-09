@@ -1,5 +1,5 @@
-use multiaddr::Protocol;
-use taxy_api::port::Port;
+use multiaddr::{Multiaddr, Protocol};
+use taxy_api::port::{Port, UpstreamServer};
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use web_sys::{HtmlInputElement, HtmlSelectElement};
 use yew::prelude::*;
@@ -26,14 +26,10 @@ const PROTOCOLS: &[(&str, &str)] = &[
 
 #[function_component(PortConfig)]
 pub fn port_config(props: &Props) -> Html {
-    let stack = props.port.listen.iter().collect::<Vec<_>>();
+    let stack = &props.port.listen;
     let tls = stack.iter().any(|p| matches!(p, Protocol::Tls));
     let http = stack.iter().any(|p| matches!(p, Protocol::Http));
-    let (interface, port) = match &stack[..] {
-        [Protocol::Ip4(addr), Protocol::Tcp(port), ..] => (addr.to_string(), *port),
-        [Protocol::Ip6(addr), Protocol::Tcp(port), ..] => (addr.to_string(), *port),
-        _ => ("0.0.0.0".to_string(), 8080),
-    };
+    let (interface, port) = extract_host_port(&props.port.listen);
 
     let protocol = match (tls, http) {
         (true, true) => "https",
@@ -85,6 +81,17 @@ pub fn port_config(props: &Props) -> Html {
             tls_server_names.set(target.value());
         }
     });
+
+    let upstream_servers = use_state(|| props.port.opts.upstream_servers.clone());
+    if &*protocol == "tcp" || &*protocol == "tls" {
+        if upstream_servers.is_empty() {
+            upstream_servers.set(vec![UpstreamServer {
+                addr: "/dns/example.com/tcp/8080".parse().unwrap(),
+            }]);
+        }
+    } else if !upstream_servers.is_empty() {
+        upstream_servers.set(Vec::new());
+    }
 
     html! {
         <>
@@ -148,66 +155,68 @@ pub fn port_config(props: &Props) -> Html {
                 </div>
             }
 
-            <div class="field is-horizontal m-5">
-                <div class="field-label is-normal">
-                <label class="label">{"Upstream Servers"}</label>
-                </div>
+            if &*protocol == "tcp" || &*protocol == "tls" {
+                <div class="field is-horizontal m-5">
+                    <div class="field-label is-normal">
+                    <label class="label">{"Upstream Servers"}</label>
+                    </div>
 
-                <div class="is-flex-grow-5" style="flex-basis: 0">
+                    <div class="is-flex-grow-5" style="flex-basis: 0">
 
-                <div class="field-body">
-                    <div class="field has-addons">
-                        <div class="control is-expanded">
-                            <input class="input" type="text" placeholder="Host" />
+                    { upstream_servers.iter().map(|server| {
+                        let (host, port) = extract_host_port(&server.addr);
+                        html! {
+                            <div class="field-body">
+                            <div class="field has-addons">
+                                <div class="control is-expanded">
+                                    <input class="input" type="text" placeholder="Host" value={host} />
+                                </div>
+                                <div class="control">
+                                    <input class="input" type="number" placeholder="Port" max="65535" min="1" value={port.to_string()} />
+                                </div>
+                                <div class="control">
+                                    <button class="button">
+                                        <span class="icon">
+                                            <ion-icon name="add"></ion-icon>
+                                        </span>
+                                    </button>
+                                </div>
+                                <div class="control">
+                                    <button class="button">
+                                        <span class="icon">
+                                            <ion-icon name="remove"></ion-icon>
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <div class="control">
-                            <input class="input" type="number" placeholder="Port" max="65535" min="1" />
-                        </div>
-                        <div class="control">
-                            <button class="button">
-                                <span class="icon">
-                                    <ion-icon name="add"></ion-icon>
-                                </span>
-                            </button>
-                        </div>
-                        <div class="control">
-                            <button class="button">
-                                <span class="icon">
-                                    <ion-icon name="remove"></ion-icon>
-                                </span>
-                            </button>
-                        </div>
+                        }
+                    }).collect::<Html>() }
+
                     </div>
                 </div>
-
-                <div class="field-body mt-3">
-                    <div class="field has-addons">
-                        <div class="control is-expanded">
-                            <input class="input" type="text" placeholder="Host" />
-                        </div>
-                        <div class="control">
-                            <input class="input" type="number" placeholder="Port" max="65535" min="1" />
-                        </div>
-                        <div class="control">
-                            <button class="button">
-                                <span class="icon">
-                                    <ion-icon name="add"></ion-icon>
-                                </span>
-                            </button>
-                        </div>
-                        <div class="control">
-                            <button class="button">
-                                <span class="icon">
-                                    <ion-icon name="remove"></ion-icon>
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                </div>
-            </div>
+            }
 
         </>
     }
+}
+
+fn extract_host_port(addr: &Multiaddr) -> (String, u16) {
+    let mut iter = addr.iter();
+    let host = iter
+        .find_map(|p| match p {
+            Protocol::Dns4(host) => Some(host.to_string()),
+            Protocol::Dns6(host) => Some(host.to_string()),
+            Protocol::Ip4(host) => Some(host.to_string()),
+            Protocol::Ip6(host) => Some(host.to_string()),
+            _ => None,
+        })
+        .unwrap_or_else(|| "127.0.0.1".into());
+    let port = iter
+        .find_map(|p| match p {
+            Protocol::Tcp(port) => Some(port),
+            _ => None,
+        })
+        .unwrap_or(8080);
+    (host, port)
 }
