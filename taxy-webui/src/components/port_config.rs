@@ -56,18 +56,18 @@ pub fn port_config(props: &Props) -> Html {
     });
 
     let interface = use_state(|| interface);
-    let interface_oninput = Callback::from({
+    let interface_onchange = Callback::from({
         let interface = interface.clone();
-        move |event: InputEvent| {
+        move |event: Event| {
             let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
             interface.set(target.value());
         }
     });
 
     let port = use_state(|| port);
-    let port_oninput = Callback::from({
+    let port_onchange = Callback::from({
         let port = port.clone();
-        move |event: InputEvent| {
+        move |event: Event| {
             let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
             port.set(target.value().parse().unwrap_or(1));
         }
@@ -82,9 +82,9 @@ pub fn port_config(props: &Props) -> Html {
             .map(|tls| tls.server_names.join(", "))
             .unwrap_or_default()
     });
-    let tls_server_names_oninput = Callback::from({
+    let tls_server_names_onchange = Callback::from({
         let tls_server_names = tls_server_names.clone();
-        move |event: InputEvent| {
+        move |event: Event| {
             let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
             tls_server_names.set(target.value());
         }
@@ -134,7 +134,7 @@ pub fn port_config(props: &Props) -> Html {
                 <div class="field-body">
                     <div class="field">
                         <p class="control is-expanded">
-                        <input class={classes!("input", interface_err.map(|_| "is-danger"))} type="text" placeholder="Interface" oninput={interface_oninput} value={interface.to_string()} />
+                        <input class={classes!("input", interface_err.map(|_| "is-danger"))} type="text" placeholder="Interface" onchange={interface_onchange} value={interface.to_string()} />
                         </p>
                         if let Some(err) = interface_err {
                             <p class="help is-danger">{err}</p>
@@ -142,7 +142,7 @@ pub fn port_config(props: &Props) -> Html {
                     </div>
                     <div class="field">
                         <p class="control is-expanded">
-                        <input class="input" type="number" placeholder="Port" oninput={port_oninput} value={port.to_string()} max="65535" min="1" />
+                        <input class="input" type="number" placeholder="Port" onchange={port_onchange} value={port.to_string()} max="65535" min="1" />
                         </p>
                     </div>
                 </div>
@@ -177,7 +177,7 @@ pub fn port_config(props: &Props) -> Html {
                     <div class="field-body">
                         <div class="field">
                             <p class="control is-expanded">
-                            <input class="input" type="text" placeholder="Server Names" value={tls_server_names.to_string()} oninput={tls_server_names_oninput} />
+                            <input class="input" type="text" placeholder="Server Names" value={tls_server_names.to_string()} onchange={tls_server_names_onchange} />
                             </p>
                             <p class="help">
                             {"You can use commas to list multiple names, e.g, example.com, *.test.examle.com."}
@@ -215,7 +215,7 @@ pub fn port_config(props: &Props) -> Html {
                         });
 
                         let upstream_servers_cloned = upstream_servers.clone();
-                        let host_oninput = Callback::from(move |event: InputEvent| {
+                        let host_onchange = Callback::from(move |event: Event| {
                             let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
                             let mut servers = (*upstream_servers_cloned).clone();
                             servers[i].0 = target.value();
@@ -223,7 +223,7 @@ pub fn port_config(props: &Props) -> Html {
                         });
 
                         let upstream_servers_cloned = upstream_servers.clone();
-                        let port_oninput = Callback::from(move |event: InputEvent| {
+                        let port_onchange = Callback::from(move |event: Event| {
                             let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
                             let mut servers = (*upstream_servers_cloned).clone();
                             servers[i].1 = target.value().parse().unwrap();
@@ -238,10 +238,10 @@ pub fn port_config(props: &Props) -> Html {
                                 <div class={classes!("field-body")}>
                                 <div class="field has-addons">
                                     <div class="control is-expanded">
-                                        <input class={classes!("input", err.map(|_| "is-danger"))} type="text" placeholder="Host" oninput={host_oninput} value={host.clone()} />
+                                        <input class={classes!("input", err.map(|_| "is-danger"))} type="text" placeholder="Host" onchange={host_onchange} value={host.clone()} />
                                     </div>
                                     <div class="control">
-                                        <input class={classes!("input", err.map(|_| "is-danger"))} type="number" placeholder="Port" max="65535" min="1" oninput={port_oninput} value={port.to_string()} />
+                                        <input class={classes!("input", err.map(|_| "is-danger"))} type="number" placeholder="Port" max="65535" min="1" onchange={port_onchange} value={port.to_string()} />
                                     </div>
                                     <div class="control">
                                         <button class={classes!("button", err.map(|_| "is-danger"))} onclick={add_onclick}>
