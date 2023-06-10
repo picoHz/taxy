@@ -37,8 +37,7 @@ pub fn self_sign() -> Html {
     let san_err = entry
         .as_ref()
         .err()
-        .map(|errors| errors.get("san").map(|s| s.to_string()))
-        .flatten();
+        .and_then(|errors| errors.get("san").map(|s| s.to_string()));
 
     let entry_cloned = entry.clone();
     let self_sign_onclick = Callback::from(move |_| {

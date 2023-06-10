@@ -7,7 +7,7 @@ use gloo_net::http::Request;
 use taxy_api::acme::AcmeInfo;
 use taxy_api::cert::CertInfo;
 use yew::prelude::*;
-use yew_router::components::_LinkProps::to;
+
 use yew_router::prelude::*;
 use yewdux::prelude::*;
 
@@ -63,7 +63,7 @@ pub fn cert_list() -> Html {
         navigator_cloned.push(&Route::SelfSign);
     });
 
-    let navigator_cloned = navigator.clone();
+    let navigator_cloned = navigator;
     let upload_onclick = Callback::from(move |_| {
         navigator_cloned.push(&Route::Upload);
     });
