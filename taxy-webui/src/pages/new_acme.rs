@@ -1,3 +1,4 @@
+use crate::components::letsencrypt::LetsEncrypt;
 use crate::{
     auth::use_ensure_auth, components::breadcrumb::Breadcrumb, pages::Route, store::SessionStore,
     API_ENDPOINT,
@@ -10,6 +11,32 @@ use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Provider {
+    LetsEncrypt,
+    LetsEncryptStaging,
+}
+
+impl Provider {
+    fn html(&self) -> Html {
+        match self {
+            Provider::LetsEncrypt => html! { <LetsEncrypt staging={false} /> },
+            Provider::LetsEncryptStaging => html! { <LetsEncrypt staging={true} /> },
+        }
+    }
+}
+
+impl ToString for Provider {
+    fn to_string(&self) -> String {
+        match self {
+            Provider::LetsEncrypt => "Let's Encrypt".to_string(),
+            Provider::LetsEncryptStaging => "Let's Encrypt (Staging)".to_string(),
+        }
+    }
+}
+
+const PROVIDERS: &[Provider] = &[Provider::LetsEncrypt, Provider::LetsEncryptStaging];
 
 #[function_component(NewAcme)]
 pub fn new_acme() -> Html {
@@ -53,6 +80,8 @@ pub fn new_acme() -> Html {
         }
     });
 
+    let provider = use_state(|| PROVIDERS[0]);
+
     html! {
         <>
             <ybc::Card classes="py-5">
@@ -61,6 +90,27 @@ pub fn new_acme() -> Html {
                     <Breadcrumb />
                 </p>
             </ybc::CardHeader>
+
+            <div class="field is-horizontal m-5">
+                <div class="field-label is-normal">
+                    <label class="label">{"Proivder"}</label>
+                </div>
+                <div class="field-body">
+                    <div class="field is-narrow">
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                        <select>
+                            { PROVIDERS.iter().map(|item| {
+                                html! {
+                                    <option selected={&*provider == item} value={item.to_string()}>{item.to_string()}</option>
+                                }
+                            }).collect::<Html>() }
+                        </select>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            </div>
 
             <div class="field is-horizontal m-5">
                 <div class="field-label is-normal">
@@ -90,7 +140,7 @@ pub fn new_acme() -> Html {
                 </p>
                 <p class="control">
                     <button class="button is-primary" onclick={self_sign_onclick} disabled={entry.is_err()}>
-                    {"Sign"}
+                    {"Request"}
                     </button>
                 </p>
             </div>
