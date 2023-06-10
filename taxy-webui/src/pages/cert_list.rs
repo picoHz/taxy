@@ -63,7 +63,7 @@ pub fn cert_list() -> Html {
 
     let navigator_cloned = navigator.clone();
     let upload_onclick = Callback::from(move |_| {
-        navigator_cloned.push(&Route::SelfSign);
+        navigator_cloned.push(&Route::Upload);
     });
 
     let cert_list = certs.entries.clone();

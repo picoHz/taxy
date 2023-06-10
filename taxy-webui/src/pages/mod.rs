@@ -12,6 +12,7 @@ mod port_list;
 mod port_view;
 mod self_sign;
 mod site_list;
+mod upload;
 
 #[derive(Clone, Debug, Routable, PartialEq)]
 pub enum Route {
@@ -33,6 +34,8 @@ pub enum Route {
     Certs,
     #[at("/certs/self_sign")]
     SelfSign,
+    #[at("/certs/upload")]
+    Upload,
     #[at("/sites/:id")]
     SiteView { id: String },
     #[not_found]
@@ -87,6 +90,16 @@ impl Route {
                     route: Route::SelfSign,
                 },
             ],
+            Route::Upload => vec![
+                BreadcrumbItem {
+                    name: "Certificates".into(),
+                    route: Route::Certs,
+                },
+                BreadcrumbItem {
+                    name: "Upload".into(),
+                    route: Route::Upload,
+                },
+            ],
             Route::PortView { id } => vec![
                 BreadcrumbItem {
                     name: "Ports".into(),
@@ -129,6 +142,7 @@ pub fn switch(routes: Route) -> Html {
         Route::SiteView { id } => html! { <port_view::PortView {id} /> },
         Route::Certs => html! { <cert_list::CertList /> },
         Route::SelfSign => html! { <self_sign::SelfSign /> },
+        Route::Upload => html! { <upload::Upload /> },
         Route::NotFound => html! { <Redirect<Route> to={Route::Home}/> },
     }
 }

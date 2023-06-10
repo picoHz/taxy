@@ -21,7 +21,7 @@ pub fn self_sign() -> Html {
 
     let navigator_cloned = navigator.clone();
     let cancel_onclick = Callback::from(move |_| {
-        navigator_cloned.push(&Route::Ports);
+        navigator_cloned.push(&Route::Certs);
     });
 
     let san = use_state(String::new);
