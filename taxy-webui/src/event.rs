@@ -1,5 +1,5 @@
 use crate::{
-    store::{PortStore, SessionStore},
+    store::{CertStore, PortStore, SessionStore},
     API_ENDPOINT,
 };
 use futures::StreamExt;
@@ -22,6 +22,7 @@ pub fn use_event_subscriber() {
     let (session, _) = use_store::<SessionStore>();
     let (event, dispatcher) = use_store::<EventSession>();
     let (_, ports) = use_store::<PortStore>();
+    let (_, certs) = use_store::<CertStore>();
     if !event.active {
         if let Some(token) = &session.token {
             let mut es = EventSource::new(&format!("{API_ENDPOINT}/events?token={token}")).unwrap();
@@ -36,6 +37,9 @@ pub fn use_event_subscriber() {
                             match event {
                                 ServerEvent::PortTableUpdated { entries } => {
                                     ports.set(PortStore { entries });
+                                }
+                                ServerEvent::ServerCertsUpdated { items } => {
+                                    certs.set(CertStore { entries: items });
                                 }
                                 _ => (),
                             }
