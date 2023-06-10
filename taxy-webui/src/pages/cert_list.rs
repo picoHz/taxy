@@ -7,6 +7,7 @@ use gloo_net::http::Request;
 use taxy_api::acme::AcmeInfo;
 use taxy_api::cert::CertInfo;
 use yew::prelude::*;
+use yew_router::components::_LinkProps::to;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
 
@@ -38,9 +39,10 @@ pub fn cert_list() -> Html {
     let (certs, certs_dispatcher) = use_store::<CertStore>();
     let (acme, acme_dispatcher) = use_store::<AcmeStore>();
     let token = session.token.clone();
+    let token_cloned = token.clone();
     use_effect_with_deps(
         move |_| {
-            if let Some(token) = token {
+            if let Some(token) = token_cloned {
                 wasm_bindgen_futures::spawn_local(async move {
                     if let Ok(res) = get_cert_list(&token).await {
                         certs_dispatcher.set(CertStore { entries: res });
@@ -106,6 +108,23 @@ pub fn cert_list() -> Html {
                 let issuer = entry.issuer.to_string();
                 let title = format!("{} ({})", subject_names, issuer);
 
+                let delete_onmousedown = Callback::from(move |e: MouseEvent|  {
+                    e.prevent_default();
+                });
+                let token_cloned = token.clone();
+                let id = entry.id.clone();
+                let delete_onclick = Callback::from(move |e: MouseEvent|  {
+                    e.prevent_default();
+                    if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
+                        let id = id.clone();
+                        if let Some(token) = token_cloned.clone() {
+                            wasm_bindgen_futures::spawn_local(async move {
+                                let _ = delete_server_cert(&token, &id).await;
+                            });
+                        }
+                    }
+                });
+
                 let active_index_cloned = active_index.clone();
                 let dropdown_onclick = Callback::from(move |_|  {
                     active_index_cloned.set(i as i32);
@@ -136,7 +155,7 @@ pub fn cert_list() -> Html {
                                     </div>
                                     <div class="dropdown-menu" id="dropdown-menu" role="menu">
                                         <div class="dropdown-content">
-                                            <a href="#" class="dropdown-item">
+                                            <a class="dropdown-item has-text-danger" onmousedown={delete_onmousedown} onclick={delete_onclick}>
                                                 <span class="icon-text">
                                                     <span class="icon">
                                                         <ion-icon name="trash"></ion-icon>
@@ -178,6 +197,23 @@ pub fn cert_list() -> Html {
                 let provider = entry.provider.to_string();
                 let title = format!("{} ({})", subject_names, provider);
 
+                let delete_onmousedown = Callback::from(move |e: MouseEvent|  {
+                    e.prevent_default();
+                });
+                let token_cloned = token.clone();
+                let id = entry.id.clone();
+                let delete_onclick = Callback::from(move |e: MouseEvent|  {
+                    e.prevent_default();
+                    if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
+                        let id = id.clone();
+                        if let Some(token) = token_cloned.clone() {
+                            wasm_bindgen_futures::spawn_local(async move {
+                                let _ = delete_acme(&token, &id).await;
+                            });
+                        }
+                    }
+                });
+
                 let active_index_cloned = active_index.clone();
                 let dropdown_onclick = Callback::from(move |_|  {
                     active_index_cloned.set(i as i32);
@@ -208,7 +244,7 @@ pub fn cert_list() -> Html {
                                     </div>
                                     <div class="dropdown-menu" id="dropdown-menu" role="menu">
                                         <div class="dropdown-content">
-                                            <a href="#" class="dropdown-item">
+                                            <a class="dropdown-item has-text-danger" onmousedown={delete_onmousedown} onclick={delete_onclick}>
                                                 <span class="icon-text">
                                                     <span class="icon">
                                                         <ion-icon name="trash"></ion-icon>
@@ -257,4 +293,20 @@ async fn get_acme_list(token: &str) -> Result<Vec<AcmeInfo>, gloo_net::Error> {
         .await?
         .json()
         .await
+}
+
+async fn delete_server_cert(token: &str, id: &str) -> Result<(), gloo_net::Error> {
+    Request::delete(&format!("{API_ENDPOINT}/server_certs/{id}"))
+        .header("Authorization", &format!("Bearer {token}"))
+        .send()
+        .await?;
+    Ok(())
+}
+
+async fn delete_acme(token: &str, id: &str) -> Result<(), gloo_net::Error> {
+    Request::delete(&format!("{API_ENDPOINT}/acme/{id}"))
+        .header("Authorization", &format!("Bearer {token}"))
+        .send()
+        .await?;
+    Ok(())
 }
