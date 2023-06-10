@@ -63,9 +63,13 @@ pub fn cert_list() -> Html {
         navigator_cloned.push(&Route::SelfSign);
     });
 
-    let navigator_cloned = navigator;
+    let navigator_cloned = navigator.clone();
     let upload_onclick = Callback::from(move |_| {
         navigator_cloned.push(&Route::Upload);
+    });
+
+    let new_acme_onclick = Callback::from(move |_| {
+        navigator.push(&Route::NewAcme);
     });
 
     let cert_list = certs.entries.clone();
@@ -262,7 +266,7 @@ pub fn cert_list() -> Html {
             }).collect::<Html>() }
             </div>
             <ybc::CardFooter>
-                <a class="card-footer-item" onclick={self_sign_onclick}>
+                <a class="card-footer-item" onclick={new_acme_onclick}>
                     <span class="icon-text">
                     <span class="icon">
                         <ion-icon name="add"></ion-icon>
