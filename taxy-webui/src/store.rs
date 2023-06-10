@@ -1,5 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
-use taxy_api::{cert::CertInfo, port::PortEntry, site::SiteEntry};
+use taxy_api::{acme::AcmeInfo, cert::CertInfo, port::PortEntry, site::SiteEntry};
 use yewdux::prelude::*;
 
 #[derive(Default, Clone, PartialEq, Serialize, Deserialize, Store)]
@@ -21,4 +21,9 @@ pub struct SiteStore {
 #[derive(Default, Clone, PartialEq, Store)]
 pub struct CertStore {
     pub entries: Vec<CertInfo>,
+}
+
+#[derive(Default, Clone, PartialEq, Store)]
+pub struct AcmeStore {
+    pub entries: Vec<AcmeInfo>,
 }
