@@ -39,15 +39,24 @@ pub fn self_sign() -> Html {
         .err()
         .and_then(|errors| errors.get("san").map(|s| s.to_string()));
 
+    let is_loading = use_state(|| false);
+
     let entry_cloned = entry.clone();
+    let is_loading_cloned = is_loading.clone();
     let self_sign_onclick = Callback::from(move |_| {
+        if *is_loading_cloned {
+            return;
+        }
         let navigator = navigator.clone();
+        let is_loading_cloned = is_loading_cloned.clone();
         if let Some(token) = token.clone() {
             if let Ok(entry) = entry_cloned.clone() {
+                is_loading_cloned.set(true);
                 wasm_bindgen_futures::spawn_local(async move {
                     if request_self_sign(&token, &entry).await.is_ok() {
                         navigator.push(&Route::Certs);
                     }
+                    is_loading_cloned.set(false);
                 });
             }
         }
@@ -89,7 +98,7 @@ pub fn self_sign() -> Html {
                     </button>
                 </p>
                 <p class="control">
-                    <button class="button is-primary" onclick={self_sign_onclick} disabled={entry.is_err()}>
+                    <button class={classes!("button", "is-primary", is_loading.then_some("is-loading"))} onclick={self_sign_onclick} disabled={entry.is_err()}>
                     {"Sign"}
                     </button>
                 </p>

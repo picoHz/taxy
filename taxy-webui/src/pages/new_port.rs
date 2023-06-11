@@ -32,15 +32,24 @@ pub fn new_port() -> Html {
         navigator_cloned.push(&Route::Ports);
     });
 
+    let is_loading = use_state(|| false);
+
     let entry_cloned = entry.clone();
+    let is_loading_cloned = is_loading.clone();
     let create_onclick = Callback::from(move |_| {
+        if *is_loading_cloned {
+            return;
+        }
         let navigator = navigator.clone();
+        let is_loading_cloned = is_loading_cloned.clone();
         if let Some(token) = token.clone() {
             if let Ok(entry) = (*entry_cloned).clone() {
+                is_loading_cloned.set(true);
                 wasm_bindgen_futures::spawn_local(async move {
                     if create_port(&token, &entry).await.is_ok() {
                         navigator.push(&Route::Ports);
                     }
+                    is_loading_cloned.set(false);
                 });
             }
         }
@@ -64,7 +73,7 @@ pub fn new_port() -> Html {
                     </button>
                 </p>
                 <p class="control">
-                    <button class="button is-primary" onclick={create_onclick} disabled={entry.is_err()}>
+                    <button class={classes!("button", "is-primary", is_loading.then_some("is-loading"))} onclick={create_onclick} disabled={entry.is_err()}>
                     {"Create"}
                     </button>
                 </p>

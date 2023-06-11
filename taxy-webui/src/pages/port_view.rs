@@ -55,18 +55,27 @@ pub fn port_view(props: &Props) -> Html {
             entry_cloned.set(updated);
         });
 
+    let is_loading = use_state(|| false);
+
     let id = props.id.clone();
     let token = session.token.clone();
     let entry_cloned = entry.clone();
+    let is_loading_cloned = is_loading.clone();
     let update_onclick = Callback::from(move |_| {
+        if *is_loading_cloned {
+            return;
+        }
         let navigator = navigator.clone();
         let id = id.clone();
+        let is_loading_cloned = is_loading_cloned.clone();
         if let Some(token) = token.clone() {
             if let Ok(entry) = (*entry_cloned).clone() {
+                is_loading_cloned.set(true);
                 wasm_bindgen_futures::spawn_local(async move {
                     if update_port(&token, &id, &entry).await.is_ok() {
                         navigator.push(&Route::Ports);
                     }
+                    is_loading_cloned.set(false);
                 });
             }
         }
@@ -91,7 +100,7 @@ pub fn port_view(props: &Props) -> Html {
                         </button>
                     </p>
                     <p class="control">
-                        <button class="button is-primary" onclick={update_onclick} disabled={entry.is_err()}>
+                        <button class={classes!("button", "is-primary", is_loading.then_some("is-loading"))} onclick={update_onclick} disabled={entry.is_err()}>
                         {"Update"}
                         </button>
                     </p>

@@ -62,6 +62,9 @@ pub fn new_acme() -> Html {
     let entry_cloned = entry.clone();
     let is_loading_cloned = is_loading.clone();
     let add_acme_onclick = Callback::from(move |_| {
+        if *is_loading_cloned {
+            return;
+        }
         let navigator = navigator.clone();
         let is_loading_cloned = is_loading_cloned.clone();
         if let Some(token) = token.clone() {

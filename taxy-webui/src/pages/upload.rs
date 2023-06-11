@@ -40,19 +40,28 @@ pub fn upload() -> Html {
         }
     });
 
+    let is_loading = use_state(|| false);
+
     let chain_cloned = (*chain).clone();
     let key_cloned = (*key).clone();
+    let is_loading_cloned = is_loading.clone();
     let upload_onclick = Callback::from(move |_| {
+        if *is_loading_cloned {
+            return;
+        }
         let navigator = navigator.clone();
         let chain_cloned = chain_cloned.clone();
         let key_cloned = key_cloned.clone();
+        let is_loading_cloned = is_loading_cloned.clone();
         if let Some(token) = token.clone() {
             if let Some(chain) = chain_cloned {
                 if let Some(key) = key_cloned {
+                    is_loading_cloned.set(true);
                     wasm_bindgen_futures::spawn_local(async move {
                         if upload_cert(&token, &chain, &key).await.is_ok() {
                             navigator.push(&Route::Certs);
                         }
+                        is_loading_cloned.set(false);
                     });
                 }
             }
@@ -127,7 +136,7 @@ pub fn upload() -> Html {
                     </button>
                 </p>
                 <p class="control">
-                    <button class="button is-primary" onclick={upload_onclick} disabled={chain.is_none() || key.is_none()}>
+                    <button class={classes!("button", "is-primary", is_loading.then_some("is-loading"))} onclick={upload_onclick} disabled={chain.is_none() || key.is_none()}>
                     {"Upload"}
                     </button>
                 </p>
