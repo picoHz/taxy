@@ -6,8 +6,6 @@ use crate::{
 use gloo_net::http::Request;
 use std::collections::HashMap;
 use taxy_api::acme::{Acme, AcmeRequest};
-use wasm_bindgen::{JsCast, UnwrapThrowExt};
-use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
@@ -52,19 +50,7 @@ pub fn new_acme() -> Html {
     });
 
     let san = use_state(String::new);
-    let san_onchange = Callback::from({
-        let san = san.clone();
-        move |event: Event| {
-            let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
-            san.set(target.value());
-        }
-    });
-
     let entry = get_request(&san);
-    let san_err = entry
-        .as_ref()
-        .err()
-        .and_then(|errors| errors.get("san").map(|s| s.to_string()));
 
     let entry_cloned = entry.clone();
     let self_sign_onclick = Callback::from(move |_| {
@@ -112,25 +98,8 @@ pub fn new_acme() -> Html {
                 </div>
             </div>
 
-            <div class="field is-horizontal m-5">
-                <div class="field-label is-normal">
-                <label class="label">{"Provider"}</label>
-                </div>
-                <div class="field-body">
-                    <div class="field">
-                        <p class="control is-expanded">
-                        <input class={classes!("input", san_err.as_ref().map(|_| "is-danger"))} type="text" placeholder="Server Names" value={san.to_string()} onchange={san_onchange} />
-                        </p>
-                        if let Some(err) = san_err {
-                            <p class="help is-danger">{err}</p>
-                        } else {
-                            <p class="help">
-                            {"You can use commas to list multiple names, e.g, example.com, *.test.examle.com."}
-                            </p>
-                        }
-                    </div>
-                </div>
-            </div>
+            { provider.html() }
+
 
             <div class="field is-grouped is-grouped-right mx-5">
                 <p class="control">
