@@ -24,7 +24,6 @@ pub fn new_port() -> Html {
     let entry_cloned = entry.clone();
     let on_changed: Callback<Result<Port, HashMap<String, String>>> =
         Callback::from(move |updated| {
-            gloo_console::log!(&format!("updated: {:?}", updated));
             entry_cloned.set(updated);
         });
 

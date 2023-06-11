@@ -5,7 +5,7 @@ use crate::{
 };
 use gloo_net::http::Request;
 use std::collections::HashMap;
-use taxy_api::acme::{Acme, AcmeRequest};
+use taxy_api::acme::AcmeRequest;
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
@@ -17,10 +17,10 @@ pub enum Provider {
 }
 
 impl Provider {
-    fn html(&self) -> Html {
+    fn html(&self, on_changed: Callback<Result<AcmeRequest, HashMap<String, String>>>) -> Html {
         match self {
-            Provider::LetsEncrypt => html! { <LetsEncrypt staging={false} /> },
-            Provider::LetsEncryptStaging => html! { <LetsEncrypt staging={true} /> },
+            Provider::LetsEncrypt => html! { <LetsEncrypt staging={false} {on_changed} /> },
+            Provider::LetsEncryptStaging => html! { <LetsEncrypt staging={true} {on_changed} /> },
         }
     }
 }
@@ -49,18 +49,29 @@ pub fn new_acme() -> Html {
         navigator_cloned.push(&Route::Certs);
     });
 
-    let san = use_state(String::new);
-    let entry = get_request(&san);
+    let entry =
+        use_state::<Result<AcmeRequest, HashMap<String, String>>, _>(|| Err(Default::default()));
+    let entry_cloned = entry.clone();
+    let on_changed: Callback<Result<AcmeRequest, HashMap<String, String>>> =
+        Callback::from(move |updated| {
+            entry_cloned.set(updated);
+        });
+
+    let is_loading = use_state(|| false);
 
     let entry_cloned = entry.clone();
-    let self_sign_onclick = Callback::from(move |_| {
+    let is_loading_cloned = is_loading.clone();
+    let add_acme_onclick = Callback::from(move |_| {
         let navigator = navigator.clone();
+        let is_loading_cloned = is_loading_cloned.clone();
         if let Some(token) = token.clone() {
-            if let Ok(entry) = entry_cloned.clone() {
+            if let Ok(entry) = (*entry_cloned).clone() {
+                is_loading_cloned.set(true);
                 wasm_bindgen_futures::spawn_local(async move {
                     if add_acme(&token, &entry).await.is_ok() {
                         navigator.push(&Route::Certs);
                     }
+                    is_loading_cloned.set(false);
                 });
             }
         }
@@ -98,8 +109,7 @@ pub fn new_acme() -> Html {
                 </div>
             </div>
 
-            { provider.html() }
-
+            { provider.html(on_changed) }
 
             <div class="field is-grouped is-grouped-right mx-5">
                 <p class="control">
@@ -108,7 +118,7 @@ pub fn new_acme() -> Html {
                     </button>
                 </p>
                 <p class="control">
-                    <button class="button is-primary" onclick={self_sign_onclick} disabled={entry.is_err()}>
+                    <button class={classes!("button", "is-primary", is_loading.then_some("is-loading"))} onclick={add_acme_onclick} disabled={entry.is_err()}>
                     {"Request"}
                     </button>
                 </p>
@@ -116,21 +126,6 @@ pub fn new_acme() -> Html {
             </ybc::Card>
         </>
     }
-}
-
-fn get_request(_san: &str) -> Result<AcmeRequest, HashMap<String, String>> {
-    Ok(AcmeRequest {
-        server_url: String::new(),
-        contacts: vec![],
-        eab: None,
-        acme: Acme {
-            provider: String::new(),
-            identifiers: vec![],
-            challenge_type: String::new(),
-            renewal_days: 0,
-            is_trusted: true,
-        },
-    })
 }
 
 async fn add_acme(token: &str, req: &AcmeRequest) -> Result<(), gloo_net::Error> {
