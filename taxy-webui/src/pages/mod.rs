@@ -9,10 +9,12 @@ mod login;
 mod logout;
 mod new_acme;
 mod new_port;
+mod new_site;
 mod port_list;
 mod port_view;
 mod self_sign;
 mod site_list;
+mod site_view;
 mod upload;
 
 #[derive(Clone, Debug, Routable, PartialEq)]
@@ -39,6 +41,8 @@ pub enum Route {
     Upload,
     #[at("/certs/new_acme")]
     NewAcme,
+    #[at("/sites/new")]
+    NewSite,
     #[at("/sites/:id")]
     SiteView { id: String },
     #[not_found]
@@ -123,6 +127,16 @@ impl Route {
                     route: Route::PortView { id: id.clone() },
                 },
             ],
+            Route::NewSite => vec![
+                BreadcrumbItem {
+                    name: "Sites".into(),
+                    route: Route::Sites,
+                },
+                BreadcrumbItem {
+                    name: "New Site".into(),
+                    route: Route::NewSite,
+                },
+            ],
             Route::SiteView { id } => vec![
                 BreadcrumbItem {
                     name: "Sites".into(),
@@ -152,7 +166,8 @@ pub fn switch(routes: Route) -> Html {
         Route::NewPort => html! { <new_port::NewPort /> },
         Route::PortView { id } => html! { <port_view::PortView {id} /> },
         Route::Sites => html! { <site_list::SiteList /> },
-        Route::SiteView { id } => html! { <port_view::PortView {id} /> },
+        Route::SiteView { id } => html! { <site_view::SiteView {id} /> },
+        Route::NewSite => html! { <new_site::NewSite /> },
         Route::Certs => html! { <cert_list::CertList /> },
         Route::SelfSign => html! { <self_sign::SelfSign /> },
         Route::NewAcme => html! { <new_acme::NewAcme /> },

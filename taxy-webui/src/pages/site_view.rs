@@ -1,14 +1,13 @@
-use std::collections::HashMap;
-
 use crate::{
     auth::use_ensure_auth,
-    components::{breadcrumb::Breadcrumb, port_config::PortConfig},
+    components::{breadcrumb::Breadcrumb, site_config::SiteConfig},
     pages::Route,
-    store::{PortStore, SessionStore},
+    store::{SessionStore, SiteStore},
     API_ENDPOINT,
 };
 use gloo_net::http::Request;
-use taxy_api::port::{Port, PortEntry};
+use std::collections::HashMap;
+use taxy_api::site::{Site, SiteEntry};
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
@@ -18,22 +17,22 @@ pub struct Props {
     pub id: String,
 }
 
-#[function_component(PortView)]
-pub fn port_view(props: &Props) -> Html {
+#[function_component(SiteView)]
+pub fn site_view(props: &Props) -> Html {
     use_ensure_auth();
 
-    let (ports, _) = use_store::<PortStore>();
-    let port = use_state(|| ports.entries.iter().find(|e| e.id == props.id).cloned());
+    let (sites, _) = use_store::<SiteStore>();
+    let site = use_state(|| sites.entries.iter().find(|e| e.id == props.id).cloned());
     let (session, _) = use_store::<SessionStore>();
     let token = session.token.clone();
     let id = props.id.clone();
-    let port_cloned = port.clone();
+    let site_cloned = site.clone();
     use_effect_with_deps(
         move |_| {
             if let Some(token) = token {
                 wasm_bindgen_futures::spawn_local(async move {
-                    if let Ok(entry) = get_port(&token, &id).await {
-                        port_cloned.set(Some(entry));
+                    if let Ok(entry) = get_site(&token, &id).await {
+                        site_cloned.set(Some(entry));
                     }
                 });
             }
@@ -45,12 +44,12 @@ pub fn port_view(props: &Props) -> Html {
 
     let navigator_cloned = navigator.clone();
     let cancel_onclick = Callback::from(move |_| {
-        navigator_cloned.push(&Route::Ports);
+        navigator_cloned.push(&Route::Sites);
     });
 
-    let entry = use_state::<Result<Port, HashMap<String, String>>, _>(|| Err(Default::default()));
+    let entry = use_state::<Result<Site, HashMap<String, String>>, _>(|| Err(Default::default()));
     let entry_cloned = entry.clone();
-    let on_changed: Callback<Result<Port, HashMap<String, String>>> =
+    let on_changed: Callback<Result<Site, HashMap<String, String>>> =
         Callback::from(move |updated| {
             entry_cloned.set(updated);
         });
@@ -72,8 +71,8 @@ pub fn port_view(props: &Props) -> Html {
             if let Ok(entry) = (*entry_cloned).clone() {
                 is_loading_cloned.set(true);
                 wasm_bindgen_futures::spawn_local(async move {
-                    if update_port(&token, &id, &entry).await.is_ok() {
-                        navigator.push(&Route::Ports);
+                    if update_site(&token, &id, &entry).await.is_ok() {
+                        navigator.push(&Route::Sites);
                     }
                     is_loading_cloned.set(false);
                 });
@@ -83,15 +82,15 @@ pub fn port_view(props: &Props) -> Html {
 
     html! {
         <>
-            <ybc::Card>
+            <ybc::Card classes="pb-5">
             <ybc::CardHeader>
                 <p class="card-header-title">
                     <Breadcrumb />
                 </p>
             </ybc::CardHeader>
 
-            if let Some(port_entry) = &*port {
-                <PortConfig port={port_entry.port.clone()} {on_changed} />
+            if let Some(site_entry) = &*site {
+                <SiteConfig site={site_entry.site.clone()} {on_changed} />
 
                 <div class="field is-grouped is-grouped-right mx-5">
                     <p class="control">
@@ -120,8 +119,8 @@ pub fn port_view(props: &Props) -> Html {
     }
 }
 
-async fn get_port(token: &str, id: &str) -> Result<PortEntry, gloo_net::Error> {
-    Request::get(&format!("{API_ENDPOINT}/ports/{id}"))
+async fn get_site(token: &str, id: &str) -> Result<SiteEntry, gloo_net::Error> {
+    Request::get(&format!("{API_ENDPOINT}/sites/{id}"))
         .header("Authorization", &format!("Bearer {token}"))
         .send()
         .await?
@@ -129,8 +128,8 @@ async fn get_port(token: &str, id: &str) -> Result<PortEntry, gloo_net::Error> {
         .await
 }
 
-async fn update_port(token: &str, id: &str, entry: &Port) -> Result<(), gloo_net::Error> {
-    Request::put(&format!("{API_ENDPOINT}/ports/{id}"))
+async fn update_site(token: &str, id: &str, entry: &Site) -> Result<(), gloo_net::Error> {
+    Request::put(&format!("{API_ENDPOINT}/sites/{id}"))
         .header("Authorization", &format!("Bearer {token}"))
         .json(entry)?
         .send()

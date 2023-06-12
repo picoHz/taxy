@@ -70,7 +70,7 @@ pub fn upload() -> Html {
 
     html! {
         <>
-            <ybc::Card classes="py-5">
+            <ybc::Card classes="pb-5">
             <ybc::CardHeader>
                 <p class="card-header-title">
                     <Breadcrumb />

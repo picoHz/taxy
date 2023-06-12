@@ -1,35 +1,35 @@
 use crate::{
     auth::use_ensure_auth,
-    components::{breadcrumb::Breadcrumb, port_config::PortConfig},
+    components::{breadcrumb::Breadcrumb, site_config::SiteConfig},
     pages::Route,
     store::SessionStore,
     API_ENDPOINT,
 };
 use gloo_net::http::Request;
 use std::collections::HashMap;
-use taxy_api::port::Port;
+use taxy_api::site::Site;
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
 
-#[function_component(NewPort)]
-pub fn new_port() -> Html {
+#[function_component(NewSite)]
+pub fn new_site() -> Html {
     use_ensure_auth();
 
     let navigator = use_navigator().unwrap();
     let (session, _) = use_store::<SessionStore>();
     let token = session.token.clone();
 
-    let entry = use_state::<Result<Port, HashMap<String, String>>, _>(|| Err(Default::default()));
+    let entry = use_state::<Result<Site, HashMap<String, String>>, _>(|| Err(Default::default()));
     let entry_cloned = entry.clone();
-    let on_changed: Callback<Result<Port, HashMap<String, String>>> =
+    let on_changed: Callback<Result<Site, HashMap<String, String>>> =
         Callback::from(move |updated| {
             entry_cloned.set(updated);
         });
 
     let navigator_cloned = navigator.clone();
     let cancel_onclick = Callback::from(move |_| {
-        navigator_cloned.push(&Route::Ports);
+        navigator_cloned.push(&Route::Sites);
     });
 
     let is_loading = use_state(|| false);
@@ -47,7 +47,7 @@ pub fn new_port() -> Html {
                 is_loading_cloned.set(true);
                 wasm_bindgen_futures::spawn_local(async move {
                     if create_port(&token, &entry).await.is_ok() {
-                        navigator.push(&Route::Ports);
+                        navigator.push(&Route::Sites);
                     }
                     is_loading_cloned.set(false);
                 });
@@ -64,7 +64,7 @@ pub fn new_port() -> Html {
                 </p>
             </ybc::CardHeader>
 
-            <PortConfig {on_changed} />
+            <SiteConfig {on_changed} />
 
             <div class="field is-grouped is-grouped-right mx-5">
                 <p class="control">
@@ -83,8 +83,8 @@ pub fn new_port() -> Html {
     }
 }
 
-async fn create_port(token: &str, entry: &Port) -> Result<(), gloo_net::Error> {
-    Request::post(&format!("{API_ENDPOINT}/ports"))
+async fn create_port(token: &str, entry: &Site) -> Result<(), gloo_net::Error> {
+    Request::post(&format!("{API_ENDPOINT}/sites"))
         .header("Authorization", &format!("Bearer {token}"))
         .json(entry)?
         .send()
