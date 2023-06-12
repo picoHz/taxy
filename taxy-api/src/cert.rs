@@ -19,7 +19,7 @@ impl KeyringInfo {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, ToSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct CertInfo {
     #[schema(example = "a13e1ecc080e42cfcdd5")]
     pub id: String,
@@ -37,7 +37,7 @@ pub struct CertInfo {
     pub metadata: Option<CertMetadata>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, ToSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct SelfSignedCertRequest {
     #[schema(value_type = [String], example = json!(["localhost"]))]
     pub san: Vec<SubjectName>,

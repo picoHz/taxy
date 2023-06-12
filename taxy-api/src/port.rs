@@ -4,7 +4,7 @@ use serde_derive::{Deserialize, Serialize};
 use std::time::SystemTime;
 use utoipa::ToSchema;
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum SocketState {
     Listening,
@@ -16,7 +16,7 @@ pub enum SocketState {
     Unknown,
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct PortStatus {
     pub state: PortState,
     #[serde(serialize_with = "serialize_started_at")]
@@ -24,7 +24,7 @@ pub struct PortStatus {
     pub started_at: Option<SystemTime>,
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct PortState {
     pub socket: SocketState,
     pub tls: Option<TlsState>,

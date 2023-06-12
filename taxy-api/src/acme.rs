@@ -22,7 +22,7 @@ fn default_renewal_days() -> u64 {
     60
 }
 
-#[derive(Debug, Clone, Serialize, ToSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct AcmeInfo {
     pub id: String,
     #[schema(example = "Let's Encrypt")]
