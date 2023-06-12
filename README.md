@@ -45,15 +45,14 @@ taxy start
 
 ### From git
 
-To build the Web UI, make sure you have Node.js installed on your system.
+To build the Web UI, make sure you have [trunk](https://trunkrs.dev/) installed on your system.
 
 Clone the repository and install the package:
 
 ```bash
 git clone https://github.com/picoHz/taxy
-cd taxy/webui
-npm install
-npm run build
+cd taxy/taxy-webui
+trunk build
 cd ..
 cargo install --path .
 ```
@@ -70,10 +69,9 @@ git clone https://github.com/picoHz/taxy
 cd taxy
 cargo run
 
-# In a separate terminal, start Vite for the WebUI
+# In a separate terminal, start `trunk serve` for the WebUI
 cd webui
-npm install
-npm run dev
+trunk serve
 ```
 
 ## FAQ
