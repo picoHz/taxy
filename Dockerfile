@@ -1,9 +1,9 @@
 # Use the official Rust image as the base image for the builder stage
 FROM rust:latest as builder
 
-# Install Node.js and npm
-RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - && \
-    apt-get install -y nodejs
+# Install trunk
+RUN cargo install trunk
+RUN rustup target add wasm32-unknown-unknown
 
 # Set the working directory
 WORKDIR /usr/src/app
@@ -25,11 +25,10 @@ WORKDIR /usr/src/app
 COPY Cargo.toml Cargo.lock ./
 COPY taxy taxy
 COPY taxy-api taxy-api
-COPY webui webui
+COPY taxy-webui taxy-webui
 
-WORKDIR /usr/src/app/webui
-RUN npm install
-RUN npm run build
+WORKDIR /usr/src/app/taxy-webui
+RUN trunk build
 WORKDIR /usr/src/app
 
 # Build the Rust project
