@@ -146,7 +146,7 @@ pub async fn start_admin(
         ))
         .with(warp::reply::with::header(
             "Access-Control-Allow-Origin",
-            "http://localhost:3000",
+            "http://localhost:8080",
         ));
 
     let (_, server) = warp::serve(api.or(swagger_ui).or(static_file).recover(handle_rejection))
@@ -312,7 +312,7 @@ async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible> {
     let reply = warp::reply::with_header(
         reply,
         "Access-Control-Allow-Origin",
-        "http://localhost:3000",
+        "http://localhost:8080",
     );
 
     Ok(reply)
