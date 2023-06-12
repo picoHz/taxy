@@ -83,7 +83,7 @@ pub fn port_view(props: &Props) -> Html {
 
     html! {
         <>
-            <ybc::Card>
+            <ybc::Card classes="pb-5">
             <ybc::CardHeader>
                 <p class="card-header-title">
                     <Breadcrumb />
