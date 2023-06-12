@@ -34,7 +34,7 @@ pub fn site_config(props: &Props) -> Html {
     let (ports, dispatcher) = use_store::<PortStore>();
 
     let token = session.token.clone();
-    let token_cloned = token.clone();
+    let token_cloned = token;
     use_effect_with_deps(
         move |_| {
             if let Some(token) = token_cloned {
@@ -204,7 +204,7 @@ pub fn site_config(props: &Props) -> Html {
                     let servers_onchange = Callback::from(move |event: Event| {
                         let target: HtmlTextAreaElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
                         let mut routes = (*routes_cloned).clone();
-                        routes[i].1 = target.value().split("\n").map(|s| s.to_string()).collect();
+                        routes[i].1 = target.value().split('\n').map(|s| s.to_string()).collect();
                         routes_cloned.set(routes);
                     });
 
@@ -256,7 +256,7 @@ pub fn site_config(props: &Props) -> Html {
 
 fn get_site(
     ports: &[String],
-    vhosts: &String,
+    vhosts: &str,
     routes: &[(String, Vec<String>)],
 ) -> Result<Site, HashMap<String, String>> {
     let mut errors = HashMap::new();
@@ -265,7 +265,7 @@ fn get_site(
     ports.dedup();
     let mut hosts = Vec::new();
     for host in vhosts
-        .split(",")
+        .split(',')
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty())
     {
@@ -277,9 +277,9 @@ fn get_site(
         }
     }
     let mut parsed_routes = Vec::new();
-    for (i, route) in routes.into_iter().enumerate() {
+    for (i, route) in routes.iter().enumerate() {
         let path = route.0.clone();
-        if !path.starts_with("/") {
+        if !path.starts_with('/') {
             errors.insert(format!("routes_{}", i), "Path must start with /".into());
             continue;
         }
