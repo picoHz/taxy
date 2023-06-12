@@ -6,7 +6,7 @@ use taxy_api::acme::{AcmeRequest, ExternalAccountBinding};
 use taxy_api::app::{AppConfig, AppInfo, Source};
 use taxy_api::auth::{LoginRequest, LoginResult};
 use taxy_api::cert::{CertInfo, CertMetadata, CertPostBody, SelfSignedCertRequest};
-use taxy_api::error::Error;
+use taxy_api::error::{Error, ErrorMessage};
 use taxy_api::event::ServerEvent;
 use taxy_api::log::SystemLogRow;
 use taxy_api::port::{PortEntry, PortOptions, UpstreamServer};
@@ -69,6 +69,7 @@ use warp::{Rejection, Reply};
         ExternalAccountBinding,
         CertPostBody,
         Error,
+        ErrorMessage,
         ServerEvent,
         Source,
         SiteEntry,

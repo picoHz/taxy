@@ -85,7 +85,7 @@ pub async fn get(state: AppState, id: String) -> Result<impl Reply, Rejection> {
     delete,
     path = "/api/sites/{id}",
     params(
-        ("id" = String, Path, description = "Port configuration id")
+        ("id" = String, Path, description = "Site configuration id")
     ),
     responses(
         (status = 200),
@@ -129,7 +129,7 @@ pub async fn post(state: AppState, entry: Site) -> Result<impl Reply, Rejection>
     put,
     path = "/api/sites/{id}",
     params(
-        ("id" = String, Path, description = "Port configuration name")
+        ("id" = String, Path, description = "Site configuration name")
     ),
     request_body = SiteEntry,
     responses(

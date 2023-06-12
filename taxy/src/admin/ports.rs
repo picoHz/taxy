@@ -4,31 +4,31 @@ use taxy_api::port::Port;
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
-    let ports_list = warp::get()
+    let api_list = warp::get()
         .and(warp::path::end())
         .and(with_state(app_state.clone()).and_then(list));
 
-    let ports_get = warp::get()
+    let api_get = warp::get()
         .and(with_state(app_state.clone()))
         .and(warp::path::param())
         .and(warp::path::end())
         .and_then(get);
 
-    let ports_status = warp::get()
+    let api_status = warp::get()
         .and(with_state(app_state.clone()))
         .and(warp::path::param())
         .and(warp::path("status"))
         .and(warp::path::end())
         .and_then(status);
 
-    let ports_delete = warp::delete().and(
+    let api_delete = warp::delete().and(
         with_state(app_state.clone())
             .and(warp::path::param())
             .and(warp::path::end())
             .and_then(delete),
     );
 
-    let ports_put = warp::put().and(
+    let api_put = warp::put().and(
         with_state(app_state.clone())
             .and(warp::body::json())
             .and(warp::path::param())
@@ -36,14 +36,14 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
             .and_then(put),
     );
 
-    let ports_post = warp::post().and(
+    let api_post = warp::post().and(
         with_state(app_state.clone())
             .and(warp::body::json())
             .and(warp::path::end())
             .and_then(post),
     );
 
-    let ports_reset = warp::get()
+    let api_reset = warp::get()
         .and(with_state(app_state))
         .and(warp::path::param())
         .and(warp::path("reset"))
@@ -52,13 +52,13 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
 
     warp::path("ports")
         .and(
-            ports_delete
-                .or(ports_get)
-                .or(ports_put)
-                .or(ports_status)
-                .or(ports_reset)
-                .or(ports_list)
-                .or(ports_post),
+            api_delete
+                .or(api_get)
+                .or(api_put)
+                .or(api_status)
+                .or(api_reset)
+                .or(api_list)
+                .or(api_post),
         )
         .boxed()
 }
