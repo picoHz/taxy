@@ -2,12 +2,12 @@ use crate::command::ServerCommand;
 use crate::server::rpc::ErasedRpcMethod;
 use crate::server::rpc::{RpcCallback, RpcMethod, RpcWrapper};
 use hyper::StatusCode;
-use serde_derive::{Deserialize, Serialize};
+use serde_derive::Deserialize;
 use std::any::Any;
 use std::collections::HashMap;
 use std::{convert::Infallible, net::SocketAddr, sync::Arc};
 use taxy_api::app::{AppConfig, AppInfo};
-use taxy_api::error::Error;
+use taxy_api::error::{Error, ErrorMessage};
 use taxy_api::event::ServerEvent;
 use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::{broadcast, mpsc, oneshot, Mutex};
@@ -278,12 +278,6 @@ impl Clone for EventStream {
             recv: self.send.subscribe(),
         }
     }
-}
-
-#[derive(Serialize)]
-struct ErrorMessage {
-    message: String,
-    error: Option<Error>,
 }
 
 async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible> {

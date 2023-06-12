@@ -1,9 +1,15 @@
 use multiaddr::Multiaddr;
-use serde_derive::Serialize;
+use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Error, Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct ErrorMessage {
+    pub message: String,
+    pub error: Option<Error>,
+}
+
+#[derive(Debug, Clone, Error, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case", tag = "message")]
 pub enum Error {
     #[error("invalid listening address: {addr}")]
