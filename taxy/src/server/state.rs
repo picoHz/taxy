@@ -232,9 +232,9 @@ impl ServerState {
     }
 
     async fn update_sites(&mut self) {
-        let _ = self
-            .br_sender
-            .send(ServerEvent::SitesUpdated { items: vec![] });
+        let _ = self.br_sender.send(ServerEvent::SitesUpdated {
+            items: self.get_site_list(),
+        });
     }
 
     async fn update_port_ctx(&mut self, mut ctx: PortContext) {
