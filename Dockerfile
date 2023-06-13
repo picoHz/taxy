@@ -28,7 +28,7 @@ COPY taxy-api taxy-api
 COPY taxy-webui taxy-webui
 
 WORKDIR /usr/src/app/taxy-webui
-RUN trunk build
+RUN trunk build --release
 WORKDIR /usr/src/app
 
 # Build the Rust project

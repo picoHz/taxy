@@ -52,7 +52,7 @@ Clone the repository and install the package:
 ```bash
 git clone https://github.com/picoHz/taxy
 cd taxy/taxy-webui
-trunk build
+trunk build --release
 cd ..
 cargo install --path .
 ```
