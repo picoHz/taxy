@@ -5,4 +5,4 @@ dist = "dist/webui"
 [[hooks]]
 stage = "post_build"
 command = "sh"
-command_arguments = ["-c", "find $TRUNK_STAGING_DIR -type f -exec gzip -9 \"{}\" \\;"]
+command_arguments = ["-c", "if [ \"$TRUNK_PROFILE\" == \"release\" ]; then find $TRUNK_STAGING_DIR -type f -exec gzip -9 {} \\; fi"]
