@@ -89,13 +89,13 @@ impl ServerState {
         }
 
         let _ = this.br_sender.send(ServerEvent::AcmeUpdated {
-            items: this.get_acme_list(),
+            entries: this.get_acme_list(),
         });
         let _ = this.br_sender.send(ServerEvent::ServerCertsUpdated {
-            items: this.get_server_cert_list(),
+            entries: this.get_server_cert_list(),
         });
         let _ = this.br_sender.send(ServerEvent::SitesUpdated {
-            items: this.get_site_list(),
+            entries: this.get_site_list(),
         });
 
         this.update_port_statuses().await;
@@ -116,10 +116,10 @@ impl ServerState {
                 }
                 self.certs.add(item);
                 let _ = self.br_sender.send(ServerEvent::AcmeUpdated {
-                    items: self.get_acme_list(),
+                    entries: self.get_acme_list(),
                 });
                 let _ = self.br_sender.send(ServerEvent::ServerCertsUpdated {
-                    items: self.get_server_cert_list(),
+                    entries: self.get_server_cert_list(),
                 });
                 self.start_http_challenges().await;
             }
@@ -153,10 +153,10 @@ impl ServerState {
                     let _ = ctx.refresh(&self.certs).await;
                 }
             }
-            ServerEvent::SitesUpdated { items } => {
-                self.storage.save_sites(&items).await;
+            ServerEvent::SitesUpdated { entries } => {
+                self.storage.save_sites(&entries).await;
                 for ctx in self.table.contexts_mut() {
-                    let sites = items
+                    let sites = entries
                         .iter()
                         .filter(|entry: &&SiteEntry| entry.site.ports.contains(&ctx.entry.id))
                         .cloned()
@@ -233,7 +233,7 @@ impl ServerState {
 
     async fn update_sites(&mut self) {
         let _ = self.br_sender.send(ServerEvent::SitesUpdated {
-            items: self.get_site_list(),
+            entries: self.get_site_list(),
         });
     }
 
@@ -301,7 +301,7 @@ impl ServerState {
         }
         if !removing_items.is_empty() {
             let _ = self.br_sender.send(ServerEvent::ServerCertsUpdated {
-                items: self.get_server_cert_list(),
+                entries: self.get_server_cert_list(),
             });
         }
     }
@@ -508,10 +508,10 @@ impl ServerState {
             _ => (),
         }
         let _ = self.br_sender.send(ServerEvent::AcmeUpdated {
-            items: self.get_acme_list(),
+            entries: self.get_acme_list(),
         });
         let _ = self.br_sender.send(ServerEvent::ServerCertsUpdated {
-            items: self.get_server_cert_list(),
+            entries: self.get_server_cert_list(),
         });
 
         Ok(())

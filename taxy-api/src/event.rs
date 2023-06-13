@@ -12,8 +12,8 @@ pub enum ServerEvent {
     AppConfigUpdated { config: AppConfig, source: Source },
     PortTableUpdated { entries: Vec<PortEntry> },
     PortStatusUpdated { id: String, status: PortStatus },
-    ServerCertsUpdated { items: Vec<CertInfo> },
-    SitesUpdated { items: Vec<SiteEntry> },
-    AcmeUpdated { items: Vec<AcmeInfo> },
+    ServerCertsUpdated { entries: Vec<CertInfo> },
+    SitesUpdated { entries: Vec<SiteEntry> },
+    AcmeUpdated { entries: Vec<AcmeInfo> },
     Shutdown,
 }

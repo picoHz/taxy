@@ -39,11 +39,11 @@ pub fn use_event_subscriber() {
                                 ServerEvent::PortTableUpdated { entries } => {
                                     ports.set(PortStore { entries });
                                 }
-                                ServerEvent::ServerCertsUpdated { items } => {
-                                    certs.set(CertStore { entries: items });
+                                ServerEvent::ServerCertsUpdated { entries } => {
+                                    certs.set(CertStore { entries });
                                 }
-                                ServerEvent::SitesUpdated { items } => {
-                                    sites.set(SiteStore { entries: items });
+                                ServerEvent::SitesUpdated { entries } => {
+                                    sites.set(SiteStore { entries });
                                 }
                                 _ => (),
                             }
