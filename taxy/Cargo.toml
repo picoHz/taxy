@@ -1,6 +1,6 @@
 [package]
 name = "taxy"
-version = "0.1.8"
+version = "0.2.0"
 edition = "2021"
 include = ["/src", "/build.rs", "/LICENSE", "/dist/webui"]
 build = "build.rs"
