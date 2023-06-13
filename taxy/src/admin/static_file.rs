@@ -2,7 +2,7 @@ use include_dir::{include_dir, Dir};
 use std::path::Path;
 use warp::{path::FullPath, Rejection, Reply};
 
-static STATIC_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../taxy-webui/dist");
+static STATIC_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/dist");
 
 pub async fn get(path: FullPath) -> Result<impl Reply, Rejection> {
     let path = path.as_str();

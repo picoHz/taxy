@@ -1,8 +1,8 @@
 [build]
 target = "index.html"
-dist = "dist/webui"
+dist = "../taxy/dist/webui"
 
 [[hooks]]
 stage = "post_build"
 command = "sh"
-command_arguments = ["-c", "[ \"$TRUNK_PROFILE\" = \"release\" ] && find \"$TRUNK_STAGING_DIR\" -type f -exec gzip -9 {} \\;"]
+command_arguments = ["-c", "[ \"$TRUNK_PROFILE\" = \"release\" ] && find \"$TRUNK_STAGING_DIR\" -type f -exec gzip -9 {} \\; || true"]

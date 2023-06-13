@@ -2,7 +2,7 @@
 name = "taxy"
 version = "0.1.8"
 edition = "2021"
-include = ["/src", "/build.rs", "/LICENSE", "/webui/dist"]
+include = ["/src", "/build.rs", "/LICENSE", "/dist/webui"]
 build = "build.rs"
 description = "A reverse proxy server with a user-friendly WebUI"
 authors = ["picoHz <picoHz@outlook.com>"]
