@@ -4,7 +4,11 @@ FROM rust:latest as builder
 # Install trunk
 RUN cargo install trunk
 RUN rustup target add wasm32-unknown-unknown
-RUN apt-get update && apt-get install -y binaryen
+
+# Install Node.js and npm
+RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - && \
+    apt-get install -y nodejs
+RUN npm i wasm-opt -g
 
 # Set the working directory
 WORKDIR /usr/src/app
