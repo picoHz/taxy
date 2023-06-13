@@ -4,6 +4,7 @@ FROM rust:latest as builder
 # Install trunk
 RUN cargo install trunk
 RUN rustup target add wasm32-unknown-unknown
+RUN apt-get update && apt-get install -y binaryen
 
 # Set the working directory
 WORKDIR /usr/src/app
