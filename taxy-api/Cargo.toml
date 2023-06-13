@@ -1,5 +1,6 @@
 [package]
 name = "taxy-api"
+description = "Type definitions and API for taxy"
 version = "0.1.0"
 edition = "2021"
 authors = ["picoHz <picoHz@outlook.com>"]
