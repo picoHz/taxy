@@ -2,8 +2,12 @@
 members = ["taxy", "taxy-api", "taxy-webui"]
 resolver = "2"
 
+[patch.crates-io]
+taxy-api = { path = "./taxy-api" }
+
 [profile.release]
 strip = true
 
 [profile.dev.package.argon2]
 opt-level = 3
+
