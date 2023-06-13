@@ -1,3 +1,8 @@
 [build]
 target = "index.html"
 dist = "dist/webui"
+
+[[hooks]]
+stage = "post_build"
+command = "sh"
+command_arguments = ["-c", "find $TRUNK_STAGING_DIR -type f -exec gzip -9 \"{}\" \\;"]

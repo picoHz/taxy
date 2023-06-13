@@ -18,11 +18,16 @@ pub async fn get(path: FullPath) -> Result<impl Reply, Rejection> {
     } else {
         path.trim_start_matches('/')
     };
-    let path = Path::new("webui").join(path);
+    let path = Path::new("webui").join(format!("{path}.gz"));
     if let Some(file) = STATIC_DIR.get_file(path) {
-        let mime = mime_guess::from_path(file.path()).first_or_octet_stream();
+        let ext = file
+            .path()
+            .file_stem()
+            .and_then(|x| x.to_str())
+            .unwrap_or_default();
+        let mime = mime_guess::from_path(ext).first_or_octet_stream();
         Ok(warp::reply::with_header(
-            file.contents(),
+            warp::reply::with_header(file.contents(), "Content-Encoding", "gzip"),
             "Content-Type",
             mime.to_string(),
         ))
