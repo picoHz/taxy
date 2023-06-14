@@ -4,8 +4,12 @@ use crate::keyring::Keyring;
 use hyper::{
     client,
     header::{HOST, UPGRADE},
-    http::HeaderValue,
+    http::{
+        uri::{Parts, Scheme},
+        HeaderValue,
+    },
     server::conn::Http,
+    Uri,
 };
 use multiaddr::{Multiaddr, Protocol};
 use std::{net::SocketAddr, sync::Arc, time::SystemTime};
@@ -229,9 +233,16 @@ pub async fn start(
         let mut host = String::new();
 
         if let Some((route, res)) = router.get_route(&req) {
-            *req.uri_mut() = res.uri;
+            let mut parts = Parts::default();
+            parts.path_and_query = res.uri.path_and_query().cloned();
             if !route.servers.is_empty() {
                 let server = &route.servers[round_robin_counter % route.servers.len()];
+
+                parts.scheme = Some(if server.url.scheme() == "http" {
+                    Scheme::HTTP
+                } else {
+                    Scheme::HTTPS
+                });
 
                 hostname = server
                     .url
@@ -244,9 +255,15 @@ pub async fn start(
                     server.url.port_or_known_default().unwrap_or_default()
                 );
 
+                parts.authority = host.parse().ok();
+
                 if let Some(req_host) = req.headers_mut().get_mut(HOST) {
                     *req_host = HeaderValue::from_str(&host).unwrap();
                 }
+            }
+
+            if let Ok(uri) = Uri::from_parts(parts) {
+                *req.uri_mut() = uri;
             }
         }
 
