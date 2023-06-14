@@ -1,5 +1,11 @@
 use crate::{
-    auth::use_ensure_auth, components::breadcrumb::Breadcrumb, pages::Route, store::SessionStore,
+    auth::use_ensure_auth,
+    components::breadcrumb::Breadcrumb,
+    pages::{
+        cert_list::{CertsQuery, CertsTab},
+        Route,
+    },
+    store::SessionStore,
     API_ENDPOINT,
 };
 use gloo_net::http::Request;
@@ -21,7 +27,12 @@ pub fn self_sign() -> Html {
 
     let navigator_cloned = navigator.clone();
     let cancel_onclick = Callback::from(move |_| {
-        navigator_cloned.push(&Route::Certs);
+        let _ = navigator_cloned.push_with_query(
+            &Route::Certs,
+            &CertsQuery {
+                tab: CertsTab::ServerCerts,
+            },
+        );
     });
 
     let san = use_state(String::new);
@@ -54,7 +65,12 @@ pub fn self_sign() -> Html {
                 is_loading_cloned.set(true);
                 wasm_bindgen_futures::spawn_local(async move {
                     if request_self_sign(&token, &entry).await.is_ok() {
-                        navigator.push(&Route::Certs);
+                        let _ = navigator.push_with_query(
+                            &Route::Certs,
+                            &CertsQuery {
+                                tab: CertsTab::ServerCerts,
+                            },
+                        );
                     }
                     is_loading_cloned.set(false);
                 });

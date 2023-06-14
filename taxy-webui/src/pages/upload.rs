@@ -1,5 +1,11 @@
 use crate::{
-    auth::use_ensure_auth, components::breadcrumb::Breadcrumb, pages::Route, store::SessionStore,
+    auth::use_ensure_auth,
+    components::breadcrumb::Breadcrumb,
+    pages::{
+        cert_list::{CertsQuery, CertsTab},
+        Route,
+    },
+    store::SessionStore,
     API_ENDPOINT,
 };
 use gloo_net::http::Request;
@@ -19,7 +25,12 @@ pub fn upload() -> Html {
 
     let navigator_cloned = navigator.clone();
     let cancel_onclick = Callback::from(move |_| {
-        navigator_cloned.push(&Route::Certs);
+        let _ = navigator_cloned.push_with_query(
+            &Route::Certs,
+            &CertsQuery {
+                tab: CertsTab::ServerCerts,
+            },
+        );
     });
 
     let chain = use_state(|| Option::<web_sys::File>::None);
@@ -59,7 +70,12 @@ pub fn upload() -> Html {
                     is_loading_cloned.set(true);
                     wasm_bindgen_futures::spawn_local(async move {
                         if upload_cert(&token, &chain, &key).await.is_ok() {
-                            navigator.push(&Route::Certs);
+                            let _ = navigator.push_with_query(
+                                &Route::Certs,
+                                &CertsQuery {
+                                    tab: CertsTab::ServerCerts,
+                                },
+                            );
                         }
                         is_loading_cloned.set(false);
                     });

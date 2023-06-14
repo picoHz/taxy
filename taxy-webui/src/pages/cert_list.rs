@@ -4,6 +4,7 @@ use crate::store::{AcmeStore, CertStore};
 use crate::API_ENDPOINT;
 use crate::{auth::use_ensure_auth, store::SessionStore};
 use gloo_net::http::Request;
+use serde_derive::{Deserialize, Serialize};
 use taxy_api::acme::AcmeInfo;
 use taxy_api::cert::CertInfo;
 use yew::prelude::*;
@@ -11,29 +12,39 @@ use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Tab {
+#[derive(Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum CertsTab {
+    #[default]
     ServerCerts,
     Acme,
 }
 
-impl ToString for Tab {
+#[derive(Default, Clone, Serialize, Deserialize)]
+pub struct CertsQuery {
+    #[serde(default)]
+    pub tab: CertsTab,
+}
+
+impl ToString for CertsTab {
     fn to_string(&self) -> String {
         match self {
-            Tab::ServerCerts => "Server Certificates",
-            Tab::Acme => "ACME",
+            CertsTab::ServerCerts => "Server Certificates",
+            CertsTab::Acme => "ACME",
         }
         .into()
     }
 }
 
-const TABS: [Tab; 2] = [Tab::ServerCerts, Tab::Acme];
+const TABS: [CertsTab; 2] = [CertsTab::ServerCerts, CertsTab::Acme];
 
 #[function_component(CertList)]
 pub fn cert_list() -> Html {
     use_ensure_auth();
 
-    let tab = use_state(|| Tab::ServerCerts);
+    let location = use_location().unwrap();
+    let query: CertsQuery = location.query().unwrap_or_default();
+    let tab = use_state(|| query.tab);
 
     let (session, _) = use_store::<SessionStore>();
     let (certs, certs_dispatcher) = use_store::<CertStore>();
@@ -68,8 +79,9 @@ pub fn cert_list() -> Html {
         navigator_cloned.push(&Route::Upload);
     });
 
+    let navigator_cloned = navigator.clone();
     let new_acme_onclick = Callback::from(move |_| {
-        navigator.push(&Route::NewAcme);
+        navigator_cloned.push(&Route::NewAcme);
     });
 
     let cert_list = certs.entries.clone();
@@ -86,10 +98,12 @@ pub fn cert_list() -> Html {
             <div class="tabs is-centered mb-0">
                 <ul>
                     { TABS.into_iter().map(|item| {
+                        let navigator = navigator.clone();
                         let is_active = item == *tab;
                         let tab = tab.clone();
                         let onclick = Callback::from(move |_|  {
                             tab.set(item);
+                            let _ = navigator.push_with_query(&Route::Certs, &CertsQuery { tab: item });
                         });
                         html! {
                             <li class={classes!(is_active.then_some("is-active"))}>
@@ -100,7 +114,7 @@ pub fn cert_list() -> Html {
 
                 </ul>
             </div>
-            if *tab == Tab::ServerCerts {
+            if *tab == CertsTab::ServerCerts {
             <div class="list has-visible-pointer-controls">
             { cert_list.into_iter().enumerate().map(|(i, entry)| {
                 let subject_names = entry

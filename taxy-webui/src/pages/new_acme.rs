@@ -1,4 +1,5 @@
 use crate::components::letsencrypt::LetsEncrypt;
+use crate::pages::cert_list::{CertsQuery, CertsTab};
 use crate::{
     auth::use_ensure_auth, components::breadcrumb::Breadcrumb, pages::Route, store::SessionStore,
     API_ENDPOINT,
@@ -46,7 +47,12 @@ pub fn new_acme() -> Html {
 
     let navigator_cloned = navigator.clone();
     let cancel_onclick = Callback::from(move |_| {
-        navigator_cloned.push(&Route::Certs);
+        let _ = navigator_cloned.push_with_query(
+            &Route::Certs,
+            &CertsQuery {
+                tab: CertsTab::Acme,
+            },
+        );
     });
 
     let entry =
@@ -72,7 +78,12 @@ pub fn new_acme() -> Html {
                 is_loading_cloned.set(true);
                 wasm_bindgen_futures::spawn_local(async move {
                     if add_acme(&token, &entry).await.is_ok() {
-                        navigator.push(&Route::Certs);
+                        let _ = navigator.push_with_query(
+                            &Route::Certs,
+                            &CertsQuery {
+                                tab: CertsTab::Acme,
+                            },
+                        );
                     }
                     is_loading_cloned.set(false);
                 });
