@@ -1,5 +1,5 @@
+use serde_derive::{Deserialize, Serialize};
 use std::borrow::Cow;
-
 use yew::prelude::*;
 use yew_router::prelude::*;
 
@@ -17,7 +17,8 @@ mod site_list;
 mod site_view;
 mod upload;
 
-#[derive(Clone, Debug, Routable, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, Routable)]
+#[serde(rename_all = "snake_case")]
 pub enum Route {
     #[at("/")]
     Home,

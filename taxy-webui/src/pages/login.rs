@@ -1,4 +1,4 @@
-use crate::{pages::Route, store::SessionStore, API_ENDPOINT};
+use crate::{auth::LoginQuery, pages::Route, store::SessionStore, API_ENDPOINT};
 use gloo_net::http::Request;
 use serde_derive::Deserialize;
 use taxy_api::{
@@ -22,6 +22,9 @@ enum ApiResult<T> {
 pub fn login() -> Html {
     let (_, dispatch) = use_store::<SessionStore>();
     let navigator = use_navigator().unwrap();
+
+    let location = use_location().unwrap();
+    let query: LoginQuery = location.query().unwrap_or_default();
 
     let username = use_state(String::new);
     let password = use_state(String::new);
@@ -59,6 +62,7 @@ pub fn login() -> Html {
         let dispatch = dispatch.clone();
         let username = username.clone();
         let password = password.clone();
+        let query = query.clone();
         let error = error_cloned.clone();
         wasm_bindgen_futures::spawn_local(async move {
             let login: ApiResult<LoginResult> = Request::post(&format!("{API_ENDPOINT}/login"))
@@ -79,7 +83,11 @@ pub fn login() -> Html {
                     dispatch.set(SessionStore {
                         token: Some(login.token),
                     });
-                    navigator.push(&Route::Home);
+                    if let Some(redirect) = query.redirect {
+                        navigator.replace(&redirect);
+                    } else {
+                        navigator.push(&Route::Home);
+                    }
                 }
                 ApiResult::Err(err) => {
                     error.set(Some(err));
