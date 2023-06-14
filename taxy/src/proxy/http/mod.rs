@@ -232,6 +232,7 @@ pub async fn start(
         let mut hostname = String::new();
         let mut host = String::new();
 
+        let mut client_tls = false;
         if let Some((route, res)) = router.get_route(&req) {
             let mut parts = Parts::default();
             parts.path_and_query = res.uri.path_and_query().cloned();
@@ -243,6 +244,7 @@ pub async fn start(
                 } else {
                     Scheme::HTTPS
                 });
+                client_tls = parts.scheme == Some(Scheme::HTTPS);
 
                 hostname = server
                     .url
@@ -295,7 +297,7 @@ pub async fn start(
             let mut client_http2 = false;
 
             let mut out: Box<dyn IoStream> = Box::new(out);
-            if let Some(config) = tls_client_config {
+            if let Some(config) = tls_client_config.filter(|_| client_tls) {
                 debug!(%resolved, "client: tls handshake");
                 let tls = TlsConnector::from(config.clone());
                 let tls_stream = tls
