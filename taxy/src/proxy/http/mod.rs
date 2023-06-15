@@ -235,7 +235,13 @@ pub async fn start(
         let mut client_tls = false;
         if let Some((route, res)) = router.get_route(&req) {
             let mut parts = Parts::default();
-            parts.path_and_query = res.uri.path_and_query().cloned();
+
+            parts.path_and_query = if let Some(query) = req.uri().query() {
+                format!("{}?{}", res.uri.path(), query).parse().ok()
+            } else {
+                res.uri.path_and_query().cloned()
+            };
+
             if !route.servers.is_empty() {
                 let server = &route.servers[round_robin_counter % route.servers.len()];
 
