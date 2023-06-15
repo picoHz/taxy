@@ -9,7 +9,10 @@ use crate::{
 };
 use hyper::server::conn::Http;
 use hyper::{service::service_fn, Body};
+use rand::seq::SliceRandom;
+use std::collections::HashSet;
 use std::convert::Infallible;
+use std::str;
 use std::{
     collections::HashMap,
     sync::Arc,
@@ -20,9 +23,9 @@ use taxy_api::app::{AppConfig, Source};
 use taxy_api::cert::{CertInfo, KeyringInfo};
 use taxy_api::error::Error;
 use taxy_api::event::ServerEvent;
-use taxy_api::port::PortEntry;
 use taxy_api::port::PortStatus;
-use taxy_api::site::SiteEntry;
+use taxy_api::port::{Port, PortEntry};
+use taxy_api::site::{Site, SiteEntry};
 use tokio::{io::AsyncBufReadExt, task::JoinHandle};
 use tokio::{
     io::BufStream,
@@ -419,7 +422,8 @@ impl ServerState {
             .ok_or_else(|| Error::IdNotFound { id: id.to_string() })
     }
 
-    pub async fn add_port(&mut self, entry: PortEntry) -> Result<(), Error> {
+    pub async fn add_port(&mut self, entry: Port) -> Result<(), Error> {
+        let entry: PortEntry = (self.generate_id(), entry).into();
         if self.get_port_status(&entry.id).is_ok() {
             Err(Error::IdAlreadyExists { id: entry.id })
         } else {
@@ -480,7 +484,7 @@ impl ServerState {
     }
 
     pub async fn add_acme(&mut self, request: AcmeRequest) -> Result<(), Error> {
-        let entry = AcmeEntry::new(request).await?;
+        let entry = AcmeEntry::new(self.generate_id(), request).await?;
         if self.certs.iter().any(|item| item.id() == entry.id) {
             Err(Error::IdAlreadyExists { id: entry.id })
         } else {
@@ -570,8 +574,8 @@ impl ServerState {
             .ok_or_else(|| Error::IdNotFound { id: id.to_string() })
     }
 
-    pub async fn add_site(&mut self, entry: SiteEntry) -> Result<(), Error> {
-        self.sites.add(entry)?;
+    pub async fn add_site(&mut self, entry: Site) -> Result<(), Error> {
+        self.sites.add((self.generate_id(), entry).into())?;
         self.update_sites().await;
         Ok(())
     }
@@ -586,5 +590,34 @@ impl ServerState {
         self.sites.delete(id)?;
         self.update_sites().await;
         Ok(())
+    }
+
+    fn generate_id(&self) -> String {
+        const TABLE: &[u8] = b"bcdfghjklmnpqrstvwxyz";
+
+        let used_ids = self
+            .get_acme_list()
+            .into_iter()
+            .map(|acme| acme.id)
+            .chain(self.get_port_list().into_iter().map(|port| port.id))
+            .chain(self.get_site_list().into_iter().map(|site| site.id))
+            .map(|id| id.to_ascii_lowercase())
+            .collect::<HashSet<_>>();
+
+        let mut rng = rand::thread_rng();
+        let mut id = [b'a'; 6];
+        loop {
+            for c in &mut id {
+                *c = *TABLE.choose(&mut rng).unwrap();
+            }
+            let id = format!(
+                "{}-{}",
+                str::from_utf8(&id[..3]).unwrap(),
+                str::from_utf8(&id[3..]).unwrap()
+            );
+            if !used_ids.contains(&id) {
+                return id;
+            }
+        }
     }
 }

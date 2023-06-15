@@ -1,7 +1,7 @@
 use super::RpcMethod;
 use crate::server::state::ServerState;
 use taxy_api::error::Error;
-use taxy_api::site::SiteEntry;
+use taxy_api::site::{Site, SiteEntry};
 
 pub struct GetSiteList;
 
@@ -41,7 +41,7 @@ impl RpcMethod for DeleteSite {
 }
 
 pub struct AddSite {
-    pub entry: SiteEntry,
+    pub entry: Site,
 }
 
 #[async_trait::async_trait]

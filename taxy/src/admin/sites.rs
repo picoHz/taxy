@@ -115,13 +115,7 @@ pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection
     )
 )]
 pub async fn post(state: AppState, entry: Site) -> Result<impl Reply, Rejection> {
-    Ok(warp::reply::json(
-        &state
-            .call(AddSite {
-                entry: (cuid2::cuid(), entry).into(),
-            })
-            .await?,
-    ))
+    Ok(warp::reply::json(&state.call(AddSite { entry }).await?))
 }
 
 /// Update a site configuration.

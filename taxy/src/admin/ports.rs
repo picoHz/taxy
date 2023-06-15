@@ -156,13 +156,7 @@ pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection
     )
 )]
 pub async fn post(state: AppState, entry: Port) -> Result<impl Reply, Rejection> {
-    Ok(warp::reply::json(
-        &state
-            .call(AddPort {
-                entry: (cuid2::cuid(), entry).into(),
-            })
-            .await?,
-    ))
+    Ok(warp::reply::json(&state.call(AddPort { entry }).await?))
 }
 
 /// Update or rename a port configuration.

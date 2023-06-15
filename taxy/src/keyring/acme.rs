@@ -39,7 +39,7 @@ impl fmt::Debug for AcmeEntry {
 }
 
 impl AcmeEntry {
-    pub async fn new(req: AcmeRequest) -> Result<Self, Error> {
+    pub async fn new(id: String, req: AcmeRequest) -> Result<Self, Error> {
         let contact = req.contacts.iter().map(|c| c.as_str()).collect::<Vec<_>>();
         let external_account = req
             .eab
@@ -64,7 +64,7 @@ impl AcmeEntry {
         };
 
         Ok(Self {
-            id: cuid2::create_id(),
+            id,
             acme: req.acme,
             account,
         })

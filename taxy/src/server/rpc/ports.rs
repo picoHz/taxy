@@ -1,7 +1,7 @@
 use super::RpcMethod;
 use crate::server::state::ServerState;
 use taxy_api::error::Error;
-use taxy_api::port::{PortEntry, PortStatus};
+use taxy_api::port::{Port, PortEntry, PortStatus};
 
 pub struct GetPortList;
 
@@ -54,7 +54,7 @@ impl RpcMethod for DeletePort {
 }
 
 pub struct AddPort {
-    pub entry: PortEntry,
+    pub entry: Port,
 }
 
 #[async_trait::async_trait]
