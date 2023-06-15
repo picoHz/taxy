@@ -47,6 +47,15 @@ pub fn post_list() -> Html {
                     <Breadcrumb />
                 </p>
             </ybc::CardHeader>
+            if list.is_empty() {
+                <ybc::Hero body_classes="has-text-centered" body={
+                    html! {
+                    <p class="title has-text-grey-lighter">
+                        {"No Items"}
+                    </p>
+                    }
+                } />
+            }
             <div class="list has-visible-pointer-controls">
             { list.into_iter().enumerate().map(|(i, entry)| {
                 let navigator = navigator.clone();

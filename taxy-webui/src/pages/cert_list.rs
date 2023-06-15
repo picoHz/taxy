@@ -115,6 +115,15 @@ pub fn cert_list() -> Html {
                 </ul>
             </div>
             if *tab == CertsTab::ServerCerts {
+                if cert_list.is_empty() {
+                    <ybc::Hero body_classes="has-text-centered" body={
+                        html! {
+                        <p class="title has-text-grey-lighter">
+                            {"No Items"}
+                        </p>
+                        }
+                    } />
+                }
             <div class="list has-visible-pointer-controls">
             { cert_list.into_iter().enumerate().map(|(i, entry)| {
                 let subject_names = entry
@@ -209,6 +218,15 @@ pub fn cert_list() -> Html {
                 </a>
             </ybc::CardFooter>
             } else {
+                if acme_list.is_empty() {
+                    <ybc::Hero body_classes="has-text-centered" body={
+                        html! {
+                        <p class="title has-text-grey-lighter">
+                            {"No Items"}
+                        </p>
+                        }
+                    } />
+                }
             <div class="list has-visible-pointer-controls">
             { acme_list.into_iter().enumerate().map(|(i, entry)| {
                 let subject_names = entry.identifiers.join(", ");
