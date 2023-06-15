@@ -1,5 +1,5 @@
 use super::{with_state, AppState};
-use crate::{keyring::acme::AcmeEntry, server::rpc::acme::*};
+use crate::server::rpc::acme::*;
 use taxy_api::acme::AcmeRequest;
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
@@ -85,8 +85,7 @@ pub async fn get(state: AppState, id: String) -> Result<impl Reply, Rejection> {
     )
 )]
 pub async fn add(state: AppState, request: AcmeRequest) -> Result<impl Reply, Rejection> {
-    let item = AcmeEntry::new(request).await?;
-    Ok(warp::reply::json(&state.call(AddAcme { item }).await?))
+    Ok(warp::reply::json(&state.call(AddAcme { request }).await?))
 }
 
 /// Delete an ACME configuration.

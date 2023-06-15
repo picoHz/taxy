@@ -1,6 +1,9 @@
 use super::RpcMethod;
-use crate::{keyring::acme::AcmeEntry, server::state::ServerState};
-use taxy_api::{acme::AcmeInfo, error::Error};
+use crate::server::state::ServerState;
+use taxy_api::{
+    acme::{AcmeInfo, AcmeRequest},
+    error::Error,
+};
 
 pub struct GetAcmeList;
 
@@ -27,7 +30,7 @@ impl RpcMethod for GetAcme {
 }
 
 pub struct AddAcme {
-    pub item: AcmeEntry,
+    pub request: AcmeRequest,
 }
 
 #[async_trait::async_trait]
@@ -35,7 +38,7 @@ impl RpcMethod for AddAcme {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.add_acme(self.item).await
+        state.add_acme(self.request).await
     }
 }
 

@@ -15,7 +15,7 @@ use std::{
     sync::Arc,
     time::{Duration, SystemTime},
 };
-use taxy_api::acme::AcmeInfo;
+use taxy_api::acme::{AcmeInfo, AcmeRequest};
 use taxy_api::app::{AppConfig, Source};
 use taxy_api::cert::{CertInfo, KeyringInfo};
 use taxy_api::error::Error;
@@ -479,7 +479,8 @@ impl ServerState {
             .unwrap_or_else(|| Err(Error::IdNotFound { id: id.to_string() }))
     }
 
-    pub async fn add_acme(&mut self, entry: AcmeEntry) -> Result<(), Error> {
+    pub async fn add_acme(&mut self, request: AcmeRequest) -> Result<(), Error> {
+        let entry = AcmeEntry::new(request).await?;
         if self.certs.iter().any(|item| item.id() == entry.id) {
             Err(Error::IdAlreadyExists { id: entry.id })
         } else {
