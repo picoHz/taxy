@@ -1,5 +1,5 @@
 use crate::{
-    store::{CertStore, PortStore, SessionStore, SiteStore},
+    store::{AcmeStore, CertStore, PortStore, SessionStore, SiteStore},
     API_ENDPOINT,
 };
 use futures::StreamExt;
@@ -23,6 +23,7 @@ pub fn use_event_subscriber() {
     let (event, dispatcher) = use_store::<EventSession>();
     let (_, ports) = use_store::<PortStore>();
     let (_, certs) = use_store::<CertStore>();
+    let (_, acme) = use_store::<AcmeStore>();
     let (_, sites) = use_store::<SiteStore>();
     if !event.active {
         if let Some(token) = &session.token {
@@ -41,6 +42,9 @@ pub fn use_event_subscriber() {
                                 }
                                 ServerEvent::ServerCertsUpdated { entries } => {
                                     certs.set(CertStore { entries });
+                                }
+                                ServerEvent::AcmeUpdated { entries } => {
+                                    acme.set(AcmeStore { entries });
                                 }
                                 ServerEvent::SitesUpdated { entries } => {
                                     sites.set(SiteStore { entries });
