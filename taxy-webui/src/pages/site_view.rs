@@ -105,7 +105,7 @@ pub fn site_view(props: &Props) -> Html {
                     </p>
                 </div>
             } else {
-                <ybc::Hero body={
+                <ybc::Hero body_classes="has-text-centered" body={
                     html! {
                     <p class="title has-text-grey-lighter">
                         {"Not Found"}
