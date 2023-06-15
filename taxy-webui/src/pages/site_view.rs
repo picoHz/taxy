@@ -82,7 +82,7 @@ pub fn site_view(props: &Props) -> Html {
 
     html! {
         <>
-            <ybc::Card classes="pb-5">
+            <ybc::Card>
             <ybc::CardHeader>
                 <p class="card-header-title">
                     <Breadcrumb />
@@ -92,7 +92,7 @@ pub fn site_view(props: &Props) -> Html {
             if let Some(site_entry) = &*site {
                 <SiteConfig site={site_entry.site.clone()} {on_changed} />
 
-                <div class="field is-grouped is-grouped-right mx-5">
+                <div class="field is-grouped is-grouped-right mx-5 pb-5">
                     <p class="control">
                         <button class="button is-light" onclick={cancel_onclick}>
                         {"Cancel"}
@@ -107,7 +107,7 @@ pub fn site_view(props: &Props) -> Html {
             } else {
                 <ybc::Hero body={
                     html! {
-                    <p class="title">
+                    <p class="title has-text-grey-lighter">
                         {"Not Found"}
                     </p>
                     }
