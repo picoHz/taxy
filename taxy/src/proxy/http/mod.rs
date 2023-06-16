@@ -1,6 +1,6 @@
 use self::route::Router;
 use super::{tls::TlsTermination, PortContextEvent};
-use crate::keyring::Keyring;
+use crate::{keyring::Keyring, proxy::http::compression::CompressionStream};
 use hyper::{
     client,
     header::{HOST, UPGRADE},
@@ -9,7 +9,7 @@ use hyper::{
         HeaderValue,
     },
     server::conn::Http,
-    Uri,
+    Response, Uri,
 };
 use multiaddr::{Multiaddr, Protocol};
 use std::{net::SocketAddr, sync::Arc, time::SystemTime};
@@ -27,6 +27,7 @@ use tokio_rustls::{
 };
 use tracing::{debug, error, info, span, warn, Instrument, Level, Span};
 
+mod compression;
 mod filter;
 mod header;
 mod route;
@@ -339,7 +340,27 @@ pub async fn start(
                 }
             });
 
-            Result::<_, anyhow::Error>::Ok(sender.send_request(req).await?)
+            let accept_brotli = req
+                .headers()
+                .get(hyper::header::ACCEPT_ENCODING)
+                .map(|value| value.to_str().unwrap_or_default().contains("br"))
+                .unwrap_or_default();
+
+            let result = Result::<_, anyhow::Error>::Ok(sender.send_request(req).await?);
+            result.map(|res| {
+                let (mut parts, body) = res.into_parts();
+                let encoding = parts.headers.entry(hyper::header::CONTENT_ENCODING);
+
+                if let hyper::header::Entry::Vacant(entry) = encoding {
+                    if accept_brotli {
+                        entry.insert(HeaderValue::from_static("br"));
+                        parts.headers.remove(hyper::header::CONTENT_LENGTH);
+                        let stream = CompressionStream::new(body);
+                        return Response::from_parts(parts, hyper::Body::wrap_stream(stream));
+                    }
+                }
+                Response::from_parts(parts, body)
+            })
         }
     });
 

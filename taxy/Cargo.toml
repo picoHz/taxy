@@ -19,6 +19,7 @@ argon2 = "0.5.0"
 async-trait = "0.1.68"
 backoff = { version = "0.4.0", features = ["tokio"] }
 base64 = "0.21.0"
+brotli = "3.3.4"
 clap = { version = "4.2.7", features = ["derive", "env"] }
 cuid2 = "0.1.0"
 dashmap = "5.4.0"
