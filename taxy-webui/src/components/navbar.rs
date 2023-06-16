@@ -64,8 +64,9 @@ pub fn navbar() -> Html {
                             e.prevent_default();
                             navigator.push(&entry.route);
                         });
+                        let is_active = route == entry.route;
                         html! {
-                            <a class="navbar-item" {onclick}>
+                            <a class={classes!("navbar-item", "pr-5", is_active.then_some("has-background-grey-lighter"))} {onclick}>
                                 <span class="icon-text">
                                     <span class="icon">
                                         <ion-icon name={entry.icon}></ion-icon>
