@@ -1,4 +1,5 @@
 use super::{with_state, AppState};
+use rand::distributions::{Alphanumeric, DistString};
 use std::{
     collections::HashMap,
     time::{Duration, Instant},
@@ -10,6 +11,7 @@ use taxy_api::{
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 const MINIMUM_SESSION_EXPIRY: Duration = Duration::from_secs(60 * 5); // 5 minutes
+const SESSION_TOKEN_LENGTH: usize = 32;
 
 pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
     let app_state_clone = app_state.clone();
@@ -89,7 +91,7 @@ pub struct SessionStore {
 
 impl SessionStore {
     pub fn new_token(&mut self) -> String {
-        let token = cuid2::cuid();
+        let token = Alphanumeric.sample_string(&mut rand::thread_rng(), SESSION_TOKEN_LENGTH);
         self.tokens.insert(token.clone(), Instant::now());
         token
     }
