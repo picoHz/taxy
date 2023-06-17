@@ -33,6 +33,7 @@ impl Stream for CompressionStream {
         if let Some(writer) = &mut self.writer {
             if let Poll::Ready(Some(Ok(chunk))) = &poll {
                 let _ = writer.write_all(chunk);
+                let _ = writer.flush();
             }
         }
         match poll {
