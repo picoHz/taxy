@@ -79,7 +79,6 @@ pub fn login() -> Html {
                 .unwrap();
             match login {
                 ApiResult::Ok(login) => {
-                    gloo_console::log!(&login.token);
                     dispatch.set(SessionStore {
                         token: Some(login.token),
                     });

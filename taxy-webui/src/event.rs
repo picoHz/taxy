@@ -54,7 +54,6 @@ pub fn use_event_subscriber() {
                         }
                     }
                 }
-                gloo_console::log!("EventSource Closed");
                 Timeout::new(5000, move || {
                     dispatcher.set(EventSession { active: false });
                 })
