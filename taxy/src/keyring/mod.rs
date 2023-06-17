@@ -63,7 +63,7 @@ impl Keyring {
         certs
     }
 
-    pub fn acme_entries(&self) -> Vec<&Arc<AcmeEntry>> {
+    pub fn acme_ports(&self) -> Vec<&Arc<AcmeEntry>> {
         self.certs
             .values()
             .filter_map(|item| match item {

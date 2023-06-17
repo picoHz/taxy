@@ -64,7 +64,7 @@ impl ServerState {
 
         let certs = storage.load_keychain().await;
         let table = ProxyTable::new();
-        let ports = storage.load_entries().await;
+        let ports = storage.load_ports().await;
         let sites = storage.load_sites().await;
 
         let mut this = Self {
@@ -149,7 +149,7 @@ impl ServerState {
                 }
             }
             ServerEvent::PortTableUpdated { entries } => {
-                self.storage.save_entries(&entries).await;
+                self.storage.save_ports(&entries).await;
             }
             ServerEvent::ServerCertsUpdated { .. } => {
                 for ctx in self.table.contexts_mut() {
@@ -287,7 +287,7 @@ impl ServerState {
 
     fn remove_expired_certs(&mut self) {
         let mut removing_items = Vec::new();
-        for acme in self.certs.acme_entries() {
+        for acme in self.certs.acme_ports() {
             let certs = self.certs.find_server_certs_by_acme(&acme.id);
             let mut expired = certs
                 .iter()
@@ -310,7 +310,7 @@ impl ServerState {
     }
 
     async fn start_http_challenges(&mut self) -> JoinHandle<()> {
-        let entries = self.certs.acme_entries();
+        let entries = self.certs.acme_ports();
         let entries = entries
             .iter()
             .filter(|entry| {

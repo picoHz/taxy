@@ -63,15 +63,15 @@ impl ConfigStorage {
         Ok(toml::from_str(&content)?)
     }
 
-    pub async fn save_entries(&self, entries: &[PortEntry]) {
+    pub async fn save_ports(&self, entries: &[PortEntry]) {
         let dir = &self.dir;
         let path = dir.join("ports.toml");
-        if let Err(err) = self.save_entries_impl(&path, entries).await {
+        if let Err(err) = self.save_ports_impl(&path, entries).await {
             error!(?path, "failed to save: {err}");
         }
     }
 
-    async fn save_entries_impl(&self, path: &Path, ports: &[PortEntry]) -> anyhow::Result<()> {
+    async fn save_ports_impl(&self, path: &Path, ports: &[PortEntry]) -> anyhow::Result<()> {
         fs::create_dir_all(path.parent().unwrap()).await?;
         info!(?path, "save config");
         let mut doc = match self.load_document(path).await {
@@ -106,10 +106,10 @@ impl ConfigStorage {
         Ok(content.parse::<Document>()?)
     }
 
-    pub async fn load_entries(&self) -> Vec<PortEntry> {
+    pub async fn load_ports(&self) -> Vec<PortEntry> {
         let dir = &self.dir;
         let path = dir.join("ports.toml");
-        match self.load_entries_impl(&path).await {
+        match self.load_ports_impl(&path).await {
             Ok(ports) => ports,
             Err(err) => {
                 warn!(?path, "failed to load: {err}");
@@ -118,7 +118,7 @@ impl ConfigStorage {
         }
     }
 
-    async fn load_entries_impl(&self, path: &Path) -> anyhow::Result<Vec<PortEntry>> {
+    async fn load_ports_impl(&self, path: &Path) -> anyhow::Result<Vec<PortEntry>> {
         info!(?path, "load config");
         let content = fs::read_to_string(path).await?;
         let table: IndexMap<String, Port> = toml::from_str(&content)?;
