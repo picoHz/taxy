@@ -2688,7 +2688,6 @@ dependencies = [
  "anyhow",
  "console_error_panic_hook",
  "futures",
- "gloo-console",
  "gloo-dialogs",
  "gloo-net",
  "gloo-timers",
