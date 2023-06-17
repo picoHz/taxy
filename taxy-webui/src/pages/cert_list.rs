@@ -99,10 +99,12 @@ pub fn cert_list() -> Html {
                 <ul>
                     { TABS.into_iter().map(|item| {
                         let navigator = navigator.clone();
+                        let active_index = active_index.clone();
                         let is_active = item == *tab;
                         let tab = tab.clone();
                         let onclick = Callback::from(move |_|  {
                             tab.set(item);
+                            active_index.set(-1);
                             let _ = navigator.push_with_query(&Route::Certs, &CertsQuery { tab: item });
                         });
                         html! {
