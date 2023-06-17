@@ -94,7 +94,7 @@ pub fn self_sign() -> Html {
                 <div class="field-body">
                     <div class="field">
                         <p class="control is-expanded">
-                        <input class={classes!("input", san_err.as_ref().map(|_| "is-danger"))} type="text" placeholder="Server Names" value={san.to_string()} onchange={san_onchange} />
+                        <input class={classes!("input", san_err.as_ref().map(|_| "is-danger"))} type="text" autocapitalize="off" placeholder="Server Names" value={san.to_string()} onchange={san_onchange} />
                         </p>
                         if let Some(err) = san_err {
                             <p class="help is-danger">{err}</p>

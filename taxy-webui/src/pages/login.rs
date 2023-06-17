@@ -112,7 +112,7 @@ pub fn login() -> Html {
                     <form {onsubmit}>
                         <label class={classes!("label", "mt-5")}>{ "Username" }</label>
                         <div class={classes!("control")}>
-                            <input class="input" type="text" oninput={oninput_username} />
+                            <input class="input" type="text" autocapitalize="off" oninput={oninput_username} />
                         </div>
                         <label class={classes!("label", "mt-5")}>{ "Password" }</label>
                         <div class={classes!("control")}>

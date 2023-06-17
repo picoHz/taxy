@@ -80,7 +80,7 @@ pub fn letsencrypt(props: &Props) -> Html {
             <div class="field-body">
                 <div class="field">
                     <p class="control is-expanded">
-                    <input class="input" type="input" placeholder="example.com" onchange={domain_name_onchange} />
+                    <input class="input" autocapitalize="off" type="input" placeholder="example.com" onchange={domain_name_onchange} />
                     </p>
                 </div>
             </div>

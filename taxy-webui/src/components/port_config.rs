@@ -134,7 +134,7 @@ pub fn port_config(props: &Props) -> Html {
                 <div class="field-body">
                     <div class="field">
                         <p class="control is-expanded">
-                        <input class={classes!("input", interface_err.map(|_| "is-danger"))} type="text" placeholder="Interface" onchange={interface_onchange} value={interface.to_string()} />
+                        <input class={classes!("input", interface_err.map(|_| "is-danger"))} autocapitalize="off" type="text" placeholder="Interface" onchange={interface_onchange} value={interface.to_string()} />
                         </p>
                         if let Some(err) = interface_err {
                             <p class="help is-danger">{err}</p>
@@ -177,7 +177,7 @@ pub fn port_config(props: &Props) -> Html {
                     <div class="field-body">
                         <div class="field">
                             <p class="control is-expanded">
-                            <input class="input" type="text" placeholder="Server Names" value={tls_server_names.to_string()} onchange={tls_server_names_onchange} />
+                            <input class="input" type="text" autocapitalize="off" placeholder="Server Names" value={tls_server_names.to_string()} onchange={tls_server_names_onchange} />
                             </p>
                             <p class="help">
                             {"You can use commas to list multiple names, e.g, example.com, *.test.examle.com."}
@@ -238,7 +238,7 @@ pub fn port_config(props: &Props) -> Html {
                                 <div class={classes!("field-body")}>
                                 <div class="field has-addons">
                                     <div class="control is-expanded">
-                                        <input class={classes!("input", err.map(|_| "is-danger"))} type="text" placeholder="Host" onchange={host_onchange} value={host.clone()} />
+                                        <input class={classes!("input", err.map(|_| "is-danger"))} type="text" autocapitalize="off" placeholder="Host" onchange={host_onchange} value={host.clone()} />
                                     </div>
                                     <div class="control">
                                         <input class={classes!("input", err.map(|_| "is-danger"))} type="number" placeholder="Port" max="65535" min="1" onchange={port_onchange} value={port.to_string()} />

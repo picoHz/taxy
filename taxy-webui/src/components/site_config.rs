@@ -153,7 +153,7 @@ pub fn site_config(props: &Props) -> Html {
                 <div class="field-body">
                     <div class="field">
                         <p class="control is-expanded">
-                        <input class="input" type="text" placeholder="Host Names"  value={vhosts.to_string()} onchange={vhosts_onchange} />
+                        <input class="input" type="text" placeholder="Host Names" autocapitalize="off" value={vhosts.to_string()} onchange={vhosts_onchange} />
                         </p>
                         if let Some(err) = vhosts_err {
                             <p class="help is-danger">{err}</p>
@@ -216,7 +216,7 @@ pub fn site_config(props: &Props) -> Html {
                             <div class={classes!("field-body")}>
                             <div class="field has-addons">
                                 <div class="control is-expanded">
-                                    <input class={classes!("input", err.map(|_| "is-danger"))} type="text" placeholder="Path" onchange={path_onchange} value={path.clone()} />
+                                    <input class={classes!("input", err.map(|_| "is-danger"))} type="text" autocapitalize="off" placeholder="Path" onchange={path_onchange} value={path.clone()} />
                                 </div>
                                 <div class="control">
                                     <button class={classes!("button", err.map(|_| "is-danger"))} onclick={add_onclick}>
@@ -237,7 +237,7 @@ pub fn site_config(props: &Props) -> Html {
                         <div class="mt-2">
                             <div class="field">
                                 <div class="control">
-                                    <textarea class={classes!("textarea", err.map(|_| "is-danger"))} placeholder="https://example.com/backend" onchange={servers_onchange} value={servers.join("\n").to_string()}></textarea>
+                                    <textarea class={classes!("textarea", err.map(|_| "is-danger"))} autocapitalize="off" placeholder="https://example.com/backend" onchange={servers_onchange} value={servers.join("\n").to_string()}></textarea>
                                 </div>
                             </div>
                         </div>
