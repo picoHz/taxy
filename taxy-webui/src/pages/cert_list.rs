@@ -154,7 +154,11 @@ pub fn cert_list() -> Html {
 
                 let active_index_cloned = active_index.clone();
                 let dropdown_onclick = Callback::from(move |_|  {
-                    active_index_cloned.set(i as i32);
+                    active_index_cloned.set(if *active_index_cloned == i as i32 {
+                        -1
+                    } else {
+                        i as i32
+                    });
                 });
                 let active_index_cloned = active_index.clone();
                 let dropdown_onfocusout = Callback::from(move |_|  {
@@ -252,7 +256,11 @@ pub fn cert_list() -> Html {
 
                 let active_index_cloned = active_index.clone();
                 let dropdown_onclick = Callback::from(move |_|  {
-                    active_index_cloned.set(i as i32);
+                    active_index_cloned.set(if *active_index_cloned == i as i32 {
+                        -1
+                    } else {
+                        i as i32
+                    });
                 });
                 let active_index_cloned = active_index.clone();
                 let dropdown_onfocusout = Callback::from(move |_|  {
