@@ -15,7 +15,6 @@ use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
 use tracing::{error, info, trace, warn};
 use utoipa::OpenApi;
-use utoipa_swagger_ui::Config;
 use warp::filters::body::BodyDeserializeError;
 use warp::{sse::Event, Filter, Rejection, Reply};
 
@@ -110,15 +109,6 @@ pub async fn start_admin(
         .and(warp::get())
         .map(|| warp::reply::json(&swagger::ApiDoc::openapi()));
 
-    let api_config = Arc::new(Config::from("/api/api-doc.json"));
-
-    let swagger_ui = warp::path("swagger-ui")
-        .and(warp::get())
-        .and(warp::path::full())
-        .and(warp::path::tail())
-        .and(warp::any().map(move || api_config.clone()))
-        .and_then(swagger::serve_swagger);
-
     let api = warp::path("api").and(
         options
             .or(app_info::api(app_state.clone()))
@@ -149,22 +139,26 @@ pub async fn start_admin(
             "http://localhost:8080",
         ));
 
-    let (_, server) = warp::serve(api.or(swagger_ui).or(static_file).recover(handle_rejection))
-        .try_bind_with_graceful_shutdown(addr, async move {
-            loop {
-                let event = event_recv.recv().await;
-                trace!("received server event: {:?}", event);
-                match event {
-                    Ok(ServerEvent::Shutdown) => {
-                        break;
-                    }
-                    Err(RecvError::Lagged(n)) => {
-                        warn!("event stream lagged: {}", n);
-                    }
-                    _ => {}
+    let (_, server) = warp::serve(
+        api.or(swagger::swagger_ui())
+            .or(static_file)
+            .recover(handle_rejection),
+    )
+    .try_bind_with_graceful_shutdown(addr, async move {
+        loop {
+            let event = event_recv.recv().await;
+            trace!("received server event: {:?}", event);
+            match event {
+                Ok(ServerEvent::Shutdown) => {
+                    break;
                 }
+                Err(RecvError::Lagged(n)) => {
+                    warn!("event stream lagged: {}", n);
+                }
+                _ => {}
             }
-        })?;
+        }
+    })?;
 
     info!("webui server started on {}", addr);
     server.await;

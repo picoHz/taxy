@@ -1,6 +1,4 @@
 use super::{acme, app_info, auth, config, log, ports, server_certs, sites};
-use hyper::{Response, StatusCode, Uri};
-use std::sync::Arc;
 use taxy_api::acme::AcmeInfo;
 use taxy_api::acme::{AcmeRequest, ExternalAccountBinding};
 use taxy_api::app::{AppConfig, AppInfo, Source};
@@ -16,7 +14,8 @@ use taxy_api::tls::TlsState;
 use taxy_api::tls::TlsTermination;
 use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
 use utoipa::{Modify, OpenApi};
-use utoipa_swagger_ui::Config;
+use warp::filters::BoxedFilter;
+use warp::Filter;
 use warp::{Rejection, Reply};
 
 #[derive(OpenApi)]
@@ -83,11 +82,36 @@ use warp::{Rejection, Reply};
 )]
 pub struct ApiDoc;
 
-pub async fn serve_swagger(
+pub fn swagger_ui() -> BoxedFilter<(impl Reply,)> {
+    warp::path("swagger-ui")
+        .and(warp::get())
+        .and(warp::path::full())
+        .and(warp::path::tail())
+        .and_then(serve_swagger)
+        .boxed()
+}
+
+#[cfg(not(feature = "utoipa-swagger-ui"))]
+async fn serve_swagger(
+    _full_path: warp::path::FullPath,
+    _tail: warp::path::Tail,
+) -> Result<Box<dyn Reply + 'static>, Rejection> {
+    Err(warp::reject::not_found())
+}
+
+#[cfg(feature = "utoipa-swagger-ui")]
+async fn serve_swagger(
     full_path: warp::path::FullPath,
     tail: warp::path::Tail,
-    config: Arc<Config<'static>>,
 ) -> Result<Box<dyn Reply + 'static>, Rejection> {
+    use hyper::{Response, StatusCode, Uri};
+    use once_cell::sync::OnceCell;
+    use std::sync::Arc;
+
+    static CONFIG: OnceCell<Arc<utoipa_swagger_ui::Config<'static>>> = OnceCell::new();
+    let config =
+        CONFIG.get_or_init(|| Arc::new(utoipa_swagger_ui::Config::from("/api/api-doc.json")));
+
     if full_path.as_str() == "/swagger-ui" {
         return Ok(Box::new(warp::redirect::found(Uri::from_static(
             "/swagger-ui/",
@@ -95,7 +119,7 @@ pub async fn serve_swagger(
     }
 
     let path = tail.as_str();
-    match utoipa_swagger_ui::serve(path, config) {
+    match utoipa_swagger_ui::serve(path, config.clone()) {
         Ok(file) => {
             if let Some(file) = file {
                 Ok(Box::new(
