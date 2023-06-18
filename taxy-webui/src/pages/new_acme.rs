@@ -1,3 +1,4 @@
+use crate::components::custom_acme::CustomAcme;
 use crate::components::letsencrypt::LetsEncrypt;
 use crate::pages::cert_list::{CertsQuery, CertsTab};
 use crate::{
@@ -7,6 +8,8 @@ use crate::{
 use gloo_net::http::Request;
 use std::collections::HashMap;
 use taxy_api::acme::AcmeRequest;
+use wasm_bindgen::{JsCast, UnwrapThrowExt};
+use web_sys::HtmlSelectElement;
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
@@ -15,6 +18,7 @@ use yewdux::prelude::*;
 pub enum Provider {
     LetsEncrypt,
     LetsEncryptStaging,
+    Custom,
 }
 
 impl Provider {
@@ -22,6 +26,7 @@ impl Provider {
         match self {
             Provider::LetsEncrypt => html! { <LetsEncrypt staging={false} {on_changed} /> },
             Provider::LetsEncryptStaging => html! { <LetsEncrypt staging={true} {on_changed} /> },
+            Provider::Custom => html! { <CustomAcme {on_changed} /> },
         }
     }
 }
@@ -31,11 +36,16 @@ impl ToString for Provider {
         match self {
             Provider::LetsEncrypt => "Let's Encrypt".to_string(),
             Provider::LetsEncryptStaging => "Let's Encrypt (Staging)".to_string(),
+            Provider::Custom => "Custom".to_string(),
         }
     }
 }
 
-const PROVIDERS: &[Provider] = &[Provider::LetsEncrypt, Provider::LetsEncryptStaging];
+const PROVIDERS: &[Provider] = &[
+    Provider::Custom,
+    Provider::LetsEncrypt,
+    Provider::LetsEncryptStaging,
+];
 
 #[function_component(NewAcme)]
 pub fn new_acme() -> Html {
@@ -92,6 +102,15 @@ pub fn new_acme() -> Html {
     });
 
     let provider = use_state(|| PROVIDERS[0]);
+    let provider_onchange = Callback::from({
+        let provider = provider.clone();
+        move |event: Event| {
+            let target: HtmlSelectElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
+            if let Ok(index) = target.value().parse::<usize>() {
+                provider.set(PROVIDERS[index]);
+            }
+        }
+    });
 
     html! {
         <>
@@ -110,10 +129,10 @@ pub fn new_acme() -> Html {
                     <div class="field is-narrow">
                     <div class="control">
                         <div class="select is-fullwidth">
-                        <select>
-                            { PROVIDERS.iter().map(|item| {
+                        <select onchange={provider_onchange}>
+                            { PROVIDERS.iter().enumerate().map(|(i, item)| {
                                 html! {
-                                    <option selected={&*provider == item} value={item.to_string()}>{item.to_string()}</option>
+                                    <option selected={&*provider == item} value={i.to_string()}>{item.to_string()}</option>
                                 }
                             }).collect::<Html>() }
                         </select>
