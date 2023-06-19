@@ -94,7 +94,7 @@ pub fn custom_acme(props: &Props) -> Html {
             <div class="field-body">
                 <div class="field">
                     <p class="control is-expanded">
-                    <input class="input" type="text" placeholder="ACME Proivder" onchange={name_onchange} />
+                    <input class="input" type="text" placeholder="ACME Provider" onchange={name_onchange} />
                     </p>
                 </div>
             </div>

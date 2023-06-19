@@ -42,9 +42,9 @@ impl ToString for Provider {
 }
 
 const PROVIDERS: &[Provider] = &[
-    Provider::Custom,
     Provider::LetsEncrypt,
     Provider::LetsEncryptStaging,
+    Provider::Custom,
 ];
 
 #[function_component(NewAcme)]
