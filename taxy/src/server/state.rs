@@ -1,10 +1,11 @@
+use super::acme_list::AcmeList;
 use super::site_list::SiteList;
 use super::{listener::TcpListenerPool, port_list::PortList, rpc::RpcCallback};
 use crate::keyring::certs::Cert;
 use crate::{
     command::ServerCommand,
     config::storage::ConfigStorage,
-    keyring::{acme::AcmeEntry, Keyring, KeyringItem},
+    keyring::{Keyring, KeyringItem},
     proxy::{PortContext, PortContextKind},
 };
 use hyper::server::conn::Http;
@@ -18,7 +19,6 @@ use std::{
     sync::Arc,
     time::{Duration, SystemTime},
 };
-use taxy_api::acme::{AcmeInfo, AcmeRequest};
 use taxy_api::app::{AppConfig, Source};
 use taxy_api::cert::{CertInfo, KeyringInfo};
 use taxy_api::error::Error;
@@ -36,6 +36,7 @@ use x509_parser::time::ASN1Time;
 
 pub struct ServerState {
     pub sites: SiteList,
+    pub acmes: AcmeList,
     pub ports: PortList,
     config: AppConfig,
     storage: ConfigStorage,
@@ -61,11 +62,13 @@ impl ServerState {
         });
 
         let certs = storage.load_keychain().await;
+        let acmes = storage.load_acmes().await;
         let ports = storage.load_ports().await;
         let sites = storage.load_sites().await;
 
         let mut this = Self {
             sites: sites.into_iter().collect(),
+            acmes: acmes.into_iter().collect(),
             ports: PortList::new(),
             config,
             storage,
@@ -89,7 +92,7 @@ impl ServerState {
         }
 
         let _ = this.br_sender.send(ServerEvent::AcmeUpdated {
-            entries: this.get_acme_list(),
+            entries: this.acmes.entries().map(|acme| acme.info()).collect(),
         });
         let _ = this.br_sender.send(ServerEvent::ServerCertsUpdated {
             entries: this.get_server_cert_list(),
@@ -107,16 +110,13 @@ impl ServerState {
         match cmd {
             ServerCommand::AddKeyringItem { item } => {
                 match &item {
-                    KeyringItem::Acme(entry) => {
-                        self.storage.save_acme(entry).await;
-                    }
                     KeyringItem::ServerCert(cert) => {
                         self.storage.save_cert(cert).await;
                     }
                 }
                 self.certs.add(item);
                 let _ = self.br_sender.send(ServerEvent::AcmeUpdated {
-                    entries: self.get_acme_list(),
+                    entries: self.acmes.entries().map(|acme| acme.info()).collect(),
                 });
                 let _ = self.br_sender.send(ServerEvent::ServerCertsUpdated {
                     entries: self.get_server_cert_list(),
@@ -237,6 +237,12 @@ impl ServerState {
         });
     }
 
+    pub async fn update_acmes(&mut self) {
+        let _ = self.br_sender.send(ServerEvent::AcmeUpdated {
+            entries: self.acmes.entries().map(|acme| acme.info()).collect(),
+        });
+    }
+
     pub async fn update_port_ctx(&mut self, mut ctx: PortContext) {
         let sites = self
             .sites
@@ -284,7 +290,7 @@ impl ServerState {
 
     fn remove_expired_certs(&mut self) {
         let mut removing_items = Vec::new();
-        for acme in self.certs.acme_ports() {
+        for acme in self.acmes.entries() {
             let certs = self.certs.find_server_certs_by_acme(&acme.id);
             let mut expired = certs
                 .iter()
@@ -307,9 +313,8 @@ impl ServerState {
     }
 
     async fn start_http_challenges(&mut self) -> JoinHandle<()> {
-        let entries = self.certs.acme_ports();
+        let entries = self.acmes.entries();
         let entries = entries
-            .iter()
             .filter(|entry| {
                 self.certs
                     .find_server_certs_by_acme(&entry.id)
@@ -397,61 +402,17 @@ impl ServerState {
         Ok(())
     }
 
-    pub fn get_acme_list(&self) -> Vec<AcmeInfo> {
-        self.certs
-            .list()
-            .into_iter()
-            .filter_map(|item| match item {
-                KeyringInfo::Acme(acme) => Some(acme),
-                _ => None,
-            })
-            .collect()
-    }
-
-    pub fn get_acme(&self, id: &str) -> Result<AcmeInfo, Error> {
-        self.certs
-            .list()
-            .into_iter()
-            .find(|item| item.id() == id)
-            .map(|item| match item {
-                KeyringInfo::Acme(acme) => Ok(acme),
-                _ => Err(Error::IdNotFound { id: id.to_string() }),
-            })
-            .unwrap_or_else(|| Err(Error::IdNotFound { id: id.to_string() }))
-    }
-
-    pub async fn add_acme(&mut self, request: AcmeRequest) -> Result<(), Error> {
-        let entry = AcmeEntry::new(self.generate_id(), request).await?;
-        if self.certs.iter().any(|item| item.id() == entry.id) {
-            Err(Error::IdAlreadyExists { id: entry.id })
-        } else {
-            let _ = self
-                .command_sender
-                .send(ServerCommand::AddKeyringItem {
-                    item: KeyringItem::Acme(Arc::new(entry)),
-                })
-                .await;
-            Ok(())
-        }
-    }
-
     pub async fn delete_keyring_item(&mut self, id: &str) -> Result<(), Error> {
         if !self.certs.iter().any(|item| item.id() == id) {
             return Err(Error::IdNotFound { id: id.to_string() });
         }
 
         match self.certs.delete(id) {
-            Some(KeyringItem::Acme(_)) => {
-                self.storage.delete_acme(id).await;
-            }
             Some(KeyringItem::ServerCert(_)) => {
                 self.storage.delete_cert(id).await;
             }
             _ => (),
         }
-        let _ = self.br_sender.send(ServerEvent::AcmeUpdated {
-            entries: self.get_acme_list(),
-        });
         let _ = self.br_sender.send(ServerEvent::ServerCertsUpdated {
             entries: self.get_server_cert_list(),
         });
@@ -502,9 +463,9 @@ impl ServerState {
         const TABLE: &[u8] = b"bcdfghjklmnpqrstvwxyz";
 
         let used_ids = self
-            .get_acme_list()
-            .into_iter()
-            .map(|acme| acme.id)
+            .acmes
+            .entries()
+            .map(|acme| acme.id.clone())
             .chain(self.ports.entries().map(|port| port.id.clone()))
             .chain(self.sites.entries().map(|site| site.id.clone()))
             .map(|id| id.to_ascii_lowercase())

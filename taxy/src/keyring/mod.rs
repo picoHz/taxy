@@ -1,6 +1,6 @@
 use taxy_api::cert::KeyringInfo;
 
-use self::{acme::AcmeEntry, certs::Cert};
+use self::certs::Cert;
 use std::{collections::HashMap, sync::Arc};
 
 pub mod acme;
@@ -14,21 +14,18 @@ pub struct Keyring {
 #[derive(Debug)]
 pub enum KeyringItem {
     ServerCert(Arc<Cert>),
-    Acme(Arc<AcmeEntry>),
 }
 
 impl KeyringItem {
     pub fn id(&self) -> &str {
         match self {
             Self::ServerCert(cert) => cert.id(),
-            Self::Acme(acme) => acme.id(),
         }
     }
 
     pub fn info(&self) -> KeyringInfo {
         match self {
             Self::ServerCert(cert) => KeyringInfo::ServerCert(cert.info()),
-            Self::Acme(acme) => KeyringInfo::Acme(acme.info()),
         }
     }
 }
@@ -56,21 +53,10 @@ impl Keyring {
             .values()
             .filter_map(|item| match item {
                 KeyringItem::ServerCert(cert) => Some(cert.clone()),
-                _ => None,
             })
             .collect::<Vec<_>>();
         certs.sort();
         certs
-    }
-
-    pub fn acme_ports(&self) -> Vec<&Arc<AcmeEntry>> {
-        self.certs
-            .values()
-            .filter_map(|item| match item {
-                KeyringItem::Acme(acme) => Some(acme),
-                _ => None,
-            })
-            .collect::<Vec<_>>()
     }
 
     pub fn find_server_certs_by_acme(&self, acme: &str) -> Vec<&Arc<Cert>> {
@@ -79,7 +65,6 @@ impl Keyring {
             .values()
             .filter_map(|item| match item {
                 KeyringItem::ServerCert(cert) => Some(cert),
-                _ => None,
             })
             .filter(|cert| {
                 cert.metadata

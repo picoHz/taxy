@@ -7,6 +7,7 @@ use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::{broadcast, mpsc};
 use tracing::{info, warn};
 
+mod acme_list;
 mod listener;
 mod port_list;
 pub mod rpc;

@@ -252,6 +252,17 @@ impl ConfigStorage {
         }
     }
 
+    pub async fn load_acmes(&self) -> Vec<AcmeEntry> {
+        let path = self.dir.join("acme.toml");
+        match self.load_acmes_impl(&path).await {
+            Ok(acmes) => acmes,
+            Err(err) => {
+                warn!(?path, "failed to load acme config: {err}");
+                Default::default()
+            }
+        }
+    }
+
     pub async fn load_keychain(&self) -> Keyring {
         let mut items = Vec::new();
 
@@ -260,14 +271,6 @@ impl ConfigStorage {
             Ok(mut certs) => items.append(&mut certs),
             Err(err) => {
                 warn!(?path, "failed to load certs: {err}");
-            }
-        }
-
-        let path = self.dir.join("acme.toml");
-        match self.load_acmes_impl(&path).await {
-            Ok(mut certs) => items.append(&mut certs),
-            Err(err) => {
-                warn!(?path, "failed to load acme config: {err}");
             }
         }
 
@@ -316,13 +319,10 @@ impl ConfigStorage {
         Ok(certs)
     }
 
-    pub async fn load_acmes_impl(&self, path: &Path) -> anyhow::Result<Vec<KeyringItem>> {
+    pub async fn load_acmes_impl(&self, path: &Path) -> anyhow::Result<Vec<AcmeEntry>> {
         info!(?path, "load acmes");
         let content = fs::read_to_string(path).await?;
         let table: IndexMap<String, AcmeAccount> = toml::from_str(&content)?;
-        Ok(table
-            .into_iter()
-            .map(|entry| KeyringItem::Acme(Arc::new(entry.into())))
-            .collect())
+        Ok(table.into_iter().map(|entry| entry.into()).collect())
     }
 }

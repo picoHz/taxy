@@ -1,5 +1,5 @@
 use super::RpcMethod;
-use crate::server::state::ServerState;
+use crate::{keyring::acme::AcmeEntry, server::state::ServerState};
 use taxy_api::{
     acme::{AcmeInfo, AcmeRequest},
     error::Error,
@@ -12,7 +12,7 @@ impl RpcMethod for GetAcmeList {
     type Output = Vec<AcmeInfo>;
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        Ok(state.get_acme_list())
+        Ok(state.acmes.entries().map(|acme| acme.info()).collect())
     }
 }
 
@@ -25,7 +25,11 @@ impl RpcMethod for GetAcme {
     type Output = AcmeInfo;
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.get_acme(&self.id)
+        state
+            .acmes
+            .get(&self.id)
+            .map(|acme| acme.info())
+            .ok_or(Error::IdNotFound { id: self.id })
     }
 }
 
@@ -38,7 +42,10 @@ impl RpcMethod for AddAcme {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.add_acme(self.request).await
+        let entry = AcmeEntry::new(state.generate_id(), self.request).await?;
+        state.acmes.add(entry)?;
+        state.update_acmes().await;
+        Ok(())
     }
 }
 
@@ -51,6 +58,8 @@ impl RpcMethod for DeleteAcme {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.delete_keyring_item(&self.id).await
+        state.acmes.delete(&self.id)?;
+        state.update_acmes().await;
+        Ok(())
     }
 }
