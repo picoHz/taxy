@@ -10,7 +10,7 @@ impl RpcMethod for GetSiteList {
     type Output = Vec<SiteEntry>;
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        Ok(state.get_site_list())
+        Ok(state.sites.entries().cloned().collect())
     }
 }
 
@@ -23,7 +23,11 @@ impl RpcMethod for GetSite {
     type Output = SiteEntry;
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.get_site(&self.id)
+        state
+            .sites
+            .get(&self.id)
+            .cloned()
+            .ok_or(Error::IdNotFound { id: self.id })
     }
 }
 
@@ -36,7 +40,9 @@ impl RpcMethod for DeleteSite {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.delete_site(&self.id).await
+        state.sites.delete(&self.id)?;
+        state.update_sites().await;
+        Ok(())
     }
 }
 
@@ -49,7 +55,9 @@ impl RpcMethod for AddSite {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.add_site(self.entry).await
+        state.sites.add((state.generate_id(), self.entry).into())?;
+        state.update_sites().await;
+        Ok(())
     }
 }
 
@@ -62,6 +70,8 @@ impl RpcMethod for UpdateSite {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.update_site(self.entry).await
+        state.sites.update(self.entry)?;
+        state.update_sites().await;
+        Ok(())
     }
 }

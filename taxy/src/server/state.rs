@@ -1,4 +1,4 @@
-use super::sites::SiteTable;
+use super::site_list::SiteList;
 use super::{listener::TcpListenerPool, rpc::RpcCallback, table::ProxyTable};
 use crate::keyring::certs::Cert;
 use crate::{
@@ -25,7 +25,7 @@ use taxy_api::error::Error;
 use taxy_api::event::ServerEvent;
 use taxy_api::port::PortStatus;
 use taxy_api::port::{Port, PortEntry};
-use taxy_api::site::{Site, SiteEntry};
+use taxy_api::site::SiteEntry;
 use tokio::{io::AsyncBufReadExt, task::JoinHandle};
 use tokio::{
     io::BufStream,
@@ -37,10 +37,10 @@ use warp::http::Response;
 use x509_parser::time::ASN1Time;
 
 pub struct ServerState {
+    pub sites: SiteList,
     config: AppConfig,
     storage: ConfigStorage,
     table: ProxyTable,
-    sites: SiteTable,
     pool: TcpListenerPool,
     certs: Keyring,
     http_challenges: HashMap<String, String>,
@@ -68,10 +68,10 @@ impl ServerState {
         let sites = storage.load_sites().await;
 
         let mut this = Self {
+            sites: sites.into_iter().collect(),
             config,
             storage,
             table,
-            sites: SiteTable::new(sites),
             pool: TcpListenerPool::new(),
             certs,
             http_challenges: HashMap::new(),
@@ -98,7 +98,7 @@ impl ServerState {
             entries: this.get_server_cert_list(),
         });
         let _ = this.br_sender.send(ServerEvent::SitesUpdated {
-            entries: this.get_site_list(),
+            entries: this.sites.entries().cloned().collect(),
         });
 
         this.update_port_statuses().await;
@@ -234,9 +234,9 @@ impl ServerState {
         }
     }
 
-    async fn update_sites(&mut self) {
+    pub async fn update_sites(&mut self) {
         let _ = self.br_sender.send(ServerEvent::SitesUpdated {
-            entries: self.get_site_list(),
+            entries: self.sites.entries().cloned().collect(),
         });
     }
 
@@ -244,8 +244,8 @@ impl ServerState {
         let sites = self
             .sites
             .entries()
-            .into_iter()
-            .filter(|entry: &SiteEntry| entry.site.ports.contains(&ctx.entry.id))
+            .filter(|entry: &&SiteEntry| entry.site.ports.contains(&ctx.entry.id))
+            .cloned()
             .collect();
         let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
         if let Err(err) = ctx.setup(&self.certs, sites).instrument(span.clone()).await {
@@ -561,38 +561,7 @@ impl ServerState {
         }
     }
 
-    pub fn get_site_list(&self) -> Vec<SiteEntry> {
-        self.sites.entries()
-    }
-
-    pub fn get_site(&self, id: &str) -> Result<SiteEntry, Error> {
-        self.sites
-            .entries()
-            .iter()
-            .find(|entry| entry.id == id)
-            .cloned()
-            .ok_or_else(|| Error::IdNotFound { id: id.to_string() })
-    }
-
-    pub async fn add_site(&mut self, entry: Site) -> Result<(), Error> {
-        self.sites.add((self.generate_id(), entry).into())?;
-        self.update_sites().await;
-        Ok(())
-    }
-
-    pub async fn update_site(&mut self, entry: SiteEntry) -> Result<(), Error> {
-        self.sites.update(entry)?;
-        self.update_sites().await;
-        Ok(())
-    }
-
-    pub async fn delete_site(&mut self, id: &str) -> Result<(), Error> {
-        self.sites.delete(id)?;
-        self.update_sites().await;
-        Ok(())
-    }
-
-    fn generate_id(&self) -> String {
+    pub fn generate_id(&self) -> String {
         const TABLE: &[u8] = b"bcdfghjklmnpqrstvwxyz";
 
         let used_ids = self
@@ -600,7 +569,7 @@ impl ServerState {
             .into_iter()
             .map(|acme| acme.id)
             .chain(self.get_port_list().into_iter().map(|port| port.id))
-            .chain(self.get_site_list().into_iter().map(|site| site.id))
+            .chain(self.sites.entries().map(|site| site.id.clone()))
             .map(|id| id.to_ascii_lowercase())
             .collect::<HashSet<_>>();
 

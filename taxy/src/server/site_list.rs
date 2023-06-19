@@ -3,47 +3,53 @@ use taxy_api::error::Error;
 use taxy_api::site::SiteEntry;
 
 #[derive(Debug, Default)]
-pub struct SiteTable {
-    sites: IndexMap<String, SiteEntry>,
+pub struct SiteList {
+    entries: IndexMap<String, SiteEntry>,
 }
 
-impl SiteTable {
-    pub fn new(sites: Vec<SiteEntry>) -> Self {
+impl FromIterator<SiteEntry> for SiteList {
+    fn from_iter<I: IntoIterator<Item = SiteEntry>>(iter: I) -> Self {
         Self {
-            sites: sites
+            entries: iter
                 .into_iter()
                 .map(|site| (site.id.clone(), site))
                 .collect(),
         }
     }
+}
 
-    pub fn entries(&self) -> Vec<SiteEntry> {
-        self.sites.values().cloned().collect()
+impl SiteList {
+    pub fn get(&self, id: &str) -> Option<&SiteEntry> {
+        self.entries.get(id)
+    }
+
+    pub fn entries(&self) -> impl Iterator<Item = &SiteEntry> {
+        self.entries.values()
     }
 
     pub fn add(&mut self, entry: SiteEntry) -> Result<(), Error> {
-        if self.sites.contains_key(&entry.id) {
+        if self.entries.contains_key(&entry.id) {
             Err(Error::IdAlreadyExists { id: entry.id })
         } else {
-            self.sites.insert(entry.id.clone(), entry);
+            self.entries.insert(entry.id.clone(), entry);
             Ok(())
         }
     }
 
     pub fn update(&mut self, entry: SiteEntry) -> Result<(), Error> {
-        if !self.sites.contains_key(&entry.id) {
+        if !self.entries.contains_key(&entry.id) {
             Err(Error::IdNotFound { id: entry.id })
         } else {
-            self.sites.insert(entry.id.clone(), entry);
+            self.entries.insert(entry.id.clone(), entry);
             Ok(())
         }
     }
 
     pub fn delete(&mut self, id: &str) -> Result<(), Error> {
-        if !self.sites.contains_key(id) {
+        if !self.entries.contains_key(id) {
             Err(Error::IdNotFound { id: id.to_string() })
         } else {
-            self.sites.remove(id);
+            self.entries.remove(id);
             Ok(())
         }
     }

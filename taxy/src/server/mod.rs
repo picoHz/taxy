@@ -9,7 +9,7 @@ use tracing::{info, warn};
 
 mod listener;
 pub mod rpc;
-mod sites;
+mod site_list;
 mod state;
 mod table;
 
