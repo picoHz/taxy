@@ -1,4 +1,5 @@
 use super::RpcMethod;
+use crate::proxy::PortContext;
 use crate::server::state::ServerState;
 use taxy_api::error::Error;
 use taxy_api::port::{Port, PortEntry, PortStatus};
@@ -10,7 +11,7 @@ impl RpcMethod for GetPortList {
     type Output = Vec<PortEntry>;
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        Ok(state.get_port_list())
+        Ok(state.ports.entries().cloned().collect())
     }
 }
 
@@ -23,7 +24,11 @@ impl RpcMethod for GetPort {
     type Output = PortEntry;
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.get_port(&self.id)
+        state
+            .ports
+            .get(&self.id)
+            .map(|port| port.entry().clone())
+            .ok_or(Error::IdNotFound { id: self.id })
     }
 }
 
@@ -36,7 +41,11 @@ impl RpcMethod for GetPortStatus {
     type Output = PortStatus;
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.get_port_status(&self.id)
+        state
+            .ports
+            .get(&self.id)
+            .map(|port| *port.status())
+            .ok_or(Error::IdNotFound { id: self.id })
     }
 }
 
@@ -49,7 +58,12 @@ impl RpcMethod for DeletePort {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.delete_port(&self.id).await
+        if state.ports.delete(&self.id) {
+            state.update_port_statuses().await;
+            Ok(())
+        } else {
+            Err(Error::IdNotFound { id: self.id })
+        }
     }
 }
 
@@ -62,7 +76,14 @@ impl RpcMethod for AddPort {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.add_port(self.entry).await
+        let entry: PortEntry = (state.generate_id(), self.entry).into();
+        if state.ports.get(&entry.id).is_some() {
+            Err(Error::IdAlreadyExists { id: entry.id })
+        } else {
+            state.update_port_ctx(PortContext::new(entry)?).await;
+            state.update_port_statuses().await;
+            Ok(())
+        }
     }
 }
 
@@ -75,7 +96,13 @@ impl RpcMethod for UpdatePort {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.update_port(self.entry).await
+        if state.ports.get(&self.entry.id).is_some() {
+            state.update_port_ctx(PortContext::new(self.entry)?).await;
+            state.update_port_statuses().await;
+            Ok(())
+        } else {
+            Err(Error::IdNotFound { id: self.entry.id })
+        }
     }
 }
 
@@ -88,6 +115,10 @@ impl RpcMethod for ResetPort {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.reset_port(&self.id)
+        if state.ports.reset(&self.id) {
+            Ok(())
+        } else {
+            Err(Error::IdNotFound { id: self.id })
+        }
     }
 }

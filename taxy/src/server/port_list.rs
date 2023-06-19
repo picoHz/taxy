@@ -1,30 +1,34 @@
 use crate::proxy::PortContext;
 use taxy_api::port::PortEntry;
 
-pub struct ProxyTable {
+pub struct PortList {
     contexts: Vec<PortContext>,
 }
 
-impl ProxyTable {
+impl PortList {
     pub fn new() -> Self {
         Self {
             contexts: Vec::new(),
         }
     }
 
-    pub fn entries(&self) -> Vec<PortEntry> {
-        self.contexts.iter().map(|c| c.entry().clone()).collect()
+    pub fn entries(&self) -> impl Iterator<Item = &PortEntry> {
+        self.contexts.iter().map(|c| c.entry())
     }
 
-    pub fn contexts(&self) -> &[PortContext] {
+    pub fn as_slice(&self) -> &[PortContext] {
         &self.contexts
     }
 
-    pub fn contexts_mut(&mut self) -> &mut [PortContext] {
+    pub fn as_mut_slice(&mut self) -> &mut [PortContext] {
         &mut self.contexts
     }
 
-    pub fn set_port(&mut self, ctx: PortContext) {
+    pub fn get(&self, id: &str) -> Option<&PortContext> {
+        self.contexts.iter().find(|p| p.entry().id == *id)
+    }
+
+    pub fn set(&mut self, ctx: PortContext) {
         if let Some(index) = self
             .contexts
             .iter()
@@ -36,7 +40,7 @@ impl ProxyTable {
         }
     }
 
-    pub fn delete_port(&mut self, id: &str) -> bool {
+    pub fn delete(&mut self, id: &str) -> bool {
         if let Some(index) = self.contexts.iter().position(|p| p.entry().id == *id) {
             self.contexts.remove(index).reset();
             true
@@ -45,7 +49,7 @@ impl ProxyTable {
         }
     }
 
-    pub fn reset_port(&mut self, id: &str) -> bool {
+    pub fn reset(&mut self, id: &str) -> bool {
         if let Some(index) = self.contexts.iter().position(|p| p.entry().id == *id) {
             self.contexts[index].reset();
             true

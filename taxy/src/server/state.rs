@@ -1,5 +1,5 @@
 use super::site_list::SiteList;
-use super::{listener::TcpListenerPool, rpc::RpcCallback, table::ProxyTable};
+use super::{listener::TcpListenerPool, port_list::PortList, rpc::RpcCallback};
 use crate::keyring::certs::Cert;
 use crate::{
     command::ServerCommand,
@@ -23,8 +23,6 @@ use taxy_api::app::{AppConfig, Source};
 use taxy_api::cert::{CertInfo, KeyringInfo};
 use taxy_api::error::Error;
 use taxy_api::event::ServerEvent;
-use taxy_api::port::PortStatus;
-use taxy_api::port::{Port, PortEntry};
 use taxy_api::site::SiteEntry;
 use tokio::{io::AsyncBufReadExt, task::JoinHandle};
 use tokio::{
@@ -38,9 +36,9 @@ use x509_parser::time::ASN1Time;
 
 pub struct ServerState {
     pub sites: SiteList,
+    pub ports: PortList,
     config: AppConfig,
     storage: ConfigStorage,
-    table: ProxyTable,
     pool: TcpListenerPool,
     certs: Keyring,
     http_challenges: HashMap<String, String>,
@@ -63,15 +61,14 @@ impl ServerState {
         });
 
         let certs = storage.load_keychain().await;
-        let table = ProxyTable::new();
         let ports = storage.load_ports().await;
         let sites = storage.load_sites().await;
 
         let mut this = Self {
             sites: sites.into_iter().collect(),
+            ports: PortList::new(),
             config,
             storage,
-            table,
             pool: TcpListenerPool::new(),
             certs,
             http_challenges: HashMap::new(),
@@ -129,7 +126,7 @@ impl ServerState {
             ServerCommand::StopHttpChallenges => {
                 self.pool.set_http_challenges(false);
                 self.http_challenges.clear();
-                self.pool.update(self.table.contexts_mut()).await;
+                self.pool.update(self.ports.as_mut_slice()).await;
             }
             ServerCommand::CallMethod { id, mut arg } => {
                 let result = arg.call(self).await;
@@ -152,13 +149,13 @@ impl ServerState {
                 self.storage.save_ports(&entries).await;
             }
             ServerEvent::ServerCertsUpdated { .. } => {
-                for ctx in self.table.contexts_mut() {
+                for ctx in self.ports.as_mut_slice() {
                     let _ = ctx.refresh(&self.certs).await;
                 }
             }
             ServerEvent::SitesUpdated { entries } => {
                 self.storage.save_sites(&entries).await;
-                for ctx in self.table.contexts_mut() {
+                for ctx in self.ports.as_mut_slice() {
                     let sites = entries
                         .iter()
                         .filter(|entry: &&SiteEntry| entry.site.ports.contains(&ctx.entry.id))
@@ -207,8 +204,8 @@ impl ServerState {
             }
         }
 
-        if index < self.table.contexts().len() {
-            let state = &mut self.table.contexts_mut()[index];
+        if index < self.ports.as_slice().len() {
+            let state = &mut self.ports.as_mut_slice()[index];
             match state.kind_mut() {
                 PortContextKind::Tcp(tcp) => {
                     tcp.start_proxy(stream);
@@ -221,12 +218,12 @@ impl ServerState {
         }
     }
 
-    async fn update_port_statuses(&mut self) {
-        self.pool.update(self.table.contexts_mut()).await;
+    pub async fn update_port_statuses(&mut self) {
+        self.pool.update(self.ports.as_mut_slice()).await;
         let _ = self.br_sender.send(ServerEvent::PortTableUpdated {
-            entries: self.table.entries().to_vec(),
+            entries: self.ports.entries().cloned().collect(),
         });
-        for (entry, ctx) in self.table.entries().iter().zip(self.table.contexts()) {
+        for (entry, ctx) in self.ports.entries().cloned().zip(self.ports.as_slice()) {
             let _ = self.br_sender.send(ServerEvent::PortStatusUpdated {
                 id: entry.id.clone(),
                 status: *ctx.status(),
@@ -240,7 +237,7 @@ impl ServerState {
         });
     }
 
-    async fn update_port_ctx(&mut self, mut ctx: PortContext) {
+    pub async fn update_port_ctx(&mut self, mut ctx: PortContext) {
         let sites = self
             .sites
             .entries()
@@ -253,7 +250,7 @@ impl ServerState {
                 error!(?err, "failed to setup port");
             });
         }
-        self.table.set_port(ctx);
+        self.ports.set(ctx);
     }
 
     async fn handle_http_challenge(&mut self, stream: &mut BufStream<TcpStream>) -> Option<String> {
@@ -274,7 +271,7 @@ impl ServerState {
 
     pub async fn run_background_tasks(&mut self) {
         let _ = self.start_http_challenges().await.await;
-        for ctx in self.table.contexts_mut() {
+        for ctx in self.ports.as_mut_slice() {
             let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
             if let Err(err) = ctx.refresh(&self.certs).instrument(span.clone()).await {
                 span.in_scope(|| {
@@ -360,7 +357,7 @@ impl ServerState {
 
         self.http_challenges = challenges;
         self.pool.set_http_challenges(true);
-        self.pool.update(self.table.contexts_mut()).await;
+        self.pool.update(self.ports.as_mut_slice()).await;
 
         let command = self.command_sender.clone();
         tokio::task::spawn(async move {
@@ -398,66 +395,6 @@ impl ServerState {
             source: Source::Api,
         });
         Ok(())
-    }
-
-    pub fn get_port_list(&self) -> Vec<PortEntry> {
-        self.table.entries()
-    }
-
-    pub fn get_port(&self, id: &str) -> Result<PortEntry, Error> {
-        self.table
-            .entries()
-            .iter()
-            .find(|entry| entry.id == id)
-            .cloned()
-            .ok_or_else(|| Error::IdNotFound { id: id.to_string() })
-    }
-
-    pub fn get_port_status(&self, id: &str) -> Result<PortStatus, Error> {
-        self.table
-            .contexts()
-            .iter()
-            .find(|ctx| ctx.entry.id == id)
-            .map(|ctx| *ctx.status())
-            .ok_or_else(|| Error::IdNotFound { id: id.to_string() })
-    }
-
-    pub async fn add_port(&mut self, entry: Port) -> Result<(), Error> {
-        let entry: PortEntry = (self.generate_id(), entry).into();
-        if self.get_port_status(&entry.id).is_ok() {
-            Err(Error::IdAlreadyExists { id: entry.id })
-        } else {
-            self.update_port_ctx(PortContext::new(entry)?).await;
-            self.update_port_statuses().await;
-            Ok(())
-        }
-    }
-
-    pub async fn update_port(&mut self, entry: PortEntry) -> Result<(), Error> {
-        if self.get_port_status(&entry.id).is_ok() {
-            self.update_port_ctx(PortContext::new(entry)?).await;
-            self.update_port_statuses().await;
-            Ok(())
-        } else {
-            Err(Error::IdNotFound { id: entry.id })
-        }
-    }
-
-    pub async fn delete_port(&mut self, id: &str) -> Result<(), Error> {
-        if self.table.delete_port(id) {
-            self.update_port_statuses().await;
-            Ok(())
-        } else {
-            Err(Error::IdNotFound { id: id.to_string() })
-        }
-    }
-
-    pub fn reset_port(&mut self, id: &str) -> Result<(), Error> {
-        if self.table.reset_port(id) {
-            Ok(())
-        } else {
-            Err(Error::IdNotFound { id: id.to_string() })
-        }
     }
 
     pub fn get_acme_list(&self) -> Vec<AcmeInfo> {
@@ -568,7 +505,7 @@ impl ServerState {
             .get_acme_list()
             .into_iter()
             .map(|acme| acme.id)
-            .chain(self.get_port_list().into_iter().map(|port| port.id))
+            .chain(self.ports.entries().map(|port| port.id.clone()))
             .chain(self.sites.entries().map(|site| site.id.clone()))
             .map(|id| id.to_ascii_lowercase())
             .collect::<HashSet<_>>();
