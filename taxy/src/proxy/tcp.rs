@@ -1,5 +1,5 @@
 use super::{tls::TlsTermination, PortContextEvent, PortStatus, SocketState};
-use crate::keyring::Keyring;
+use crate::server::cert_list::CertList;
 use multiaddr::{Multiaddr, Protocol};
 use std::{
     net::{IpAddr, SocketAddr},
@@ -70,7 +70,7 @@ impl TcpPortContext {
         })
     }
 
-    pub async fn setup(&mut self, keyring: &Keyring, _sites: Vec<SiteEntry>) -> Result<(), Error> {
+    pub async fn setup(&mut self, certs: &CertList, _sites: Vec<SiteEntry>) -> Result<(), Error> {
         let use_tls = self.servers.iter().any(|server| server.tls);
         if self.tls_client_config.is_none() && use_tls {
             let mut root_certs = RootCertStore::empty();
@@ -98,12 +98,12 @@ impl TcpPortContext {
         }
 
         if let Some(tls) = &mut self.tls_termination {
-            self.status.state.tls = Some(tls.setup(keyring).await);
+            self.status.state.tls = Some(tls.setup(certs).await);
         }
         Ok(())
     }
 
-    pub async fn refresh(&mut self, certs: &Keyring) -> Result<(), Error> {
+    pub async fn refresh(&mut self, certs: &CertList) -> Result<(), Error> {
         if let Some(tls) = &mut self.tls_termination {
             self.status.state.tls = Some(tls.refresh(certs).await);
         }

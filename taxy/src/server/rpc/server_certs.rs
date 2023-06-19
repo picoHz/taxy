@@ -1,5 +1,6 @@
 use super::RpcMethod;
 use crate::{keyring::certs::Cert, server::state::ServerState};
+use std::sync::Arc;
 use taxy_api::{cert::CertInfo, error::Error};
 
 pub struct GetServerCertList;
@@ -9,7 +10,7 @@ impl RpcMethod for GetServerCertList {
     type Output = Vec<CertInfo>;
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        Ok(state.get_server_cert_list())
+        Ok(state.certs.iter().map(|item| item.info()).collect())
     }
 }
 
@@ -22,7 +23,11 @@ impl RpcMethod for GetServerCert {
     type Output = CertInfo;
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.get_server_cert(&self.id)
+        state
+            .certs
+            .get(&self.id)
+            .map(|item| item.info())
+            .ok_or_else(|| Error::IdNotFound { id: self.id })
     }
 }
 
@@ -35,7 +40,9 @@ impl RpcMethod for AddServerCert {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.add_server_cert(self.cert).await
+        state.certs.add(Arc::new(self.cert))?;
+        state.update_certs().await;
+        Ok(())
     }
 }
 
@@ -48,6 +55,7 @@ impl RpcMethod for DeleteServerCert {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.delete_keyring_item(&self.id).await
+        state.certs.delete(&self.id)?;
+        Ok(())
     }
 }

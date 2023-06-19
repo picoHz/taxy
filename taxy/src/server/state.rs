@@ -1,11 +1,10 @@
 use super::acme_list::AcmeList;
+use super::cert_list::CertList;
 use super::site_list::SiteList;
 use super::{listener::TcpListenerPool, port_list::PortList, rpc::RpcCallback};
-use crate::keyring::certs::Cert;
 use crate::{
     command::ServerCommand,
     config::storage::ConfigStorage,
-    keyring::{Keyring, KeyringItem},
     proxy::{PortContext, PortContextKind},
 };
 use hyper::server::conn::Http;
@@ -20,7 +19,6 @@ use std::{
     time::{Duration, SystemTime},
 };
 use taxy_api::app::{AppConfig, Source};
-use taxy_api::cert::{CertInfo, KeyringInfo};
 use taxy_api::error::Error;
 use taxy_api::event::ServerEvent;
 use taxy_api::site::SiteEntry;
@@ -36,12 +34,12 @@ use x509_parser::time::ASN1Time;
 
 pub struct ServerState {
     pub sites: SiteList,
+    pub certs: CertList,
     pub acmes: AcmeList,
     pub ports: PortList,
     config: AppConfig,
     storage: ConfigStorage,
     pool: TcpListenerPool,
-    certs: Keyring,
     http_challenges: HashMap<String, String>,
     command_sender: mpsc::Sender<ServerCommand>,
     br_sender: broadcast::Sender<ServerEvent>,
@@ -61,19 +59,19 @@ impl ServerState {
             source: Source::File,
         });
 
-        let certs = storage.load_keychain().await;
+        let certs = storage.load_certs().await;
         let acmes = storage.load_acmes().await;
         let ports = storage.load_ports().await;
         let sites = storage.load_sites().await;
 
         let mut this = Self {
             sites: sites.into_iter().collect(),
+            certs: certs.into_iter().collect(),
             acmes: acmes.into_iter().collect(),
             ports: PortList::new(),
             config,
             storage,
             pool: TcpListenerPool::new(),
-            certs,
             http_challenges: HashMap::new(),
             command_sender,
             br_sender,
@@ -95,7 +93,7 @@ impl ServerState {
             entries: this.acmes.entries().map(|acme| acme.info()).collect(),
         });
         let _ = this.br_sender.send(ServerEvent::ServerCertsUpdated {
-            entries: this.get_server_cert_list(),
+            entries: this.certs.iter().map(|item| item.info()).collect(),
         });
         let _ = this.br_sender.send(ServerEvent::SitesUpdated {
             entries: this.sites.entries().cloned().collect(),
@@ -108,20 +106,11 @@ impl ServerState {
 
     pub async fn handle_command(&mut self, cmd: ServerCommand) {
         match cmd {
-            ServerCommand::AddKeyringItem { item } => {
-                match &item {
-                    KeyringItem::ServerCert(cert) => {
-                        self.storage.save_cert(cert).await;
-                    }
+            ServerCommand::AddServerCert { cert } => {
+                if let Err(err) = self.certs.add(cert) {
+                    error!(?err, "failed to add server cert");
                 }
-                self.certs.add(item);
-                let _ = self.br_sender.send(ServerEvent::AcmeUpdated {
-                    entries: self.acmes.entries().map(|acme| acme.info()).collect(),
-                });
-                let _ = self.br_sender.send(ServerEvent::ServerCertsUpdated {
-                    entries: self.get_server_cert_list(),
-                });
-                self.start_http_challenges().await;
+                self.update_certs().await;
             }
             ServerCommand::StopHttpChallenges => {
                 self.pool.set_http_challenges(false);
@@ -237,10 +226,17 @@ impl ServerState {
         });
     }
 
+    pub async fn update_certs(&mut self) {
+        let _ = self.br_sender.send(ServerEvent::ServerCertsUpdated {
+            entries: self.certs.iter().map(|item| item.info()).collect(),
+        });
+    }
+
     pub async fn update_acmes(&mut self) {
         let _ = self.br_sender.send(ServerEvent::AcmeUpdated {
             entries: self.acmes.entries().map(|acme| acme.info()).collect(),
         });
+        self.start_http_challenges().await;
     }
 
     pub async fn update_port_ctx(&mut self, mut ctx: PortContext) {
@@ -303,11 +299,13 @@ impl ServerState {
             removing_items.append(&mut expired);
         }
         for id in &removing_items {
-            self.certs.delete(id);
+            if let Err(err) = self.certs.delete(id) {
+                error!(?err, "failed to delete cert");
+            }
         }
         if !removing_items.is_empty() {
             let _ = self.br_sender.send(ServerEvent::ServerCertsUpdated {
-                entries: self.get_server_cert_list(),
+                entries: self.certs.iter().map(|item| item.info()).collect(),
             });
         }
     }
@@ -374,8 +372,8 @@ impl ServerState {
                             info!(id = cert.id(), "acme request completed");
                         });
                         let _ = command
-                            .send(ServerCommand::AddKeyringItem {
-                                item: KeyringItem::ServerCert(Arc::new(cert)),
+                            .send(ServerCommand::AddServerCert {
+                                cert: Arc::new(cert),
                             })
                             .await;
                     }
@@ -400,63 +398,6 @@ impl ServerState {
             source: Source::Api,
         });
         Ok(())
-    }
-
-    pub async fn delete_keyring_item(&mut self, id: &str) -> Result<(), Error> {
-        if !self.certs.iter().any(|item| item.id() == id) {
-            return Err(Error::IdNotFound { id: id.to_string() });
-        }
-
-        match self.certs.delete(id) {
-            Some(KeyringItem::ServerCert(_)) => {
-                self.storage.delete_cert(id).await;
-            }
-            _ => (),
-        }
-        let _ = self.br_sender.send(ServerEvent::ServerCertsUpdated {
-            entries: self.get_server_cert_list(),
-        });
-
-        Ok(())
-    }
-
-    pub fn get_server_cert_list(&self) -> Vec<CertInfo> {
-        self.certs
-            .list()
-            .into_iter()
-            .filter_map(|item| match item {
-                KeyringInfo::ServerCert(cert) => Some(cert),
-                _ => None,
-            })
-            .collect()
-    }
-
-    pub fn get_server_cert(&self, id: &str) -> Result<CertInfo, Error> {
-        self.certs
-            .list()
-            .into_iter()
-            .find(|item| item.id() == id)
-            .map(|item| match item {
-                KeyringInfo::ServerCert(cert) => Ok(cert),
-                _ => Err(Error::IdNotFound { id: id.to_string() }),
-            })
-            .unwrap_or_else(|| Err(Error::IdNotFound { id: id.to_string() }))
-    }
-
-    pub async fn add_server_cert(&mut self, cert: Cert) -> Result<(), Error> {
-        if self.certs.iter().any(|item| item.id() == cert.id()) {
-            Err(Error::IdAlreadyExists {
-                id: cert.id().into(),
-            })
-        } else {
-            let _ = self
-                .command_sender
-                .send(ServerCommand::AddKeyringItem {
-                    item: KeyringItem::ServerCert(Arc::new(cert)),
-                })
-                .await;
-            Ok(())
-        }
     }
 
     pub fn generate_id(&self) -> String {
