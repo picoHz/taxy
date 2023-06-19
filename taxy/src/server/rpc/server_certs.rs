@@ -27,7 +27,7 @@ impl RpcMethod for GetServerCert {
             .certs
             .get(&self.id)
             .map(|item| item.info())
-            .ok_or_else(|| Error::IdNotFound { id: self.id })
+            .ok_or(Error::IdNotFound { id: self.id })
     }
 }
 
