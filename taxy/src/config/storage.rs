@@ -263,9 +263,9 @@ impl ConfigStorage {
     }
 
     pub async fn load_certs(&self) -> Vec<Arc<Cert>> {
-        let path = self.dir.join("acme.toml");
+        let path = self.dir.join("certs");
         match self.load_certs_impl(&path).await {
-            Ok(acmes) => acmes,
+            Ok(certs) => certs,
             Err(err) => {
                 warn!(?path, "failed to load acme config: {err}");
                 Default::default()
