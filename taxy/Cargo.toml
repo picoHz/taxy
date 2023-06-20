@@ -23,6 +23,7 @@ brotli = "3.3.4"
 clap = { version = "4.2.7", features = ["derive", "env"] }
 dashmap = "5.4.0"
 directories = "5.0.1"
+flate2 = "1.0.26"
 futures = "0.3.28"
 globwalk = "0.8.1"
 hex = "0.4.3"
@@ -50,6 +51,7 @@ serde_json = "1.0.96"
 serde_qs = "0.12.0"
 sha2 = "0.10.6"
 sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "sqlite", "time"] }
+tar = "0.4.38"
 taxy-api = { version = "0.1.0", features = ["warp"] }
 thiserror = "1.0.40"
 time = { version = "0.3.21", features = ["serde"] }
