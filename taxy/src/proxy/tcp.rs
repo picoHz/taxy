@@ -22,6 +22,8 @@ use tokio_rustls::{
 };
 use tracing::{debug, error, info, span, warn, Instrument, Level, Span};
 
+const MAX_BUFFER_SIZE: usize = 4096;
+
 #[derive(Debug)]
 pub struct TcpPortContext {
     pub listen: SocketAddr,
@@ -176,7 +178,7 @@ impl TcpPortContext {
 }
 
 pub async fn start(
-    stream: BufStream<TcpStream>,
+    mut stream: BufStream<TcpStream>,
     conn: Connection,
     tls_client_config: Option<Arc<ClientConfig>>,
     tls_acceptor: Option<TlsAcceptor>,
@@ -184,6 +186,20 @@ pub async fn start(
 ) -> anyhow::Result<()> {
     let remote = stream.get_ref().peer_addr()?;
     let local = stream.get_ref().local_addr()?;
+
+    let (mut client_strem, server_stream) = tokio::io::duplex(MAX_BUFFER_SIZE);
+    tokio::spawn(async move {
+        tokio::select! {
+            result = tokio::io::copy_bidirectional(&mut stream, &mut client_strem) => {
+                if let Err(err) = result {
+                    error!("{err}");
+                }
+            },
+            _ = stop_notifier.notified() => {
+                debug!("stop");
+            },
+        }
+    });
 
     let host = match conn.name.clone() {
         ServerName::DnsName(name) => format!("{}:{}", name.as_ref(), conn.port),
@@ -205,7 +221,7 @@ pub async fn start(
     let out = sock.connect(resolved).await?;
     debug!(%resolved, "connected");
 
-    let mut stream: Box<dyn IoStream> = Box::new(stream);
+    let mut stream: Box<dyn IoStream> = Box::new(server_stream);
     if let Some(acceptor) = tls_acceptor {
         debug!(%remote, "server: tls handshake");
         stream = Box::new(acceptor.accept(stream).await?);
@@ -218,15 +234,8 @@ pub async fn start(
         out = Box::new(tls.connect(conn.name, out).await?);
     }
 
-    tokio::select! {
-        result = tokio::io::copy_bidirectional(&mut stream, &mut out) => {
-            if let Err(err) = result {
-                error!("{err}");
-            }
-        },
-        _ = stop_notifier.notified() => {
-            debug!(%resolved, "stop");
-        },
+    if let Err(err) = tokio::io::copy_bidirectional(&mut stream, &mut out).await {
+        error!("{err}");
     }
 
     stream.shutdown().await?;

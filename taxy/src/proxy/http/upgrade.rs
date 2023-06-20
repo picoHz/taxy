@@ -1,14 +1,11 @@
 use super::IoStream;
 use hyper::{client, Body, Request, Response, StatusCode};
-use std::sync::Arc;
 use tokio::io::AsyncWriteExt;
-use tokio::sync::Notify;
-use tracing::{debug, error};
+use tracing::error;
 
 pub async fn connect(
     req: Request<Body>,
     stream: Box<dyn IoStream>,
-    stop_notifier: Arc<Notify>,
 ) -> anyhow::Result<Response<Body>> {
     let mut client_req = Request::builder().uri(req.uri()).body(Body::empty())?;
     *client_req.headers_mut() = req.headers().clone();
@@ -17,17 +14,9 @@ pub async fn connect(
         .handshake::<_, Body>(stream)
         .await?;
 
-    let stop_notifier_clone = stop_notifier.clone();
     tokio::task::spawn(async move {
-        tokio::select! {
-            result = conn => {
-                if let Err(err) = result {
-                    error!("Connection failed: {:?}", err);
-                }
-            },
-            _ = stop_notifier_clone.notified() => {
-                debug!("stop");
-            },
+        if let Err(err) = conn.await {
+            error!("Connection failed: {:?}", err);
         }
     });
 
@@ -50,15 +39,10 @@ pub async fn connect(
     tokio::spawn(async move {
         match hyper::upgrade::on(req).await {
             Ok(mut upgraded) => {
-                tokio::select! {
-                    result = tokio::io::copy_bidirectional(&mut upgraded_client, &mut upgraded) => {
-                        if let Err(err) = result {
-                            error!("upgraded io error: {}", err);
-                        }
-                    },
-                    _ = stop_notifier.notified() => {
-                        debug!("stop");
-                    },
+                if let Err(err) =
+                    tokio::io::copy_bidirectional(&mut upgraded_client, &mut upgraded).await
+                {
+                    error!("upgraded io error: {}", err);
                 }
                 let _ = upgraded.shutdown().await;
                 let _ = upgraded_client.shutdown().await;

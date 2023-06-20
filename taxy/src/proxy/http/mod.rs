@@ -1,6 +1,7 @@
 use self::route::Router;
 use super::{tls::TlsTermination, PortContextEvent};
 use crate::{proxy::http::compression::CompressionStream, server::cert_list::CertList};
+use header::HeaderRewriter;
 use hyper::{
     client,
     header::{HOST, UPGRADE},
@@ -33,7 +34,7 @@ mod header;
 mod route;
 mod upgrade;
 
-use header::HeaderRewriter;
+const MAX_BUFFER_SIZE: usize = 4096;
 
 #[derive(Debug)]
 pub struct HttpPortContext {
@@ -191,7 +192,7 @@ impl HttpPortContext {
 }
 
 pub async fn start(
-    stream: BufStream<TcpStream>,
+    mut stream: BufStream<TcpStream>,
     tls_client_config: Option<Arc<ClientConfig>>,
     tls_acceptor: Option<TlsAcceptor>,
     header_rewriter: HeaderRewriter,
@@ -202,7 +203,21 @@ pub async fn start(
     let remote = stream.get_ref().peer_addr()?;
     let local = stream.get_ref().local_addr()?;
 
-    let mut stream: Box<dyn IoStream> = Box::new(stream);
+    let (mut client_strem, server_stream) = tokio::io::duplex(MAX_BUFFER_SIZE);
+    tokio::spawn(async move {
+        tokio::select! {
+            result = tokio::io::copy_bidirectional(&mut stream, &mut client_strem) => {
+                if let Err(err) = result {
+                    error!("{err}");
+                }
+            },
+            _ = stop_notifier.notified() => {
+                debug!("stop");
+            },
+        }
+    });
+
+    let mut stream: Box<dyn IoStream> = Box::new(server_stream);
     let mut server_http2 = false;
     let mut sni = None;
 
@@ -216,7 +231,6 @@ pub async fn start(
     }
 
     let router = router.clone();
-    let stop_notifier_clone = stop_notifier.clone();
     let service = hyper::service::service_fn(move |mut req| {
         let tls_client_config = tls_client_config.clone();
         let upgrade = req.headers().contains_key(UPGRADE);
@@ -279,7 +293,6 @@ pub async fn start(
         header_rewriter.pre_process(req.headers_mut(), remote.ip());
         header_rewriter.post_process(req.headers_mut());
 
-        let stop_notifier = stop_notifier_clone.clone();
         async move {
             if hostname.is_empty() || domain_fronting {
                 let mut res = hyper::Response::new(hyper::Body::empty());
@@ -315,7 +328,7 @@ pub async fn start(
             }
 
             if upgrade {
-                return upgrade::connect(req, out, stop_notifier.clone()).await;
+                return upgrade::connect(req, out).await;
             }
 
             let (mut sender, conn) = client::conn::Builder::new()
@@ -328,15 +341,8 @@ pub async fn start(
                 })?;
 
             tokio::task::spawn(async move {
-                tokio::select! {
-                    result = conn => {
-                        if let Err(err) = result {
-                            error!("Connection failed: {:?}", err);
-                        }
-                    },
-                    _ = stop_notifier.notified() => {
-                        debug!("stop");
-                    },
+                if let Err(err) = conn.await {
+                    error!("Connection failed: {:?}", err);
                 }
             });
 
@@ -369,15 +375,8 @@ pub async fn start(
             .http2_only(server_http2)
             .serve_connection(stream, service)
             .with_upgrades();
-        tokio::select! {
-            result = http => {
-                if let Err(err) = result {
-                    error!("Failed to serve the connection: {:?}", err);
-                }
-            },
-            _ = stop_notifier.notified() => {
-                debug!("stop");
-            },
+        if let Err(err) = http.await {
+            error!("Failed to serve the connection: {:?}", err);
         }
     });
 
