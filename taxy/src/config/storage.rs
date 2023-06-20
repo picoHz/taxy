@@ -1,7 +1,6 @@
 use crate::keyring::{
     acme::{AcmeAccount, AcmeEntry},
     certs::Cert,
-    {Keyring, KeyringItem},
 };
 use indexmap::map::IndexMap;
 use std::{
@@ -252,29 +251,29 @@ impl ConfigStorage {
         }
     }
 
-    pub async fn load_keychain(&self) -> Keyring {
-        let mut items = Vec::new();
-
-        let path = self.dir.join("certs");
-        match self.load_certs_impl(&path).await {
-            Ok(mut certs) => items.append(&mut certs),
-            Err(err) => {
-                warn!(?path, "failed to load certs: {err}");
-            }
-        }
-
+    pub async fn load_acmes(&self) -> Vec<AcmeEntry> {
         let path = self.dir.join("acme.toml");
         match self.load_acmes_impl(&path).await {
-            Ok(mut certs) => items.append(&mut certs),
+            Ok(acmes) => acmes,
             Err(err) => {
                 warn!(?path, "failed to load acme config: {err}");
+                Default::default()
             }
         }
-
-        Keyring::new(items)
     }
 
-    pub async fn load_certs_impl(&self, path: &Path) -> anyhow::Result<Vec<KeyringItem>> {
+    pub async fn load_certs(&self) -> Vec<Arc<Cert>> {
+        let path = self.dir.join("acme.toml");
+        match self.load_certs_impl(&path).await {
+            Ok(acmes) => acmes,
+            Err(err) => {
+                warn!(?path, "failed to load acme config: {err}");
+                Default::default()
+            }
+        }
+    }
+
+    pub async fn load_certs_impl(&self, path: &Path) -> anyhow::Result<Vec<Arc<Cert>>> {
         let walker = globwalk::GlobWalkerBuilder::from_patterns(path, &["*/cert.pem"])
             .build()?
             .filter_map(Result::ok);
@@ -309,20 +308,17 @@ impl ConfigStorage {
             }
 
             match Cert::new(chain_data, key_data) {
-                Ok(cert) => certs.push(KeyringItem::ServerCert(Arc::new(cert))),
+                Ok(cert) => certs.push(Arc::new(cert)),
                 Err(err) => error!(?path, "failed to load: {err}"),
             }
         }
         Ok(certs)
     }
 
-    pub async fn load_acmes_impl(&self, path: &Path) -> anyhow::Result<Vec<KeyringItem>> {
+    pub async fn load_acmes_impl(&self, path: &Path) -> anyhow::Result<Vec<AcmeEntry>> {
         info!(?path, "load acmes");
         let content = fs::read_to_string(path).await?;
         let table: IndexMap<String, AcmeAccount> = toml::from_str(&content)?;
-        Ok(table
-            .into_iter()
-            .map(|entry| KeyringItem::Acme(Arc::new(entry.into())))
-            .collect())
+        Ok(table.into_iter().map(|entry| entry.into()).collect())
     }
 }

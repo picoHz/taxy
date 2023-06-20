@@ -1,5 +1,5 @@
 use self::{http::HttpPortContext, tcp::TcpPortContext};
-use crate::keyring::Keyring;
+use crate::server::cert_list::CertList;
 use multiaddr::{Multiaddr, Protocol};
 use once_cell::sync::OnceCell;
 use taxy_api::error::Error;
@@ -60,15 +60,15 @@ impl PortContext {
         &mut self.kind
     }
 
-    pub async fn setup(&mut self, keyring: &Keyring, sites: Vec<SiteEntry>) -> Result<(), Error> {
+    pub async fn setup(&mut self, certs: &CertList, sites: Vec<SiteEntry>) -> Result<(), Error> {
         match &mut self.kind {
-            PortContextKind::Tcp(ctx) => ctx.setup(keyring, sites).await,
-            PortContextKind::Http(ctx) => ctx.setup(keyring, sites).await,
+            PortContextKind::Tcp(ctx) => ctx.setup(certs, sites).await,
+            PortContextKind::Http(ctx) => ctx.setup(certs, sites).await,
             PortContextKind::Reserved => Ok(()),
         }
     }
 
-    pub async fn refresh(&mut self, certs: &Keyring) -> Result<(), Error> {
+    pub async fn refresh(&mut self, certs: &CertList) -> Result<(), Error> {
         match &mut self.kind {
             PortContextKind::Tcp(ctx) => ctx.refresh(certs).await,
             PortContextKind::Http(ctx) => ctx.refresh(certs).await,

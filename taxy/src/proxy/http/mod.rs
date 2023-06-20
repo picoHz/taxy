@@ -1,6 +1,6 @@
 use self::route::Router;
 use super::{tls::TlsTermination, PortContextEvent};
-use crate::{keyring::Keyring, proxy::http::compression::CompressionStream};
+use crate::{proxy::http::compression::CompressionStream, server::cert_list::CertList};
 use hyper::{
     client,
     header::{HOST, UPGRADE},
@@ -77,7 +77,7 @@ impl HttpPortContext {
         })
     }
 
-    pub async fn setup(&mut self, keyring: &Keyring, sites: Vec<SiteEntry>) -> Result<(), Error> {
+    pub async fn setup(&mut self, certs: &CertList, sites: Vec<SiteEntry>) -> Result<(), Error> {
         self.router = Arc::new(Router::new(sites));
 
         if self.tls_client_config.is_none() {
@@ -106,12 +106,12 @@ impl HttpPortContext {
             self.tls_client_config = Some(Arc::new(config));
         }
         if let Some(tls) = &mut self.tls_termination {
-            self.status.state.tls = Some(tls.setup(keyring).await);
+            self.status.state.tls = Some(tls.setup(certs).await);
         }
         Ok(())
     }
 
-    pub async fn refresh(&mut self, certs: &Keyring) -> Result<(), Error> {
+    pub async fn refresh(&mut self, certs: &CertList) -> Result<(), Error> {
         if let Some(tls) = &mut self.tls_termination {
             self.status.state.tls = Some(tls.refresh(certs).await);
         }

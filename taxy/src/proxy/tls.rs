@@ -1,5 +1,5 @@
 use crate::keyring::certs::Cert;
-use crate::keyring::Keyring;
+use crate::server::cert_list::CertList;
 use dashmap::DashMap;
 use std::fmt;
 use std::str::FromStr;
@@ -44,9 +44,9 @@ impl TlsTermination {
         })
     }
 
-    pub async fn setup(&mut self, keyring: &Keyring) -> TlsState {
+    pub async fn setup(&mut self, certs: &CertList) -> TlsState {
         let resolver: Arc<dyn ResolvesServerCert> = Arc::new(ServerCertResolver::new(
-            keyring.certs(),
+            certs.iter().cloned().collect(),
             self.server_names.clone(),
             true,
         ));
@@ -63,7 +63,7 @@ impl TlsTermination {
         TlsState::Active
     }
 
-    pub async fn refresh(&mut self, certs: &Keyring) -> TlsState {
+    pub async fn refresh(&mut self, certs: &CertList) -> TlsState {
         self.setup(certs).await
     }
 }

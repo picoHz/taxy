@@ -42,9 +42,6 @@ pub enum Error {
     #[error("certificate already exists: {id}")]
     CertAlreadyExists { id: String },
 
-    #[error("certificate not found: {id}")]
-    KeyringItemNotFound { id: String },
-
     #[error("port id not found: {id}")]
     IdNotFound { id: String },
 
@@ -85,7 +82,7 @@ impl warp::reject::Reject for Error {}
 impl Error {
     pub fn status_code(&self) -> u16 {
         match self {
-            Self::KeyringItemNotFound { .. } | Self::IdNotFound { .. } => 404,
+            Self::IdNotFound { .. } => 404,
             Self::Unauthorized => 401,
             Self::WaitingLogTimedOut => 408,
             _ => 400,

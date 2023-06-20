@@ -1,23 +1,7 @@
-use crate::{acme::AcmeInfo, subject_name::SubjectName};
+use crate::subject_name::SubjectName;
 use serde_derive::{Deserialize, Serialize};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use utoipa::ToSchema;
-
-#[derive(Debug, Clone, Serialize, ToSchema)]
-#[serde(rename_all = "snake_case", tag = "type")]
-pub enum KeyringInfo {
-    ServerCert(CertInfo),
-    Acme(AcmeInfo),
-}
-
-impl KeyringInfo {
-    pub fn id(&self) -> &str {
-        match self {
-            Self::ServerCert(cert) => &cert.id,
-            Self::Acme(acme) => &acme.id,
-        }
-    }
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct CertInfo {
