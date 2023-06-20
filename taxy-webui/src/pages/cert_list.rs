@@ -8,7 +8,6 @@ use serde_derive::{Deserialize, Serialize};
 use taxy_api::acme::AcmeInfo;
 use taxy_api::cert::CertInfo;
 use yew::prelude::*;
-
 use yew_router::prelude::*;
 use yewdux::prelude::*;
 
@@ -146,6 +145,17 @@ pub fn cert_list() -> Html {
                     }
                 });
 
+                let download_onmousedown = Callback::from(move |e: MouseEvent|  {
+                    e.prevent_default();
+                });
+                let id = entry.id.clone();
+                let download_onclick = Callback::from(move |e: MouseEvent|  {
+                    e.prevent_default();
+                    if gloo_dialogs::confirm(&format!("Are you sure to download {id}.tar.gz?\nThis file contains the unencrypted private key.")) {
+                        location::assign(&format!("{API_ENDPOINT}/server_certs/{id}/download"));
+                    }
+                });
+
                 let active_index_cloned = active_index.clone();
                 let dropdown_onclick = Callback::from(move |_|  {
                     active_index_cloned.set(if *active_index_cloned == i as i32 {
@@ -186,6 +196,14 @@ pub fn cert_list() -> Html {
                                                         <ion-icon name="trash"></ion-icon>
                                                     </span>
                                                     <span>{"Delete"}</span>
+                                                </span>
+                                            </a>
+                                            <a class="dropdown-item" onmousedown={download_onmousedown} onclick={download_onclick}>
+                                                <span class="icon-text">
+                                                    <span class="icon">
+                                                        <ion-icon name="cloud-download"></ion-icon>
+                                                    </span>
+                                                    <span>{"Download"}</span>
                                                 </span>
                                             </a>
                                         </div>
@@ -340,4 +358,14 @@ async fn delete_acme(id: &str) -> Result<(), gloo_net::Error> {
         .send()
         .await?;
     Ok(())
+}
+
+mod location {
+    use wasm_bindgen::prelude::*;
+
+    #[wasm_bindgen]
+    extern "C" {
+        #[wasm_bindgen(js_namespace = location)]
+        pub fn assign(url: &str);
+    }
 }
