@@ -1,8 +1,8 @@
+use crate::auth::use_ensure_auth;
 use crate::components::breadcrumb::Breadcrumb;
 use crate::pages::Route;
 use crate::store::PortStore;
 use crate::API_ENDPOINT;
-use crate::{auth::use_ensure_auth, store::SessionStore};
 use gloo_net::http::Request;
 use taxy_api::port::PortEntry;
 use yew::prelude::*;
@@ -13,21 +13,16 @@ use yewdux::prelude::*;
 pub fn post_list() -> Html {
     use_ensure_auth();
 
-    let (session, _) = use_store::<SessionStore>();
     let (ports, dispatcher) = use_store::<PortStore>();
-    let token = session.token.clone();
-    let token_cloned = token.clone();
     use_effect_with_deps(
         move |_| {
-            if let Some(token) = token_cloned {
-                wasm_bindgen_futures::spawn_local(async move {
-                    if let Ok(res) = get_list(&token).await {
-                        dispatcher.set(PortStore { entries: res });
-                    }
-                });
-            }
+            wasm_bindgen_futures::spawn_local(async move {
+                if let Ok(res) = get_list().await {
+                    dispatcher.set(PortStore { entries: res });
+                }
+            });
         },
-        session,
+        (),
     );
 
     let navigator = use_navigator().unwrap();
@@ -69,34 +64,28 @@ pub fn post_list() -> Html {
                 let delete_onmousedown = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                 });
-                let token_cloned = token.clone();
                 let id = entry.id.clone();
                 let delete_onclick = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                     if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
                         let id = id.clone();
-                        if let Some(token) = token_cloned.clone() {
-                            wasm_bindgen_futures::spawn_local(async move {
-                                let _ = delete_port(&token, &id).await;
-                            });
-                        }
+                        wasm_bindgen_futures::spawn_local(async move {
+                            let _ = delete_port(&id).await;
+                        });
                     }
                 });
 
                 let reset_onmousedown = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                 });
-                let token_cloned = token.clone();
                 let id = entry.id.clone();
                 let reset_onclick = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                     if gloo_dialogs::confirm(&format!("Are you sure to reset {id}?\nThis operation closes all existing connections. ")) {
                         let id = id.clone();
-                        if let Some(token) = token_cloned.clone() {
-                            wasm_bindgen_futures::spawn_local(async move {
-                                let _ = reset_port(&token, &id).await;
-                            });
-                        }
+                        wasm_bindgen_futures::spawn_local(async move {
+                            let _ = reset_port(&id).await;
+                        });
                     }
                 });
 
@@ -179,26 +168,23 @@ pub fn post_list() -> Html {
     }
 }
 
-async fn get_list(token: &str) -> Result<Vec<PortEntry>, gloo_net::Error> {
+async fn get_list() -> Result<Vec<PortEntry>, gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/ports"))
-        .header("Authorization", &format!("Bearer {token}"))
         .send()
         .await?
         .json()
         .await
 }
 
-async fn delete_port(token: &str, id: &str) -> Result<(), gloo_net::Error> {
+async fn delete_port(id: &str) -> Result<(), gloo_net::Error> {
     Request::delete(&format!("{API_ENDPOINT}/ports/{id}"))
-        .header("Authorization", &format!("Bearer {token}"))
         .send()
         .await?;
     Ok(())
 }
 
-async fn reset_port(token: &str, id: &str) -> Result<(), gloo_net::Error> {
+async fn reset_port(id: &str) -> Result<(), gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/ports/{id}/reset"))
-        .header("Authorization", &format!("Bearer {token}"))
         .send()
         .await?;
     Ok(())

@@ -2,7 +2,7 @@ use crate::{
     auth::use_ensure_auth,
     components::{breadcrumb::Breadcrumb, site_config::SiteConfig},
     pages::Route,
-    store::{SessionStore, SiteStore},
+    store::SiteStore,
     API_ENDPOINT,
 };
 use gloo_net::http::Request;
@@ -23,21 +23,17 @@ pub fn site_view(props: &Props) -> Html {
 
     let (sites, _) = use_store::<SiteStore>();
     let site = use_state(|| sites.entries.iter().find(|e| e.id == props.id).cloned());
-    let (session, _) = use_store::<SessionStore>();
-    let token = session.token.clone();
     let id = props.id.clone();
     let site_cloned = site.clone();
     use_effect_with_deps(
         move |_| {
-            if let Some(token) = token {
-                wasm_bindgen_futures::spawn_local(async move {
-                    if let Ok(entry) = get_site(&token, &id).await {
-                        site_cloned.set(Some(entry));
-                    }
-                });
-            }
+            wasm_bindgen_futures::spawn_local(async move {
+                if let Ok(entry) = get_site(&id).await {
+                    site_cloned.set(Some(entry));
+                }
+            });
         },
-        session.clone(),
+        (),
     );
 
     let navigator = use_navigator().unwrap();
@@ -57,7 +53,6 @@ pub fn site_view(props: &Props) -> Html {
     let is_loading = use_state(|| false);
 
     let id = props.id.clone();
-    let token = session.token.clone();
     let entry_cloned = entry.clone();
     let is_loading_cloned = is_loading.clone();
     let update_onclick = Callback::from(move |_| {
@@ -67,16 +62,14 @@ pub fn site_view(props: &Props) -> Html {
         let navigator = navigator.clone();
         let id = id.clone();
         let is_loading_cloned = is_loading_cloned.clone();
-        if let Some(token) = token.clone() {
-            if let Ok(entry) = (*entry_cloned).clone() {
-                is_loading_cloned.set(true);
-                wasm_bindgen_futures::spawn_local(async move {
-                    if update_site(&token, &id, &entry).await.is_ok() {
-                        navigator.push(&Route::Sites);
-                    }
-                    is_loading_cloned.set(false);
-                });
-            }
+        if let Ok(entry) = (*entry_cloned).clone() {
+            is_loading_cloned.set(true);
+            wasm_bindgen_futures::spawn_local(async move {
+                if update_site(&id, &entry).await.is_ok() {
+                    navigator.push(&Route::Sites);
+                }
+                is_loading_cloned.set(false);
+            });
         }
     });
 
@@ -119,18 +112,16 @@ pub fn site_view(props: &Props) -> Html {
     }
 }
 
-async fn get_site(token: &str, id: &str) -> Result<SiteEntry, gloo_net::Error> {
+async fn get_site(id: &str) -> Result<SiteEntry, gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/sites/{id}"))
-        .header("Authorization", &format!("Bearer {token}"))
         .send()
         .await?
         .json()
         .await
 }
 
-async fn update_site(token: &str, id: &str, entry: &Site) -> Result<(), gloo_net::Error> {
+async fn update_site(id: &str, entry: &Site) -> Result<(), gloo_net::Error> {
     Request::put(&format!("{API_ENDPOINT}/sites/{id}"))
-        .header("Authorization", &format!("Bearer {token}"))
         .json(entry)?
         .send()
         .await?

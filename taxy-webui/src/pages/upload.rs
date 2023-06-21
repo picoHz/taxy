@@ -5,7 +5,6 @@ use crate::{
         cert_list::{CertsQuery, CertsTab},
         Route,
     },
-    store::SessionStore,
     API_ENDPOINT,
 };
 use gloo_net::http::Request;
@@ -13,16 +12,12 @@ use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_router::prelude::*;
-use yewdux::prelude::*;
 
 #[function_component(Upload)]
 pub fn upload() -> Html {
     use_ensure_auth();
 
     let navigator = use_navigator().unwrap();
-    let (session, _) = use_store::<SessionStore>();
-    let token = session.token.clone();
-
     let navigator_cloned = navigator.clone();
     let cancel_onclick = Callback::from(move |_| {
         let _ = navigator_cloned.push_with_query(
@@ -64,22 +59,20 @@ pub fn upload() -> Html {
         let chain_cloned = chain_cloned.clone();
         let key_cloned = key_cloned.clone();
         let is_loading_cloned = is_loading_cloned.clone();
-        if let Some(token) = token.clone() {
-            if let Some(chain) = chain_cloned {
-                if let Some(key) = key_cloned {
-                    is_loading_cloned.set(true);
-                    wasm_bindgen_futures::spawn_local(async move {
-                        if upload_cert(&token, &chain, &key).await.is_ok() {
-                            let _ = navigator.push_with_query(
-                                &Route::Certs,
-                                &CertsQuery {
-                                    tab: CertsTab::ServerCerts,
-                                },
-                            );
-                        }
-                        is_loading_cloned.set(false);
-                    });
-                }
+        if let Some(chain) = chain_cloned {
+            if let Some(key) = key_cloned {
+                is_loading_cloned.set(true);
+                wasm_bindgen_futures::spawn_local(async move {
+                    if upload_cert(&chain, &key).await.is_ok() {
+                        let _ = navigator.push_with_query(
+                            &Route::Certs,
+                            &CertsQuery {
+                                tab: CertsTab::ServerCerts,
+                            },
+                        );
+                    }
+                    is_loading_cloned.set(false);
+                });
             }
         }
     });
@@ -162,17 +155,12 @@ pub fn upload() -> Html {
     }
 }
 
-async fn upload_cert(
-    token: &str,
-    chain: &web_sys::File,
-    key: &web_sys::File,
-) -> Result<(), gloo_net::Error> {
+async fn upload_cert(chain: &web_sys::File, key: &web_sys::File) -> Result<(), gloo_net::Error> {
     let form_data = web_sys::FormData::new().unwrap();
     form_data.append_with_blob("chain", chain).unwrap();
     form_data.append_with_blob("key", key).unwrap();
 
     Request::post(&format!("{API_ENDPOINT}/server_certs/upload"))
-        .header("Authorization", &format!("Bearer {token}"))
         .body(form_data)
         .send()
         .await?;

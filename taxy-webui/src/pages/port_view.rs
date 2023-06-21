@@ -4,7 +4,7 @@ use crate::{
     auth::use_ensure_auth,
     components::{breadcrumb::Breadcrumb, port_config::PortConfig},
     pages::Route,
-    store::{PortStore, SessionStore},
+    store::PortStore,
     API_ENDPOINT,
 };
 use gloo_net::http::Request;
@@ -24,21 +24,17 @@ pub fn port_view(props: &Props) -> Html {
 
     let (ports, _) = use_store::<PortStore>();
     let port = use_state(|| ports.entries.iter().find(|e| e.id == props.id).cloned());
-    let (session, _) = use_store::<SessionStore>();
-    let token = session.token.clone();
     let id = props.id.clone();
     let port_cloned = port.clone();
     use_effect_with_deps(
         move |_| {
-            if let Some(token) = token {
-                wasm_bindgen_futures::spawn_local(async move {
-                    if let Ok(entry) = get_port(&token, &id).await {
-                        port_cloned.set(Some(entry));
-                    }
-                });
-            }
+            wasm_bindgen_futures::spawn_local(async move {
+                if let Ok(entry) = get_port(&id).await {
+                    port_cloned.set(Some(entry));
+                }
+            });
         },
-        session.clone(),
+        (),
     );
 
     let navigator = use_navigator().unwrap();
@@ -58,7 +54,6 @@ pub fn port_view(props: &Props) -> Html {
     let is_loading = use_state(|| false);
 
     let id = props.id.clone();
-    let token = session.token.clone();
     let entry_cloned = entry.clone();
     let is_loading_cloned = is_loading.clone();
     let update_onclick = Callback::from(move |_| {
@@ -68,16 +63,14 @@ pub fn port_view(props: &Props) -> Html {
         let navigator = navigator.clone();
         let id = id.clone();
         let is_loading_cloned = is_loading_cloned.clone();
-        if let Some(token) = token.clone() {
-            if let Ok(entry) = (*entry_cloned).clone() {
-                is_loading_cloned.set(true);
-                wasm_bindgen_futures::spawn_local(async move {
-                    if update_port(&token, &id, &entry).await.is_ok() {
-                        navigator.push(&Route::Ports);
-                    }
-                    is_loading_cloned.set(false);
-                });
-            }
+        if let Ok(entry) = (*entry_cloned).clone() {
+            is_loading_cloned.set(true);
+            wasm_bindgen_futures::spawn_local(async move {
+                if update_port(&id, &entry).await.is_ok() {
+                    navigator.push(&Route::Ports);
+                }
+                is_loading_cloned.set(false);
+            });
         }
     });
 
@@ -120,18 +113,16 @@ pub fn port_view(props: &Props) -> Html {
     }
 }
 
-async fn get_port(token: &str, id: &str) -> Result<PortEntry, gloo_net::Error> {
+async fn get_port(id: &str) -> Result<PortEntry, gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/ports/{id}"))
-        .header("Authorization", &format!("Bearer {token}"))
         .send()
         .await?
         .json()
         .await
 }
 
-async fn update_port(token: &str, id: &str, entry: &Port) -> Result<(), gloo_net::Error> {
+async fn update_port(id: &str, entry: &Port) -> Result<(), gloo_net::Error> {
     Request::put(&format!("{API_ENDPOINT}/ports/{id}"))
-        .header("Authorization", &format!("Bearer {token}"))
         .json(entry)?
         .send()
         .await?

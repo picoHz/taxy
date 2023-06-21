@@ -1,8 +1,8 @@
+use crate::auth::use_ensure_auth;
 use crate::components::breadcrumb::Breadcrumb;
 use crate::pages::Route;
 use crate::store::{PortStore, SiteStore};
 use crate::API_ENDPOINT;
-use crate::{auth::use_ensure_auth, store::SessionStore};
 use gloo_net::http::Request;
 use taxy_api::port::PortEntry;
 use taxy_api::site::SiteEntry;
@@ -14,37 +14,29 @@ use yewdux::prelude::*;
 pub fn site_list() -> Html {
     use_ensure_auth();
 
-    let (session, _) = use_store::<SessionStore>();
     let (ports, ports_dispatcher) = use_store::<PortStore>();
     let (sites, sites_dispatcher) = use_store::<SiteStore>();
-    let token = session.token.clone();
 
-    let token_cloned = token.clone();
     use_effect_with_deps(
         move |_| {
-            if let Some(token) = token_cloned {
-                wasm_bindgen_futures::spawn_local(async move {
-                    if let Ok(res) = get_list(&token).await {
-                        sites_dispatcher.set(SiteStore { entries: res });
-                    }
-                });
-            }
+            wasm_bindgen_futures::spawn_local(async move {
+                if let Ok(res) = get_list().await {
+                    sites_dispatcher.set(SiteStore { entries: res });
+                }
+            });
         },
-        session.clone(),
+        (),
     );
 
-    let token_cloned = token.clone();
     use_effect_with_deps(
         move |_| {
-            if let Some(token) = token_cloned {
-                wasm_bindgen_futures::spawn_local(async move {
-                    if let Ok(res) = get_ports(&token).await {
-                        ports_dispatcher.set(PortStore { entries: res });
-                    }
-                });
-            }
+            wasm_bindgen_futures::spawn_local(async move {
+                if let Ok(res) = get_ports().await {
+                    ports_dispatcher.set(PortStore { entries: res });
+                }
+            });
         },
-        session,
+        (),
     );
 
     let navigator = use_navigator().unwrap();
@@ -85,17 +77,14 @@ pub fn site_list() -> Html {
                 let delete_onmousedown = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                 });
-                let token_cloned = token.clone();
                 let id = entry.id.clone();
                 let delete_onclick = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                     if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
                         let id = id.clone();
-                        if let Some(token) = token_cloned.clone() {
-                            wasm_bindgen_futures::spawn_local(async move {
-                                let _ = delete_site(&token, &id).await;
-                            });
-                        }
+                        wasm_bindgen_futures::spawn_local(async move {
+                            let _ = delete_site(&id).await;
+                        });
                     }
                 });
 
@@ -174,27 +163,24 @@ pub fn site_list() -> Html {
     }
 }
 
-async fn get_ports(token: &str) -> Result<Vec<PortEntry>, gloo_net::Error> {
+async fn get_ports() -> Result<Vec<PortEntry>, gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/ports"))
-        .header("Authorization", &format!("Bearer {token}"))
         .send()
         .await?
         .json()
         .await
 }
 
-async fn get_list(token: &str) -> Result<Vec<SiteEntry>, gloo_net::Error> {
+async fn get_list() -> Result<Vec<SiteEntry>, gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/sites"))
-        .header("Authorization", &format!("Bearer {token}"))
         .send()
         .await?
         .json()
         .await
 }
 
-async fn delete_site(token: &str, id: &str) -> Result<(), gloo_net::Error> {
+async fn delete_site(id: &str) -> Result<(), gloo_net::Error> {
     Request::delete(&format!("{API_ENDPOINT}/sites/{id}"))
-        .header("Authorization", &format!("Bearer {token}"))
         .send()
         .await?;
     Ok(())

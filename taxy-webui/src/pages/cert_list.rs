@@ -1,8 +1,8 @@
+use crate::auth::use_ensure_auth;
 use crate::components::breadcrumb::Breadcrumb;
 use crate::pages::Route;
 use crate::store::{AcmeStore, CertStore};
 use crate::API_ENDPOINT;
-use crate::{auth::use_ensure_auth, store::SessionStore};
 use gloo_net::http::Request;
 use serde_derive::{Deserialize, Serialize};
 use taxy_api::acme::AcmeInfo;
@@ -46,25 +46,20 @@ pub fn cert_list() -> Html {
     let query: CertsQuery = location.query().unwrap_or_default();
     let tab = use_state(|| query.tab);
 
-    let (session, _) = use_store::<SessionStore>();
     let (certs, certs_dispatcher) = use_store::<CertStore>();
     let (acme, acme_dispatcher) = use_store::<AcmeStore>();
-    let token = session.token.clone();
-    let token_cloned = token.clone();
     use_effect_with_deps(
         move |_| {
-            if let Some(token) = token_cloned {
-                wasm_bindgen_futures::spawn_local(async move {
-                    if let Ok(res) = get_cert_list(&token).await {
-                        certs_dispatcher.set(CertStore { entries: res });
-                    }
-                    if let Ok(res) = get_acme_list(&token).await {
-                        acme_dispatcher.set(AcmeStore { entries: res });
-                    }
-                });
-            }
+            wasm_bindgen_futures::spawn_local(async move {
+                if let Ok(res) = get_cert_list().await {
+                    certs_dispatcher.set(CertStore { entries: res });
+                }
+                if let Ok(res) = get_acme_list().await {
+                    acme_dispatcher.set(AcmeStore { entries: res });
+                }
+            });
         },
-        session,
+        (),
     );
 
     let navigator = use_navigator().unwrap();
@@ -140,17 +135,14 @@ pub fn cert_list() -> Html {
                 let delete_onmousedown = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                 });
-                let token_cloned = token.clone();
                 let id = entry.id.clone();
                 let delete_onclick = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                     if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
                         let id = id.clone();
-                        if let Some(token) = token_cloned.clone() {
-                            wasm_bindgen_futures::spawn_local(async move {
-                                let _ = delete_server_cert(&token, &id).await;
-                            });
-                        }
+                        wasm_bindgen_futures::spawn_local(async move {
+                            let _ = delete_server_cert(&id).await;
+                        });
                     }
                 });
 
@@ -242,17 +234,14 @@ pub fn cert_list() -> Html {
                 let delete_onmousedown = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                 });
-                let token_cloned = token.clone();
                 let id = entry.id.clone();
                 let delete_onclick = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                     if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
                         let id = id.clone();
-                        if let Some(token) = token_cloned.clone() {
-                            wasm_bindgen_futures::spawn_local(async move {
-                                let _ = delete_acme(&token, &id).await;
-                            });
-                        }
+                        wasm_bindgen_futures::spawn_local(async move {
+                            let _ = delete_acme(&id).await;
+                        });
                     }
                 });
 
@@ -323,35 +312,31 @@ pub fn cert_list() -> Html {
     }
 }
 
-async fn get_cert_list(token: &str) -> Result<Vec<CertInfo>, gloo_net::Error> {
+async fn get_cert_list() -> Result<Vec<CertInfo>, gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/server_certs"))
-        .header("Authorization", &format!("Bearer {token}"))
         .send()
         .await?
         .json()
         .await
 }
 
-async fn get_acme_list(token: &str) -> Result<Vec<AcmeInfo>, gloo_net::Error> {
+async fn get_acme_list() -> Result<Vec<AcmeInfo>, gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/acme"))
-        .header("Authorization", &format!("Bearer {token}"))
         .send()
         .await?
         .json()
         .await
 }
 
-async fn delete_server_cert(token: &str, id: &str) -> Result<(), gloo_net::Error> {
+async fn delete_server_cert(id: &str) -> Result<(), gloo_net::Error> {
     Request::delete(&format!("{API_ENDPOINT}/server_certs/{id}"))
-        .header("Authorization", &format!("Bearer {token}"))
         .send()
         .await?;
     Ok(())
 }
 
-async fn delete_acme(token: &str, id: &str) -> Result<(), gloo_net::Error> {
+async fn delete_acme(id: &str) -> Result<(), gloo_net::Error> {
     Request::delete(&format!("{API_ENDPOINT}/acme/{id}"))
-        .header("Authorization", &format!("Bearer {token}"))
         .send()
         .await?;
     Ok(())

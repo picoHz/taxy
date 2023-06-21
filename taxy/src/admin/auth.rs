@@ -1,13 +1,11 @@
 use super::{with_state, AppState};
 use rand::distributions::{Alphanumeric, DistString};
+use serde_json::Value;
 use std::{
     collections::HashMap,
     time::{Duration, Instant},
 };
-use taxy_api::{
-    auth::{LoginRequest, LoginResult},
-    error::Error,
-};
+use taxy_api::{auth::LoginRequest, error::Error};
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 const MINIMUM_SESSION_EXPIRY: Duration = Duration::from_secs(60 * 5); // 5 minutes
@@ -24,7 +22,7 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
 
     let api_logout = warp::get().and(warp::path("logout")).and(
         with_state(app_state)
-            .and(warp::header::optional("authorization"))
+            .and(warp::cookie::cookie("token"))
             .and(warp::path::end())
             .and_then(logout),
     );
@@ -45,9 +43,14 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
 pub async fn login(state: AppState, req: LoginRequest) -> Result<impl Reply, Rejection> {
     let mut data = state.data.lock().await;
     if crate::auth::verify_account(&data.app_info.config_path, &req.username, &req.password).await {
-        Ok(warp::reply::json(&LoginResult {
-            token: data.sessions.new_token(),
-        }))
+        Ok(warp::reply::with_header(
+            warp::reply::json(&Value::Object(Default::default())),
+            "Set-Cookie",
+            &format!(
+                "token={}; HttpOnly; SameSite=Strict; Secure",
+                data.sessions.new_token()
+            ),
+        ))
     } else {
         Err(warp::reject::custom(Error::InvalidLoginCredentials))
     }
@@ -65,23 +68,14 @@ pub async fn login(state: AppState, req: LoginRequest) -> Result<impl Reply, Rej
         ("authorization"=[])
     )
 )]
-pub async fn logout(state: AppState, header: Option<String>) -> Result<impl Reply, Rejection> {
-    if let Some(token) = get_auth_token(&header) {
-        state.data.lock().await.sessions.remove(token);
-    }
-    Ok(warp::reply::reply())
-}
-
-pub fn get_auth_token(header: &Option<String>) -> Option<&str> {
-    if let Some(header) = header {
-        let parts: Vec<&str> = header.split(' ').collect();
-        if let [bearer, token] = &parts[..] {
-            if bearer.to_lowercase() == "bearer" {
-                return Some(*token);
-            }
-        }
-    }
-    None
+pub async fn logout(state: AppState, token: String) -> Result<impl Reply, Rejection> {
+    let mut data = state.data.lock().await;
+    data.sessions.remove(&token);
+    Ok(warp::reply::with_header(
+        warp::reply::json(&Value::Object(Default::default())),
+        "Set-Cookie",
+        "token=",
+    ))
 }
 
 #[derive(Default)]

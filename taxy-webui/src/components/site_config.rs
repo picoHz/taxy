@@ -1,4 +1,4 @@
-use crate::store::{PortStore, SessionStore};
+use crate::store::PortStore;
 use crate::API_ENDPOINT;
 use gloo_net::http::Request;
 use multiaddr::Protocol;
@@ -30,22 +30,17 @@ fn create_default_port() -> Site {
 
 #[function_component(SiteConfig)]
 pub fn site_config(props: &Props) -> Html {
-    let (session, _) = use_store::<SessionStore>();
     let (ports, dispatcher) = use_store::<PortStore>();
 
-    let token = session.token.clone();
-    let token_cloned = token;
     use_effect_with_deps(
         move |_| {
-            if let Some(token) = token_cloned {
-                wasm_bindgen_futures::spawn_local(async move {
-                    if let Ok(res) = get_ports(&token).await {
-                        dispatcher.set(PortStore { entries: res });
-                    }
-                });
-            }
+            wasm_bindgen_futures::spawn_local(async move {
+                if let Ok(res) = get_ports().await {
+                    dispatcher.set(PortStore { entries: res });
+                }
+            });
         },
-        session,
+        (),
     );
 
     let bound_ports = use_state(|| props.site.ports.clone());
@@ -310,9 +305,8 @@ fn get_site(
     }
 }
 
-async fn get_ports(token: &str) -> Result<Vec<PortEntry>, gloo_net::Error> {
+async fn get_ports() -> Result<Vec<PortEntry>, gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/ports"))
-        .header("Authorization", &format!("Bearer {token}"))
         .send()
         .await?
         .json()

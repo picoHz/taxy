@@ -1,15 +1,14 @@
-use crate::{auth::LoginQuery, pages::Route, store::SessionStore, API_ENDPOINT};
+use crate::{auth::LoginQuery, pages::Route, API_ENDPOINT};
 use gloo_net::http::Request;
 use serde_derive::Deserialize;
 use taxy_api::{
-    auth::{LoginRequest, LoginResult},
+    auth::{LoginRequest, LoginResponse},
     error::ErrorMessage,
 };
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
-use web_sys::HtmlInputElement;
+use web_sys::{HtmlInputElement, RequestCredentials};
 use yew::prelude::*;
 use yew_router::prelude::*;
-use yewdux::prelude::*;
 
 #[derive(Deserialize)]
 #[serde(untagged)]
@@ -20,7 +19,6 @@ enum ApiResult<T> {
 
 #[function_component(Login)]
 pub fn login() -> Html {
-    let (_, dispatch) = use_store::<SessionStore>();
     let navigator = use_navigator().unwrap();
 
     let location = use_location().unwrap();
@@ -59,13 +57,13 @@ pub fn login() -> Html {
         event.prevent_default();
 
         let navigator = navigator.clone();
-        let dispatch = dispatch.clone();
         let username = username.clone();
         let password = password.clone();
         let query = query.clone();
         let error = error_cloned.clone();
         wasm_bindgen_futures::spawn_local(async move {
-            let login: ApiResult<LoginResult> = Request::post(&format!("{API_ENDPOINT}/login"))
+            let login: ApiResult<LoginResponse> = Request::post(&format!("{API_ENDPOINT}/login"))
+                .credentials(RequestCredentials::Include)
                 .json(&LoginRequest {
                     username: username.to_string(),
                     password: password.to_string(),
@@ -78,10 +76,7 @@ pub fn login() -> Html {
                 .await
                 .unwrap();
             match login {
-                ApiResult::Ok(login) => {
-                    dispatch.set(SessionStore {
-                        token: Some(login.token),
-                    });
+                ApiResult::Ok(_) => {
                     if let Some(redirect) = query.redirect {
                         navigator.replace(&redirect);
                     } else {

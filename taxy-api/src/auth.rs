@@ -9,8 +9,5 @@ pub struct LoginRequest {
     pub password: String,
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
-pub struct LoginResult {
-    #[schema(example = "nidhmyh9c7txiyqe53ttsxyq")]
-    pub token: String,
-}
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct LoginResponse {}

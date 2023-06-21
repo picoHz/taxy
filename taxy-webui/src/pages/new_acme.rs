@@ -2,8 +2,7 @@ use crate::components::custom_acme::CustomAcme;
 use crate::components::letsencrypt::LetsEncrypt;
 use crate::pages::cert_list::{CertsQuery, CertsTab};
 use crate::{
-    auth::use_ensure_auth, components::breadcrumb::Breadcrumb, pages::Route, store::SessionStore,
-    API_ENDPOINT,
+    auth::use_ensure_auth, components::breadcrumb::Breadcrumb, pages::Route, API_ENDPOINT,
 };
 use gloo_net::http::Request;
 use std::collections::HashMap;
@@ -12,7 +11,6 @@ use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use web_sys::HtmlSelectElement;
 use yew::prelude::*;
 use yew_router::prelude::*;
-use yewdux::prelude::*;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Provider {
@@ -52,8 +50,6 @@ pub fn new_acme() -> Html {
     use_ensure_auth();
 
     let navigator = use_navigator().unwrap();
-    let (session, _) = use_store::<SessionStore>();
-    let token = session.token.clone();
 
     let navigator_cloned = navigator.clone();
     let cancel_onclick = Callback::from(move |_| {
@@ -83,21 +79,19 @@ pub fn new_acme() -> Html {
         }
         let navigator = navigator.clone();
         let is_loading_cloned = is_loading_cloned.clone();
-        if let Some(token) = token.clone() {
-            if let Ok(entry) = (*entry_cloned).clone() {
-                is_loading_cloned.set(true);
-                wasm_bindgen_futures::spawn_local(async move {
-                    if add_acme(&token, &entry).await.is_ok() {
-                        let _ = navigator.push_with_query(
-                            &Route::Certs,
-                            &CertsQuery {
-                                tab: CertsTab::Acme,
-                            },
-                        );
-                    }
-                    is_loading_cloned.set(false);
-                });
-            }
+        if let Ok(entry) = (*entry_cloned).clone() {
+            is_loading_cloned.set(true);
+            wasm_bindgen_futures::spawn_local(async move {
+                if add_acme(&entry).await.is_ok() {
+                    let _ = navigator.push_with_query(
+                        &Route::Certs,
+                        &CertsQuery {
+                            tab: CertsTab::Acme,
+                        },
+                    );
+                }
+                is_loading_cloned.set(false);
+            });
         }
     });
 
@@ -161,9 +155,8 @@ pub fn new_acme() -> Html {
     }
 }
 
-async fn add_acme(token: &str, req: &AcmeRequest) -> Result<(), gloo_net::Error> {
+async fn add_acme(req: &AcmeRequest) -> Result<(), gloo_net::Error> {
     Request::post(&format!("{API_ENDPOINT}/acme"))
-        .header("Authorization", &format!("Bearer {token}"))
         .json(&req)?
         .send()
         .await?

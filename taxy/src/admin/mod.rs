@@ -2,7 +2,6 @@ use crate::command::ServerCommand;
 use crate::server::rpc::ErasedRpcMethod;
 use crate::server::rpc::{RpcCallback, RpcMethod, RpcWrapper};
 use hyper::StatusCode;
-use serde_derive::Deserialize;
 use std::any::Any;
 use std::collections::HashMap;
 use std::{convert::Infallible, net::SocketAddr, sync::Arc};
@@ -128,7 +127,11 @@ pub async fn start_admin(
     let api = api
         .with(warp::reply::with::header(
             "Access-Control-Allow-Headers",
-            "content-type, authorization",
+            "content-type, authorization, cookie",
+        ))
+        .with(warp::reply::with::header(
+            "Access-Control-Allow-Credentials",
+            "true",
         ))
         .with(warp::reply::with::header(
             "Access-Control-Allow-Methods",
@@ -230,32 +233,23 @@ impl Data {
     }
 }
 
-#[derive(Deserialize)]
-struct TokenQuery {
-    token: Option<String>,
-}
-
 fn with_state(state: AppState) -> impl Filter<Extract = (AppState,), Error = Rejection> + Clone {
     let data = state.data.clone();
     warp::any()
         .and(
-            warp::header::optional("authorization")
-                .and(warp::query::<TokenQuery>())
-                .and_then(move |header: Option<String>, query: TokenQuery| {
-                    let data = data.clone();
-                    async move {
-                        if let Some(token) =
-                            auth::get_auth_token(&header).or(query.token.as_deref())
-                        {
-                            let mut data = data.lock().await;
-                            let expiry = data.config.admin_session_expiry;
-                            if data.sessions.verify(token, expiry) {
-                                return Ok(());
-                            }
+            warp::cookie::optional("token").and_then(move |token: Option<String>| {
+                let data = data.clone();
+                async move {
+                    if let Some(token) = token {
+                        let mut data = data.lock().await;
+                        let expiry = data.config.admin_session_expiry;
+                        if data.sessions.verify(&token, expiry) {
+                            return Ok(());
                         }
-                        Err(warp::reject::custom(Error::Unauthorized))
                     }
-                }),
+                    Err(warp::reject::custom(Error::Unauthorized))
+                }
+            }),
         )
         .map(move |_| state.clone())
 }
