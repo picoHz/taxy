@@ -71,12 +71,12 @@ cargo run
 
 # In a separate terminal, start `trunk serve` for the WebUI
 cd webui
-trunk serve
+trunk serve --proxy-backend=http://localhost:46492/api/
 ```
 
 ## FAQ
 
 ### Why don't changes to the configuration take effect immediately?
 
-Updating the configuration solely impacts new connections. 
+Updating the configuration solely impacts new connections.
 When browsers maintain active TCP streams, subsequent requests will continue to follow the prior configuration.

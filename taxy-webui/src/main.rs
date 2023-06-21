@@ -12,9 +12,6 @@ mod store;
 
 use components::navbar::Navbar;
 
-#[cfg(debug_assertions)]
-const API_ENDPOINT: &str = "http://127.0.0.1:46492/api";
-#[cfg(not(debug_assertions))]
 const API_ENDPOINT: &str = "/api";
 
 #[function_component(App)]
