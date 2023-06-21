@@ -1009,7 +1009,7 @@ dependencies = [
  "gloo-events",
  "gloo-utils",
  "serde",
- "serde-wasm-bindgen 0.4.5",
+ "serde-wasm-bindgen",
  "serde_urlencoded",
  "thiserror",
  "wasm-bindgen",
@@ -2269,17 +2269,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde-wasm-bindgen"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3b143e2833c57ab9ad3ea280d21fd34e285a42837aeb0ee301f4f41890fa00e"
-dependencies = [
- "js-sys",
- "serde",
- "wasm-bindgen",
-]
-
-[[package]]
 name = "serde_default"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2685,7 +2674,6 @@ dependencies = [
 name = "taxy-webui"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "base64 0.21.2",
  "console_error_panic_hook",
  "futures",
@@ -2696,7 +2684,6 @@ dependencies = [
  "gloo-utils",
  "multiaddr",
  "serde",
- "serde-wasm-bindgen 0.5.0",
  "serde_derive",
  "serde_json",
  "taxy-api",
