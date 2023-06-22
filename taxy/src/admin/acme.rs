@@ -43,7 +43,7 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
         (status = 401),
     ),
     security(
-        ("authorization"=[])
+        ("cookie"=[])
     )
 )]
 pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
@@ -63,7 +63,7 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
         (status = 401),
     ),
     security(
-        ("authorization"=[])
+        ("cookie"=[])
     )
 )]
 pub async fn get(state: AppState, id: String) -> Result<impl Reply, Rejection> {
@@ -81,7 +81,7 @@ pub async fn get(state: AppState, id: String) -> Result<impl Reply, Rejection> {
         (status = 401),
     ),
     security(
-        ("authorization"=[])
+        ("cookie"=[])
     )
 )]
 pub async fn add(state: AppState, request: AcmeRequest) -> Result<impl Reply, Rejection> {
@@ -101,7 +101,7 @@ pub async fn add(state: AppState, request: AcmeRequest) -> Result<impl Reply, Re
         (status = 401),
     ),
     security(
-        ("authorization"=[])
+        ("cookie"=[])
     )
 )]
 pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {

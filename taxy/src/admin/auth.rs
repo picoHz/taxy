@@ -65,7 +65,7 @@ pub async fn login(state: AppState, req: LoginRequest) -> Result<impl Reply, Rej
         (status = 401),
     ),
     security(
-        ("authorization"=[])
+        ("cookie"=[])
     )
 )]
 pub async fn logout(state: AppState, token: String) -> Result<impl Reply, Rejection> {

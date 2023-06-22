@@ -58,7 +58,7 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
         (status = 401),
     ),
     security(
-        ("authorization"=[])
+        ("cookie"=[])
     )
 )]
 pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
@@ -78,7 +78,7 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
         (status = 401),
     ),
     security(
-        ("authorization"=[])
+        ("cookie"=[])
     )
 )]
 pub async fn get(state: AppState, id: String) -> Result<impl Reply, Rejection> {
@@ -96,7 +96,7 @@ pub async fn get(state: AppState, id: String) -> Result<impl Reply, Rejection> {
         (status = 401),
     ),
     security(
-        ("authorization"=[])
+        ("cookie"=[])
     )
 )]
 pub async fn self_sign(
@@ -120,7 +120,7 @@ pub async fn self_sign(
         (status = 401),
     ),
     security(
-        ("authorization"=[])
+        ("cookie"=[])
     )
 )]
 pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, Rejection> {
@@ -163,7 +163,7 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
         (status = 401),
     ),
     security(
-        ("authorization"=[])
+        ("cookie"=[])
     )
 )]
 pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {
