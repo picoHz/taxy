@@ -5,7 +5,10 @@ use std::{
     collections::HashMap,
     time::{Duration, Instant},
 };
-use taxy_api::{auth::LoginRequest, error::Error};
+use taxy_api::{
+    auth::{LoginRequest, LoginResponse},
+    error::Error,
+};
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 const MINIMUM_SESSION_EXPIRY: Duration = Duration::from_secs(60 * 5); // 5 minutes
@@ -36,7 +39,7 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
     path = "/api/login",
     request_body = LoginRequest,
     responses(
-        (status = 200),
+        (status = 200, body = LoginResponse),
         (status = 400),
     )
 )]
@@ -44,7 +47,7 @@ pub async fn login(state: AppState, req: LoginRequest) -> Result<impl Reply, Rej
     let mut data = state.data.lock().await;
     if crate::auth::verify_account(&data.app_info.config_path, &req.username, &req.password).await {
         Ok(warp::reply::with_header(
-            warp::reply::json(&Value::Object(Default::default())),
+            warp::reply::json(&LoginResponse { success: true }),
             "Set-Cookie",
             &format!(
                 "token={}; HttpOnly; SameSite=Strict; Secure",

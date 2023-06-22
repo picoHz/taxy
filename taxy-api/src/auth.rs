@@ -10,4 +10,6 @@ pub struct LoginRequest {
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
-pub struct LoginResponse {}
+pub struct LoginResponse {
+    pub success: bool,
+}

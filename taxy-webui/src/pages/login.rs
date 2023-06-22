@@ -6,7 +6,7 @@ use taxy_api::{
     error::ErrorMessage,
 };
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
-use web_sys::{HtmlInputElement, RequestCredentials};
+use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
@@ -63,7 +63,6 @@ pub fn login() -> Html {
         let error = error_cloned.clone();
         wasm_bindgen_futures::spawn_local(async move {
             let login: ApiResult<LoginResponse> = Request::post(&format!("{API_ENDPOINT}/login"))
-                .credentials(RequestCredentials::Include)
                 .json(&LoginRequest {
                     username: username.to_string(),
                     password: password.to_string(),

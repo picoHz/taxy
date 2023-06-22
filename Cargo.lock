@@ -2702,7 +2702,6 @@ dependencies = [
  "base64 0.21.2",
  "console_error_panic_hook",
  "futures",
- "gloo-console",
  "gloo-dialogs",
  "gloo-net",
  "gloo-timers",
