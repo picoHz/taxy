@@ -1,3 +1,4 @@
+use super::storage::Storage;
 use crate::certs::{
     acme::{AcmeAccount, AcmeEntry},
     Cert,
@@ -29,14 +30,6 @@ impl FileStorage {
         }
     }
 
-    pub async fn save_app_config(&self, config: &AppConfig) {
-        let dir = &self.dir;
-        let path = dir.join("config.toml");
-        if let Err(err) = self.save_app_config_impl(&path, config).await {
-            error!(?path, "failed to save: {err}");
-        }
-    }
-
     async fn save_app_config_impl(&self, path: &Path, config: &AppConfig) -> anyhow::Result<()> {
         fs::create_dir_all(path.parent().unwrap()).await?;
         info!(?path, "save config");
@@ -44,30 +37,10 @@ impl FileStorage {
         Ok(())
     }
 
-    pub async fn load_app_config(&self) -> AppConfig {
-        let dir = &self.dir;
-        let path = dir.join("config.toml");
-        match self.load_app_config_impl(&path).await {
-            Ok(config) => config,
-            Err(err) => {
-                warn!(?path, "failed to load: {err}");
-                Default::default()
-            }
-        }
-    }
-
     async fn load_app_config_impl(&self, path: &Path) -> anyhow::Result<AppConfig> {
         info!(?path, "load config");
         let content = fs::read_to_string(path).await?;
         Ok(toml::from_str(&content)?)
-    }
-
-    pub async fn save_ports(&self, entries: &[PortEntry]) {
-        let dir = &self.dir;
-        let path = dir.join("ports.toml");
-        if let Err(err) = self.save_ports_impl(&path, entries).await {
-            error!(?path, "failed to save: {err}");
-        }
     }
 
     async fn save_ports_impl(&self, path: &Path, ports: &[PortEntry]) -> anyhow::Result<()> {
@@ -105,18 +78,6 @@ impl FileStorage {
         Ok(content.parse::<Document>()?)
     }
 
-    pub async fn load_ports(&self) -> Vec<PortEntry> {
-        let dir = &self.dir;
-        let path = dir.join("ports.toml");
-        match self.load_ports_impl(&path).await {
-            Ok(ports) => ports,
-            Err(err) => {
-                warn!(?path, "failed to load: {err}");
-                Default::default()
-            }
-        }
-    }
-
     async fn load_ports_impl(&self, path: &Path) -> anyhow::Result<Vec<PortEntry>> {
         info!(?path, "load config");
         let content = fs::read_to_string(path).await?;
@@ -124,31 +85,11 @@ impl FileStorage {
         Ok(table.into_iter().map(|entry| entry.into()).collect())
     }
 
-    pub async fn load_sites(&self) -> Vec<SiteEntry> {
-        let dir = &self.dir;
-        let path = dir.join("sites.toml");
-        match self.load_sites_impl(&path).await {
-            Ok(sites) => sites,
-            Err(err) => {
-                warn!(?path, "failed to load: {err}");
-                Default::default()
-            }
-        }
-    }
-
     async fn load_sites_impl(&self, path: &Path) -> anyhow::Result<Vec<SiteEntry>> {
         info!(?path, "load sites");
         let content = fs::read_to_string(path).await?;
         let table: IndexMap<String, Site> = toml::from_str(&content)?;
         Ok(table.into_iter().map(|entry| entry.into()).collect())
-    }
-
-    pub async fn save_sites(&self, sites: &[SiteEntry]) {
-        let dir = &self.dir;
-        let path = dir.join("sites.toml");
-        if let Err(err) = self.save_sites_impl(&path, sites).await {
-            error!(?path, "failed to save: {err}");
-        }
     }
 
     async fn save_sites_impl(&self, path: &Path, sites: &[SiteEntry]) -> anyhow::Result<()> {
@@ -180,27 +121,12 @@ impl FileStorage {
         Ok(())
     }
 
-    pub async fn save_cert(&self, cert: &Cert) {
-        let dir = &self.dir;
-        let path = dir.join("certs").join(cert.id());
-        if let Err(err) = self.save_cert_impl(&path, cert).await {
-            error!(?path, "failed to save: {err}");
-        }
-    }
-
     async fn save_cert_impl(&self, path: &Path, cert: &Cert) -> anyhow::Result<()> {
         fs::create_dir_all(path).await?;
         info!(?path, "save cert");
         fs::write(path.join("cert.pem"), &cert.raw_chain).await?;
         fs::write(path.join("key.pem"), &cert.raw_key).await?;
         Ok(())
-    }
-
-    pub async fn save_acme(&self, acme: &AcmeEntry) {
-        let path = self.dir.join("acme.toml");
-        if let Err(err) = self.save_acme_impl(&path, acme).await {
-            error!(?path, "failed to save: {err}");
-        }
     }
 
     async fn save_acme_impl(&self, path: &Path, acme: &AcmeEntry) -> anyhow::Result<()> {
@@ -221,13 +147,6 @@ impl FileStorage {
         Ok(())
     }
 
-    pub async fn delete_acme(&self, id: &str) {
-        let path = self.dir.join("acme.toml");
-        if let Err(err) = self.delete_acme_impl(&path, id).await {
-            error!(?path, "failed to save: {err}");
-        }
-    }
-
     async fn delete_acme_impl(&self, path: &Path, id: &str) -> anyhow::Result<()> {
         info!(?path, "delete acme");
         let mut doc = match self.load_document(path).await {
@@ -241,36 +160,6 @@ impl FileStorage {
         doc.remove(id);
         fs::write(path, doc.to_string()).await?;
         Ok(())
-    }
-
-    pub async fn delete_cert(&self, id: &str) {
-        let dir = &self.dir;
-        let path = dir.join("certs").join(id);
-        if let Err(err) = fs::remove_dir_all(&path).await {
-            error!(?path, "failed to delete: {err}");
-        }
-    }
-
-    pub async fn load_acmes(&self) -> Vec<AcmeEntry> {
-        let path = self.dir.join("acme.toml");
-        match self.load_acmes_impl(&path).await {
-            Ok(acmes) => acmes,
-            Err(err) => {
-                warn!(?path, "failed to load acme config: {err}");
-                Default::default()
-            }
-        }
-    }
-
-    pub async fn load_certs(&self) -> Vec<Arc<Cert>> {
-        let path = self.dir.join("certs");
-        match self.load_certs_impl(&path).await {
-            Ok(certs) => certs,
-            Err(err) => {
-                warn!(?path, "failed to load acme config: {err}");
-                Default::default()
-            }
-        }
     }
 
     pub async fn load_certs_impl(&self, path: &Path) -> anyhow::Result<Vec<Arc<Cert>>> {
@@ -320,5 +209,122 @@ impl FileStorage {
         let content = fs::read_to_string(path).await?;
         let table: IndexMap<String, AcmeAccount> = toml::from_str(&content)?;
         Ok(table.into_iter().map(|entry| entry.into()).collect())
+    }
+}
+
+#[async_trait::async_trait]
+impl Storage for FileStorage {
+    async fn save_app_config(&self, config: &AppConfig) {
+        let dir = &self.dir;
+        let path = dir.join("config.toml");
+        if let Err(err) = self.save_app_config_impl(&path, config).await {
+            error!(?path, "failed to save: {err}");
+        }
+    }
+
+    async fn load_app_config(&self) -> AppConfig {
+        let dir = &self.dir;
+        let path = dir.join("config.toml");
+        match self.load_app_config_impl(&path).await {
+            Ok(config) => config,
+            Err(err) => {
+                warn!(?path, "failed to load: {err}");
+                Default::default()
+            }
+        }
+    }
+
+    async fn save_ports(&self, entries: &[PortEntry]) {
+        let dir = &self.dir;
+        let path = dir.join("ports.toml");
+        if let Err(err) = self.save_ports_impl(&path, entries).await {
+            error!(?path, "failed to save: {err}");
+        }
+    }
+
+    async fn load_ports(&self) -> Vec<PortEntry> {
+        let dir = &self.dir;
+        let path = dir.join("ports.toml");
+        match self.load_ports_impl(&path).await {
+            Ok(ports) => ports,
+            Err(err) => {
+                warn!(?path, "failed to load: {err}");
+                Default::default()
+            }
+        }
+    }
+
+    async fn save_sites(&self, sites: &[SiteEntry]) {
+        let dir = &self.dir;
+        let path = dir.join("sites.toml");
+        if let Err(err) = self.save_sites_impl(&path, sites).await {
+            error!(?path, "failed to save: {err}");
+        }
+    }
+
+    async fn load_sites(&self) -> Vec<SiteEntry> {
+        let dir = &self.dir;
+        let path = dir.join("sites.toml");
+        match self.load_sites_impl(&path).await {
+            Ok(sites) => sites,
+            Err(err) => {
+                warn!(?path, "failed to load: {err}");
+                Default::default()
+            }
+        }
+    }
+
+    async fn save_cert(&self, cert: &Cert) {
+        let dir = &self.dir;
+        let path = dir.join("certs").join(cert.id());
+        if let Err(err) = self.save_cert_impl(&path, cert).await {
+            error!(?path, "failed to save: {err}");
+        }
+    }
+
+    async fn save_acme(&self, acme: &AcmeEntry) {
+        let path = self.dir.join("acme.toml");
+        if let Err(err) = self.save_acme_impl(&path, acme).await {
+            error!(?path, "failed to save: {err}");
+        }
+    }
+
+    async fn delete_acme(&self, id: &str) {
+        let path = self.dir.join("acme.toml");
+        if let Err(err) = self.delete_acme_impl(&path, id).await {
+            error!(?path, "failed to delete: {err}");
+        }
+    }
+
+    async fn delete_cert(&self, id: &str) {
+        let dir = &self.dir;
+        let path = dir.join("certs").join(id);
+        if let Err(err) = fs::remove_dir_all(&path).await {
+            error!(?path, "failed to delete: {err}");
+        }
+    }
+
+    async fn load_acmes(&self) -> Vec<AcmeEntry> {
+        let dir = &self.dir;
+        let path = dir.join("acme.toml");
+        match self.load_acmes_impl(&path).await {
+            Ok(acmes) => acmes,
+            Err(err) => {
+                warn!(?path, "failed to load: {err}");
+                Default::default()
+            }
+        }
+    }
+
+    async fn load_certs(&self) -> Vec<Arc<Cert>> {
+        let dir = &self.dir;
+        let path = dir.join("certs");
+        match self.load_certs_impl(&path).await {
+            Ok(certs) => certs,
+            Err(err) => {
+                warn!(?path, "failed to load: {err}");
+                Default::default()
+            }
+        }
     }
 }
