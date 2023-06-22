@@ -1,5 +1,5 @@
 use super::{with_state, AppState};
-use crate::{keyring::certs::Cert, server::rpc::server_certs::*};
+use crate::{certs::Cert, server::rpc::server_certs::*};
 use hyper::Response;
 use std::{io::Read, ops::Deref};
 use taxy_api::{cert::SelfSignedCertRequest, error::Error};

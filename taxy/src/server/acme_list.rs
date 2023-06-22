@@ -1,4 +1,4 @@
-use crate::keyring::acme::AcmeEntry;
+use crate::certs::acme::AcmeEntry;
 use indexmap::IndexMap;
 use taxy_api::error::Error;
 

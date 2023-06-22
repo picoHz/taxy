@@ -1,4 +1,4 @@
-use crate::{keyring::certs::Cert, server::rpc::ErasedRpcMethod};
+use crate::{certs::Cert, server::rpc::ErasedRpcMethod};
 use std::sync::Arc;
 
 pub enum ServerCommand {

@@ -1,5 +1,5 @@
 use super::RpcMethod;
-use crate::{keyring::acme::AcmeEntry, server::state::ServerState};
+use crate::{certs::acme::AcmeEntry, server::state::ServerState};
 use taxy_api::{
     acme::{AcmeInfo, AcmeRequest},
     error::Error,

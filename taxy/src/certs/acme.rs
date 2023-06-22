@@ -1,4 +1,4 @@
-use crate::keyring::certs::Cert;
+use crate::certs::Cert;
 use anyhow::bail;
 use backoff::{backoff::Backoff, ExponentialBackoff};
 use instant_acme::{

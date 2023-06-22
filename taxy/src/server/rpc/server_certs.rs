@@ -1,5 +1,5 @@
 use super::RpcMethod;
-use crate::{keyring::certs::Cert, server::state::ServerState};
+use crate::{certs::Cert, server::state::ServerState};
 use flate2::{write::GzEncoder, Compression};
 use hyper::body::Bytes;
 use std::{

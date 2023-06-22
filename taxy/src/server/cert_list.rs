@@ -1,4 +1,4 @@
-use crate::keyring::certs::Cert;
+use crate::certs::Cert;
 use indexmap::IndexMap;
 use std::sync::Arc;
 use taxy_api::error::Error;

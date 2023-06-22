@@ -1,4 +1,4 @@
-use crate::keyring::certs::Cert;
+use crate::certs::Cert;
 use crate::server::cert_list::CertList;
 use dashmap::DashMap;
 use std::fmt;

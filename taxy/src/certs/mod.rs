@@ -13,6 +13,8 @@ use tracing::error;
 use x509_parser::{extensions::GeneralName, time::ASN1Time};
 use x509_parser::{parse_x509_certificate, prelude::X509Certificate};
 
+pub mod acme;
+
 const CERT_ID_LENGTH: usize = 20;
 
 #[derive(Clone)]
@@ -287,7 +289,6 @@ fn parse_chain(chain: &[Certificate]) -> Result<Vec<X509Certificate>, Error> {
 
 #[cfg(test)]
 mod test {
-    
 
     #[test]
     fn test_self_signed() {
