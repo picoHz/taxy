@@ -18,11 +18,11 @@ use tokio::io::AsyncReadExt;
 use toml_edit::Document;
 use tracing::{error, info, warn};
 
-pub struct ConfigStorage {
+pub struct FileStorage {
     dir: PathBuf,
 }
 
-impl ConfigStorage {
+impl FileStorage {
     pub fn new(dir: &Path) -> Self {
         Self {
             dir: dir.to_owned(),

@@ -4,7 +4,7 @@ use super::site_list::SiteList;
 use super::{listener::TcpListenerPool, port_list::PortList, rpc::RpcCallback};
 use crate::{
     command::ServerCommand,
-    config::storage::ConfigStorage,
+    config::file::FileStorage,
     proxy::{PortContext, PortContextKind},
 };
 use hyper::server::conn::Http;
@@ -37,7 +37,7 @@ pub struct ServerState {
     pub certs: CertList,
     pub acmes: AcmeList,
     pub ports: PortList,
-    pub storage: ConfigStorage,
+    pub storage: FileStorage,
     config: AppConfig,
     pool: TcpListenerPool,
     http_challenges: HashMap<String, String>,
@@ -48,7 +48,7 @@ pub struct ServerState {
 
 impl ServerState {
     pub async fn new(
-        storage: ConfigStorage,
+        storage: FileStorage,
         command_sender: mpsc::Sender<ServerCommand>,
         callback_sender: mpsc::Sender<RpcCallback>,
         br_sender: broadcast::Sender<ServerEvent>,

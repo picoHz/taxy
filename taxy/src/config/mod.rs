@@ -1,8 +1,7 @@
 use std::path::Path;
-
 use taxy_api::app::AppInfo;
 
-pub mod storage;
+pub mod file;
 
 mod build_info {
     include!(concat!(env!("OUT_DIR"), "/built.rs"));

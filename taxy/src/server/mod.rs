@@ -1,7 +1,7 @@
 use self::rpc::RpcCallback;
 use self::state::ServerState;
 use crate::command::ServerCommand;
-use crate::config::storage::ConfigStorage;
+use crate::config::file::FileStorage;
 use taxy_api::event::ServerEvent;
 use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::{broadcast, mpsc};
@@ -16,7 +16,7 @@ mod site_list;
 mod state;
 
 pub struct Server {
-    config: ConfigStorage,
+    config: FileStorage,
     command_send: mpsc::Sender<ServerCommand>,
     command_recv: mpsc::Receiver<ServerCommand>,
     callback: mpsc::Sender<RpcCallback>,
@@ -24,7 +24,7 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new(config: ConfigStorage) -> (Self, ServerChannels) {
+    pub fn new(config: FileStorage) -> (Self, ServerChannels) {
         let (command_send, command_recv) = mpsc::channel(1);
         let (callback_send, callback_recv) = mpsc::channel(16);
         let (event_send, _) = broadcast::channel(16);
@@ -62,7 +62,7 @@ pub struct ServerChannels {
 }
 
 async fn start_server(
-    config: ConfigStorage,
+    config: FileStorage,
     command_send: mpsc::Sender<ServerCommand>,
     mut command_recv: mpsc::Receiver<ServerCommand>,
     callback: mpsc::Sender<RpcCallback>,

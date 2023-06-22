@@ -1,8 +1,8 @@
 #![forbid(unsafe_code)]
 
 use crate::args::Command;
+use crate::config::file::FileStorage;
 use crate::config::new_appinfo;
-use crate::config::storage::ConfigStorage;
 use crate::log::DatabaseLayer;
 use crate::server::Server;
 use args::StartArgs;
@@ -70,7 +70,7 @@ async fn start(args: StartArgs) -> anyhow::Result<()> {
     let config_dir = get_config_dir(args.config_dir)?;
     fs::create_dir_all(&config_dir)?;
 
-    let config = ConfigStorage::new(&config_dir);
+    let config = FileStorage::new(&config_dir);
     let app_info = new_appinfo(&config_dir, &log_dir);
 
     let (server, channels) = Server::new(config);
