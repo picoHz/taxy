@@ -2,9 +2,9 @@ use super::acme_list::AcmeList;
 use super::cert_list::CertList;
 use super::site_list::SiteList;
 use super::{listener::TcpListenerPool, port_list::PortList, rpc::RpcCallback};
+use crate::config::storage::Storage;
 use crate::{
     command::ServerCommand,
-    config::storage::ConfigStorage,
     proxy::{PortContext, PortContextKind},
 };
 use hyper::server::conn::Http;
@@ -37,7 +37,7 @@ pub struct ServerState {
     pub certs: CertList,
     pub acmes: AcmeList,
     pub ports: PortList,
-    pub storage: ConfigStorage,
+    pub storage: Box<dyn Storage>,
     config: AppConfig,
     pool: TcpListenerPool,
     http_challenges: HashMap<String, String>,
@@ -48,7 +48,7 @@ pub struct ServerState {
 
 impl ServerState {
     pub async fn new(
-        storage: ConfigStorage,
+        storage: impl Storage,
         command_sender: mpsc::Sender<ServerCommand>,
         callback_sender: mpsc::Sender<RpcCallback>,
         br_sender: broadcast::Sender<ServerEvent>,
@@ -69,7 +69,7 @@ impl ServerState {
             certs: certs.into_iter().collect(),
             acmes: acmes.into_iter().collect(),
             ports: PortList::new(),
-            storage,
+            storage: Box::new(storage),
             config,
             pool: TcpListenerPool::new(),
             http_challenges: HashMap::new(),

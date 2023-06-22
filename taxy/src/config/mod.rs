@@ -1,7 +1,7 @@
 use std::path::Path;
-
 use taxy_api::app::AppInfo;
 
+pub mod file;
 pub mod storage;
 
 mod build_info {
