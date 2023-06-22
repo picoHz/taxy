@@ -15,7 +15,53 @@ pub mod rpc;
 mod site_list;
 mod state;
 
-pub async fn start_server(
+pub struct Server {
+    config: ConfigStorage,
+    command_send: mpsc::Sender<ServerCommand>,
+    command_recv: mpsc::Receiver<ServerCommand>,
+    callback: mpsc::Sender<RpcCallback>,
+    event: broadcast::Sender<ServerEvent>,
+}
+
+impl Server {
+    pub fn new(config: ConfigStorage) -> (Self, ServerChannels) {
+        let (command_send, command_recv) = mpsc::channel(1);
+        let (callback_send, callback_recv) = mpsc::channel(16);
+        let (event_send, _) = broadcast::channel(16);
+        let server = Self {
+            config,
+            command_send,
+            command_recv,
+            callback: callback_send,
+            event: event_send,
+        };
+        let channels = ServerChannels {
+            command: server.command_send.clone(),
+            callback: callback_recv,
+            event: server.event.clone(),
+        };
+        (server, channels)
+    }
+
+    pub async fn start(self) -> anyhow::Result<()> {
+        start_server(
+            self.config,
+            self.command_send,
+            self.command_recv,
+            self.callback,
+            self.event,
+        )
+        .await
+    }
+}
+
+pub struct ServerChannels {
+    pub command: mpsc::Sender<ServerCommand>,
+    pub callback: mpsc::Receiver<RpcCallback>,
+    pub event: broadcast::Sender<ServerEvent>,
+}
+
+async fn start_server(
     config: ConfigStorage,
     command_send: mpsc::Sender<ServerCommand>,
     mut command_recv: mpsc::Receiver<ServerCommand>,

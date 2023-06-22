@@ -4,12 +4,12 @@ use crate::args::Command;
 use crate::config::new_appinfo;
 use crate::config::storage::ConfigStorage;
 use crate::log::DatabaseLayer;
+use crate::server::Server;
 use args::StartArgs;
 use clap::Parser;
 use directories::ProjectDirs;
 use std::fs;
 use std::path::PathBuf;
-use tokio::sync::{broadcast, mpsc};
 use tracing::{error, info};
 use tracing_subscriber::filter::{self, FilterExt};
 use tracing_subscriber::prelude::*;
@@ -73,20 +73,13 @@ async fn start(args: StartArgs) -> anyhow::Result<()> {
     let config = ConfigStorage::new(&config_dir);
     let app_info = new_appinfo(&config_dir, &log_dir);
 
-    let (event_send, _) = broadcast::channel(16);
-    let (command_send, command_recv) = mpsc::channel(1);
-    let (callback_send, callback_recv) = mpsc::channel(16);
-    let server_task = tokio::spawn(server::start_server(
-        config,
-        command_send.clone(),
-        command_recv,
-        callback_send,
-        event_send.clone(),
-    ));
+    let (server, channels) = Server::new(config);
+    let server_task = tokio::spawn(server.start());
+    let event_send = channels.event.clone();
 
     let webui_enabled = !args.no_webui;
     tokio::select! {
-        r = admin::start_admin(app_info, args.webui, command_send, callback_recv, event_send.clone()), if webui_enabled => {
+        r = admin::start_admin(app_info, args.webui, channels.command, channels.callback, channels.event), if webui_enabled => {
             if let Err(err) = r {
                 error!("admin error: {}", err);
             }
