@@ -89,18 +89,10 @@ impl ServerState {
             };
         }
 
-        let _ = this.br_sender.send(ServerEvent::AcmeUpdated {
-            entries: this.acmes.entries().map(|acme| acme.info()).collect(),
-        });
-        let _ = this.br_sender.send(ServerEvent::ServerCertsUpdated {
-            entries: this.certs.iter().map(|item| item.info()).collect(),
-        });
-        let _ = this.br_sender.send(ServerEvent::SitesUpdated {
-            entries: this.sites.entries().cloned().collect(),
-        });
-
         this.update_port_statuses().await;
-        this.start_http_challenges().await;
+        this.update_certs().await;
+        this.update_sites().await;
+        this.update_acmes().await;
         this
     }
 
@@ -121,44 +113,6 @@ impl ServerState {
                 let result = arg.call(self).await;
                 let _ = self.callback_sender.send(RpcCallback { id, result }).await;
             }
-        }
-    }
-
-    pub async fn handle_event(&mut self, event: ServerEvent) {
-        match event {
-            ServerEvent::AppConfigUpdated {
-                config: app_config,
-                source,
-            } => {
-                if source != Source::File {
-                    self.storage.save_app_config(&app_config).await;
-                }
-            }
-            ServerEvent::PortTableUpdated { entries } => {
-                self.storage.save_ports(&entries).await;
-            }
-            ServerEvent::ServerCertsUpdated { .. } => {
-                for ctx in self.ports.as_mut_slice() {
-                    let _ = ctx.refresh(&self.certs).await;
-                }
-            }
-            ServerEvent::SitesUpdated { entries } => {
-                self.storage.save_sites(&entries).await;
-                for ctx in self.ports.as_mut_slice() {
-                    let sites = entries
-                        .iter()
-                        .filter(|entry: &&SiteEntry| entry.site.ports.contains(&ctx.entry.id))
-                        .cloned()
-                        .collect();
-                    let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
-                    if let Err(err) = ctx.setup(&self.certs, sites).instrument(span.clone()).await {
-                        span.in_scope(|| {
-                            error!(?err, "failed to setup port");
-                        });
-                    }
-                }
-            }
-            _ => (),
         }
     }
 
@@ -208,10 +162,12 @@ impl ServerState {
     }
 
     pub async fn update_port_statuses(&mut self) {
+        let entries = self.ports.entries().cloned().collect::<Vec<_>>();
         self.pool.update(self.ports.as_mut_slice()).await;
-        let _ = self.br_sender.send(ServerEvent::PortTableUpdated {
-            entries: self.ports.entries().cloned().collect(),
-        });
+        self.storage.save_ports(&entries).await;
+        let _ = self
+            .br_sender
+            .send(ServerEvent::PortTableUpdated { entries });
         for (entry, ctx) in self.ports.entries().cloned().zip(self.ports.as_slice()) {
             let _ = self.br_sender.send(ServerEvent::PortStatusUpdated {
                 id: entry.id.clone(),
@@ -221,15 +177,33 @@ impl ServerState {
     }
 
     pub async fn update_sites(&mut self) {
+        let entries = self.sites.entries().cloned().collect::<Vec<_>>();
+        self.storage.save_sites(&entries).await;
         let _ = self.br_sender.send(ServerEvent::SitesUpdated {
-            entries: self.sites.entries().cloned().collect(),
+            entries: entries.clone(),
         });
+        for ctx in self.ports.as_mut_slice() {
+            let sites = entries
+                .iter()
+                .filter(|entry: &&SiteEntry| entry.site.ports.contains(&ctx.entry.id))
+                .cloned()
+                .collect();
+            let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
+            if let Err(err) = ctx.setup(&self.certs, sites).instrument(span.clone()).await {
+                span.in_scope(|| {
+                    error!(?err, "failed to setup port");
+                });
+            }
+        }
     }
 
     pub async fn update_certs(&mut self) {
         let _ = self.br_sender.send(ServerEvent::ServerCertsUpdated {
             entries: self.certs.iter().map(|item| item.info()).collect(),
         });
+        for ctx in self.ports.as_mut_slice() {
+            let _ = ctx.refresh(&self.certs).await;
+        }
     }
 
     pub async fn update_acmes(&mut self) {

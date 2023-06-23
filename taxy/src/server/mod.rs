@@ -96,7 +96,6 @@ where
                         new_interval.tick().await;
                         background_task_interval = new_interval;
                     },
-                    Ok(event) => server.handle_event(event).await,
                     Err(RecvError::Lagged(n)) => {
                         warn!("event stream lagged: {}", n);
                     }
