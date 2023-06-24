@@ -1,4 +1,5 @@
 use crate::store::PortStore;
+use crate::utils::format_multiaddr;
 use crate::API_ENDPOINT;
 use gloo_net::http::Request;
 use multiaddr::Protocol;
@@ -131,7 +132,7 @@ pub fn site_config(props: &Props) -> Html {
                                 { http_ports.map(|entry| {
                                     html! {
                                         <option selected={bound_ports.contains(&entry.id)} value={entry.id.clone()}>
-                                            {entry.port.listen.to_string()}
+                                            {format_multiaddr(&entry.port.listen)}
                                         </option>
                                     }
                                 }).collect::<Html>() }

@@ -1,5 +1,6 @@
 #![recursion_limit = "1024"]
 
+use components::navbar::Navbar;
 use console_error_panic_hook::set_once as set_panic_hook;
 use yew::prelude::*;
 use yew_router::prelude::*;
@@ -9,8 +10,7 @@ mod components;
 mod event;
 mod pages;
 mod store;
-
-use components::navbar::Navbar;
+pub mod utils;
 
 const API_ENDPOINT: &str = "/api";
 

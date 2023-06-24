@@ -2,6 +2,7 @@ use crate::auth::use_ensure_auth;
 use crate::components::breadcrumb::Breadcrumb;
 use crate::pages::Route;
 use crate::store::{PortStore, SiteStore};
+use crate::utils::format_multiaddr;
 use crate::API_ENDPOINT;
 use gloo_net::http::Request;
 use taxy_api::port::PortEntry;
@@ -104,7 +105,7 @@ pub fn site_list() -> Html {
 
                 let ports = entry.site.ports.iter().filter_map(|port| {
                     ports.entries.iter().find(|p| p.id == *port)
-                }).map(|entry| entry.port.listen.to_string()).collect::<Vec<_>>().join(",");
+                }).map(|entry| format_multiaddr(&entry.port.listen)).collect::<Vec<_>>().join(", ");
                 html! {
                     <div class="list-item">
                         <div class="list-item-content">
