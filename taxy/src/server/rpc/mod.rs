@@ -3,6 +3,7 @@ use std::any::Any;
 use taxy_api::error::Error;
 
 pub mod acme;
+pub mod auth;
 pub mod config;
 pub mod ports;
 pub mod server_certs;

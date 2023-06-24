@@ -54,6 +54,9 @@ pub enum Error {
     #[error("unauthorized")]
     Unauthorized,
 
+    #[error("failed to create account")]
+    FailedToCreateAccount,
+
     #[error("invalid login credentials")]
     InvalidLoginCredentials,
 

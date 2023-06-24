@@ -3,14 +3,17 @@ use crate::certs::{
     acme::{AcmeAccount, AcmeEntry},
     Cert,
 };
+use argon2::{password_hash::SaltString, Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use indexmap::map::IndexMap;
+use serde_derive::{Deserialize, Serialize};
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     path::{Path, PathBuf},
     sync::Arc,
 };
 use taxy_api::app::AppConfig;
 use taxy_api::{
+    error::Error,
     port::{Port, PortEntry},
     site::{Site, SiteEntry},
 };
@@ -210,6 +213,72 @@ impl FileStorage {
         let table: IndexMap<String, AcmeAccount> = toml::from_str(&content)?;
         Ok(table.into_iter().map(|entry| entry.into()).collect())
     }
+
+    async fn add_account_impl(&self, name: &str, password: &str) -> anyhow::Result<()> {
+        let path = self.dir.join("accounts.toml");
+        info!(?path, "save account");
+
+        let mut doc = match fs::read_to_string(&path).await {
+            Ok(content) => content.parse::<Document>().unwrap_or_default(),
+            Err(_) => Document::default(),
+        };
+
+        let salt = SaltString::generate(rand::thread_rng());
+        let argon2 = Argon2::default();
+        let password_hash = argon2
+            .hash_password(password.as_bytes(), &salt)
+            .map_err(|_| anyhow::anyhow!("failed to hash password"))?
+            .to_string();
+
+        let account = Account {
+            password: password_hash,
+        };
+        doc[name] = toml_edit::ser::to_document(&account)?.as_item().clone();
+
+        fs::write(&path, doc.to_string()).await?;
+        Ok(())
+    }
+
+    async fn load_accounts(&self) -> anyhow::Result<HashMap<String, Account>> {
+        let path = self.dir.join("accounts.toml");
+        info!(?path, "load accounts");
+        let content = fs::read_to_string(&path).await?;
+        Ok(toml::from_str(&content)?)
+    }
+
+    async fn verify_account(&self, name: &str, password: &str) -> bool {
+        let accounts = match self.load_accounts().await {
+            Ok(accounts) => accounts,
+            Err(err) => {
+                error!(?err, "failed to load accounts: {err}");
+                return false;
+            }
+        };
+
+        let account = match accounts.get(name) {
+            Some(account) => account,
+            None => {
+                error!(?name, "account not found: {name}");
+                return false;
+            }
+        };
+
+        let parsed_hash = match PasswordHash::new(&account.password) {
+            Ok(parsed_hash) => parsed_hash,
+            Err(err) => {
+                error!(?err, "failed to parse password hash: {err}");
+                return false;
+            }
+        };
+
+        let argon2 = Argon2::default();
+        if let Err(err) = argon2.verify_password(password.as_bytes(), &parsed_hash) {
+            error!(?err, "failed to verify password: {err}");
+            return false;
+        }
+
+        true
+    }
 }
 
 #[async_trait::async_trait]
@@ -327,4 +396,23 @@ impl Storage for FileStorage {
             }
         }
     }
+
+    async fn add_account(&self, name: &str, password: &str) -> Result<(), Error> {
+        self.add_account_impl(name, password)
+            .await
+            .map_err(|_| Error::FailedToCreateAccount)
+    }
+
+    async fn verify_account(&self, name: &str, password: &str) -> Result<(), Error> {
+        if self.verify_account(name, password).await {
+            Ok(())
+        } else {
+            Err(Error::InvalidLoginCredentials)
+        }
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct Account {
+    pub password: String,
 }
