@@ -7,6 +7,7 @@ use crate::log::DatabaseLayer;
 use crate::server::Server;
 use args::StartArgs;
 use clap::Parser;
+use config::storage::Storage;
 use directories::ProjectDirs;
 use std::fs;
 use std::path::PathBuf;
@@ -16,7 +17,6 @@ use tracing_subscriber::prelude::*;
 
 mod admin;
 mod args;
-mod auth;
 mod certs;
 mod command;
 mod config;
@@ -97,12 +97,13 @@ async fn start(args: StartArgs) -> anyhow::Result<()> {
 
 async fn add_user(args: args::AddUserArgs) -> anyhow::Result<()> {
     let config_dir = get_config_dir(args.config_dir)?;
+    let config = FileStorage::new(&config_dir);
     let password = if let Some(password) = args.password {
         password
     } else {
         rpassword::prompt_password("password?: ")?
     };
-    auth::add_account(&config_dir, &args.name, &password).await?;
+    config.add_account(&args.name, &password).await?;
     Ok(())
 }
 

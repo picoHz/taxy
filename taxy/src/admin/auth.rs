@@ -1,14 +1,12 @@
 use super::{with_state, AppState};
+use crate::server::rpc::auth::VerifyAccount;
 use rand::distributions::{Alphanumeric, DistString};
 use serde_json::Value;
 use std::{
     collections::HashMap,
     time::{Duration, Instant},
 };
-use taxy_api::{
-    auth::{LoginRequest, LoginResponse},
-    error::Error,
-};
+use taxy_api::auth::{LoginRequest, LoginResponse};
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 const MINIMUM_SESSION_EXPIRY: Duration = Duration::from_secs(60 * 5); // 5 minutes
@@ -44,18 +42,23 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
     )
 )]
 pub async fn login(state: AppState, req: LoginRequest) -> Result<impl Reply, Rejection> {
-    let mut data = state.data.lock().await;
-    if crate::auth::verify_account(&data.app_info.config_path, &req.username, &req.password).await {
+    let result = state
+        .call(VerifyAccount {
+            username: req.username,
+            password: req.password,
+        })
+        .await;
+    if let Err(err) = result {
+        Err(warp::reject::custom(err))
+    } else {
         Ok(warp::reply::with_header(
             warp::reply::json(&LoginResponse { success: true }),
             "Set-Cookie",
             &format!(
                 "token={}; HttpOnly; SameSite=Strict; Secure",
-                data.sessions.new_token()
+                state.data.lock().await.sessions.new_token()
             ),
         ))
-    } else {
-        Err(warp::reject::custom(Error::InvalidLoginCredentials))
     }
 }
 
