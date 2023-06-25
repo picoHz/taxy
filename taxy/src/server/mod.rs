@@ -15,49 +15,42 @@ pub mod rpc;
 mod site_list;
 mod state;
 
-pub struct Server<S> {
-    config: S,
-    command_send: mpsc::Sender<ServerCommand>,
+pub struct Server {
+    server_state: ServerState,
     command_recv: mpsc::Receiver<ServerCommand>,
-    callback: mpsc::Sender<RpcCallback>,
     event_recv: broadcast::Receiver<ServerEvent>,
-    event_send: broadcast::Sender<ServerEvent>,
 }
 
-impl<S> Server<S>
-where
-    S: Storage,
-{
-    pub fn new(config: S) -> (Self, ServerChannels) {
+impl Server {
+    pub async fn new<S>(config: S) -> (Self, ServerChannels)
+    where
+        S: Storage,
+    {
         let (command_send, command_recv) = mpsc::channel(1);
         let (callback_send, callback_recv) = mpsc::channel(16);
         let (event_send, _) = broadcast::channel(16);
-        let server = Self {
+        let server_state = ServerState::new(
             config,
-            command_send,
+            command_send.clone(),
+            callback_send,
+            event_send.clone(),
+        )
+        .await;
+        let server = Self {
+            server_state,
             command_recv,
-            callback: callback_send,
             event_recv: event_send.subscribe(),
-            event_send,
         };
         let channels = ServerChannels {
-            command: server.command_send.clone(),
+            command: command_send,
             callback: callback_recv,
-            event: server.event_send.clone(),
+            event: event_send,
         };
         (server, channels)
     }
 
     pub async fn start(self) -> anyhow::Result<()> {
-        start_server(
-            self.config,
-            self.command_send,
-            self.command_recv,
-            self.callback,
-            self.event_recv,
-            self.event_send,
-        )
-        .await
+        start_server(self.server_state, self.command_recv, self.event_recv).await
     }
 }
 
@@ -73,19 +66,11 @@ impl ServerChannels {
     }
 }
 
-async fn start_server<S>(
-    config: S,
-    command_send: mpsc::Sender<ServerCommand>,
+async fn start_server(
+    mut server: ServerState,
     mut command_recv: mpsc::Receiver<ServerCommand>,
-    callback: mpsc::Sender<RpcCallback>,
     mut event_recv: broadcast::Receiver<ServerEvent>,
-    event_send: broadcast::Sender<ServerEvent>,
-) -> anyhow::Result<()>
-where
-    S: Storage,
-{
-    let mut server = ServerState::new(config, command_send, callback, event_send).await;
-
+) -> anyhow::Result<()> {
     let mut background_task_interval =
         tokio::time::interval(server.config().background_task_interval);
     background_task_interval.tick().await;

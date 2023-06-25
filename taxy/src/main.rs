@@ -64,7 +64,7 @@ async fn start(args: StartArgs) -> anyhow::Result<()> {
     let config = FileStorage::new(&config_dir);
     let app_info = new_appinfo(&config_dir, &log_dir);
 
-    let (server, channels) = Server::new(config);
+    let (server, channels) = Server::new(config).await;
     let server_task = tokio::spawn(server.start());
     let event_send = channels.event.clone();
 
