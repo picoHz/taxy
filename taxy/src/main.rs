@@ -1,32 +1,23 @@
 #![forbid(unsafe_code)]
 
-use crate::args::Command;
-use crate::config::file::FileStorage;
-use crate::config::new_appinfo;
-use crate::log::DatabaseLayer;
-use crate::server::Server;
-use args::StartArgs;
 use clap::Parser;
-use config::storage::Storage;
 use directories::ProjectDirs;
 use std::fs;
 use std::path::PathBuf;
+use taxy::args::Command;
+use taxy::args::StartArgs;
+use taxy::config::file::FileStorage;
+use taxy::config::new_appinfo;
+use taxy::config::storage::Storage;
+use taxy::log::DatabaseLayer;
+use taxy::server::Server;
 use tracing::{error, info};
 use tracing_subscriber::filter::{self, FilterExt};
 use tracing_subscriber::prelude::*;
 
-mod admin;
-mod args;
-mod certs;
-mod command;
-mod config;
-mod log;
-mod proxy;
-mod server;
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let args = args::Cli::parse();
+    let args = taxy::args::Cli::parse();
 
     match args.command {
         Command::Start(args) => start(args).await?,
@@ -50,8 +41,8 @@ async fn start(args: StartArgs) -> anyhow::Result<()> {
         fs::create_dir_all(path)?;
     }
 
-    let (log, _guard) = log::create_layer(log, "taxy.log", args.log_level, args.log_format);
-    let (access_log, _guard) = log::create_layer(
+    let (log, _guard) = taxy::log::create_layer(log, "taxy.log", args.log_level, args.log_format);
+    let (access_log, _guard) = taxy::log::create_layer(
         access_log,
         "access.log",
         args.access_log_level,
@@ -79,7 +70,7 @@ async fn start(args: StartArgs) -> anyhow::Result<()> {
 
     let webui_enabled = !args.no_webui;
     tokio::select! {
-        r = admin::start_admin(app_info, args.webui, channels.command, channels.callback, channels.event), if webui_enabled => {
+        r = taxy::admin::start_admin(app_info, args.webui, channels.command, channels.callback, channels.event), if webui_enabled => {
             if let Err(err) = r {
                 error!("admin error: {}", err);
             }
@@ -95,7 +86,7 @@ async fn start(args: StartArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn add_user(args: args::AddUserArgs) -> anyhow::Result<()> {
+async fn add_user(args: taxy::args::AddUserArgs) -> anyhow::Result<()> {
     let config_dir = get_config_dir(args.config_dir)?;
     let config = FileStorage::new(&config_dir);
     let password = if let Some(password) = args.password {
