@@ -215,6 +215,7 @@ impl FileStorage {
     }
 
     async fn add_account_impl(&self, name: &str, password: &str) -> anyhow::Result<()> {
+        fs::create_dir_all(&self.dir).await?;
         let path = self.dir.join("accounts.toml");
         info!(?path, "save account");
 
