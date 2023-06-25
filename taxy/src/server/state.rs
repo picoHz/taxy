@@ -68,7 +68,7 @@ impl ServerState {
             sites: sites.into_iter().collect(),
             certs: certs.into_iter().collect(),
             acmes: acmes.into_iter().collect(),
-            ports: PortList::new(),
+            ports: PortList::default(),
             storage: Box::new(storage),
             config,
             pool: TcpListenerPool::new(),

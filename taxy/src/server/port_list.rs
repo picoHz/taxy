@@ -1,17 +1,12 @@
 use crate::proxy::PortContext;
 use taxy_api::port::PortEntry;
 
+#[derive(Default)]
 pub struct PortList {
     contexts: Vec<PortContext>,
 }
 
 impl PortList {
-    pub fn new() -> Self {
-        Self {
-            contexts: Vec::new(),
-        }
-    }
-
     pub fn entries(&self) -> impl Iterator<Item = &PortEntry> {
         self.contexts.iter().map(|c| c.entry())
     }
