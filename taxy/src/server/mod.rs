@@ -20,7 +20,8 @@ pub struct Server<S> {
     command_send: mpsc::Sender<ServerCommand>,
     command_recv: mpsc::Receiver<ServerCommand>,
     callback: mpsc::Sender<RpcCallback>,
-    event: broadcast::Sender<ServerEvent>,
+    event_recv: broadcast::Receiver<ServerEvent>,
+    event_send: broadcast::Sender<ServerEvent>,
 }
 
 impl<S> Server<S>
@@ -36,12 +37,13 @@ where
             command_send,
             command_recv,
             callback: callback_send,
-            event: event_send,
+            event_recv: event_send.subscribe(),
+            event_send,
         };
         let channels = ServerChannels {
             command: server.command_send.clone(),
             callback: callback_recv,
-            event: server.event.clone(),
+            event: server.event_send.clone(),
         };
         (server, channels)
     }
@@ -52,7 +54,8 @@ where
             self.command_send,
             self.command_recv,
             self.callback,
-            self.event,
+            self.event_recv,
+            self.event_send,
         )
         .await
     }
@@ -64,18 +67,24 @@ pub struct ServerChannels {
     pub event: broadcast::Sender<ServerEvent>,
 }
 
+impl ServerChannels {
+    pub fn shutdown(&self) {
+        let _ = self.event.send(ServerEvent::Shutdown);
+    }
+}
+
 async fn start_server<S>(
     config: S,
     command_send: mpsc::Sender<ServerCommand>,
     mut command_recv: mpsc::Receiver<ServerCommand>,
     callback: mpsc::Sender<RpcCallback>,
-    event: broadcast::Sender<ServerEvent>,
+    mut event_recv: broadcast::Receiver<ServerEvent>,
+    event_send: broadcast::Sender<ServerEvent>,
 ) -> anyhow::Result<()>
 where
     S: Storage,
 {
-    let mut event_recv = event.subscribe();
-    let mut server = ServerState::new(config, command_send, callback, event).await;
+    let mut server = ServerState::new(config, command_send, callback, event_send).await;
 
     let mut background_task_interval =
         tokio::time::interval(server.config().background_task_interval);
