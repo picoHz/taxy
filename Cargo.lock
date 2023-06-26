@@ -2285,6 +2285,7 @@ version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c911ba11bc8433e811ce56fde130ccf32f5127cab0e0194e9c68c5a5b671791e"
 dependencies = [
+ "log",
  "ring",
  "rustls-webpki",
  "sct",
@@ -3046,7 +3047,10 @@ checksum = "ec509ac96e9a0c43427c74f003127d953a265737636129424288d27cb5c4b12c"
 dependencies = [
  "futures-util",
  "log",
+ "rustls 0.21.1",
+ "rustls-native-certs",
  "tokio",
+ "tokio-rustls 0.24.0",
  "tungstenite 0.19.0",
 ]
 
@@ -3234,10 +3238,12 @@ dependencies = [
  "httparse",
  "log",
  "rand",
+ "rustls 0.21.1",
  "sha1",
  "thiserror",
  "url",
  "utf-8",
+ "webpki",
 ]
 
 [[package]]
