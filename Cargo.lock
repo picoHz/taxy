@@ -2811,6 +2811,7 @@ dependencies = [
  "tokio",
  "tokio-rustls 0.24.0",
  "tokio-stream",
+ "tokio-tungstenite 0.19.0",
  "toml 0.7.4",
  "toml_edit",
  "tracing",
@@ -3034,7 +3035,19 @@ dependencies = [
  "futures-util",
  "log",
  "tokio",
- "tungstenite",
+ "tungstenite 0.18.0",
+]
+
+[[package]]
+name = "tokio-tungstenite"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec509ac96e9a0c43427c74f003127d953a265737636129424288d27cb5c4b12c"
+dependencies = [
+ "futures-util",
+ "log",
+ "tokio",
+ "tungstenite 0.19.0",
 ]
 
 [[package]]
@@ -3198,6 +3211,25 @@ dependencies = [
  "base64 0.13.1",
  "byteorder",
  "bytes",
+ "http",
+ "httparse",
+ "log",
+ "rand",
+ "sha1",
+ "thiserror",
+ "url",
+ "utf-8",
+]
+
+[[package]]
+name = "tungstenite"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "15fba1a6d6bb030745759a9a2a588bfe8490fc8b4751a277db3a0be1c9ebbf67"
+dependencies = [
+ "byteorder",
+ "bytes",
+ "data-encoding",
  "http",
  "httparse",
  "log",
@@ -3400,7 +3432,7 @@ dependencies = [
  "serde_urlencoded",
  "tokio",
  "tokio-stream",
- "tokio-tungstenite",
+ "tokio-tungstenite 0.18.0",
  "tokio-util",
  "tower-service",
  "tracing",
