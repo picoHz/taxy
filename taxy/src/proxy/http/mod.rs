@@ -235,7 +235,11 @@ pub async fn start(
         let tls_client_config = tls_client_config.clone();
         let upgrade = req.headers().contains_key(UPGRADE);
 
-        let domain_fronting = match (&sni, req.headers().get(HOST).and_then(|h| h.to_str().ok())) {
+        let header_host = req
+            .headers()
+            .get(HOST)
+            .and_then(|h| h.to_str().ok().and_then(|host| host.split(':').next()));
+        let domain_fronting = match (&sni, header_host) {
             (Some(sni), Some(header)) => !sni.eq_ignore_ascii_case(header),
             _ => false,
         };
