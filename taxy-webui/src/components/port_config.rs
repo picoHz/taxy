@@ -35,8 +35,12 @@ const PROTOCOLS: &[(&str, &str)] = &[
 #[function_component(PortConfig)]
 pub fn port_config(props: &Props) -> Html {
     let stack = &props.port.listen;
-    let tls = stack.iter().any(|p| matches!(p, Protocol::Tls));
-    let http = stack.iter().any(|p| matches!(p, Protocol::Http));
+    let tls = stack
+        .iter()
+        .any(|p| matches!(p, Protocol::Tls) || matches!(p, Protocol::Https));
+    let http = stack
+        .iter()
+        .any(|p| matches!(p, Protocol::Http) || matches!(p, Protocol::Https));
     let (interface, port) = extract_host_port(&props.port.listen);
 
     let protocol = match (tls, http) {

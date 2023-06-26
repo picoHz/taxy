@@ -60,7 +60,12 @@ impl HttpPortContext {
         let tls_termination = if let Some(tls) = &entry.port.opts.tls_termination {
             let alpn = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
             Some(TlsTermination::new(tls, alpn)?)
-        } else if entry.port.listen.iter().any(|p| p == Protocol::Tls) {
+        } else if entry
+            .port
+            .listen
+            .iter()
+            .any(|p| matches!(p, Protocol::Tls) || matches!(p, Protocol::Https))
+        {
             return Err(Error::TlsTerminationConfigMissing);
         } else {
             None
