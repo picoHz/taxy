@@ -1,36 +1,15 @@
-use multiaddr::{Multiaddr, Protocol};
+use taxy_api::port::Port;
 
-pub fn format_multiaddr(addr: &Multiaddr) -> String {
-    let mut interface = String::new();
-
-    let mut kind = "";
-    for protocol in addr.iter() {
-        match protocol {
-            Protocol::Dns(name) | Protocol::Dns4(name) | Protocol::Dns6(name) => {
-                interface.push_str(&format!("{name}:"));
-            }
-            Protocol::Ip4(addr) => {
-                interface.push_str(&format!("{addr}:"));
-            }
-            Protocol::Ip6(addr) => {
-                interface.push_str(&format!("{addr}:"));
-            }
-            Protocol::Tcp(port) => {
-                interface.push_str(&format!("{port}"));
-                kind = "TCP";
-            }
-            Protocol::Tls => {
-                kind = "TLS";
-            }
-            Protocol::Http => {
-                kind = "HTTP";
-            }
-            Protocol::Https => {
-                kind = "HTTPS";
-            }
-            _ => (),
-        }
-    }
-
-    format!("{kind} [{interface}]")
+pub fn format_addr(port: &Port) -> String {
+    let bind = port
+        .bind
+        .iter()
+        .map(|addr| addr.to_string())
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!(
+        "{} [{}]",
+        port.protocol.to_string().to_ascii_uppercase(),
+        bind
+    )
 }

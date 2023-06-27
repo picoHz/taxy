@@ -8,7 +8,7 @@ use taxy_api::error::{Error, ErrorMessage};
 use taxy_api::event::ServerEvent;
 use taxy_api::log::SystemLogRow;
 use taxy_api::port::{PortEntry, PortOptions, UpstreamServer};
-use taxy_api::port::{PortState, PortStatus, SocketState};
+use taxy_api::port::{PortState, PortStatus, Protocol, SocketState};
 use taxy_api::site::{Route, Server, SiteEntry};
 use taxy_api::tls::TlsState;
 use taxy_api::tls::TlsTermination;
@@ -52,6 +52,7 @@ use warp::{Rejection, Reply};
     components(schemas(
         AppInfo,
         AppConfig,
+        Protocol,
         PortEntry,
         PortOptions,
         UpstreamServer,

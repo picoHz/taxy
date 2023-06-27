@@ -12,11 +12,8 @@ pub struct ErrorMessage {
 #[derive(Debug, Clone, Error, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case", tag = "message")]
 pub enum Error {
-    #[error("invalid listening address: {addr}")]
-    InvalidListeningAddress {
-        #[schema(value_type = String)]
-        addr: Multiaddr,
-    },
+    #[error("invalid listening address")]
+    InvalidListeningAddress,
 
     #[error("invalid server address: {addr}")]
     InvalidServerAddress {
@@ -26,6 +23,9 @@ pub enum Error {
 
     #[error("invalid subject name: {name}")]
     InvalidSubjectName { name: String },
+
+    #[error("invalid protocol: {name}")]
+    InvalidProtocol { name: String },
 
     #[error("missing TLS termination config")]
     TlsTerminationConfigMissing,

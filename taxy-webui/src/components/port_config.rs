@@ -1,7 +1,7 @@
 use multiaddr::{Multiaddr, Protocol};
 use std::{
     collections::HashMap,
-    net::{Ipv4Addr, Ipv6Addr},
+    net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr},
 };
 use taxy_api::{
     port::{Port, UpstreamServer},
@@ -20,7 +20,8 @@ pub struct Props {
 
 fn create_default_port() -> Port {
     Port {
-        listen: "/ip4/0.0.0.0/tcp/8080".parse().unwrap(),
+        protocol: taxy_api::port::Protocol::Tcp,
+        bind: vec!["0.0.0.0:8080".parse().unwrap()],
         opts: Default::default(),
     }
 }
@@ -34,23 +35,16 @@ const PROTOCOLS: &[(&str, &str)] = &[
 
 #[function_component(PortConfig)]
 pub fn port_config(props: &Props) -> Html {
-    let stack = &props.port.listen;
-    let tls = stack
-        .iter()
-        .any(|p| matches!(p, Protocol::Tls) || matches!(p, Protocol::Https));
-    let http = stack
-        .iter()
-        .any(|p| matches!(p, Protocol::Http) || matches!(p, Protocol::Https));
-    let (interface, port) = extract_host_port(&props.port.listen);
+    let stack = props
+        .port
+        .bind
+        .first()
+        .copied()
+        .unwrap_or(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 8080));
+    let interface = stack.ip().to_string();
+    let port = stack.port();
 
-    let protocol = match (tls, http) {
-        (true, true) => "https",
-        (true, false) => "tls",
-        (false, true) => "http",
-        (false, false) => "tcp",
-    };
-
-    let protocol = use_state(|| protocol.to_string());
+    let protocol = use_state(|| props.port.protocol.to_string());
     let protocol_onchange = Callback::from({
         let protocol = protocol.clone();
         move |event: Event| {
@@ -330,45 +324,36 @@ fn get_port(
     upstream_servers: &[(String, u16)],
 ) -> Result<Port, HashMap<String, String>> {
     let mut errors = HashMap::new();
-    let mut addr = Multiaddr::empty();
 
-    let interface = interface.trim();
-    if interface.is_empty() {
-        errors.insert("interface".into(), "Interface is required".into());
-    } else if let Ok(ip) = interface.parse::<Ipv4Addr>() {
-        addr.push(Protocol::Ip4(ip));
-    } else if let Ok(ip) = interface.parse::<Ipv6Addr>() {
-        addr.push(Protocol::Ip6(ip));
-    } else {
-        addr.push(Protocol::Dns(interface.into()));
-    }
+    let addr = format!("{}:{port}", interface.trim());
+    let addr: SocketAddr = match { addr.parse() } {
+        Ok(addr) => addr,
+        Err(_) => {
+            errors.insert(
+                "interface".into(),
+                "Interface must be a valid IP address".into(),
+            );
+            return Err(errors);
+        }
+    };
 
-    match protocol {
-        "tcp" => {
-            addr.push(Protocol::Tcp(port));
+    let protocol: taxy_api::port::Protocol = match protocol.parse() {
+        Ok(protocol) => protocol,
+        Err(_) => {
+            errors.insert(
+                "protocol".into(),
+                "Protocol must be one of tcp, tls, http, https".into(),
+            );
+            return Err(errors);
         }
-        "tls" => {
-            addr.push(Protocol::Tcp(port));
-            addr.push(Protocol::Tls);
-        }
-        "http" => {
-            addr.push(Protocol::Tcp(port));
-            addr.push(Protocol::Http);
-        }
-        "https" => {
-            addr.push(Protocol::Tcp(port));
-            addr.push(Protocol::Https);
-        }
-        _ => {
-            errors.insert("protocol".into(), "Invalid protocol".into());
-        }
-    }
+    };
 
     let mut opts = Port {
-        listen: addr,
+        protocol,
+        bind: vec![addr],
         opts: Default::default(),
     };
-    if protocol == "tls" || protocol == "https" {
+    if protocol.is_tls() {
         opts.opts.tls_termination = Some(TlsTermination {
             server_names: tls_server_names
                 .split(',')
@@ -377,7 +362,7 @@ fn get_port(
                 .collect(),
         });
     }
-    if protocol == "tcp" || protocol == "tls" {
+    if !protocol.is_http() {
         for (i, (host, port)) in upstream_servers.iter().enumerate() {
             if host.is_empty() {
                 errors.insert(format!("upstream_servers_{i}"), "Host is required".into());

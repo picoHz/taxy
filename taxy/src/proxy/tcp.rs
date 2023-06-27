@@ -38,13 +38,16 @@ pub struct TcpPortContext {
 
 impl TcpPortContext {
     pub fn new(entry: &PortEntry) -> Result<Self, Error> {
-        let span = span!(Level::INFO, "proxy", resource_id = entry.id, listen = ?entry.port.listen);
+        let span = span!(Level::INFO, "proxy", resource_id = entry.id, bind = ?entry.port.bind);
         let enter = span.clone();
         let _enter = enter.enter();
 
         info!("initializing tcp proxy");
-
-        let listen = multiaddr_to_tcp(&entry.port.listen)?;
+        let listen = *entry
+            .port
+            .bind
+            .first()
+            .ok_or(Error::InvalidListeningAddress)?;
 
         let mut servers = Vec::new();
         for server in &entry.port.opts.upstream_servers {
@@ -54,7 +57,7 @@ impl TcpPortContext {
 
         let tls_termination = if let Some(tls) = &entry.port.opts.tls_termination {
             Some(TlsTermination::new(tls, vec![])?)
-        } else if entry.port.listen.iter().any(|p| p == Protocol::Tls) {
+        } else if entry.port.protocol.is_tls() {
             return Err(Error::TlsTerminationConfigMissing);
         } else {
             None
@@ -243,19 +246,6 @@ pub async fn start(
 
     debug!(%resolved, "eof");
     Ok(())
-}
-
-fn multiaddr_to_tcp(addr: &Multiaddr) -> Result<SocketAddr, Error> {
-    let stack = addr.iter().collect::<Vec<_>>();
-    match &stack[..] {
-        [Protocol::Ip4(addr), Protocol::Tcp(port), ..] if *port > 0 => {
-            Ok(SocketAddr::new(std::net::IpAddr::V4(*addr), *port))
-        }
-        [Protocol::Ip6(addr), Protocol::Tcp(port), ..] if *port > 0 => {
-            Ok(SocketAddr::new(std::net::IpAddr::V6(*addr), *port))
-        }
-        _ => Err(Error::InvalidListeningAddress { addr: addr.clone() }),
-    }
 }
 
 fn multiaddr_to_host(addr: &Multiaddr) -> Result<Connection, Error> {

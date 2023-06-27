@@ -2,7 +2,7 @@ use std::sync::Arc;
 use taxy::{certs::Cert, server::Server};
 use taxy_api::{
     cert::SelfSignedCertRequest,
-    port::{Port, PortEntry, PortOptions, UpstreamServer},
+    port::{Port, PortEntry, PortOptions, Protocol, UpstreamServer},
     tls::TlsTermination,
 };
 use tokio::net::TcpListener;
@@ -30,7 +30,8 @@ async fn tls_proxy() {
             .ports(vec![PortEntry {
                 id: "test".into(),
                 port: Port {
-                    listen: "/ip4/127.0.0.1/tcp/51001/tls".parse().unwrap(),
+                    protocol: Protocol::Tls,
+                    bind: vec!["127.0.0.1:51001".parse().unwrap()],
                     opts: PortOptions {
                         upstream_servers: vec![UpstreamServer {
                             addr: "/ip4/127.0.0.1/tcp/51000".parse().unwrap(),
