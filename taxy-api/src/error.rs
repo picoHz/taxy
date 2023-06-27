@@ -14,13 +14,13 @@ pub struct ErrorMessage {
 pub enum Error {
     #[error("invalid listening address: {addr}")]
     InvalidListeningAddress {
-        #[schema(value_type = [String])]
+        #[schema(value_type = String)]
         addr: Multiaddr,
     },
 
     #[error("invalid server address: {addr}")]
     InvalidServerAddress {
-        #[schema(value_type = [String])]
+        #[schema(value_type = String)]
         addr: Multiaddr,
     },
 
