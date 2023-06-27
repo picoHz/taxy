@@ -18,7 +18,7 @@ use std::{
     sync::Arc,
     time::{Duration, SystemTime},
 };
-use taxy_api::app::{AppConfig, Source};
+use taxy_api::app::AppConfig;
 use taxy_api::error::Error;
 use taxy_api::event::ServerEvent;
 use taxy_api::site::SiteEntry;
@@ -56,7 +56,6 @@ impl ServerState {
         let config = storage.load_app_config().await;
         let _ = br_sender.send(ServerEvent::AppConfigUpdated {
             config: config.clone(),
-            source: Source::File,
         });
 
         let certs = storage.load_certs().await;
@@ -367,10 +366,9 @@ impl ServerState {
 
     pub async fn set_config(&mut self, config: AppConfig) -> Result<(), Error> {
         self.config = config.clone();
-        let _ = self.br_sender.send(ServerEvent::AppConfigUpdated {
-            config,
-            source: Source::Api,
-        });
+        let _ = self
+            .br_sender
+            .send(ServerEvent::AppConfigUpdated { config });
         Ok(())
     }
 

@@ -59,7 +59,7 @@ pub async fn start_admin(
     tokio::spawn(async move {
         loop {
             match event_recv.recv().await {
-                Ok(ServerEvent::AppConfigUpdated { config, .. }) => {
+                Ok(ServerEvent::AppConfigUpdated { config }) => {
                     data.lock().await.config = config;
                 }
                 Ok(ServerEvent::Shutdown) => break,

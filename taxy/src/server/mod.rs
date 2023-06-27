@@ -85,7 +85,7 @@ async fn start_server(
             event = event_recv.recv() => {
                 match event {
                     Ok(ServerEvent::Shutdown) => break,
-                    Ok(ServerEvent::AppConfigUpdated { config, .. }) => {
+                    Ok(ServerEvent::AppConfigUpdated { config }) => {
                         let mut new_interval = tokio::time::interval(config.background_task_interval);
                         new_interval.tick().await;
                         background_task_interval = new_interval;

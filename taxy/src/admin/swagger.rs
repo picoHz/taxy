@@ -1,7 +1,7 @@
 use super::{acme, app_info, auth, config, log, ports, server_certs, sites};
 use taxy_api::acme::AcmeInfo;
 use taxy_api::acme::{AcmeRequest, ExternalAccountBinding};
-use taxy_api::app::{AppConfig, AppInfo, Source};
+use taxy_api::app::{AppConfig, AppInfo};
 use taxy_api::auth::LoginRequest;
 use taxy_api::cert::{CertInfo, CertMetadata, CertPostBody, SelfSignedCertRequest};
 use taxy_api::error::{Error, ErrorMessage};
@@ -70,7 +70,6 @@ use warp::{Rejection, Reply};
         Error,
         ErrorMessage,
         ServerEvent,
-        Source,
         SiteEntry,
         Route,
         Server,
