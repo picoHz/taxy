@@ -1,5 +1,5 @@
 use taxy::server::Server;
-use taxy_api::port::{Port, PortEntry, PortOptions, Protocol, UpstreamServer};
+use taxy_api::port::{Port, PortEntry, PortOptions, UpstreamServer};
 use tokio::net::TcpListener;
 use tokio_stream::wrappers::TcpListenerStream;
 use warp::Filter;
@@ -18,8 +18,7 @@ async fn tcp_proxy() {
             .ports(vec![PortEntry {
                 id: "test".into(),
                 port: Port {
-                    protocol: Protocol::Tcp,
-                    bind: vec!["127.0.0.1:50001".parse().unwrap()],
+                    listen: "/ip4/127.0.0.1/tcp/50001".parse().unwrap(),
                     opts: PortOptions {
                         upstream_servers: vec![UpstreamServer {
                             addr: "/ip4/127.0.0.1/tcp/50000".parse().unwrap(),

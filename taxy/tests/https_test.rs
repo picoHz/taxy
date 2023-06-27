@@ -2,7 +2,7 @@ use std::sync::Arc;
 use taxy::{certs::Cert, server::Server};
 use taxy_api::{
     cert::SelfSignedCertRequest,
-    port::{Port, PortEntry, PortOptions, Protocol},
+    port::{Port, PortEntry, PortOptions},
     site::{Route, Site, SiteEntry},
     tls::TlsTermination,
 };
@@ -31,8 +31,7 @@ async fn https_proxy() {
             .ports(vec![PortEntry {
                 id: "test".into(),
                 port: Port {
-                    protocol: Protocol::Https,
-                    bind: vec!["127.0.0.1:53001".parse().unwrap()],
+                    listen: "/ip4/127.0.0.1/tcp/53001/https".parse().unwrap(),
                     opts: PortOptions {
                         tls_termination: Some(TlsTermination {
                             server_names: vec!["localhost".into()],

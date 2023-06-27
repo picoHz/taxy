@@ -2,7 +2,7 @@ use crate::auth::use_ensure_auth;
 use crate::components::breadcrumb::Breadcrumb;
 use crate::pages::Route;
 use crate::store::PortStore;
-use crate::utils::format_addr;
+use crate::utils::format_multiaddr;
 use crate::API_ENDPOINT;
 use gloo_net::http::Request;
 use taxy_api::port::PortEntry;
@@ -106,7 +106,7 @@ pub fn post_list() -> Html {
                 html! {
                     <div class="list-item">
                         <div class="list-item-content">
-                            <div class="list-item-title">{format_addr(&entry.port)}</div>
+                            <div class="list-item-title">{format_multiaddr(&entry.port.listen)}</div>
                             <div class="list-item-description">{&entry.id}</div>
                         </div>
 

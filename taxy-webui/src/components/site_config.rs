@@ -1,7 +1,8 @@
 use crate::store::PortStore;
-use crate::utils::format_addr;
+use crate::utils::format_multiaddr;
 use crate::API_ENDPOINT;
 use gloo_net::http::Request;
+use multiaddr::Protocol;
 use std::collections::HashMap;
 use std::str::FromStr;
 use taxy_api::site::{Route, Server};
@@ -110,10 +111,13 @@ pub fn site_config(props: &Props) -> Html {
     let errors = prev_entry.as_ref().err().unwrap_or(&err);
     let vhosts_err = errors.get("vhosts").map(|e| e.as_str());
 
-    let http_ports = ports
-        .entries
-        .iter()
-        .filter(|entry| entry.port.protocol.is_http());
+    let http_ports = ports.entries.iter().filter(|entry| {
+        entry
+            .port
+            .listen
+            .iter()
+            .any(|protocol| matches!(protocol, Protocol::Http | Protocol::Https))
+    });
 
     html! {
         <>
@@ -128,7 +132,7 @@ pub fn site_config(props: &Props) -> Html {
                                 { http_ports.map(|entry| {
                                     html! {
                                         <option selected={bound_ports.contains(&entry.id)} value={entry.id.clone()}>
-                                            {format_addr(&entry.port)}
+                                            {format_multiaddr(&entry.port.listen)}
                                         </option>
                                     }
                                 }).collect::<Html>() }

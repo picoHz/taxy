@@ -1,6 +1,6 @@
 use taxy::server::Server;
 use taxy_api::{
-    port::{Port, PortEntry, Protocol},
+    port::{Port, PortEntry},
     site::{Route, Site, SiteEntry},
 };
 use tokio::net::TcpListener;
@@ -21,8 +21,7 @@ async fn http_proxy() {
             .ports(vec![PortEntry {
                 id: "test".into(),
                 port: Port {
-                    protocol: Protocol::Http,
-                    bind: vec!["127.0.0.1:52001".parse().unwrap()],
+                    listen: "/ip4/127.0.0.1/tcp/52001/http".parse().unwrap(),
                     opts: Default::default(),
                 },
             }])

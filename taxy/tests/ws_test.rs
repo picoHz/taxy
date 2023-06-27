@@ -1,8 +1,9 @@
 use core::panic;
+
 use futures::{FutureExt, SinkExt, StreamExt};
 use taxy::server::Server;
 use taxy_api::{
-    port::{Port, PortEntry, Protocol},
+    port::{Port, PortEntry},
     site::{Route, Site, SiteEntry},
 };
 use tokio::net::TcpListener;
@@ -35,8 +36,7 @@ async fn ws_proxy() {
             .ports(vec![PortEntry {
                 id: "test".into(),
                 port: Port {
-                    protocol: Protocol::Http,
-                    bind: vec!["127.0.0.1:54001".parse().unwrap()],
+                    listen: "/ip4/127.0.0.1/tcp/54001/http".parse().unwrap(),
                     opts: Default::default(),
                 },
             }])
