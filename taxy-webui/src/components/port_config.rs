@@ -1,10 +1,12 @@
+use crate::API_ENDPOINT;
+use gloo_net::http::Request;
 use multiaddr::{Multiaddr, Protocol};
 use std::{
     collections::HashMap,
     net::{Ipv4Addr, Ipv6Addr},
 };
 use taxy_api::{
-    port::{Port, UpstreamServer},
+    port::{NetworkInterface, Port, UpstreamServer},
     tls::TlsTermination,
 };
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
@@ -43,6 +45,32 @@ pub fn port_config(props: &Props) -> Html {
         .any(|p| matches!(p, Protocol::Http) || matches!(p, Protocol::Https));
     let (interface, port) = extract_host_port(&props.port.listen);
 
+    let interfaces = use_state(|| vec![interface.clone()]);
+    let interfaces_cloned = interfaces.clone();
+    let interface_cloned = interface.clone();
+    use_effect_with_deps(
+        move |_| {
+            wasm_bindgen_futures::spawn_local(async move {
+                if let Ok(entry) = get_interfaces().await {
+                    let mut list = vec!["0.0.0.0".into(), "::".into()]
+                        .into_iter()
+                        .chain(
+                            entry
+                                .into_iter()
+                                .flat_map(|ifs| ifs.addrs)
+                                .map(|addr| addr.ip.to_string()),
+                        )
+                        .collect::<Vec<_>>();
+                    if !list.contains(&interface_cloned) {
+                        list.push(interface_cloned);
+                    }
+                    interfaces_cloned.set(list);
+                }
+            });
+        },
+        (),
+    );
+
     let protocol = match (tls, http) {
         (true, true) => "https",
         (true, false) => "tls",
@@ -63,7 +91,7 @@ pub fn port_config(props: &Props) -> Html {
     let interface_onchange = Callback::from({
         let interface = interface.clone();
         move |event: Event| {
-            let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
+            let target: HtmlSelectElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
             interface.set(target.value());
         }
     });
@@ -127,7 +155,6 @@ pub fn port_config(props: &Props) -> Html {
 
     let err = Default::default();
     let errors = prev_entry.as_ref().err().unwrap_or(&err);
-    let interface_err = errors.get("interface").map(|s| s.as_str());
 
     html! {
         <>
@@ -136,14 +163,20 @@ pub fn port_config(props: &Props) -> Html {
                 <label class="label">{"Listener"}</label>
                 </div>
                 <div class="field-body">
-                    <div class="field">
-                        <p class="control is-expanded">
-                        <input class={classes!("input", interface_err.map(|_| "is-danger"))} autocapitalize="off" type="text" placeholder="Interface" onchange={interface_onchange} value={interface.to_string()} />
-                        </p>
-                        if let Some(err) = interface_err {
-                            <p class="help is-danger">{err}</p>
-                        }
+                    <div class="field is-narrow">
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                        <select onchange={interface_onchange}>
+                            { interfaces.iter().map(|value| {
+                                html! {
+                                    <option selected={&*interface == value} value={value.clone()}>{value}</option>
+                                }
+                            }).collect::<Html>() }
+                        </select>
+                        </div>
                     </div>
+                    </div>
+
                     <div class="field">
                         <p class="control is-expanded">
                         <input class="input" type="number" placeholder="Port" onchange={port_onchange} value={port.to_string()} max="65535" min="1" />
@@ -394,4 +427,12 @@ fn get_port(
     } else {
         Err(errors)
     }
+}
+
+async fn get_interfaces() -> Result<Vec<NetworkInterface>, gloo_net::Error> {
+    Request::get(&format!("{API_ENDPOINT}/ports/interfaces"))
+        .send()
+        .await?
+        .json()
+        .await
 }
