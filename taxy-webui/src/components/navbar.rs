@@ -56,7 +56,7 @@ pub fn navbar() -> Html {
                 </a>
             }}
             navstart={html!{
-                if route != Route::Login {
+                if let Some(root) = route.root() {
                     <>
                     { ITEMS.iter().map(|entry| {
                         let navigator = navigator.clone();
@@ -64,7 +64,7 @@ pub fn navbar() -> Html {
                             e.prevent_default();
                             navigator.push(&entry.route);
                         });
-                        let is_active = route == entry.route;
+                        let is_active = root == entry.route;
                         html! {
                             <a class={classes!("navbar-item", "pr-5", is_active.then_some("has-background-grey-lighter"))} {onclick}>
                                 <span class="icon-text">

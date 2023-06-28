@@ -52,6 +52,15 @@ pub enum Route {
 }
 
 impl Route {
+    pub fn root(&self) -> Option<Route> {
+        match self {
+            Route::Ports | Route::NewPort | Route::PortView { .. } => Some(Route::Ports),
+            Route::Certs | Route::SelfSign | Route::Upload | Route::NewAcme => Some(Route::Certs),
+            Route::Sites | Route::NewSite | Route::SiteView { .. } => Some(Route::Sites),
+            _ => None,
+        }
+    }
+
     pub fn breadcrumb(&self) -> Vec<BreadcrumbItem> {
         match self {
             Route::Home => vec![BreadcrumbItem {
