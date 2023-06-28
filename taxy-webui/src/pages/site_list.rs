@@ -119,7 +119,6 @@ pub fn site_list() -> Html {
                                 <span class="icon is-small">
                                     <ion-icon name="settings"></ion-icon>
                                 </span>
-                                <span>{"Config"}</span>
                             </button>
 
                                 <div class={classes!("dropdown", "is-right", is_active.then_some("is-active"))}>
