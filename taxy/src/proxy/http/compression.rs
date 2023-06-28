@@ -4,6 +4,7 @@ use hyper::{
     body::{Bytes, HttpBody},
     Body,
 };
+use phf::phf_map;
 use std::{
     io::Write,
     pin::Pin,
@@ -52,5 +53,60 @@ impl Stream for CompressionStream {
             }
             _ => poll,
         }
+    }
+}
+
+pub fn is_compressed(content_type: &[u8]) -> bool {
+    let content_type = if let Ok(content_type) = std::str::from_utf8(content_type) {
+        content_type.to_ascii_lowercase()
+    } else {
+        return false;
+    };
+    if let Some(&known) = KNOWN_TYPES.get(&content_type) {
+        return known;
+    }
+    !(content_type.starts_with("text/") || content_type.starts_with("application/"))
+}
+
+static KNOWN_TYPES: phf::Map<&'static str, bool> = phf_map! {
+    "image/svg+xml" => false,
+    "image/bmp" => false,
+    "image/x-ms-bmp" => false,
+    "audio/wav" => false,
+    "audio/x-wav" => false,
+    "audio/midi" => false,
+    "audio/x-midi" => false,
+    "application/x-bzip" => true,
+    "application/x-bzip2" => true,
+    "application/gzip" => true,
+    "application/vnd.rar" => true,
+    "application/x-tar" => true,
+    "application/zip" => true,
+    "application/x-7z-compressed" => true,
+    "application/epub+zip" => true,
+    "font/otf" => false,
+    "font/ttf" => false,
+};
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn test_is_compressed() {
+        assert_eq!(is_compressed(b"text/html"), false);
+        assert_eq!(is_compressed(b"application/json"), false);
+        assert_eq!(is_compressed(b"image/svg+xml"), false);
+        assert_eq!(is_compressed(b"image/bmp"), false);
+        assert_eq!(is_compressed(b"image/png"), true);
+        assert_eq!(is_compressed(b"image/x-ms-bmp"), false);
+        assert_eq!(is_compressed(b"audio/mp3"), true);
+        assert_eq!(is_compressed(b"audio/wav"), false);
+        assert_eq!(is_compressed(b"audio/x-wav"), false);
+        assert_eq!(is_compressed(b"audio/midi"), false);
+        assert_eq!(is_compressed(b"audio/x-midi"), false);
+        assert_eq!(is_compressed(b"video/webm"), true);
+        assert_eq!(is_compressed(b"application/x-bzip"), true);
+        assert_eq!(is_compressed(b"application/x-bzip2"), true);
+        assert_eq!(is_compressed(b"application/gzip"), true);
     }
 }

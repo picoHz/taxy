@@ -1,6 +1,9 @@
 use self::route::Router;
 use super::{tls::TlsTermination, PortContextEvent};
-use crate::{proxy::http::compression::CompressionStream, server::cert_list::CertList};
+use crate::{
+    proxy::http::compression::{is_compressed, CompressionStream},
+    server::cert_list::CertList,
+};
 use header::HeaderRewriter;
 use hyper::{
     client,
@@ -364,16 +367,25 @@ pub async fn start(
             let result = Result::<_, anyhow::Error>::Ok(sender.send_request(req).await?);
             result.map(|res| {
                 let (mut parts, body) = res.into_parts();
-                let encoding = parts.headers.entry(hyper::header::CONTENT_ENCODING);
 
-                if let hyper::header::Entry::Vacant(entry) = encoding {
-                    if accept_brotli {
-                        entry.insert(HeaderValue::from_static("br"));
-                        parts.headers.remove(hyper::header::CONTENT_LENGTH);
-                        let stream = CompressionStream::new(body);
-                        return Response::from_parts(parts, hyper::Body::wrap_stream(stream));
+                let is_compressed = parts
+                    .headers
+                    .get(hyper::header::CONTENT_TYPE)
+                    .map(|value| is_compressed(value.as_bytes()))
+                    .unwrap_or_default();
+
+                if !is_compressed {
+                    let encoding = parts.headers.entry(hyper::header::CONTENT_ENCODING);
+                    if let hyper::header::Entry::Vacant(entry) = encoding {
+                        if accept_brotli {
+                            entry.insert(HeaderValue::from_static("br"));
+                            parts.headers.remove(hyper::header::CONTENT_LENGTH);
+                            let stream = CompressionStream::new(body);
+                            return Response::from_parts(parts, hyper::Body::wrap_stream(stream));
+                        }
                     }
                 }
+
                 Response::from_parts(parts, body)
             })
         }
