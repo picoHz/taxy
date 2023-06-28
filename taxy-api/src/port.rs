@@ -1,7 +1,7 @@
 use crate::tls::{TlsState, TlsTermination};
 use multiaddr::Multiaddr;
 use serde_derive::{Deserialize, Serialize};
-use std::time::SystemTime;
+use std::{net::IpAddr, time::SystemTime};
 use utoipa::ToSchema;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -88,4 +88,20 @@ pub struct PortOptions {
     pub upstream_servers: Vec<UpstreamServer>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tls_termination: Option<TlsTermination>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct NetworkInterface {
+    pub name: String,
+    pub description: String,
+    pub addrs: Vec<NetworkAddr>,
+    pub mac: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct NetworkAddr {
+    #[schema(value_type = String, example = "127.0.0.1")]
+    pub ip: IpAddr,
+    #[schema(value_type = String, example = "255.255.255.0")]
+    pub mask: IpAddr,
 }

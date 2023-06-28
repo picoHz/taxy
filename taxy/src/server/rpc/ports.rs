@@ -2,7 +2,7 @@ use super::RpcMethod;
 use crate::proxy::PortContext;
 use crate::server::state::ServerState;
 use taxy_api::error::Error;
-use taxy_api::port::{Port, PortEntry, PortStatus};
+use taxy_api::port::{NetworkAddr, NetworkInterface, Port, PortEntry, PortStatus};
 
 pub struct GetPortList;
 
@@ -120,5 +120,34 @@ impl RpcMethod for ResetPort {
         } else {
             Err(Error::IdNotFound { id: self.id })
         }
+    }
+}
+
+pub struct GetNetworkInterfaceList;
+
+#[async_trait::async_trait]
+impl RpcMethod for GetNetworkInterfaceList {
+    type Output = Vec<NetworkInterface>;
+
+    async fn call(self, _state: &mut ServerState) -> Result<Self::Output, Error> {
+        Ok(pnet_datalink::interfaces()
+            .into_iter()
+            .map(|iface| {
+                let addrs = iface
+                    .ips
+                    .into_iter()
+                    .map(|net| NetworkAddr {
+                        ip: net.ip(),
+                        mask: net.mask(),
+                    })
+                    .collect::<Vec<_>>();
+                NetworkInterface {
+                    name: iface.name,
+                    description: iface.description,
+                    addrs,
+                    mac: iface.mac.map(|mac| mac.to_string()),
+                }
+            })
+            .collect())
     }
 }

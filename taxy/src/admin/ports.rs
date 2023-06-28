@@ -44,11 +44,17 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
     );
 
     let api_reset = warp::get()
-        .and(with_state(app_state))
+        .and(with_state(app_state.clone()))
         .and(warp::path::param())
         .and(warp::path("reset"))
         .and(warp::path::end())
         .and_then(reset);
+
+    let api_interfaces = warp::get()
+        .and(with_state(app_state))
+        .and(warp::path("interfaces"))
+        .and(warp::path::end())
+        .and_then(interfaces);
 
     warp::path("ports")
         .and(
@@ -56,6 +62,7 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
                 .or(api_get)
                 .or(api_put)
                 .or(api_status)
+                .or(api_interfaces)
                 .or(api_reset)
                 .or(api_list)
                 .or(api_post),
@@ -200,4 +207,22 @@ pub async fn put(state: AppState, entry: Port, id: String) -> Result<impl Reply,
 )]
 pub async fn reset(state: AppState, id: String) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(&state.call(ResetPort { id }).await?))
+}
+
+/// Get the list of network interfaces.
+#[utoipa::path(
+    get,
+    path = "/api/ports/interfaces",
+    responses(
+        (status = 200, body = [NetworkInterface]),
+        (status = 401),
+    ),
+    security(
+        ("cookie"=[])
+    )
+)]
+pub async fn interfaces(state: AppState) -> Result<impl Reply, Rejection> {
+    Ok(warp::reply::json(
+        &state.call(GetNetworkInterfaceList).await?,
+    ))
 }
