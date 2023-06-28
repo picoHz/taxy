@@ -1,6 +1,6 @@
 [package]
 name = "taxy"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 include = ["/src", "/build.rs", "/LICENSE", "/dist/webui"]
 build = "build.rs"
@@ -53,7 +53,7 @@ serde_qs = "0.12.0"
 sha2 = "0.10.6"
 sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "sqlite", "time"] }
 tar = "0.4.38"
-taxy-api = { version = "0.1.1", features = ["warp"] }
+taxy-api = { version = "0.1.2", features = ["warp"] }
 thiserror = "1.0.40"
 time = { version = "0.3.21", features = ["serde"] }
 tokio = { version = "1.28.1", features = ["macros", "rt-multi-thread", "net", "signal", "io-util"] }
