@@ -1,10 +1,27 @@
+use futures::Future;
 use std::{collections::HashMap, sync::Arc};
 use taxy::{
     certs::{acme::AcmeEntry, Cert},
     config::storage::Storage,
+    server::{Server, ServerChannels},
 };
 use taxy_api::{app::AppConfig, error::Error, port::PortEntry, site::SiteEntry};
 use tokio::sync::Mutex;
+
+pub async fn with_server<S, F, O>(s: S, func: F) -> anyhow::Result<()>
+where
+    S: Storage,
+    F: FnOnce(ServerChannels) -> O,
+    O: Future<Output = anyhow::Result<()>> + Send + 'static,
+{
+    let (server, channels) = Server::new(s).await;
+    let event_send = channels.event.clone();
+    let task = tokio::spawn(server.start());
+    func(channels).await?;
+    event_send.send(taxy_api::event::ServerEvent::Shutdown)?;
+    task.await??;
+    Ok(())
+}
 
 #[derive(Debug, Default)]
 pub struct TestStorage {
