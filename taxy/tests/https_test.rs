@@ -61,6 +61,30 @@ async fn https_proxy() -> anyhow::Result<()> {
 
     with_server(config, |_| async move {
         let client = reqwest::Client::builder()
+            .add_root_certificate(ca.clone())
+            .build()?;
+        let resp = client
+            .get("https://localhost:53001/hello")
+            .send()
+            .await?
+            .text()
+            .await?;
+        assert_eq!(resp, "Hello");
+
+        let client = reqwest::Client::builder()
+            .http1_only()
+            .add_root_certificate(ca.clone())
+            .build()?;
+        let resp = client
+            .get("https://localhost:53001/hello")
+            .send()
+            .await?
+            .text()
+            .await?;
+        assert_eq!(resp, "Hello");
+
+        let client = reqwest::Client::builder()
+            .http2_prior_knowledge()
             .add_root_certificate(ca)
             .build()?;
         let resp = client
@@ -70,6 +94,7 @@ async fn https_proxy() -> anyhow::Result<()> {
             .text()
             .await?;
         assert_eq!(resp, "Hello");
+
         Ok(())
     })
     .await
