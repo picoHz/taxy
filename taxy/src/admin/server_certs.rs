@@ -95,7 +95,9 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
     )
 )]
 pub async fn get(state: AppState, id: String) -> Result<impl Reply, Rejection> {
-    Ok(warp::reply::json(&state.call(GetServerCert { id }).await?))
+    Ok(warp::reply::json(
+        &state.call(GetServerCert { id }).await?.info(),
+    ))
 }
 
 /// Generate a self-signed certificate.

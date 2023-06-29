@@ -26,13 +26,13 @@ pub struct GetServerCert {
 
 #[async_trait::async_trait]
 impl RpcMethod for GetServerCert {
-    type Output = CertInfo;
+    type Output = Arc<Cert>;
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state
             .certs
             .get(&self.id)
-            .map(|item| item.info())
+            .cloned()
             .ok_or(Error::IdNotFound { id: self.id })
     }
 }
