@@ -12,7 +12,10 @@ use std::{
     fmt,
     time::{Duration, SystemTime},
 };
-use taxy_api::{acme::Acme, cert::CertMetadata};
+use taxy_api::{
+    acme::Acme,
+    cert::{CertKind, CertMetadata},
+};
 use taxy_api::{acme::AcmeInfo, subject_name::SubjectName};
 use taxy_api::{acme::AcmeRequest, error::Error};
 use tracing::{error, info};
@@ -249,6 +252,7 @@ impl AcmeOrder {
         let cert_chain_pem = format!("# {}\r\n\r\n{}", metadata, cert_chain_pem);
 
         let cert = Cert::new(
+            CertKind::Server,
             cert_chain_pem.into_bytes(),
             cert.serialize_private_key_pem().into_bytes(),
         );

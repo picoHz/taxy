@@ -11,7 +11,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
-use taxy_api::app::AppConfig;
+use taxy_api::{app::AppConfig, cert::CertKind};
 use taxy_api::{
     error::Error,
     port::{Port, PortEntry},
@@ -165,10 +165,17 @@ impl FileStorage {
         Ok(())
     }
 
-    pub async fn load_certs_impl(&self, path: &Path) -> anyhow::Result<Vec<Arc<Cert>>> {
-        let walker = globwalk::GlobWalkerBuilder::from_patterns(path, &["*/cert.pem"])
-            .build()?
-            .filter_map(Result::ok);
+    pub async fn load_certs_impl(
+        &self,
+        path: &Path,
+        kind: CertKind,
+    ) -> anyhow::Result<Vec<Arc<Cert>>> {
+        let walker = globwalk::GlobWalkerBuilder::from_patterns(
+            path.join(kind.to_string()),
+            &["*/cert.pem"],
+        )
+        .build()?
+        .filter_map(Result::ok);
 
         let mut certs = Vec::new();
         for pem in walker {
@@ -199,7 +206,7 @@ impl FileStorage {
                 }
             }
 
-            match Cert::new(chain_data, key_data) {
+            match Cert::new(kind, chain_data, key_data) {
                 Ok(cert) => certs.push(Arc::new(cert)),
                 Err(err) => error!(?path, "failed to load: {err}"),
             }
@@ -346,7 +353,10 @@ impl Storage for FileStorage {
 
     async fn save_cert(&self, cert: &Cert) {
         let dir = &self.dir;
-        let path = dir.join("certs").join(cert.id());
+        let path = dir
+            .join("certs")
+            .join(cert.kind.to_string())
+            .join(cert.id());
         if let Err(err) = self.save_cert_impl(&path, cert).await {
             error!(?path, "failed to save: {err}");
         }
@@ -389,7 +399,7 @@ impl Storage for FileStorage {
     async fn load_certs(&self) -> Vec<Arc<Cert>> {
         let dir = &self.dir;
         let path = dir.join("certs");
-        match self.load_certs_impl(&path).await {
+        match self.load_certs_impl(&path, CertKind::Server).await {
             Ok(certs) => certs,
             Err(err) => {
                 warn!(?path, "failed to load: {err}");

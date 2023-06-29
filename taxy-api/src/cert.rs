@@ -1,12 +1,36 @@
 use crate::subject_name::SubjectName;
 use serde_derive::{Deserialize, Serialize};
+use std::fmt;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use utoipa::ToSchema;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum CertKind {
+    Server,
+    Client,
+    Root,
+}
+
+impl fmt::Display for CertKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                CertKind::Server => "server",
+                CertKind::Client => "client",
+                CertKind::Root => "root",
+            }
+        )
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct CertInfo {
     #[schema(example = "a13e1ecc080e42cfcdd5")]
     pub id: String,
+    pub kind: CertKind,
     #[schema(example = "a13e1ecc080e42cfcdd5b77fec8450c777554aa7269c029b242a7c548d0d73da")]
     pub fingerprint: String,
     #[schema(example = "CN=taxy self signed cert")]

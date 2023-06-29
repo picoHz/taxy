@@ -4,7 +4,7 @@ use sha2::{Digest, Sha256};
 use std::fmt;
 use std::io::{BufRead, BufReader};
 use std::str::FromStr;
-use taxy_api::cert::{CertInfo, CertMetadata, SelfSignedCertRequest};
+use taxy_api::cert::{CertInfo, CertKind, CertMetadata, SelfSignedCertRequest};
 use taxy_api::error::Error;
 use taxy_api::subject_name::SubjectName;
 use tokio_rustls::rustls::sign::CertifiedKey;
@@ -20,6 +20,7 @@ const CERT_ID_LENGTH: usize = 20;
 #[derive(Clone)]
 pub struct Cert {
     pub id: String,
+    pub kind: CertKind,
     pub key: SecretDocument,
     pub raw_chain: Vec<u8>,
     pub raw_key: Vec<u8>,
@@ -92,6 +93,7 @@ impl Cert {
     pub fn info(&self) -> CertInfo {
         CertInfo {
             id: self.id.clone(),
+            kind: self.kind,
             fingerprint: self.fingerprint.clone(),
             issuer: self.issuer.clone(),
             root_cert: self.root_cert.clone(),
@@ -124,7 +126,7 @@ impl Cert {
         false
     }
 
-    pub fn new(raw_chain: Vec<u8>, raw_key: Vec<u8>) -> Result<Self, Error> {
+    pub fn new(kind: CertKind, raw_chain: Vec<u8>, raw_key: Vec<u8>) -> Result<Self, Error> {
         let key_pem =
             std::str::from_utf8(&raw_key).map_err(|_| Error::FailedToDecryptPrivateKey)?;
         let (_, key) =
@@ -178,6 +180,7 @@ impl Cert {
 
         Ok(Self {
             id: fingerprint[..CERT_ID_LENGTH].to_string(),
+            kind,
             fingerprint,
             key,
             raw_chain,
@@ -248,7 +251,7 @@ impl Cert {
         let raw_chain = format!("{}\r\n{}", cert_pem, ca_pem).into_bytes();
         let raw_key = cert.serialize_private_key_pem().into_bytes();
 
-        Self::new(raw_chain, raw_key)
+        Self::new(CertKind::Server, raw_chain, raw_key)
     }
 
     pub fn certified(&self) -> Result<CertifiedKey, Error> {

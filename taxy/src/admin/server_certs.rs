@@ -2,7 +2,10 @@ use super::{with_state, AppState};
 use crate::{certs::Cert, server::rpc::server_certs::*};
 use hyper::Response;
 use std::{io::Read, ops::Deref};
-use taxy_api::{cert::SelfSignedCertRequest, error::Error};
+use taxy_api::{
+    cert::{CertKind, SelfSignedCertRequest},
+    error::Error,
+};
 use tokio_stream::StreamExt;
 use warp::{filters::BoxedFilter, multipart::FormData, Buf, Filter, Rejection, Reply};
 
@@ -154,7 +157,7 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
         }
     }
 
-    let cert = Cert::new(chain, key)?;
+    let cert = Cert::new(CertKind::Server, chain, key)?;
     Ok(warp::reply::json(
         &state.call(AddServerCert { cert }).await?,
     ))

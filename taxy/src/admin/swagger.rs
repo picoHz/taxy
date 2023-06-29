@@ -3,7 +3,7 @@ use taxy_api::acme::AcmeInfo;
 use taxy_api::acme::{AcmeRequest, ExternalAccountBinding};
 use taxy_api::app::{AppConfig, AppInfo};
 use taxy_api::auth::LoginRequest;
-use taxy_api::cert::{CertInfo, CertMetadata, CertPostBody, SelfSignedCertRequest};
+use taxy_api::cert::{CertInfo, CertKind, CertMetadata, CertPostBody, SelfSignedCertRequest};
 use taxy_api::error::{Error, ErrorMessage};
 use taxy_api::event::ServerEvent;
 use taxy_api::log::SystemLogRow;
@@ -60,6 +60,7 @@ use warp::{Rejection, Reply};
         PortState,
         SocketState,
         TlsState,
+        CertKind,
         CertInfo,
         CertMetadata,
         AcmeInfo,
