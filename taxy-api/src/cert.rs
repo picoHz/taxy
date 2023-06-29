@@ -49,6 +49,8 @@ pub struct CertInfo {
 pub struct SelfSignedCertRequest {
     #[schema(value_type = [String], example = json!(["localhost"]))]
     pub san: Vec<SubjectName>,
+    #[schema(example = "f9cf7e3faa1aca7e6086")]
+    pub ca_cert: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, ToSchema)]

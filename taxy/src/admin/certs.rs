@@ -116,8 +116,15 @@ pub async fn self_sign(
     state: AppState,
     request: SelfSignedCertRequest,
 ) -> Result<impl Reply, Rejection> {
-    let ca = Cert::new_ca()?;
-    let cert = Arc::new(Cert::new_self_signed(&request.san, &ca)?);
+    let cert = if let Some(ca_cert) = request.ca_cert {
+        let ca = state.call(GetCert { id: ca_cert }).await?;
+        Cert::new_self_signed(&request.san, &ca)?
+    } else {
+        let ca = Arc::new(Cert::new_ca()?);
+        state.call(AddCert { cert: ca.clone() }).await?;
+        Cert::new_self_signed(&request.san, &ca)?
+    };
+    let cert = Arc::new(cert);
     Ok(warp::reply::json(&state.call(AddCert { cert }).await?))
 }
 

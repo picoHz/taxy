@@ -134,7 +134,10 @@ fn get_request(san: &str) -> Result<SelfSignedCertRequest, HashMap<String, Strin
         );
     }
     if errors.is_empty() {
-        Ok(SelfSignedCertRequest { san: names })
+        Ok(SelfSignedCertRequest {
+            san: names,
+            ca_cert: None,
+        })
     } else {
         Err(errors)
     }
