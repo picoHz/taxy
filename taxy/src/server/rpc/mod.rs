@@ -4,9 +4,9 @@ use taxy_api::error::Error;
 
 pub mod acme;
 pub mod auth;
+pub mod certs;
 pub mod config;
 pub mod ports;
-pub mod server_certs;
 pub mod sites;
 
 #[async_trait::async_trait]

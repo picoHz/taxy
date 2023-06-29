@@ -24,7 +24,7 @@ impl CertList {
         self.certs.values()
     }
 
-    pub fn find_server_certs_by_acme(&self, acme: &str) -> Vec<&Arc<Cert>> {
+    pub fn find_certs_by_acme(&self, acme: &str) -> Vec<&Arc<Cert>> {
         self.certs
             .values()
             .filter(|cert| {

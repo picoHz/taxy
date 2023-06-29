@@ -1,5 +1,5 @@
 use super::{with_state, AppState};
-use crate::{certs::Cert, server::rpc::server_certs::*};
+use crate::{certs::Cert, server::rpc::certs::*};
 use hyper::Response;
 use std::{io::Read, ops::Deref};
 use taxy_api::{
@@ -50,7 +50,7 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
             .and_then(download),
     );
 
-    warp::path("server_certs")
+    warp::path("certs")
         .and(
             api_delete
                 .or(api_get)
@@ -65,7 +65,7 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
 /// List server certificates.
 #[utoipa::path(
     get,
-    path = "/api/server_certs",
+    path = "/api/certs",
     responses(
         (status = 200, body = [CertInfo]),
         (status = 401),
@@ -75,13 +75,13 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
     )
 )]
 pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
-    Ok(warp::reply::json(&state.call(GetServerCertList).await?))
+    Ok(warp::reply::json(&state.call(GetCertList).await?))
 }
 
 /// Delete a certificate.
 #[utoipa::path(
     get,
-    path = "/api/server_certs/{id}",
+    path = "/api/certs/{id}",
     params(
         ("id" = String, Path, description = "Certification ID")
     ),
@@ -95,15 +95,13 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
     )
 )]
 pub async fn get(state: AppState, id: String) -> Result<impl Reply, Rejection> {
-    Ok(warp::reply::json(
-        &state.call(GetServerCert { id }).await?.info(),
-    ))
+    Ok(warp::reply::json(&state.call(GetCert { id }).await?.info()))
 }
 
 /// Generate a self-signed certificate.
 #[utoipa::path(
     post,
-    path = "/api/server_certs/self_sign",
+    path = "/api/certs/self_sign",
     request_body = SelfSignedCertRequest,
     responses(
         (status = 200),
@@ -120,15 +118,13 @@ pub async fn self_sign(
 ) -> Result<impl Reply, Rejection> {
     let ca = Cert::new_ca()?;
     let cert = Cert::new_self_signed(&request, &ca)?;
-    Ok(warp::reply::json(
-        &state.call(AddServerCert { cert }).await?,
-    ))
+    Ok(warp::reply::json(&state.call(AddCert { cert }).await?))
 }
 
 /// Upload a certificate and key pair.
 #[utoipa::path(
     post,
-    path = "/api/server_certs/upload",
+    path = "/api/certs/upload",
     request_body(content = CertPostBody, content_type = "multipart/form-data"),
     responses(
         (status = 200),
@@ -161,15 +157,13 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
     }
 
     let cert = Cert::new(CertKind::Server, chain, key)?;
-    Ok(warp::reply::json(
-        &state.call(AddServerCert { cert }).await?,
-    ))
+    Ok(warp::reply::json(&state.call(AddCert { cert }).await?))
 }
 
 /// Delete a certificate.
 #[utoipa::path(
     delete,
-    path = "/api/server_certs/{id}",
+    path = "/api/certs/{id}",
     params(
         ("id" = String, Path, description = "Certification ID")
     ),
@@ -183,15 +177,13 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
     )
 )]
 pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {
-    Ok(warp::reply::json(
-        &state.call(DeleteServerCert { id }).await?,
-    ))
+    Ok(warp::reply::json(&state.call(DeleteCert { id }).await?))
 }
 
 /// Download a certificate.
 #[utoipa::path(
     get,
-    path = "/api/server_certs/{id}/download",
+    path = "/api/certs/{id}/download",
     params(
         ("id" = String, Path, description = "Certification ID")
     ),
@@ -205,7 +197,7 @@ pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection
     )
 )]
 pub async fn download(state: AppState, id: String) -> Result<impl Reply, Rejection> {
-    let file = state.call(DownloadServerCert { id: id.clone() }).await?;
+    let file = state.call(DownloadCert { id: id.clone() }).await?;
     Ok(Response::builder()
         .header("Content-Type", "application/gzip")
         .header(

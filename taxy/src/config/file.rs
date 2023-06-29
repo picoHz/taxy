@@ -399,13 +399,20 @@ impl Storage for FileStorage {
     async fn load_certs(&self) -> Vec<Arc<Cert>> {
         let dir = &self.dir;
         let path = dir.join("certs");
+        let mut certs = Vec::new();
         match self.load_certs_impl(&path, CertKind::Server).await {
-            Ok(certs) => certs,
+            Ok(mut entries) => certs.append(&mut entries),
             Err(err) => {
                 warn!(?path, "failed to load: {err}");
-                Default::default()
             }
         }
+        match self.load_certs_impl(&path, CertKind::Root).await {
+            Ok(mut entries) => certs.append(&mut entries),
+            Err(err) => {
+                warn!(?path, "failed to load: {err}");
+            }
+        }
+        certs
     }
 
     async fn add_account(&self, name: &str, password: &str) -> Result<(), Error> {

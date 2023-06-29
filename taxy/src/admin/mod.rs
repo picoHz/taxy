@@ -23,10 +23,10 @@ use self::log::LogReader;
 mod acme;
 mod app_info;
 mod auth;
+mod certs;
 mod config;
 mod log;
 mod ports;
-mod server_certs;
 mod sites;
 mod static_file;
 mod swagger;
@@ -114,7 +114,7 @@ pub async fn start_admin(
             .or(config::api(app_state.clone()))
             .or(ports::api(app_state.clone()))
             .or(sites::api(app_state.clone()))
-            .or(server_certs::api(app_state.clone()))
+            .or(certs::api(app_state.clone()))
             .or(acme::api(app_state.clone()))
             .or(auth::api(app_state.clone()))
             .or(log::api(app_state))

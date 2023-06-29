@@ -152,7 +152,7 @@ pub fn cert_list() -> Html {
                 let download_onclick = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                     if gloo_dialogs::confirm(&format!("Are you sure to download {id}.tar.gz?\nThis file contains the unencrypted private key.")) {
-                        location::assign(&format!("{API_ENDPOINT}/server_certs/{id}/download"));
+                        location::assign(&format!("{API_ENDPOINT}/certs/{id}/download"));
                     }
                 });
 
@@ -331,7 +331,7 @@ pub fn cert_list() -> Html {
 }
 
 async fn get_cert_list() -> Result<Vec<CertInfo>, gloo_net::Error> {
-    Request::get(&format!("{API_ENDPOINT}/server_certs"))
+    Request::get(&format!("{API_ENDPOINT}/certs"))
         .send()
         .await?
         .json()
@@ -347,7 +347,7 @@ async fn get_acme_list() -> Result<Vec<AcmeInfo>, gloo_net::Error> {
 }
 
 async fn delete_server_cert(id: &str) -> Result<(), gloo_net::Error> {
-    Request::delete(&format!("{API_ENDPOINT}/server_certs/{id}"))
+    Request::delete(&format!("{API_ENDPOINT}/certs/{id}"))
         .send()
         .await?;
     Ok(())

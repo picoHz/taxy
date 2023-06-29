@@ -1,4 +1,4 @@
-use super::{acme, app_info, auth, config, log, ports, server_certs, sites};
+use super::{acme, app_info, auth, certs, config, log, ports, sites};
 use taxy_api::acme::AcmeInfo;
 use taxy_api::acme::{AcmeRequest, ExternalAccountBinding};
 use taxy_api::app::{AppConfig, AppInfo};
@@ -43,11 +43,11 @@ use warp::{Rejection, Reply};
         sites::post,
         sites::put,
         log::get,
-        server_certs::list,
-        server_certs::get,
-        server_certs::delete,
-        server_certs::self_sign,
-        server_certs::upload,
+        certs::list,
+        certs::get,
+        certs::delete,
+        certs::self_sign,
+        certs::upload,
     ),
     components(schemas(
         AppInfo,

@@ -9,10 +9,10 @@ use std::{
 use tar::Header;
 use taxy_api::{cert::CertInfo, error::Error};
 
-pub struct GetServerCertList;
+pub struct GetCertList;
 
 #[async_trait::async_trait]
-impl RpcMethod for GetServerCertList {
+impl RpcMethod for GetCertList {
     type Output = Vec<CertInfo>;
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
@@ -20,12 +20,12 @@ impl RpcMethod for GetServerCertList {
     }
 }
 
-pub struct GetServerCert {
+pub struct GetCert {
     pub id: String,
 }
 
 #[async_trait::async_trait]
-impl RpcMethod for GetServerCert {
+impl RpcMethod for GetCert {
     type Output = Arc<Cert>;
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
@@ -37,12 +37,12 @@ impl RpcMethod for GetServerCert {
     }
 }
 
-pub struct AddServerCert {
+pub struct AddCert {
     pub cert: Cert,
 }
 
 #[async_trait::async_trait]
-impl RpcMethod for AddServerCert {
+impl RpcMethod for AddCert {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
@@ -54,12 +54,12 @@ impl RpcMethod for AddServerCert {
     }
 }
 
-pub struct DeleteServerCert {
+pub struct DeleteCert {
     pub id: String,
 }
 
 #[async_trait::async_trait]
-impl RpcMethod for DeleteServerCert {
+impl RpcMethod for DeleteCert {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
@@ -69,12 +69,12 @@ impl RpcMethod for DeleteServerCert {
     }
 }
 
-pub struct DownloadServerCert {
+pub struct DownloadCert {
     pub id: String,
 }
 
 #[async_trait::async_trait]
-impl RpcMethod for DownloadServerCert {
+impl RpcMethod for DownloadCert {
     type Output = Bytes;
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {

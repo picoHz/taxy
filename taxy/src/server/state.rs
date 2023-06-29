@@ -97,7 +97,7 @@ impl ServerState {
 
     pub async fn handle_command(&mut self, cmd: ServerCommand) {
         match cmd {
-            ServerCommand::AddServerCert { cert } => {
+            ServerCommand::AddCert { cert } => {
                 if let Err(err) = self.certs.add(cert) {
                     error!(?err, "failed to add server cert");
                 }
@@ -197,7 +197,7 @@ impl ServerState {
     }
 
     pub async fn update_certs(&mut self) {
-        let _ = self.br_sender.send(ServerEvent::ServerCertsUpdated {
+        let _ = self.br_sender.send(ServerEvent::CertsUpdated {
             entries: self.certs.iter().map(|item| item.info()).collect(),
         });
         for ctx in self.ports.as_mut_slice() {
@@ -260,7 +260,7 @@ impl ServerState {
     fn remove_expired_certs(&mut self) {
         let mut removing_items = Vec::new();
         for acme in self.acmes.entries() {
-            let certs = self.certs.find_server_certs_by_acme(&acme.id);
+            let certs = self.certs.find_certs_by_acme(&acme.id);
             let mut expired = certs
                 .iter()
                 .filter(|cert| cert.not_after < ASN1Time::now())
@@ -277,7 +277,7 @@ impl ServerState {
             }
         }
         if !removing_items.is_empty() {
-            let _ = self.br_sender.send(ServerEvent::ServerCertsUpdated {
+            let _ = self.br_sender.send(ServerEvent::CertsUpdated {
                 entries: self.certs.iter().map(|item| item.info()).collect(),
             });
         }
@@ -288,7 +288,7 @@ impl ServerState {
         let entries = entries
             .filter(|entry| {
                 self.certs
-                    .find_server_certs_by_acme(&entry.id)
+                    .find_certs_by_acme(&entry.id)
                     .iter()
                     .map(|cert| {
                         cert.metadata
@@ -345,7 +345,7 @@ impl ServerState {
                             info!(id = cert.id(), "acme request completed");
                         });
                         let _ = command
-                            .send(ServerCommand::AddServerCert {
+                            .send(ServerCommand::AddCert {
                                 cert: Arc::new(cert),
                             })
                             .await;

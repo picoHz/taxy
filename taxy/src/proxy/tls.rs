@@ -45,7 +45,7 @@ impl TlsTermination {
     }
 
     pub async fn setup(&mut self, certs: &CertList) -> TlsState {
-        let resolver: Arc<dyn ResolvesServerCert> = Arc::new(ServerCertResolver::new(
+        let resolver: Arc<dyn ResolvesServerCert> = Arc::new(CertResolver::new(
             certs.iter().cloned().collect(),
             self.server_names.clone(),
             true,
@@ -68,14 +68,14 @@ impl TlsTermination {
     }
 }
 
-pub struct ServerCertResolver {
+pub struct CertResolver {
     certs: Vec<Arc<Cert>>,
     default_names: Vec<SubjectName>,
     sni: bool,
     cache: DashMap<String, Arc<CertifiedKey>>,
 }
 
-impl ServerCertResolver {
+impl CertResolver {
     pub fn new(certs: Vec<Arc<Cert>>, default_names: Vec<SubjectName>, sni: bool) -> Self {
         Self {
             certs,
@@ -86,7 +86,7 @@ impl ServerCertResolver {
     }
 }
 
-impl ResolvesServerCert for ServerCertResolver {
+impl ResolvesServerCert for CertResolver {
     fn resolve(&self, client_hello: ClientHello) -> Option<Arc<CertifiedKey>> {
         let sni = client_hello
             .server_name()

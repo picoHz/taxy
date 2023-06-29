@@ -38,7 +38,7 @@ pub fn use_event_subscriber() {
                             ServerEvent::PortTableUpdated { entries } => {
                                 ports.set(PortStore { entries });
                             }
-                            ServerEvent::ServerCertsUpdated { entries } => {
+                            ServerEvent::CertsUpdated { entries } => {
                                 certs.set(CertStore { entries });
                             }
                             ServerEvent::AcmeUpdated { entries } => {

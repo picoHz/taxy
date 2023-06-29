@@ -141,7 +141,7 @@ fn get_request(san: &str) -> Result<SelfSignedCertRequest, HashMap<String, Strin
 }
 
 async fn request_self_sign(req: &SelfSignedCertRequest) -> Result<(), gloo_net::Error> {
-    Request::post(&format!("{API_ENDPOINT}/server_certs/self_sign"))
+    Request::post(&format!("{API_ENDPOINT}/certs/self_sign"))
         .json(&req)?
         .send()
         .await?

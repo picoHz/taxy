@@ -160,7 +160,7 @@ async fn upload_cert(chain: &web_sys::File, key: &web_sys::File) -> Result<(), g
     form_data.append_with_blob("chain", chain).unwrap();
     form_data.append_with_blob("key", key).unwrap();
 
-    Request::post(&format!("{API_ENDPOINT}/server_certs/upload"))
+    Request::post(&format!("{API_ENDPOINT}/certs/upload"))
         .body(form_data)
         .send()
         .await?;
