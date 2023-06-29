@@ -1,7 +1,7 @@
 use super::{with_state, AppState};
 use crate::{certs::Cert, server::rpc::certs::*};
 use hyper::Response;
-use std::{io::Read, ops::Deref};
+use std::{io::Read, ops::Deref, sync::Arc};
 use taxy_api::{
     cert::{CertKind, SelfSignedCertRequest},
     error::Error,
@@ -117,7 +117,7 @@ pub async fn self_sign(
     request: SelfSignedCertRequest,
 ) -> Result<impl Reply, Rejection> {
     let ca = Cert::new_ca()?;
-    let cert = Cert::new_self_signed(&request.san, &ca)?;
+    let cert = Arc::new(Cert::new_self_signed(&request.san, &ca)?);
     Ok(warp::reply::json(&state.call(AddCert { cert }).await?))
 }
 
@@ -156,7 +156,7 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
         }
     }
 
-    let cert = Cert::new(CertKind::Server, chain, key)?;
+    let cert = Arc::new(Cert::new(CertKind::Server, chain, key)?);
     Ok(warp::reply::json(&state.call(AddCert { cert }).await?))
 }
 

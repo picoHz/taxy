@@ -38,7 +38,7 @@ impl RpcMethod for GetCert {
 }
 
 pub struct AddCert {
-    pub cert: Cert,
+    pub cert: Arc<Cert>,
 }
 
 #[async_trait::async_trait]
@@ -46,10 +46,9 @@ impl RpcMethod for AddCert {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        let cert = Arc::new(self.cert);
-        state.certs.add(cert.clone())?;
+        state.certs.add(self.cert.clone())?;
         state.update_certs().await;
-        state.storage.save_cert(&cert).await;
+        state.storage.save_cert(&self.cert).await;
         Ok(())
     }
 }
