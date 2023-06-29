@@ -15,10 +15,14 @@ use common::{with_server, TestStorage};
 
 #[tokio::test]
 async fn https_proxy() -> anyhow::Result<()> {
+    let root = Cert::new_ca().unwrap();
     let cert = Arc::new(
-        Cert::new_self_signed(&SelfSignedCertRequest {
-            san: vec!["localhost".parse().unwrap()],
-        })
+        Cert::new_self_signed(
+            &SelfSignedCertRequest {
+                san: vec!["localhost".parse().unwrap()],
+            },
+            &root,
+        )
         .unwrap(),
     );
 
@@ -55,10 +59,7 @@ async fn https_proxy() -> anyhow::Result<()> {
         .certs([(cert.id.clone(), cert.clone())].into_iter().collect())
         .build();
 
-    let pem = String::from_utf8_lossy(&cert.raw_chain);
-    let root = pem.split("\r\n\r\n").skip(1).next().unwrap();
-    let ca = reqwest::Certificate::from_pem(root.as_bytes())?;
-
+    let ca = reqwest::Certificate::from_pem(&root.raw_chain)?;
     with_server(config, |_| async move {
         let client = reqwest::Client::builder()
             .add_root_certificate(ca.clone())

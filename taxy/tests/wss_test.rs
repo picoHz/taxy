@@ -21,10 +21,14 @@ use common::{with_server, TestStorage};
 
 #[tokio::test]
 async fn wss_proxy() -> anyhow::Result<()> {
+    let root = Cert::new_ca().unwrap();
     let cert = Arc::new(
-        Cert::new_self_signed(&SelfSignedCertRequest {
-            san: vec!["localhost".parse().unwrap()],
-        })
+        Cert::new_self_signed(
+            &SelfSignedCertRequest {
+                san: vec!["localhost".parse().unwrap()],
+            },
+            &root,
+        )
         .unwrap(),
     );
 
@@ -72,7 +76,7 @@ async fn wss_proxy() -> anyhow::Result<()> {
         .build();
 
     let mut root_certs = RootCertStore::empty();
-    for cert in cert.certified().unwrap().cert {
+    for cert in root.certified().unwrap().cert {
         root_certs.add(&cert).unwrap();
     }
 

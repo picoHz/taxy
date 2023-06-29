@@ -42,7 +42,7 @@ pin-project-lite = "0.2.9"
 pkcs8 = { version = "0.10.2", features = ["pem"] }
 pnet_datalink = "0.33.0"
 rand = "0.8.5"
-rcgen = "0.10.0"
+rcgen = { version = "0.10.0", features = ["pem", "x509-parser"] }
 rpassword = "7.2.0"
 rustls-native-certs = "0.6.2"
 rustls-pemfile = "1.0.2"

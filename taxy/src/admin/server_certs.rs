@@ -116,7 +116,8 @@ pub async fn self_sign(
     state: AppState,
     request: SelfSignedCertRequest,
 ) -> Result<impl Reply, Rejection> {
-    let cert = Cert::new_self_signed(&request)?;
+    let ca = Cert::new_ca()?;
+    let cert = Cert::new_self_signed(&request, &ca)?;
     Ok(warp::reply::json(
         &state.call(AddServerCert { cert }).await?,
     ))

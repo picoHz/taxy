@@ -1,5 +1,7 @@
 use pkcs8::{PrivateKeyInfo, SecretDocument};
-use rcgen::{BasicConstraints, CertificateParams, DistinguishedName, DnType, IsCa, SanType};
+use rcgen::{
+    BasicConstraints, CertificateParams, DistinguishedName, DnType, IsCa, KeyPair, SanType,
+};
 use sha2::{Digest, Sha256};
 use std::fmt;
 use std::io::{BufRead, BufReader};
@@ -194,12 +196,40 @@ impl Cert {
         })
     }
 
-    pub fn new_self_signed(req: &SelfSignedCertRequest) -> Result<Self, Error> {
+    pub fn new_ca() -> Result<Self, Error> {
         let mut distinguished_name = DistinguishedName::new();
         distinguished_name.push(DnType::CommonName, "Taxy CA");
-        let mut ca_params = CertificateParams::default();
-        ca_params.is_ca = IsCa::Ca(BasicConstraints::Unconstrained);
-        ca_params.distinguished_name = distinguished_name;
+        let mut params = CertificateParams::default();
+        params.is_ca = IsCa::Ca(BasicConstraints::Unconstrained);
+        params.distinguished_name = distinguished_name;
+
+        let cert = match rcgen::Certificate::from_params(params) {
+            Ok(cert) => cert,
+            Err(err) => {
+                error!(?err);
+                return Err(Error::FailedToGerateSelfSignedCertificate);
+            }
+        };
+
+        let pem = cert
+            .serialize_pem()
+            .map_err(|_| Error::FailedToGerateSelfSignedCertificate)?;
+
+        let raw_chain = pem.into_bytes();
+        let raw_key = cert.serialize_private_key_pem().into_bytes();
+
+        Self::new(CertKind::Root, raw_chain, raw_key)
+    }
+
+    pub fn new_self_signed(req: &SelfSignedCertRequest, ca: &Cert) -> Result<Self, Error> {
+        let ca_pem =
+            std::str::from_utf8(&ca.raw_chain).map_err(|_| Error::FailedToDecryptPrivateKey)?;
+        let key_pem =
+            std::str::from_utf8(&ca.raw_key).map_err(|_| Error::FailedToDecryptPrivateKey)?;
+        let ca_keypair =
+            KeyPair::from_pem(key_pem).map_err(|_| Error::FailedToDecryptPrivateKey)?;
+        let ca_params = CertificateParams::from_ca_cert_pem(ca_pem, ca_keypair)
+            .map_err(|_| Error::FailedToGerateSelfSignedCertificate)?;
 
         let ca_cert = match rcgen::Certificate::from_params(ca_params) {
             Ok(cert) => cert,
@@ -300,7 +330,8 @@ mod test {
         let req = SelfSignedCertRequest {
             san: vec![SubjectName::from_str("localhost").unwrap()],
         };
-        let cert = Cert::new_self_signed(&req).unwrap();
+        let ca = Cert::new_ca().unwrap();
+        let cert = Cert::new_self_signed(&req, &ca).unwrap();
         assert_eq!(cert.san, req.san);
     }
 }
