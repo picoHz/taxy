@@ -1,7 +1,6 @@
 use std::sync::Arc;
 use taxy::certs::Cert;
 use taxy_api::{
-    cert::SelfSignedCertRequest,
     port::{Port, PortEntry, PortOptions, UpstreamServer},
     tls::TlsTermination,
 };
@@ -15,15 +14,7 @@ use common::{with_server, TestStorage};
 #[tokio::test]
 async fn tls_proxy() -> anyhow::Result<()> {
     let root = Cert::new_ca().unwrap();
-    let cert = Arc::new(
-        Cert::new_self_signed(
-            &SelfSignedCertRequest {
-                san: vec!["localhost".parse().unwrap()],
-            },
-            &root,
-        )
-        .unwrap(),
-    );
+    let cert = Arc::new(Cert::new_self_signed(&["localhost".parse().unwrap()], &root).unwrap());
 
     let listener = TcpListener::bind("127.0.0.1:51000").await.unwrap();
     let hello = warp::path!("hello").map(|| format!("Hello"));

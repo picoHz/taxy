@@ -6,7 +6,7 @@ use sha2::{Digest, Sha256};
 use std::fmt;
 use std::io::{BufRead, BufReader};
 use std::str::FromStr;
-use taxy_api::cert::{CertInfo, CertKind, CertMetadata, SelfSignedCertRequest};
+use taxy_api::cert::{CertInfo, CertKind, CertMetadata};
 use taxy_api::error::Error;
 use taxy_api::subject_name::SubjectName;
 use tokio_rustls::rustls::sign::CertifiedKey;
@@ -221,7 +221,7 @@ impl Cert {
         Self::new(CertKind::Root, raw_chain, raw_key)
     }
 
-    pub fn new_self_signed(req: &SelfSignedCertRequest, ca: &Cert) -> Result<Self, Error> {
+    pub fn new_self_signed(san: &[SubjectName], ca: &Cert) -> Result<Self, Error> {
         let ca_pem =
             std::str::from_utf8(&ca.raw_chain).map_err(|_| Error::FailedToDecryptPrivateKey)?;
         let key_pem =
@@ -240,8 +240,7 @@ impl Cert {
         };
 
         let mut params = CertificateParams::default();
-        params.subject_alt_names = req
-            .san
+        params.subject_alt_names = san
             .iter()
             .map(|name| {
                 if let SubjectName::IPAddress(ip) = name {
@@ -252,8 +251,7 @@ impl Cert {
             })
             .collect();
 
-        let common_name = req
-            .san
+        let common_name = san
             .iter()
             .map(|name| name.to_string())
             .next()
@@ -327,11 +325,9 @@ mod test {
     fn test_self_signed() {
         use super::*;
 
-        let req = SelfSignedCertRequest {
-            san: vec![SubjectName::from_str("localhost").unwrap()],
-        };
+        let san = [SubjectName::from_str("localhost").unwrap()];
         let ca = Cert::new_ca().unwrap();
-        let cert = Cert::new_self_signed(&req, &ca).unwrap();
-        assert_eq!(cert.san, req.san);
+        let cert = Cert::new_self_signed(&san, &ca).unwrap();
+        assert_eq!(cert.san, san);
     }
 }

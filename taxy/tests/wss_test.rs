@@ -4,7 +4,6 @@ use std::sync::Arc;
 use futures::{FutureExt, SinkExt, StreamExt};
 use taxy::certs::Cert;
 use taxy_api::{
-    cert::SelfSignedCertRequest,
     port::{Port, PortEntry, PortOptions},
     site::{Route, Site, SiteEntry},
     tls::TlsTermination,
@@ -22,15 +21,7 @@ use common::{with_server, TestStorage};
 #[tokio::test]
 async fn wss_proxy() -> anyhow::Result<()> {
     let root = Cert::new_ca().unwrap();
-    let cert = Arc::new(
-        Cert::new_self_signed(
-            &SelfSignedCertRequest {
-                san: vec!["localhost".parse().unwrap()],
-            },
-            &root,
-        )
-        .unwrap(),
-    );
+    let cert = Arc::new(Cert::new_self_signed(&["localhost".parse().unwrap()], &root).unwrap());
 
     let routes = warp::path("ws").and(warp::ws()).map(|ws: warp::ws::Ws| {
         ws.on_upgrade(|websocket| {
