@@ -23,7 +23,7 @@ pub fn upload() -> Html {
         let _ = navigator_cloned.push_with_query(
             &Route::Certs,
             &CertsQuery {
-                tab: CertsTab::ServerCerts,
+                tab: CertsTab::Server,
             },
         );
     });
@@ -67,7 +67,7 @@ pub fn upload() -> Html {
                         let _ = navigator.push_with_query(
                             &Route::Certs,
                             &CertsQuery {
-                                tab: CertsTab::ServerCerts,
+                                tab: CertsTab::Server,
                             },
                         );
                     }

@@ -6,7 +6,7 @@ use crate::API_ENDPOINT;
 use gloo_net::http::Request;
 use serde_derive::{Deserialize, Serialize};
 use taxy_api::acme::AcmeInfo;
-use taxy_api::cert::CertInfo;
+use taxy_api::cert::{CertInfo, CertKind};
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
@@ -15,7 +15,8 @@ use yewdux::prelude::*;
 #[serde(rename_all = "snake_case")]
 pub enum CertsTab {
     #[default]
-    ServerCerts,
+    Server,
+    Root,
     Acme,
 }
 
@@ -28,14 +29,15 @@ pub struct CertsQuery {
 impl ToString for CertsTab {
     fn to_string(&self) -> String {
         match self {
-            CertsTab::ServerCerts => "Server Certificates",
+            CertsTab::Server => "Server Certs",
+            CertsTab::Root => "Root Certs",
             CertsTab::Acme => "ACME",
         }
         .into()
     }
 }
 
-const TABS: [CertsTab; 2] = [CertsTab::ServerCerts, CertsTab::Acme];
+const TABS: [CertsTab; 3] = [CertsTab::Server, CertsTab::Root, CertsTab::Acme];
 
 #[function_component(CertList)]
 pub fn cert_list() -> Html {
@@ -78,7 +80,18 @@ pub fn cert_list() -> Html {
         navigator_cloned.push(&Route::NewAcme);
     });
 
-    let cert_list = certs.entries.clone();
+    let cert_list = certs
+        .entries
+        .iter()
+        .filter(|cert| {
+            cert.kind
+                == if *tab == CertsTab::Server {
+                    CertKind::Server
+                } else {
+                    CertKind::Root
+                }
+        })
+        .collect::<Vec<_>>();
     let acme_list = acme.entries.clone();
     let active_index = use_state(|| -1);
     html! {
@@ -110,7 +123,7 @@ pub fn cert_list() -> Html {
 
                 </ul>
             </div>
-            if *tab == CertsTab::ServerCerts {
+            if *tab == CertsTab::Server {
                 if cert_list.is_empty() {
                     <ybc::Hero body_classes="has-text-centered" body={
                         html! {
@@ -224,6 +237,114 @@ pub fn cert_list() -> Html {
                     <span>{"Self-sign"}</span>
                     </span>
                 </a>
+                <a class="card-footer-item" onclick={upload_onclick}>
+                    <span class="icon-text">
+                    <span class="icon">
+                        <ion-icon name="cloud-upload"></ion-icon>
+                    </span>
+                    <span>{"Upload"}</span>
+                    </span>
+                </a>
+            </ybc::CardFooter>
+        } else if *tab == CertsTab::Root {
+                if cert_list.is_empty() {
+                    <ybc::Hero body_classes="has-text-centered" body={
+                        html! {
+                        <p class="title has-text-grey-lighter">
+                            {"No Items"}
+                        </p>
+                        }
+                    } />
+                }
+            <div class="list has-visible-pointer-controls">
+            { cert_list.into_iter().enumerate().map(|(i, entry)| {
+                let title = entry.issuer.to_string();
+
+                let delete_onmousedown = Callback::from(move |e: MouseEvent|  {
+                    e.prevent_default();
+                });
+                let id = entry.id.clone();
+                let delete_onclick = Callback::from(move |e: MouseEvent|  {
+                    e.prevent_default();
+                    if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
+                        let id = id.clone();
+                        wasm_bindgen_futures::spawn_local(async move {
+                            let _ = delete_server_cert(&id).await;
+                        });
+                    }
+                });
+
+                let download_onmousedown = Callback::from(move |e: MouseEvent|  {
+                    e.prevent_default();
+                });
+                let id = entry.id.clone();
+                let download_onclick = Callback::from(move |e: MouseEvent|  {
+                    e.prevent_default();
+                    if gloo_dialogs::confirm(&format!("Are you sure to download {id}.tar.gz?\nThis file contains the unencrypted private key.")) {
+                        location::assign(&format!("{API_ENDPOINT}/certs/{id}/download"));
+                    }
+                });
+
+                let active_index_cloned = active_index.clone();
+                let dropdown_onclick = Callback::from(move |_|  {
+                    active_index_cloned.set(if *active_index_cloned == i as i32 {
+                        -1
+                    } else {
+                        i as i32
+                    });
+                });
+                let active_index_cloned = active_index.clone();
+                let dropdown_onfocusout = Callback::from(move |_|  {
+                    active_index_cloned.set(-1);
+                });
+                let is_active = *active_index == i as i32;
+
+                html! {
+                    <div class="list-item">
+                        <div class="list-item-content">
+                            <div class="list-item-title">{title}</div>
+                            <div class="list-item-description">{&entry.id}</div>
+                        </div>
+
+                        <div class="list-item-controls">
+                            <div class="buttons is-right">
+
+                                <div class={classes!("dropdown", "is-right", is_active.then_some("is-active"))}>
+                                    <div class="dropdown-trigger" onfocusout={dropdown_onfocusout}>
+                                        <button class="button" onclick={dropdown_onclick}>
+                                            <span class="icon is-small">
+                                                <ion-icon name="ellipsis-horizontal"></ion-icon>
+                                            </span>
+                                        </button>
+                                    </div>
+                                    <div class="dropdown-menu" id="dropdown-menu" role="menu">
+                                        <div class="dropdown-content">
+                                            <a class="dropdown-item has-text-danger" onmousedown={delete_onmousedown} onclick={delete_onclick}>
+                                                <span class="icon-text">
+                                                    <span class="icon">
+                                                        <ion-icon name="trash"></ion-icon>
+                                                    </span>
+                                                    <span>{"Delete"}</span>
+                                                </span>
+                                            </a>
+                                            <a class="dropdown-item" onmousedown={download_onmousedown} onclick={download_onclick}>
+                                                <span class="icon-text">
+                                                    <span class="icon">
+                                                        <ion-icon name="cloud-download"></ion-icon>
+                                                    </span>
+                                                    <span>{"Download"}</span>
+                                                </span>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }).collect::<Html>() }
+            </div>
+            <ybc::CardFooter>
                 <a class="card-footer-item" onclick={upload_onclick}>
                     <span class="icon-text">
                     <span class="icon">
