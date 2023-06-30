@@ -58,6 +58,11 @@ impl FromStr for SubjectName {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if !s.is_ascii() {
+            return Err(Error::InvalidSubjectName {
+                name: s.to_string(),
+            });
+        }
         let wildcard = s.starts_with("*.");
         let name = s.trim_start_matches("*.");
         let ipaddr: Result<IpAddr, _> = name.parse();
