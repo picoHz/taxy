@@ -123,25 +123,6 @@ pub async fn start_admin(
             .or(not_found),
     );
 
-    #[cfg(debug_assertions)]
-    let api = api
-        .with(warp::reply::with::header(
-            "Access-Control-Allow-Headers",
-            "content-type, authorization, cookie",
-        ))
-        .with(warp::reply::with::header(
-            "Access-Control-Allow-Credentials",
-            "true",
-        ))
-        .with(warp::reply::with::header(
-            "Access-Control-Allow-Methods",
-            "GET, POST, PUT, DELETE",
-        ))
-        .with(warp::reply::with::header(
-            "Access-Control-Allow-Origin",
-            "http://localhost:8080",
-        ));
-
     let (_, server) = warp::serve(
         api.or(swagger::swagger_ui())
             .or(static_file)
@@ -293,15 +274,5 @@ async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible> {
     }
 
     let json = warp::reply::json(&ErrorMessage { message, error });
-
-    let reply = warp::reply::with_status(json, code);
-
-    #[cfg(debug_assertions)]
-    let reply = warp::reply::with_header(
-        reply,
-        "Access-Control-Allow-Origin",
-        "http://localhost:8080",
-    );
-
-    Ok(reply)
+    Ok(warp::reply::with_status(json, code))
 }
