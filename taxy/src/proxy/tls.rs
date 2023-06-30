@@ -4,6 +4,7 @@ use dashmap::DashMap;
 use std::fmt;
 use std::str::FromStr;
 use std::sync::Arc;
+use taxy_api::cert::CertKind;
 use taxy_api::error::Error;
 use taxy_api::subject_name::SubjectName;
 use taxy_api::tls::TlsState;
@@ -46,7 +47,11 @@ impl TlsTermination {
 
     pub async fn setup(&mut self, certs: &CertList) -> TlsState {
         let resolver: Arc<dyn ResolvesServerCert> = Arc::new(CertResolver::new(
-            certs.iter().cloned().collect(),
+            certs
+                .iter()
+                .filter(|cert| cert.kind == CertKind::Server)
+                .cloned()
+                .collect(),
             self.server_names.clone(),
             true,
         ));
