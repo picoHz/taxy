@@ -65,7 +65,7 @@ impl ServerState {
 
         let mut this = Self {
             sites: sites.into_iter().collect(),
-            certs: certs.into_iter().collect(),
+            certs: CertList::new(certs).await,
             acmes: acmes.into_iter().collect(),
             ports: PortList::default(),
             storage: Box::new(storage),

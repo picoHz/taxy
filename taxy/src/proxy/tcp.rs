@@ -17,10 +17,10 @@ use tokio::{
     sync::Notify,
 };
 use tokio_rustls::{
-    rustls::{client::ServerName, Certificate, ClientConfig, RootCertStore},
+    rustls::{client::ServerName, ClientConfig},
     TlsAcceptor, TlsConnector,
 };
-use tracing::{debug, error, info, span, warn, Instrument, Level, Span};
+use tracing::{debug, error, info, span, Instrument, Level, Span};
 
 const MAX_BUFFER_SIZE: usize = 4096;
 
@@ -73,31 +73,11 @@ impl TcpPortContext {
     }
 
     pub async fn setup(&mut self, certs: &CertList, _sites: Vec<SiteEntry>) -> Result<(), Error> {
-        let use_tls = self.servers.iter().any(|server| server.tls);
-        if self.tls_client_config.is_none() && use_tls {
-            let mut root_certs = RootCertStore::empty();
-            if let Ok(certs) =
-                tokio::task::spawn_blocking(rustls_native_certs::load_native_certs).await
-            {
-                match certs {
-                    Ok(certs) => {
-                        for certs in certs {
-                            if let Err(err) = root_certs.add(&Certificate(certs.0)) {
-                                warn!("failed to add native certs: {err}");
-                            }
-                        }
-                    }
-                    Err(err) => {
-                        warn!("failed to load native certs: {err}");
-                    }
-                }
-            }
-            let config = ClientConfig::builder()
-                .with_safe_defaults()
-                .with_root_certificates(root_certs)
-                .with_no_client_auth();
-            self.tls_client_config = Some(Arc::new(config));
-        }
+        let config = ClientConfig::builder()
+            .with_safe_defaults()
+            .with_root_certificates(certs.root_certs().clone())
+            .with_no_client_auth();
+        self.tls_client_config = Some(Arc::new(config));
 
         if let Some(tls) = &mut self.tls_termination {
             self.status.state.tls = Some(tls.setup(certs).await);
