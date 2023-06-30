@@ -72,10 +72,13 @@ pub fn self_sign() -> Html {
         (),
     );
 
+    let validation = use_state(|| false);
+
     let entry = get_request(&san, &ca_cert);
     let san_err = entry
         .as_ref()
         .err()
+        .filter(|_| *validation)
         .and_then(|errors| errors.get("san").map(|s| s.to_string()));
 
     let is_loading = use_state(|| false);
@@ -83,6 +86,7 @@ pub fn self_sign() -> Html {
     let entry_cloned = entry.clone();
     let is_loading_cloned = is_loading.clone();
     let self_sign_onclick = Callback::from(move |_| {
+        validation.set(true);
         if *is_loading_cloned {
             return;
         }
@@ -162,7 +166,7 @@ pub fn self_sign() -> Html {
                     </button>
                 </p>
                 <p class="control">
-                    <button class={classes!("button", "is-primary", is_loading.then_some("is-loading"))} onclick={self_sign_onclick} disabled={entry.is_err()}>
+                    <button class={classes!("button", "is-primary", is_loading.then_some("is-loading"))} onclick={self_sign_onclick}>
                     {"Sign"}
                     </button>
                 </p>
