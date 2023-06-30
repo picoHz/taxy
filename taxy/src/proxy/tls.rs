@@ -67,10 +67,6 @@ impl TlsTermination {
 
         TlsState::Active
     }
-
-    pub async fn refresh(&mut self, certs: &CertList) -> TlsState {
-        self.setup(certs).await
-    }
 }
 
 pub struct CertResolver {

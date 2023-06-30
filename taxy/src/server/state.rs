@@ -201,7 +201,13 @@ impl ServerState {
             entries: self.certs.iter().map(|item| item.info()).collect(),
         });
         for ctx in self.ports.as_mut_slice() {
-            let _ = ctx.refresh(&self.certs).await;
+            let sites = self
+                .sites
+                .entries()
+                .filter(|entry: &&SiteEntry| entry.site.ports.contains(&ctx.entry.id))
+                .cloned()
+                .collect();
+            let _ = ctx.setup(&self.certs, sites).await;
         }
     }
 
@@ -247,8 +253,14 @@ impl ServerState {
     pub async fn run_background_tasks(&mut self) {
         let _ = self.start_http_challenges().await.await;
         for ctx in self.ports.as_mut_slice() {
+            let sites = self
+                .sites
+                .entries()
+                .filter(|entry: &&SiteEntry| entry.site.ports.contains(&ctx.entry.id))
+                .cloned()
+                .collect();
             let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
-            if let Err(err) = ctx.refresh(&self.certs).instrument(span.clone()).await {
+            if let Err(err) = ctx.setup(&self.certs, sites).instrument(span.clone()).await {
                 span.in_scope(|| {
                     error!(?err, "failed to refresh port");
                 });
