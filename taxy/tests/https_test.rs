@@ -1,12 +1,10 @@
-use std::sync::Arc;
+use std::{net::ToSocketAddrs, sync::Arc};
 use taxy::certs::Cert;
 use taxy_api::{
     port::{Port, PortEntry, PortOptions},
     site::{Route, Site, SiteEntry},
     tls::TlsTermination,
 };
-use tokio::net::TcpListener;
-use tokio_stream::wrappers::TcpListenerStream;
 use warp::Filter;
 
 mod common;
@@ -14,12 +12,17 @@ use common::{with_server, TestStorage};
 
 #[tokio::test]
 async fn https_proxy() -> anyhow::Result<()> {
-    let root = Cert::new_ca().unwrap();
+    let root = Arc::new(Cert::new_ca().unwrap());
     let cert = Arc::new(Cert::new_self_signed(&["localhost".parse().unwrap()], &root).unwrap());
 
-    let listener = TcpListener::bind("127.0.0.1:53000").await.unwrap();
+    let addr = "localhost:53000".to_socket_addrs().unwrap().next().unwrap();
     let hello = warp::path!("hello").map(|| format!("Hello"));
-    tokio::spawn(warp::serve(hello).run_incoming(TcpListenerStream::new(listener)));
+    let (_, server) = warp::serve(hello)
+        .tls()
+        .cert(&cert.raw_chain)
+        .key(&cert.raw_key)
+        .bind_ephemeral(addr);
+    tokio::spawn(server);
 
     let config = TestStorage::builder()
         .ports(vec![PortEntry {
@@ -42,12 +45,19 @@ async fn https_proxy() -> anyhow::Result<()> {
                 routes: vec![Route {
                     path: "/".into(),
                     servers: vec![taxy_api::site::Server {
-                        url: "http://127.0.0.1:53000/".parse().unwrap(),
+                        url: "https://localhost:53000/".parse().unwrap(),
                     }],
                 }],
             },
         }])
-        .certs([(cert.id.clone(), cert.clone())].into_iter().collect())
+        .certs(
+            [
+                (root.id.clone(), root.clone()),
+                (cert.id.clone(), cert.clone()),
+            ]
+            .into_iter()
+            .collect(),
+        )
         .build();
 
     let ca = reqwest::Certificate::from_pem(&root.raw_chain)?;

@@ -1,16 +1,13 @@
 use core::panic;
-use std::sync::Arc;
-
 use futures::{FutureExt, SinkExt, StreamExt};
+use std::{net::ToSocketAddrs, sync::Arc};
 use taxy::certs::Cert;
 use taxy_api::{
     port::{Port, PortEntry, PortOptions},
     site::{Route, Site, SiteEntry},
     tls::TlsTermination,
 };
-use tokio::net::TcpListener;
 use tokio_rustls::rustls::{client::ClientConfig, RootCertStore};
-use tokio_stream::wrappers::TcpListenerStream;
 use tokio_tungstenite::{connect_async_tls_with_config, tungstenite::Message, Connector};
 use url::Url;
 use warp::Filter;
@@ -20,7 +17,7 @@ use common::{with_server, TestStorage};
 
 #[tokio::test]
 async fn wss_proxy() -> anyhow::Result<()> {
-    let root = Cert::new_ca().unwrap();
+    let root = Arc::new(Cert::new_ca().unwrap());
     let cert = Arc::new(Cert::new_self_signed(&["localhost".parse().unwrap()], &root).unwrap());
 
     let routes = warp::path("ws").and(warp::ws()).map(|ws: warp::ws::Ws| {
@@ -34,8 +31,13 @@ async fn wss_proxy() -> anyhow::Result<()> {
         })
     });
 
-    let listener = TcpListener::bind("127.0.0.1:55000").await.unwrap();
-    tokio::spawn(warp::serve(routes).run_incoming(TcpListenerStream::new(listener)));
+    let addr = "localhost:55000".to_socket_addrs().unwrap().next().unwrap();
+    let (_, server) = warp::serve(routes)
+        .tls()
+        .cert(&cert.raw_chain)
+        .key(&cert.raw_key)
+        .bind_ephemeral(addr);
+    tokio::spawn(server);
 
     let config = TestStorage::builder()
         .ports(vec![PortEntry {
@@ -58,12 +60,19 @@ async fn wss_proxy() -> anyhow::Result<()> {
                 routes: vec![Route {
                     path: "/".into(),
                     servers: vec![taxy_api::site::Server {
-                        url: "http://127.0.0.1:55000/".parse().unwrap(),
+                        url: "https://localhost:55000/".parse().unwrap(),
                     }],
                 }],
             },
         }])
-        .certs([(cert.id.clone(), cert.clone())].into_iter().collect())
+        .certs(
+            [
+                (root.id.clone(), root.clone()),
+                (cert.id.clone(), cert.clone()),
+            ]
+            .into_iter()
+            .collect(),
+        )
         .build();
 
     let mut root_certs = RootCertStore::empty();
