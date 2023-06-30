@@ -1,8 +1,9 @@
 use crate::subject_name::SubjectName;
+use serde_default::DefaultFromSerde;
 use serde_derive::{Deserialize, Serialize};
 use std::fmt;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
@@ -52,6 +53,17 @@ pub struct SelfSignedCertRequest {
     pub san: Vec<SubjectName>,
     #[schema(example = "f9cf7e3faa1aca7e6086")]
     pub ca_cert: Option<String>,
+}
+
+#[derive(DefaultFromSerde, Clone, Serialize, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct UploadQuery {
+    #[serde(default = "default_cert_kind")]
+    pub kind: CertKind,
+}
+
+fn default_cert_kind() -> CertKind {
+    CertKind::Server
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, ToSchema)]

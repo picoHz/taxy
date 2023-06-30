@@ -6,7 +6,7 @@ use crate::API_ENDPOINT;
 use gloo_net::http::Request;
 use serde_derive::{Deserialize, Serialize};
 use taxy_api::acme::AcmeInfo;
-use taxy_api::cert::{CertInfo, CertKind};
+use taxy_api::cert::{CertInfo, CertKind, UploadQuery};
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
@@ -71,8 +71,18 @@ pub fn cert_list() -> Html {
     });
 
     let navigator_cloned = navigator.clone();
+    let tab_cloned = tab.clone();
     let upload_onclick = Callback::from(move |_| {
-        navigator_cloned.push(&Route::Upload);
+        let _ = navigator_cloned.push_with_query(
+            &Route::Upload,
+            &UploadQuery {
+                kind: if *tab_cloned == CertsTab::Server {
+                    CertKind::Server
+                } else {
+                    CertKind::Root
+                },
+            },
+        );
     });
 
     let navigator_cloned = navigator.clone();

@@ -8,6 +8,7 @@ use crate::{
     API_ENDPOINT,
 };
 use gloo_net::http::Request;
+use taxy_api::cert::{CertKind, UploadQuery};
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
@@ -16,6 +17,9 @@ use yew_router::prelude::*;
 #[function_component(Upload)]
 pub fn upload() -> Html {
     use_ensure_auth();
+
+    let location = use_location().unwrap();
+    let query: UploadQuery = location.query().unwrap_or_default();
 
     let navigator = use_navigator().unwrap();
     let navigator_cloned = navigator.clone();
@@ -63,11 +67,15 @@ pub fn upload() -> Html {
             if let Some(key) = key_cloned {
                 is_loading_cloned.set(true);
                 wasm_bindgen_futures::spawn_local(async move {
-                    if upload_cert(&chain, &key).await.is_ok() {
+                    if upload_cert(&chain, &key, query.kind).await.is_ok() {
                         let _ = navigator.push_with_query(
                             &Route::Certs,
                             &CertsQuery {
-                                tab: CertsTab::Server,
+                                tab: if query.kind == CertKind::Server {
+                                    CertsTab::Server
+                                } else {
+                                    CertsTab::Root
+                                },
                             },
                         );
                     }
@@ -155,12 +163,17 @@ pub fn upload() -> Html {
     }
 }
 
-async fn upload_cert(chain: &web_sys::File, key: &web_sys::File) -> Result<(), gloo_net::Error> {
+async fn upload_cert(
+    chain: &web_sys::File,
+    key: &web_sys::File,
+    kind: CertKind,
+) -> Result<(), gloo_net::Error> {
     let form_data = web_sys::FormData::new().unwrap();
     form_data.append_with_blob("chain", chain).unwrap();
     form_data.append_with_blob("key", key).unwrap();
 
     Request::post(&format!("{API_ENDPOINT}/certs/upload"))
+        .query([("kind", kind.to_string())])
         .body(form_data)
         .send()
         .await?;

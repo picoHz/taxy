@@ -3,7 +3,7 @@ use crate::{certs::Cert, server::rpc::certs::*};
 use hyper::Response;
 use std::{io::Read, ops::Deref, sync::Arc};
 use taxy_api::{
-    cert::{CertKind, SelfSignedCertRequest},
+    cert::{SelfSignedCertRequest, UploadQuery},
     error::Error,
 };
 use tokio_stream::StreamExt;
@@ -31,6 +31,7 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
     let api_upload = warp::post().and(warp::path("upload")).and(
         with_state(app_state.clone())
             .and(warp::multipart::form())
+            .and(warp::query())
             .and(warp::path::end())
             .and_then(upload),
     );
@@ -133,6 +134,7 @@ pub async fn self_sign(
     post,
     path = "/api/certs/upload",
     request_body(content = CertPostBody, content_type = "multipart/form-data"),
+    params(UploadQuery),
     responses(
         (status = 200),
         (status = 400, body = Error),
@@ -142,7 +144,11 @@ pub async fn self_sign(
         ("cookie"=[])
     )
 )]
-pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, Rejection> {
+pub async fn upload(
+    state: AppState,
+    mut form: FormData,
+    query: UploadQuery,
+) -> Result<impl Reply, Rejection> {
     let mut chain = Vec::new();
     let mut key = Vec::new();
     while let Some(part) = form.next().await {
@@ -163,7 +169,7 @@ pub async fn upload(state: AppState, mut form: FormData) -> Result<impl Reply, R
         }
     }
 
-    let cert = Arc::new(Cert::new(CertKind::Server, chain, key)?);
+    let cert = Arc::new(Cert::new(query.kind, chain, key)?);
     Ok(warp::reply::json(&state.call(AddCert { cert }).await?))
 }
 
