@@ -42,6 +42,7 @@ pub struct CertInfo {
     pub not_after: i64,
     #[schema(example = "157766400")]
     pub not_before: i64,
+    pub is_ca: bool,
     pub metadata: Option<CertMetadata>,
 }
 

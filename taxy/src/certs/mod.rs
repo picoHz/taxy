@@ -32,6 +32,7 @@ pub struct Cert {
     pub san: Vec<SubjectName>,
     pub not_after: ASN1Time,
     pub not_before: ASN1Time,
+    pub is_ca: bool,
     pub metadata: Option<CertMetadata>,
 }
 
@@ -102,6 +103,7 @@ impl Cert {
             san: self.san.clone(),
             not_after: self.not_after.timestamp(),
             not_before: self.not_before.timestamp(),
+            is_ca: self.is_ca,
             metadata: self.metadata.clone(),
         }
     }
@@ -173,6 +175,7 @@ impl Cert {
 
         let not_after = x509.validity().not_after;
         let not_before = x509.validity().not_before;
+        let is_ca = x509.is_ca();
 
         let issuer = x509.issuer().to_string();
         let root_cert = parsed_chain
@@ -192,6 +195,7 @@ impl Cert {
             san,
             not_after,
             not_before,
+            is_ca,
             metadata,
         })
     }
