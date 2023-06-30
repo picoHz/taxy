@@ -63,6 +63,7 @@ impl RpcMethod for DeleteCert {
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state.certs.delete(&self.id)?;
+        state.update_certs().await;
         state.storage.delete_cert(&self.id).await;
         Ok(())
     }
