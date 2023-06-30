@@ -9,9 +9,12 @@ use crate::{
 };
 use gloo_net::http::Request;
 use std::{collections::HashMap, str::FromStr};
-use taxy_api::{cert::SelfSignedCertRequest, subject_name::SubjectName};
+use taxy_api::{
+    cert::{CertInfo, CertKind, SelfSignedCertRequest},
+    subject_name::SubjectName,
+};
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
-use web_sys::HtmlInputElement;
+use web_sys::{HtmlInputElement, HtmlSelectElement};
 use yew::prelude::*;
 use yew_router::prelude::*;
 
@@ -39,7 +42,37 @@ pub fn self_sign() -> Html {
         }
     });
 
-    let entry = get_request(&san);
+    let ca_cert = use_state(String::new);
+    let ca_cert_onchange = Callback::from({
+        let ca_cert = ca_cert.clone();
+        move |event: Event| {
+            let target: HtmlSelectElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
+            ca_cert.set(target.value());
+        }
+    });
+
+    let ca_cert_list = use_state(Vec::<CertInfo>::new);
+    let ca_cert_list_cloned = ca_cert_list.clone();
+    let ca_cert_cloned = ca_cert.clone();
+    use_effect_with_deps(
+        move |_| {
+            wasm_bindgen_futures::spawn_local(async move {
+                if let Ok(res) = get_cert_list().await {
+                    let list = res
+                        .into_iter()
+                        .filter(|cert| cert.kind == CertKind::Root)
+                        .collect::<Vec<_>>();
+                    if let Some(cert) = list.first() {
+                        ca_cert_cloned.set(cert.id.clone());
+                    }
+                    ca_cert_list_cloned.set(list);
+                }
+            });
+        },
+        (),
+    );
+
+    let entry = get_request(&san, &ca_cert);
     let san_err = entry
         .as_ref()
         .err()
@@ -100,6 +133,28 @@ pub fn self_sign() -> Html {
                 </div>
             </div>
 
+            <div class="field is-horizontal m-5">
+                <div class="field-label is-normal">
+                    <label class="label">{"CA Certificate"}</label>
+                </div>
+                <div class="field-body">
+                    <div class="field is-narrow">
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                        <select onchange={ca_cert_onchange}>
+                            { ca_cert_list.iter().map(|cert| {
+                                html! {
+                                    <option selected={&*ca_cert == &cert.id} value={cert.id.clone()}>{format!("{} ({})", cert.issuer, cert.id)}</option>
+                                }
+                            }).collect::<Html>() }
+                            <option selected={ca_cert.is_empty()} value={""}>{"Generate"}</option>
+                        </select>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="field is-grouped is-grouped-right mx-5">
                 <p class="control">
                     <button class="button is-light" onclick={cancel_onclick}>
@@ -117,7 +172,7 @@ pub fn self_sign() -> Html {
     }
 }
 
-fn get_request(san: &str) -> Result<SelfSignedCertRequest, HashMap<String, String>> {
+fn get_request(san: &str, ca_cert: &str) -> Result<SelfSignedCertRequest, HashMap<String, String>> {
     let mut errors = HashMap::new();
     let mut names = Vec::new();
     for name in san.split(',').filter(|s| !s.is_empty()) {
@@ -133,10 +188,15 @@ fn get_request(san: &str) -> Result<SelfSignedCertRequest, HashMap<String, Strin
             "At least one subject name is required.".into(),
         );
     }
+    let ca_cert = ca_cert.trim();
     if errors.is_empty() {
         Ok(SelfSignedCertRequest {
             san: names,
-            ca_cert: None,
+            ca_cert: if ca_cert.is_empty() {
+                None
+            } else {
+                Some(ca_cert.into())
+            },
         })
     } else {
         Err(errors)
@@ -146,6 +206,14 @@ fn get_request(san: &str) -> Result<SelfSignedCertRequest, HashMap<String, Strin
 async fn request_self_sign(req: &SelfSignedCertRequest) -> Result<(), gloo_net::Error> {
     Request::post(&format!("{API_ENDPOINT}/certs/self_sign"))
         .json(&req)?
+        .send()
+        .await?
+        .json()
+        .await
+}
+
+async fn get_cert_list() -> Result<Vec<CertInfo>, gloo_net::Error> {
+    Request::get(&format!("{API_ENDPOINT}/certs"))
         .send()
         .await?
         .json()
