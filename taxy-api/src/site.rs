@@ -5,6 +5,8 @@ use utoipa::ToSchema;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct Site {
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub name: String,
     #[schema(example = json!(["c56yqmqcvpmp49n14s2lexxl"]))]
     pub ports: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]

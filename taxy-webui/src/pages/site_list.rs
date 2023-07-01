@@ -106,10 +106,16 @@ pub fn site_list() -> Html {
                 let ports = entry.site.ports.iter().filter_map(|port| {
                     ports.entries.iter().find(|p| p.id == *port)
                 }).map(|entry| format_multiaddr(&entry.port.listen)).collect::<Vec<_>>().join(", ");
+
+                let title = if entry.site.name.is_empty() {
+                    entry.id.clone()
+                } else {
+                    entry.site.name.clone()
+                };
                 html! {
                     <div class="list-item">
                         <div class="list-item-content">
-                            <div class="list-item-title">{&entry.id}</div>
+                            <div class="list-item-title">{title}</div>
                             <div class="list-item-description">{ports}</div>
                         </div>
 

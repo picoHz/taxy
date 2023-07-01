@@ -16,13 +16,14 @@ use yewdux::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct Props {
-    #[prop_or_else(create_default_port)]
+    #[prop_or_else(create_default_site)]
     pub site: Site,
     pub on_changed: Callback<Result<Site, HashMap<String, String>>>,
 }
 
-fn create_default_port() -> Site {
+fn create_default_site() -> Site {
     Site {
+        name: String::new(),
         ports: vec![],
         vhosts: vec![],
         routes: vec![],
@@ -43,6 +44,15 @@ pub fn site_config(props: &Props) -> Html {
         },
         (),
     );
+
+    let name = use_state(|| props.site.name.clone());
+    let name_onchange = Callback::from({
+        let name = name.clone();
+        move |event: Event| {
+            let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
+            name.set(target.value());
+        }
+    });
 
     let bound_ports = use_state(|| props.site.ports.clone());
     let bound_ports_onchange = Callback::from({
@@ -100,7 +110,7 @@ pub fn site_config(props: &Props) -> Html {
 
     let prev_entry =
         use_state::<Result<Site, HashMap<String, String>>, _>(|| Err(Default::default()));
-    let entry = get_site(&bound_ports, &vhosts, &routes);
+    let entry = get_site(&name, &bound_ports, &vhosts, &routes);
 
     if entry != *prev_entry {
         prev_entry.set(entry.clone());
@@ -121,6 +131,19 @@ pub fn site_config(props: &Props) -> Html {
 
     html! {
         <>
+            <div class="field is-horizontal m-5">
+                <div class="field-label is-normal">
+                <label class="label">{"Name"}</label>
+                </div>
+                <div class="field-body">
+                    <div class="field">
+                        <p class="control is-expanded">
+                        <input class="input" type="text" value={name.to_string()} onchange={name_onchange} />
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <div class="field is-horizontal m-5">
                 <div class="field-label is-normal">
                 <label class="label">{"Ports"}</label>
@@ -251,6 +274,7 @@ pub fn site_config(props: &Props) -> Html {
 }
 
 fn get_site(
+    name: &str,
     ports: &[String],
     vhosts: &str,
     routes: &[(String, Vec<String>)],
@@ -297,6 +321,7 @@ fn get_site(
 
     if errors.is_empty() {
         Ok(Site {
+            name: name.trim().to_string(),
             ports,
             vhosts: hosts,
             routes: parsed_routes,

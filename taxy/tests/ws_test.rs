@@ -40,6 +40,7 @@ async fn ws_proxy() -> anyhow::Result<()> {
         .sites(vec![SiteEntry {
             id: "test2".into(),
             site: Site {
+                name: String::new(),
                 ports: vec!["test".into()],
                 vhosts: vec!["localhost:54001".parse().unwrap()],
                 routes: vec![Route {
