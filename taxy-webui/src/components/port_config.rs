@@ -22,6 +22,7 @@ pub struct Props {
 
 fn create_default_port() -> Port {
     Port {
+        name: String::new(),
         listen: "/ip4/0.0.0.0/tcp/8080".parse().unwrap(),
         opts: Default::default(),
     }
@@ -77,6 +78,15 @@ pub fn port_config(props: &Props) -> Html {
         (false, true) => "http",
         (false, false) => "tcp",
     };
+
+    let name = use_state(|| props.port.name.clone());
+    let name_onchange = Callback::from({
+        let name = name.clone();
+        move |event: Event| {
+            let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
+            name.set(target.value());
+        }
+    });
 
     let protocol = use_state(|| protocol.to_string());
     let protocol_onchange = Callback::from({
@@ -142,6 +152,7 @@ pub fn port_config(props: &Props) -> Html {
     let prev_entry =
         use_state::<Result<Port, HashMap<String, String>>, _>(|| Err(Default::default()));
     let entry = get_port(
+        &name,
         &protocol,
         &interface,
         *port,
@@ -158,6 +169,19 @@ pub fn port_config(props: &Props) -> Html {
 
     html! {
         <>
+            <div class="field is-horizontal m-5">
+                <div class="field-label is-normal">
+                <label class="label">{"Name"}</label>
+                </div>
+                <div class="field-body">
+                    <div class="field">
+                        <p class="control is-expanded">
+                        <input class="input" type="text" value={name.to_string()} onchange={name_onchange} />
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <div class="field is-horizontal m-5">
                 <div class="field-label is-normal">
                 <label class="label">{"Listener"}</label>
@@ -356,6 +380,7 @@ fn set_host_port(addr: &Multiaddr, host: &str, port: u16) -> Multiaddr {
 }
 
 fn get_port(
+    name: &str,
     protocol: &str,
     interface: &str,
     port: u16,
@@ -398,6 +423,7 @@ fn get_port(
     }
 
     let mut opts = Port {
+        name: name.trim().to_string(),
         listen: addr,
         opts: Default::default(),
     };

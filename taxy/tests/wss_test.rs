@@ -43,6 +43,7 @@ async fn wss_proxy() -> anyhow::Result<()> {
         .ports(vec![PortEntry {
             id: "test".into(),
             port: Port {
+                name: String::new(),
                 listen: "/ip4/127.0.0.1/tcp/55001/https".parse().unwrap(),
                 opts: PortOptions {
                     tls_termination: Some(TlsTermination {

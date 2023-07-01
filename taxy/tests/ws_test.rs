@@ -32,6 +32,7 @@ async fn ws_proxy() -> anyhow::Result<()> {
         .ports(vec![PortEntry {
             id: "test".into(),
             port: Port {
+                name: String::new(),
                 listen: "/ip4/127.0.0.1/tcp/54001/http".parse().unwrap(),
                 opts: Default::default(),
             },

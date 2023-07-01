@@ -40,6 +40,7 @@ impl PortContext {
             entry: PortEntry {
                 id: String::new(),
                 port: Port {
+                    name: String::new(),
                     listen: Multiaddr::empty(),
                     opts: Default::default(),
                 },

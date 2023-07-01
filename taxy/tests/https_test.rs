@@ -28,6 +28,7 @@ async fn https_proxy() -> anyhow::Result<()> {
         .ports(vec![PortEntry {
             id: "test".into(),
             port: Port {
+                name: String::new(),
                 listen: "/ip4/127.0.0.1/tcp/53001/https".parse().unwrap(),
                 opts: PortOptions {
                     tls_termination: Some(TlsTermination {

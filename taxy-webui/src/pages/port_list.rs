@@ -103,11 +103,16 @@ pub fn post_list() -> Html {
                     active_index_cloned.set(-1);
                 });
                 let is_active = *active_index == i as i32;
+                let title = if entry.port.name.is_empty() {
+                    entry.id.clone()
+                } else {
+                    entry.port.name.clone()
+                };
                 html! {
                     <div class="list-item">
                         <div class="list-item-content">
-                            <div class="list-item-title">{format_multiaddr(&entry.port.listen)}</div>
-                            <div class="list-item-description">{&entry.id}</div>
+                            <div class="list-item-title">{title}</div>
+                            <div class="list-item-description">{format_multiaddr(&entry.port.listen)}</div>
                         </div>
 
                         <div class="list-item-controls">

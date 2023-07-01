@@ -19,6 +19,7 @@ async fn http_proxy() -> anyhow::Result<()> {
         .ports(vec![PortEntry {
             id: "test".into(),
             port: Port {
+                name: String::new(),
                 listen: "/ip4/127.0.0.1/tcp/52001/http".parse().unwrap(),
                 opts: Default::default(),
             },

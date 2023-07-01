@@ -27,6 +27,7 @@ async fn tls_proxy() -> anyhow::Result<()> {
         .ports(vec![PortEntry {
             id: "test".into(),
             port: Port {
+                name: String::new(),
                 listen: "/ip4/127.0.0.1/tcp/51001/tls".parse().unwrap(),
                 opts: PortOptions {
                     upstream_servers: vec![UpstreamServer {

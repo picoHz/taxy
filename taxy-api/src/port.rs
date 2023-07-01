@@ -70,6 +70,8 @@ impl From<(String, Port)> for PortEntry {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct Port {
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub name: String,
     #[schema(value_type = String, example = "/ip4/127.0.0.1/tcp/8080")]
     pub listen: Multiaddr,
     #[serde(flatten, default)]
