@@ -378,9 +378,16 @@ impl Storage for FileStorage {
 
     async fn delete_cert(&self, id: &str) {
         let dir = &self.dir;
-        let path = dir.join("certs").join(id);
-        if let Err(err) = fs::remove_dir_all(&path).await {
-            error!(?path, "failed to delete: {err}");
+
+        if let Ok(walker) =
+            globwalk::GlobWalkerBuilder::from_patterns(dir.join("certs"), &[&format!("*/{id}")])
+                .build()
+        {
+            for entry in walker.filter_map(Result::ok) {
+                if let Err(err) = fs::remove_dir_all(entry.path()).await {
+                    error!(path = ?entry.path(), "failed to delete: {err}");
+                }
+            }
         }
     }
 
