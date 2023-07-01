@@ -34,8 +34,8 @@ async fn wss_proxy() -> anyhow::Result<()> {
     let addr = "localhost:55000".to_socket_addrs().unwrap().next().unwrap();
     let (_, server) = warp::serve(routes)
         .tls()
-        .cert(&cert.raw_chain)
-        .key(&cert.raw_key)
+        .cert(&cert.pem_chain)
+        .key(&cert.pem_key)
         .bind_ephemeral(addr);
     tokio::spawn(server);
 

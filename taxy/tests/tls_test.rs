@@ -18,8 +18,8 @@ async fn tls_proxy() -> anyhow::Result<()> {
     let hello = warp::path!("hello").map(|| format!("Hello"));
     let (_, server) = warp::serve(hello)
         .tls()
-        .cert(&cert.raw_chain)
-        .key(&cert.raw_key)
+        .cert(&cert.pem_chain)
+        .key(&cert.pem_key)
         .bind_ephemeral(addr);
     tokio::spawn(server);
 
@@ -49,7 +49,7 @@ async fn tls_proxy() -> anyhow::Result<()> {
         )
         .build();
 
-    let ca = reqwest::Certificate::from_pem(&root.raw_chain)?;
+    let ca = reqwest::Certificate::from_pem(&root.pem_chain)?;
 
     with_server(config, |_| async move {
         let client = reqwest::Client::builder()

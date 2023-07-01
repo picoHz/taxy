@@ -24,8 +24,8 @@ pub struct Cert {
     pub id: String,
     pub kind: CertKind,
     pub key: SecretDocument,
-    pub raw_chain: Vec<u8>,
-    pub raw_key: Vec<u8>,
+    pub pem_chain: Vec<u8>,
+    pub pem_key: Vec<u8>,
     pub fingerprint: String,
     pub issuer: String,
     pub root_cert: Option<String>,
@@ -130,13 +130,13 @@ impl Cert {
         false
     }
 
-    pub fn new(kind: CertKind, raw_chain: Vec<u8>, raw_key: Vec<u8>) -> Result<Self, Error> {
+    pub fn new(kind: CertKind, pem_chain: Vec<u8>, pem_key: Vec<u8>) -> Result<Self, Error> {
         let key_pem =
-            std::str::from_utf8(&raw_key).map_err(|_| Error::FailedToDecryptPrivateKey)?;
+            std::str::from_utf8(&pem_key).map_err(|_| Error::FailedToDecryptPrivateKey)?;
         let (_, key) =
             SecretDocument::from_pem(key_pem).map_err(|_| Error::FailedToDecryptPrivateKey)?;
 
-        let chain_meta = raw_chain.as_slice();
+        let chain_meta = pem_chain.as_slice();
         let mut meta_read = BufReader::new(chain_meta);
         let mut comment = String::new();
         meta_read
@@ -150,7 +150,7 @@ impl Cert {
         )
         .ok();
 
-        let mut chain = raw_chain.as_slice();
+        let mut chain = pem_chain.as_slice();
         let chain =
             rustls_pemfile::certs(&mut chain).map_err(|_| Error::FailedToReadCertificate)?;
         let chain = chain.into_iter().map(Certificate).collect::<Vec<_>>();
@@ -188,8 +188,8 @@ impl Cert {
             kind,
             fingerprint,
             key,
-            raw_chain,
-            raw_key,
+            pem_chain,
+            pem_key,
             issuer,
             root_cert,
             san,
@@ -219,17 +219,17 @@ impl Cert {
             .serialize_pem()
             .map_err(|_| Error::FailedToGerateSelfSignedCertificate)?;
 
-        let raw_chain = pem.into_bytes();
-        let raw_key = cert.serialize_private_key_pem().into_bytes();
+        let pem_chain = pem.into_bytes();
+        let pem_key = cert.serialize_private_key_pem().into_bytes();
 
-        Self::new(CertKind::Root, raw_chain, raw_key)
+        Self::new(CertKind::Root, pem_chain, pem_key)
     }
 
     pub fn new_self_signed(san: &[SubjectName], ca: &Cert) -> Result<Self, Error> {
         let ca_pem =
-            std::str::from_utf8(&ca.raw_chain).map_err(|_| Error::FailedToDecryptPrivateKey)?;
+            std::str::from_utf8(&ca.pem_chain).map_err(|_| Error::FailedToDecryptPrivateKey)?;
         let key_pem =
-            std::str::from_utf8(&ca.raw_key).map_err(|_| Error::FailedToDecryptPrivateKey)?;
+            std::str::from_utf8(&ca.pem_key).map_err(|_| Error::FailedToDecryptPrivateKey)?;
         let ca_keypair =
             KeyPair::from_pem(key_pem).map_err(|_| Error::FailedToDecryptPrivateKey)?;
         let ca_params = CertificateParams::from_ca_cert_pem(ca_pem, ca_keypair)
@@ -280,10 +280,10 @@ impl Cert {
             .serialize_pem()
             .map_err(|_| Error::FailedToGerateSelfSignedCertificate)?;
 
-        let raw_chain = format!("{}\r\n{}", cert_pem, ca_pem).into_bytes();
-        let raw_key = cert.serialize_private_key_pem().into_bytes();
+        let pem_chain = format!("{}\r\n{}", cert_pem, ca_pem).into_bytes();
+        let pem_key = cert.serialize_private_key_pem().into_bytes();
 
-        Self::new(CertKind::Server, raw_chain, raw_key)
+        Self::new(CertKind::Server, pem_chain, pem_key)
     }
 
     pub fn certified(&self) -> Result<CertifiedKey, Error> {
@@ -304,7 +304,7 @@ impl Cert {
         let signing_key = sign::any_supported_type(&PrivateKey(key.private_key.to_vec()))
             .map_err(|err| anyhow::anyhow!("{err}"))?;
 
-        let mut chain = self.raw_chain.as_slice();
+        let mut chain = self.pem_chain.as_slice();
         let chain =
             rustls_pemfile::certs(&mut chain).map_err(|_| Error::FailedToReadCertificate)?;
         let chain = chain.into_iter().map(Certificate).collect::<Vec<_>>();

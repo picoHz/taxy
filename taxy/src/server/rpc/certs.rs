@@ -93,8 +93,8 @@ fn cert_to_tar_gz(cert: &Cert) -> anyhow::Result<Bytes> {
         let enc = GzEncoder::new(&mut buf, Compression::default());
         let mut tar = tar::Builder::new(enc);
 
-        let mut chain = cert.raw_chain.as_slice();
-        let mut key = cert.raw_key.as_slice();
+        let mut chain = cert.pem_chain.as_slice();
+        let mut key = cert.pem_key.as_slice();
 
         let mtime = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)

@@ -127,8 +127,8 @@ impl FileStorage {
     async fn save_cert_impl(&self, path: &Path, cert: &Cert) -> anyhow::Result<()> {
         fs::create_dir_all(path).await?;
         info!(?path, "save cert");
-        fs::write(path.join("cert.pem"), &cert.raw_chain).await?;
-        fs::write(path.join("key.pem"), &cert.raw_key).await?;
+        fs::write(path.join("cert.pem"), &cert.pem_chain).await?;
+        fs::write(path.join("key.pem"), &cert.pem_key).await?;
         Ok(())
     }
 
