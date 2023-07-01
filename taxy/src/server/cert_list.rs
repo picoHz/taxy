@@ -101,8 +101,8 @@ impl CertList {
         let mut root_certs = self.system_root_certs.clone();
         for cert in self.certs.values() {
             if cert.kind == CertKind::Root {
-                if let Ok(certified) = cert.certified() {
-                    for cert in certified.cert {
+                if let Ok(certs) = cert.certificates() {
+                    for cert in certs {
                         if let Err(err) = root_certs.add(&cert) {
                             warn!("failed to add root cert: {}", err);
                         }

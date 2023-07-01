@@ -94,7 +94,6 @@ fn cert_to_tar_gz(cert: &Cert) -> anyhow::Result<Bytes> {
         let mut tar = tar::Builder::new(enc);
 
         let mut chain = cert.pem_chain.as_slice();
-        let mut key = cert.pem_key.as_slice();
 
         let mtime = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -108,12 +107,15 @@ fn cert_to_tar_gz(cert: &Cert) -> anyhow::Result<Bytes> {
         header.set_cksum();
         tar.append_data(&mut header, "chain.pem", &mut chain)?;
 
-        let mut header = Header::new_old();
-        header.set_size(key.len() as _);
-        header.set_mtime(mtime);
-        header.set_mode(0o644);
-        header.set_cksum();
-        tar.append_data(&mut header, "key.pem", &mut key)?;
+        if let Some(key) = &cert.pem_key {
+            let mut key = key.as_slice();
+            let mut header = Header::new_old();
+            header.set_size(key.len() as _);
+            header.set_mtime(mtime);
+            header.set_mode(0o644);
+            header.set_cksum();
+            tar.append_data(&mut header, "key.pem", &mut key)?;
+        }
 
         tar.finish()?;
     }

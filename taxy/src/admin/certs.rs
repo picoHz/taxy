@@ -169,6 +169,7 @@ pub async fn upload(
         }
     }
 
+    let key = if key.is_empty() { None } else { Some(key) };
     let cert = Arc::new(Cert::new(query.kind, chain, key)?);
     Ok(warp::reply::json(&state.call(AddCert { cert }).await?))
 }

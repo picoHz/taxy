@@ -110,7 +110,7 @@ impl ResolvesServerCert for CertResolver {
         if let Some(cert) = self.cache.get(cert.id()) {
             Some(cert.clone())
         } else {
-            let certified = match cert.certified() {
+            let certified = match cert.certified_key() {
                 Ok(certified) => Arc::new(certified),
                 Err(err) => {
                     error!("failed to load certified key: {}", err);

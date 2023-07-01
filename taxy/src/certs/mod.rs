@@ -23,9 +23,9 @@ const CERT_ID_LENGTH: usize = 20;
 pub struct Cert {
     pub id: String,
     pub kind: CertKind,
-    pub key: SecretDocument,
+    pub key: Option<SecretDocument>,
     pub pem_chain: Vec<u8>,
-    pub pem_key: Vec<u8>,
+    pub pem_key: Option<Vec<u8>>,
     pub fingerprint: String,
     pub issuer: String,
     pub root_cert: Option<String>,
@@ -130,12 +130,20 @@ impl Cert {
         false
     }
 
-    pub fn new(kind: CertKind, pem_chain: Vec<u8>, pem_key: Vec<u8>) -> Result<Self, Error> {
-        let key_pem =
-            std::str::from_utf8(&pem_key).map_err(|_| Error::FailedToDecryptPrivateKey)?;
-        let (_, key) =
-            SecretDocument::from_pem(key_pem).map_err(|_| Error::FailedToDecryptPrivateKey)?;
-
+    pub fn new(
+        kind: CertKind,
+        pem_chain: Vec<u8>,
+        pem_key: Option<Vec<u8>>,
+    ) -> Result<Self, Error> {
+        let key = if let Some(pem_key) = &pem_key {
+            let key_pem =
+                std::str::from_utf8(&pem_key).map_err(|_| Error::FailedToDecryptPrivateKey)?;
+            let (_, key) =
+                SecretDocument::from_pem(key_pem).map_err(|_| Error::FailedToDecryptPrivateKey)?;
+            Some(key)
+        } else {
+            None
+        };
         let chain_meta = pem_chain.as_slice();
         let mut meta_read = BufReader::new(chain_meta);
         let mut comment = String::new();
@@ -222,14 +230,17 @@ impl Cert {
         let pem_chain = pem.into_bytes();
         let pem_key = cert.serialize_private_key_pem().into_bytes();
 
-        Self::new(CertKind::Root, pem_chain, pem_key)
+        Self::new(CertKind::Root, pem_chain, Some(pem_key))
     }
 
     pub fn new_self_signed(san: &[SubjectName], ca: &Cert) -> Result<Self, Error> {
         let ca_pem =
             std::str::from_utf8(&ca.pem_chain).map_err(|_| Error::FailedToDecryptPrivateKey)?;
-        let key_pem =
-            std::str::from_utf8(&ca.pem_key).map_err(|_| Error::FailedToDecryptPrivateKey)?;
+        let pem_key = ca
+            .pem_key
+            .as_ref()
+            .ok_or(Error::FailedToDecryptPrivateKey)?;
+        let key_pem = std::str::from_utf8(pem_key).map_err(|_| Error::FailedToDecryptPrivateKey)?;
         let ca_keypair =
             KeyPair::from_pem(key_pem).map_err(|_| Error::FailedToDecryptPrivateKey)?;
         let ca_params = CertificateParams::from_ca_cert_pem(ca_pem, ca_keypair)
@@ -283,10 +294,10 @@ impl Cert {
         let pem_chain = format!("{}\r\n{}", cert_pem, ca_pem).into_bytes();
         let pem_key = cert.serialize_private_key_pem().into_bytes();
 
-        Self::new(CertKind::Server, pem_chain, pem_key)
+        Self::new(CertKind::Server, pem_chain, Some(pem_key))
     }
 
-    pub fn certified(&self) -> Result<CertifiedKey, Error> {
+    pub fn certified_key(&self) -> Result<CertifiedKey, Error> {
         match self.certified_impl() {
             Ok(certified) => Ok(certified),
             Err(err) => {
@@ -296,18 +307,21 @@ impl Cert {
         }
     }
 
+    pub fn certificates(&self) -> Result<Vec<Certificate>, Error> {
+        let mut chain = self.pem_chain.as_slice();
+        let chain =
+            rustls_pemfile::certs(&mut chain).map_err(|_| Error::FailedToReadCertificate)?;
+        Ok(chain.into_iter().map(Certificate).collect())
+    }
+
     fn certified_impl(&self) -> anyhow::Result<CertifiedKey> {
-        let key = self
-            .key
+        let key = self.key.as_ref().ok_or(Error::FailedToDecryptPrivateKey)?;
+        let key = key
             .decode_msg::<PrivateKeyInfo>()
             .map_err(|err| anyhow::anyhow!("{err}"))?;
         let signing_key = sign::any_supported_type(&PrivateKey(key.private_key.to_vec()))
             .map_err(|err| anyhow::anyhow!("{err}"))?;
-
-        let mut chain = self.pem_chain.as_slice();
-        let chain =
-            rustls_pemfile::certs(&mut chain).map_err(|_| Error::FailedToReadCertificate)?;
-        let chain = chain.into_iter().map(Certificate).collect::<Vec<_>>();
+        let chain = self.certificates()?;
         Ok(CertifiedKey::new(chain, signing_key))
     }
 }

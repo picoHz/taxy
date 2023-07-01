@@ -128,7 +128,9 @@ impl FileStorage {
         fs::create_dir_all(path).await?;
         info!(?path, "save cert");
         fs::write(path.join("cert.pem"), &cert.pem_chain).await?;
-        fs::write(path.join("key.pem"), &cert.pem_key).await?;
+        if let Some(key) = &cert.pem_key {
+            fs::write(path.join("key.pem"), key).await?;
+        }
         Ok(())
     }
 
@@ -205,6 +207,12 @@ impl FileStorage {
                     error!(path = ?key, "failed to load: {err}");
                 }
             }
+
+            let key_data = if key_data.is_empty() {
+                None
+            } else {
+                Some(key_data)
+            };
 
             match Cert::new(kind, chain_data, key_data) {
                 Ok(cert) => certs.push(Arc::new(cert)),

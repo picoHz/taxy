@@ -254,7 +254,7 @@ impl AcmeOrder {
         let cert = Cert::new(
             CertKind::Server,
             cert_chain_pem.into_bytes(),
-            cert.serialize_private_key_pem().into_bytes(),
+            Some(cert.serialize_private_key_pem().into_bytes()),
         );
 
         Ok(cert?)

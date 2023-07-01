@@ -19,7 +19,7 @@ async fn tls_proxy() -> anyhow::Result<()> {
     let (_, server) = warp::serve(hello)
         .tls()
         .cert(&cert.pem_chain)
-        .key(&cert.pem_key)
+        .key(&cert.pem_key.as_ref().unwrap())
         .bind_ephemeral(addr);
     tokio::spawn(server);
 

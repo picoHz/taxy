@@ -35,7 +35,7 @@ async fn wss_proxy() -> anyhow::Result<()> {
     let (_, server) = warp::serve(routes)
         .tls()
         .cert(&cert.pem_chain)
-        .key(&cert.pem_key)
+        .key(&cert.pem_key.as_ref().unwrap())
         .bind_ephemeral(addr);
     tokio::spawn(server);
 
@@ -78,7 +78,7 @@ async fn wss_proxy() -> anyhow::Result<()> {
         .build();
 
     let mut root_certs = RootCertStore::empty();
-    for cert in root.certified().unwrap().cert {
+    for cert in root.certified_key().unwrap().cert {
         root_certs.add(&cert).unwrap();
     }
 
