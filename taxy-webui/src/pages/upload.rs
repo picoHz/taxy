@@ -64,26 +64,29 @@ pub fn upload() -> Html {
         let key_cloned = key_cloned.clone();
         let is_loading_cloned = is_loading_cloned.clone();
         if let Some(chain) = chain_cloned {
-            if let Some(key) = key_cloned {
-                is_loading_cloned.set(true);
-                wasm_bindgen_futures::spawn_local(async move {
-                    if upload_cert(&chain, &key, query.kind).await.is_ok() {
-                        let _ = navigator.push_with_query(
-                            &Route::Certs,
-                            &CertsQuery {
-                                tab: if query.kind == CertKind::Server {
-                                    CertsTab::Server
-                                } else {
-                                    CertsTab::Root
-                                },
+            is_loading_cloned.set(true);
+            wasm_bindgen_futures::spawn_local(async move {
+                if upload_cert(&chain, key_cloned.as_ref(), query.kind)
+                    .await
+                    .is_ok()
+                {
+                    let _ = navigator.push_with_query(
+                        &Route::Certs,
+                        &CertsQuery {
+                            tab: if query.kind == CertKind::Server {
+                                CertsTab::Server
+                            } else {
+                                CertsTab::Root
                             },
-                        );
-                    }
-                    is_loading_cloned.set(false);
-                });
-            }
+                        },
+                    );
+                }
+                is_loading_cloned.set(false);
+            });
         }
     });
+
+    let uploadable = chain.is_some() && (query.kind == CertKind::Root || key.is_some());
 
     html! {
         <>
@@ -153,7 +156,7 @@ pub fn upload() -> Html {
                     </button>
                 </p>
                 <p class="control">
-                    <button class={classes!("button", "is-primary", is_loading.then_some("is-loading"))} onclick={upload_onclick} disabled={chain.is_none() || key.is_none()}>
+                    <button class={classes!("button", "is-primary", is_loading.then_some("is-loading"))} onclick={upload_onclick} disabled={!uploadable}>
                     {"Upload"}
                     </button>
                 </p>
@@ -165,12 +168,14 @@ pub fn upload() -> Html {
 
 async fn upload_cert(
     chain: &web_sys::File,
-    key: &web_sys::File,
+    key: Option<&web_sys::File>,
     kind: CertKind,
 ) -> Result<(), gloo_net::Error> {
     let form_data = web_sys::FormData::new().unwrap();
     form_data.append_with_blob("chain", chain).unwrap();
-    form_data.append_with_blob("key", key).unwrap();
+    if let Some(key) = key {
+        form_data.append_with_blob("key", key).unwrap();
+    }
 
     Request::post(&format!("{API_ENDPOINT}/certs/upload"))
         .query([("kind", kind.to_string())])
