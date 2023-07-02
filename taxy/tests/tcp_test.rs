@@ -9,7 +9,7 @@ use common::{with_server, TestStorage};
 #[tokio::test]
 async fn tcp_proxy() -> anyhow::Result<()> {
     let listener = TcpListener::bind("127.0.0.1:50000").await.unwrap();
-    let hello = warp::path!("hello").map(|| format!("Hello"));
+    let hello = warp::path!("hello").map(|| "Hello".to_string());
     tokio::spawn(warp::serve(hello).run_incoming(TcpListenerStream::new(listener)));
 
     let config = TestStorage::builder()

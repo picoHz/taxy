@@ -15,11 +15,11 @@ async fn tls_proxy() -> anyhow::Result<()> {
     let cert = Arc::new(Cert::new_self_signed(&["localhost".parse().unwrap()], &root).unwrap());
 
     let addr = "localhost:51000".to_socket_addrs().unwrap().next().unwrap();
-    let hello = warp::path!("hello").map(|| format!("Hello"));
+    let hello = warp::path!("hello").map(|| "Hello".to_string());
     let (_, server) = warp::serve(hello)
         .tls()
         .cert(&cert.pem_chain)
-        .key(&cert.pem_key.as_ref().unwrap())
+        .key(cert.pem_key.as_ref().unwrap())
         .bind_ephemeral(addr);
     tokio::spawn(server);
 

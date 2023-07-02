@@ -93,20 +93,20 @@ mod test {
     use super::*;
     #[test]
     fn test_is_compressed() {
-        assert_eq!(is_compressed(b"text/html"), false);
-        assert_eq!(is_compressed(b"application/json"), false);
-        assert_eq!(is_compressed(b"image/svg+xml"), false);
-        assert_eq!(is_compressed(b"image/bmp"), false);
-        assert_eq!(is_compressed(b"image/png"), true);
-        assert_eq!(is_compressed(b"image/x-ms-bmp"), false);
-        assert_eq!(is_compressed(b"audio/mp3"), true);
-        assert_eq!(is_compressed(b"audio/wav"), false);
-        assert_eq!(is_compressed(b"audio/x-wav"), false);
-        assert_eq!(is_compressed(b"audio/midi"), false);
-        assert_eq!(is_compressed(b"audio/x-midi"), false);
-        assert_eq!(is_compressed(b"video/webm"), true);
-        assert_eq!(is_compressed(b"application/x-bzip"), true);
-        assert_eq!(is_compressed(b"application/x-bzip2"), true);
-        assert_eq!(is_compressed(b"application/gzip"), true);
+        assert!(!is_compressed(b"text/html"));
+        assert!(!is_compressed(b"application/json"));
+        assert!(!is_compressed(b"image/svg+xml"));
+        assert!(!is_compressed(b"image/bmp"));
+        assert!(is_compressed(b"image/png"));
+        assert!(!is_compressed(b"image/x-ms-bmp"));
+        assert!(is_compressed(b"audio/mp3"));
+        assert!(!is_compressed(b"audio/wav"));
+        assert!(!is_compressed(b"audio/x-wav"));
+        assert!(!is_compressed(b"audio/midi"));
+        assert!(!is_compressed(b"audio/x-midi"));
+        assert!(is_compressed(b"video/webm"));
+        assert!(is_compressed(b"application/x-bzip"));
+        assert!(is_compressed(b"application/x-bzip2"));
+        assert!(is_compressed(b"application/gzip"));
     }
 }

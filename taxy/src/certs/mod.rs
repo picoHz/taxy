@@ -138,7 +138,7 @@ impl Cert {
     ) -> Result<Self, Error> {
         let key = if let Some(pem_key) = &pem_key {
             let key_pem =
-                std::str::from_utf8(&pem_key).map_err(|_| Error::FailedToDecryptPrivateKey)?;
+                std::str::from_utf8(pem_key).map_err(|_| Error::FailedToDecryptPrivateKey)?;
             let (_, key) =
                 SecretDocument::from_pem(key_pem).map_err(|_| Error::FailedToDecryptPrivateKey)?;
             Some(key)
