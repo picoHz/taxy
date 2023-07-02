@@ -22,7 +22,7 @@ pub fn app() -> Html {
         <BrowserRouter>
             <Navbar />
             <ybc::Columns classes={classes!("is-centered")}>
-                <ybc::Column classes={classes!("is-three-fifths-desktop", "m-5")}>
+                <ybc::Column classes={classes!("is-three-quarters-desktop", "m-5")}>
                     <Switch<pages::Route> render={pages::switch} />
                 </ybc::Column>
             </ybc::Columns>

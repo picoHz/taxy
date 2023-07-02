@@ -91,7 +91,7 @@ pub fn login() -> Html {
 
     html! {
         <ybc::Columns classes={classes!("is-centered")}>
-            <ybc::Column classes={classes!("is-half")}>
+            <ybc::Column classes={classes!("login-form")}>
                 <ybc::Field>
                     if let Some(err) = &*error {
                         <article class="message is-danger">
