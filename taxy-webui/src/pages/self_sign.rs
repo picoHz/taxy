@@ -60,7 +60,7 @@ pub fn self_sign() -> Html {
                 if let Ok(res) = get_cert_list().await {
                     let list = res
                         .into_iter()
-                        .filter(|cert| cert.kind == CertKind::Root)
+                        .filter(|cert| cert.has_private_key && cert.kind == CertKind::Root)
                         .collect::<Vec<_>>();
                     if let Some(cert) = list.first() {
                         ca_cert_cloned.set(cert.id.clone());

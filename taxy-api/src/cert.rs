@@ -44,6 +44,7 @@ pub struct CertInfo {
     #[schema(example = "157766400")]
     pub not_before: i64,
     pub is_ca: bool,
+    pub has_private_key: bool,
     pub metadata: Option<CertMetadata>,
 }
 

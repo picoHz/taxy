@@ -104,6 +104,7 @@ impl Cert {
             not_after: self.not_after.timestamp(),
             not_before: self.not_before.timestamp(),
             is_ca: self.is_ca,
+            has_private_key: self.key.is_some(),
             metadata: self.metadata.clone(),
         }
     }
