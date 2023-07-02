@@ -55,7 +55,8 @@ pub fn upload() -> Html {
     let chain_cloned = (*chain).clone();
     let key_cloned = (*key).clone();
     let is_loading_cloned = is_loading.clone();
-    let upload_onclick = Callback::from(move |_| {
+    let onsubmit = Callback::from(move |event: SubmitEvent| {
+        event.prevent_default();
         if *is_loading_cloned {
             return;
         }
@@ -97,70 +98,72 @@ pub fn upload() -> Html {
                 </p>
             </ybc::CardHeader>
 
-            <div class="field is-horizontal m-5">
-                <div class="field-label is-normal">
-                <label class="label">{"Certificate Chain"}</label>
-                </div>
-                <div class="field-body">
-                    <div class={classes!("file", chain.as_ref().map(|_| "has-name"))}>
-                    <label class="file-label">
-                    <input class="file-input" type="file" name="chain" onchange={chain_onchange} />
-                    <span class="file-cta">
-                        <span class="file-icon">
-                            <ion-icon name="folder-open"></ion-icon>
+            <form {onsubmit}>
+                <div class="field is-horizontal m-5">
+                    <div class="field-label is-normal">
+                    <label class="label">{"Certificate Chain"}</label>
+                    </div>
+                    <div class="field-body">
+                        <div class={classes!("file", chain.as_ref().map(|_| "has-name"))}>
+                        <label class="file-label">
+                        <input class="file-input" type="file" name="chain" onchange={chain_onchange} />
+                        <span class="file-cta">
+                            <span class="file-icon">
+                                <ion-icon name="folder-open"></ion-icon>
+                            </span>
+                            <span class="file-label">
+                            {"Choose a PEM file…"}
+                            </span>
                         </span>
-                        <span class="file-label">
-                        {"Choose a PEM file…"}
-                        </span>
-                    </span>
-                    if let Some(file) = chain.as_ref() {
-                        <span class="file-name">
-                            {file.name()}
-                        </span>
-                    }
-                    </label>
+                        if let Some(file) = chain.as_ref() {
+                            <span class="file-name">
+                                {file.name()}
+                            </span>
+                        }
+                        </label>
+                    </div>
+                    </div>
                 </div>
-                </div>
-            </div>
 
-            <div class="field is-horizontal m-5">
-                <div class="field-label is-normal">
-                <label class="label">{"Private Key"}</label>
-                </div>
-                <div class="field-body">
-                    <div class={classes!("file", key.as_ref().map(|_| "has-name"))}>
-                    <label class="file-label">
-                    <input class="file-input" type="file" name="key" onchange={key_onchange} />
-                    <span class="file-cta">
-                        <span class="file-icon">
-                            <ion-icon name="folder-open"></ion-icon>
+                <div class="field is-horizontal m-5">
+                    <div class="field-label is-normal">
+                    <label class="label">{"Private Key"}</label>
+                    </div>
+                    <div class="field-body">
+                        <div class={classes!("file", key.as_ref().map(|_| "has-name"))}>
+                        <label class="file-label">
+                        <input class="file-input" type="file" name="key" onchange={key_onchange} />
+                        <span class="file-cta">
+                            <span class="file-icon">
+                                <ion-icon name="folder-open"></ion-icon>
+                            </span>
+                            <span class="file-label">
+                            {"Choose a PEM file…"}
+                            </span>
                         </span>
-                        <span class="file-label">
-                        {"Choose a PEM file…"}
-                        </span>
-                    </span>
-                    if let Some(file) = key.as_ref() {
-                        <span class="file-name">
-                            {file.name()}
-                        </span>
-                    }
-                    </label>
+                        if let Some(file) = key.as_ref() {
+                            <span class="file-name">
+                                {file.name()}
+                            </span>
+                        }
+                        </label>
+                    </div>
+                    </div>
                 </div>
-                </div>
-            </div>
 
-            <div class="field is-grouped is-grouped-right mx-5">
-                <p class="control">
-                    <button class="button is-light" onclick={cancel_onclick}>
-                    {"Cancel"}
-                    </button>
-                </p>
-                <p class="control">
-                    <button class={classes!("button", "is-primary", is_loading.then_some("is-loading"))} onclick={upload_onclick} disabled={!uploadable}>
-                    {"Upload"}
-                    </button>
-                </p>
-            </div>
+                <div class="field is-grouped is-grouped-right mx-5">
+                    <p class="control">
+                        <button class="button is-light" onclick={cancel_onclick}>
+                        {"Cancel"}
+                        </button>
+                    </p>
+                    <p class="control">
+                        <button type="submit" class={classes!("button", "is-primary", is_loading.then_some("is-loading"))} disabled={!uploadable}>
+                        {"Upload"}
+                        </button>
+                    </p>
+                </div>
+            </form>
             </ybc::Card>
         </>
     }

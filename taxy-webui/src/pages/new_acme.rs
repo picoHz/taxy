@@ -73,7 +73,8 @@ pub fn new_acme() -> Html {
 
     let entry_cloned = entry.clone();
     let is_loading_cloned = is_loading.clone();
-    let add_acme_onclick = Callback::from(move |_| {
+    let onsubmit = Callback::from(move |event: SubmitEvent| {
+        event.prevent_default();
         if *is_loading_cloned {
             return;
         }
@@ -115,41 +116,43 @@ pub fn new_acme() -> Html {
                 </p>
             </ybc::CardHeader>
 
-            <div class="field is-horizontal m-5">
-                <div class="field-label is-normal">
-                    <label class="label">{"Proivder"}</label>
-                </div>
-                <div class="field-body">
-                    <div class="field is-narrow">
-                    <div class="control">
-                        <div class="select is-fullwidth">
-                        <select onchange={provider_onchange}>
-                            { PROVIDERS.iter().enumerate().map(|(i, item)| {
-                                html! {
-                                    <option selected={&*provider == item} value={i.to_string()}>{item.to_string()}</option>
-                                }
-                            }).collect::<Html>() }
-                        </select>
+            <form {onsubmit}>
+                <div class="field is-horizontal m-5">
+                    <div class="field-label is-normal">
+                        <label class="label">{"Proivder"}</label>
+                    </div>
+                    <div class="field-body">
+                        <div class="field is-narrow">
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                            <select onchange={provider_onchange}>
+                                { PROVIDERS.iter().enumerate().map(|(i, item)| {
+                                    html! {
+                                        <option selected={&*provider == item} value={i.to_string()}>{item.to_string()}</option>
+                                    }
+                                }).collect::<Html>() }
+                            </select>
+                            </div>
+                        </div>
                         </div>
                     </div>
-                    </div>
                 </div>
-            </div>
 
-            { provider.html(on_changed) }
+                { provider.html(on_changed) }
 
-            <div class="field is-grouped is-grouped-right mx-5">
-                <p class="control">
-                    <button class="button is-light" onclick={cancel_onclick}>
-                    {"Cancel"}
-                    </button>
-                </p>
-                <p class="control">
-                    <button class={classes!("button", "is-primary", is_loading.then_some("is-loading"))} onclick={add_acme_onclick} disabled={entry.is_err()}>
-                    {"Request"}
-                    </button>
-                </p>
-            </div>
+                <div class="field is-grouped is-grouped-right mx-5">
+                    <p class="control">
+                        <button class="button is-light" onclick={cancel_onclick}>
+                        {"Cancel"}
+                        </button>
+                    </p>
+                    <p class="control">
+                        <button type="submit" class={classes!("button", "is-primary", is_loading.then_some("is-loading"))} disabled={entry.is_err()}>
+                        {"Request"}
+                        </button>
+                    </p>
+                </div>
+            </form>
             </ybc::Card>
         </>
     }

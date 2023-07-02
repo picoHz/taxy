@@ -85,7 +85,8 @@ pub fn self_sign() -> Html {
 
     let entry_cloned = entry.clone();
     let is_loading_cloned = is_loading.clone();
-    let self_sign_onclick = Callback::from(move |_| {
+    let onsubmit = Callback::from(move |event: SubmitEvent| {
+        event.prevent_default();
         validation.set(true);
         if *is_loading_cloned {
             return;
@@ -117,60 +118,62 @@ pub fn self_sign() -> Html {
                 </p>
             </ybc::CardHeader>
 
-            <div class="field is-horizontal m-5">
-                <div class="field-label is-normal">
-                <label class="label">{"Subject Alternative Names"}</label>
-                </div>
-                <div class="field-body">
-                    <div class="field">
-                        <p class="control is-expanded">
-                        <input class={classes!("input", san_err.as_ref().map(|_| "is-danger"))} type="text" autocapitalize="off" placeholder="Server Names" value={san.to_string()} onchange={san_onchange} />
-                        </p>
-                        if let Some(err) = san_err {
-                            <p class="help is-danger">{err}</p>
-                        } else {
-                            <p class="help">
-                            {"You can use commas to list multiple names, e.g, example.com, *.test.examle.com."}
-                            </p>
-                        }
+            <form {onsubmit}>
+                <div class="field is-horizontal m-5">
+                    <div class="field-label is-normal">
+                    <label class="label">{"Subject Alternative Names"}</label>
                     </div>
-                </div>
-            </div>
-
-            <div class="field is-horizontal m-5">
-                <div class="field-label is-normal">
-                    <label class="label">{"CA Certificate"}</label>
-                </div>
-                <div class="field-body">
-                    <div class="field is-narrow">
-                    <div class="control">
-                        <div class="select is-fullwidth">
-                        <select onchange={ca_cert_onchange}>
-                            { ca_cert_list.iter().map(|cert| {
-                                html! {
-                                    <option selected={&*ca_cert == &cert.id} value={cert.id.clone()}>{format!("{} ({})", cert.issuer, cert.id)}</option>
-                                }
-                            }).collect::<Html>() }
-                            <option selected={ca_cert.is_empty()} value={""}>{"Generate"}</option>
-                        </select>
+                    <div class="field-body">
+                        <div class="field">
+                            <p class="control is-expanded">
+                            <input class={classes!("input", san_err.as_ref().map(|_| "is-danger"))} type="text" autocapitalize="off" placeholder="Server Names" value={san.to_string()} onchange={san_onchange} />
+                            </p>
+                            if let Some(err) = san_err {
+                                <p class="help is-danger">{err}</p>
+                            } else {
+                                <p class="help">
+                                {"You can use commas to list multiple names, e.g, example.com, *.test.examle.com."}
+                                </p>
+                            }
                         </div>
                     </div>
+                </div>
+
+                <div class="field is-horizontal m-5">
+                    <div class="field-label is-normal">
+                        <label class="label">{"CA Certificate"}</label>
+                    </div>
+                    <div class="field-body">
+                        <div class="field is-narrow">
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                            <select onchange={ca_cert_onchange}>
+                                { ca_cert_list.iter().map(|cert| {
+                                    html! {
+                                        <option selected={&*ca_cert == &cert.id} value={cert.id.clone()}>{format!("{} ({})", cert.issuer, cert.id)}</option>
+                                    }
+                                }).collect::<Html>() }
+                                <option selected={ca_cert.is_empty()} value={""}>{"Generate"}</option>
+                            </select>
+                            </div>
+                        </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="field is-grouped is-grouped-right mx-5">
-                <p class="control">
-                    <button class="button is-light" onclick={cancel_onclick}>
-                    {"Cancel"}
-                    </button>
-                </p>
-                <p class="control">
-                    <button class={classes!("button", "is-primary", is_loading.then_some("is-loading"))} onclick={self_sign_onclick}>
-                    {"Sign"}
-                    </button>
-                </p>
-            </div>
+                <div class="field is-grouped is-grouped-right mx-5">
+                    <p class="control">
+                        <button class="button is-light" onclick={cancel_onclick}>
+                        {"Cancel"}
+                        </button>
+                    </p>
+                    <p class="control">
+                        <button type="submit" class={classes!("button", "is-primary", is_loading.then_some("is-loading"))}>
+                        {"Sign"}
+                        </button>
+                    </p>
+                </div>
+            </form>
             </ybc::Card>
         </>
     }

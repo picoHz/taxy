@@ -55,7 +55,8 @@ pub fn site_view(props: &Props) -> Html {
     let id = props.id.clone();
     let entry_cloned = entry.clone();
     let is_loading_cloned = is_loading.clone();
-    let update_onclick = Callback::from(move |_| {
+    let onsubmit = Callback::from(move |event: SubmitEvent| {
+        event.prevent_default();
         if *is_loading_cloned {
             return;
         }
@@ -83,20 +84,22 @@ pub fn site_view(props: &Props) -> Html {
             </ybc::CardHeader>
 
             if let Some(site_entry) = &*site {
-                <SiteConfig site={site_entry.site.clone()} {on_changed} />
+                <form {onsubmit}>
+                    <SiteConfig site={site_entry.site.clone()} {on_changed} />
 
-                <div class="field is-grouped is-grouped-right mx-5 pb-5">
-                    <p class="control">
-                        <button class="button is-light" onclick={cancel_onclick}>
-                        {"Cancel"}
-                        </button>
-                    </p>
-                    <p class="control">
-                        <button class={classes!("button", "is-primary", is_loading.then_some("is-loading"))} onclick={update_onclick} disabled={entry.is_err()}>
-                        {"Update"}
-                        </button>
-                    </p>
-                </div>
+                    <div class="field is-grouped is-grouped-right mx-5 pb-5">
+                        <p class="control">
+                            <button class="button is-light" onclick={cancel_onclick}>
+                            {"Cancel"}
+                            </button>
+                        </p>
+                        <p class="control">
+                            <button type="submit" class={classes!("button", "is-primary", is_loading.then_some("is-loading"))} disabled={entry.is_err()}>
+                            {"Update"}
+                            </button>
+                        </p>
+                    </div>
+                </form>
             } else {
                 <ybc::Hero body_classes="has-text-centered" body={
                     html! {
