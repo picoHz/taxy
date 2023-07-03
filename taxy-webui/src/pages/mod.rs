@@ -5,6 +5,7 @@ use yew_router::prelude::*;
 
 mod cert_list;
 mod home;
+mod log_view;
 mod login;
 mod logout;
 mod new_acme;
@@ -32,6 +33,8 @@ pub enum Route {
     NewPort,
     #[at("/ports/:id")]
     PortView { id: String },
+    #[at("/ports/:id/log")]
+    PortLogView { id: String },
     #[at("/sites")]
     Sites,
     #[at("/certs")]
@@ -54,7 +57,9 @@ pub enum Route {
 impl Route {
     pub fn root(&self) -> Option<Route> {
         match self {
-            Route::Ports | Route::NewPort | Route::PortView { .. } => Some(Route::Ports),
+            Route::Ports | Route::NewPort | Route::PortView { .. } | Route::PortLogView { .. } => {
+                Some(Route::Ports)
+            }
             Route::Certs | Route::SelfSign | Route::Upload | Route::NewAcme => Some(Route::Certs),
             Route::Sites | Route::NewSite | Route::SiteView { .. } => Some(Route::Sites),
             _ => None,
@@ -137,6 +142,20 @@ impl Route {
                     route: Route::PortView { id: id.clone() },
                 },
             ],
+            Route::PortLogView { id } => vec![
+                BreadcrumbItem {
+                    name: "Ports".into(),
+                    route: Route::Ports,
+                },
+                BreadcrumbItem {
+                    name: id.clone().into(),
+                    route: Route::PortView { id: id.clone() },
+                },
+                BreadcrumbItem {
+                    name: "Log".into(),
+                    route: Route::PortLogView { id: id.clone() },
+                },
+            ],
             Route::NewSite => vec![
                 BreadcrumbItem {
                     name: "Sites".into(),
@@ -175,6 +194,7 @@ pub fn switch(routes: Route) -> Html {
         Route::Ports => html! { <port_list::PortList /> },
         Route::NewPort => html! { <new_port::NewPort /> },
         Route::PortView { id } => html! { <port_view::PortView {id} /> },
+        Route::PortLogView { id } => html! { <log_view::LogView {id} /> },
         Route::Sites => html! { <site_list::SiteList /> },
         Route::SiteView { id } => html! { <site_view::SiteView {id} /> },
         Route::NewSite => html! { <new_site::NewSite /> },
