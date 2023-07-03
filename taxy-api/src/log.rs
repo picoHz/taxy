@@ -3,14 +3,53 @@ use std::collections::HashMap;
 use time::OffsetDateTime;
 use utoipa::{IntoParams, ToSchema};
 
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum LogLevel {
+    Error,
+    Warn,
+    Info,
+    Debug,
+    Trace,
+}
+
+impl TryFrom<u8> for LogLevel {
+    type Error = ();
+
+    fn try_from(value: u8) -> Result<Self, ()> {
+        match value {
+            0 => Ok(LogLevel::Error),
+            1 => Ok(LogLevel::Warn),
+            2 => Ok(LogLevel::Info),
+            3 => Ok(LogLevel::Debug),
+            4 => Ok(LogLevel::Trace),
+            _ => Err(()),
+        }
+    }
+}
+
+impl ToString for LogLevel {
+    fn to_string(&self) -> String {
+        match self {
+            LogLevel::Error => "error".to_string(),
+            LogLevel::Warn => "warn".to_string(),
+            LogLevel::Info => "info".to_string(),
+            LogLevel::Debug => "debug".to_string(),
+            LogLevel::Trace => "trace".to_string(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct SystemLogRow {
-    #[serde(serialize_with = "serialize_timestamp")]
+    #[serde(
+        serialize_with = "serialize_timestamp",
+        deserialize_with = "deserialize_timestamp"
+    )]
     #[schema(value_type = u64)]
     pub timestamp: OffsetDateTime,
-    #[serde(serialize_with = "serialize_level")]
     #[schema(value_type = String, example = "info")]
-    pub level: u8,
+    pub level: LogLevel,
     pub resource_id: String,
     pub message: String,
     pub fields: HashMap<String, String>,
@@ -23,19 +62,12 @@ where
     serializer.serialize_i64(timestamp.unix_timestamp())
 }
 
-fn serialize_level<S>(level: &u8, serializer: S) -> Result<S::Ok, S::Error>
+fn deserialize_timestamp<'de, D>(deserializer: D) -> Result<OffsetDateTime, D::Error>
 where
-    S: serde::Serializer,
+    D: serde::Deserializer<'de>,
 {
-    let level = match *level {
-        1 => "error",
-        2 => "warn",
-        3 => "info",
-        4 => "debug",
-        5 => "trace",
-        _ => "unknown",
-    };
-    serializer.serialize_str(level)
+    let timestamp = i64::deserialize(deserializer)?;
+    OffsetDateTime::from_unix_timestamp(timestamp).map_err(serde::de::Error::custom)
 }
 
 #[derive(Deserialize, IntoParams)]

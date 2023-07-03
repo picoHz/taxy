@@ -6,7 +6,7 @@ use taxy_api::auth::LoginRequest;
 use taxy_api::cert::{CertInfo, CertKind, CertMetadata, CertPostBody, SelfSignedCertRequest};
 use taxy_api::error::{Error, ErrorMessage};
 use taxy_api::event::ServerEvent;
-use taxy_api::log::SystemLogRow;
+use taxy_api::log::{LogLevel, SystemLogRow};
 use taxy_api::port::{NetworkAddr, NetworkInterface, PortEntry, PortOptions, UpstreamServer};
 use taxy_api::port::{PortState, PortStatus, SocketState};
 use taxy_api::site::{Route, Server, SiteEntry};
@@ -75,6 +75,7 @@ use warp::{Rejection, Reply};
         Route,
         Server,
         LoginRequest,
+        LogLevel,
         SystemLogRow,
         NetworkInterface,
         NetworkAddr

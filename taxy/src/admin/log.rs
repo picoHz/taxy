@@ -4,7 +4,7 @@ use sqlx::{sqlite::SqliteConnectOptions, Row, SqlitePool};
 use std::path::Path;
 use std::time::Duration;
 use taxy_api::error::Error;
-use taxy_api::log::{LogQuery, SystemLogRow};
+use taxy_api::log::{LogLevel, LogQuery, SystemLogRow};
 use time::OffsetDateTime;
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
@@ -91,7 +91,7 @@ impl LogReader {
                                 .into_iter()
                                 .map(|row| SystemLogRow {
                                     timestamp: row.get(0),
-                                    level: row.get(1),
+                                    level: row.get::<'_, u8, _>(1).try_into().unwrap_or(LogLevel::Debug),
                                     resource_id: row.get(2),
                                     message: row.get(3),
                                     fields: serde_json::from_str(row.get(4)).unwrap_or_default(),
