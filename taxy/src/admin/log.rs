@@ -14,7 +14,7 @@ const REQUEST_DEFAULT_LIMIT: u32 = 100;
 
 pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
     warp::get()
-        .and(warp::path("log"))
+        .and(warp::path("logs"))
         .and(
             with_state(app_state)
                 .and(warp::path::param())
@@ -28,7 +28,7 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
 /// Get log.
 #[utoipa::path(
     get,
-    path = "/api/log/{id}",
+    path = "/api/logs/{id}",
     params(
         ("id" = String, Path, description = "Resource ID"),
         LogQuery
