@@ -37,7 +37,7 @@ RUN trunk build --release
 WORKDIR /usr/src/app
 
 # Build the Rust project
-RUN cargo build --release
+RUN cargo build --features utoipa-swagger-ui --release
 
 # Prepare the final image
 FROM debian:bookworm-slim as runtime
