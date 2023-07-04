@@ -82,10 +82,12 @@ fn poll_log(
             setter.set(history.clone());
 
             if let Some(elem) = ul_ref.cast::<Element>() {
-                Timeout::new(0, move || {
-                    elem.set_scroll_top(elem.scroll_height());
-                })
-                .forget();
+                if elem.scroll_top() == elem.scroll_height() {
+                    Timeout::new(0, move || {
+                        elem.set_scroll_top(elem.scroll_height());
+                    })
+                    .forget();
+                }
                 poll_log(id, ul_ref, setter, history, time);
             }
         }
