@@ -23,7 +23,13 @@ pub fn log_view(props: &Props) -> Html {
     let ul_ref_cloned = ul_ref.clone();
     use_effect_with_deps(
         move |_| {
-            poll_log(id.clone(), ul_ref_cloned.clone(), log_cloned.clone(), None);
+            poll_log(
+                id.clone(),
+                ul_ref_cloned.clone(),
+                log_cloned.clone(),
+                vec![],
+                None,
+            );
         },
         (),
     );
@@ -58,22 +64,22 @@ pub fn log_view(props: &Props) -> Html {
 fn poll_log(
     id: String,
     ul_ref: NodeRef,
-    log: UseStateHandle<Vec<SystemLogRow>>,
+    setter: UseStateHandle<Vec<SystemLogRow>>,
+    mut history: Vec<SystemLogRow>,
     time: Option<OffsetDateTime>,
 ) {
     wasm_bindgen_futures::spawn_local(async move {
         if let Ok(mut list) = get_log(&id, time).await {
             let time = list.last().map(|row| row.timestamp).or(time);
-            let mut new_log = (*log).clone();
-            new_log.append(&mut list);
-            log.set(new_log);
+            history.append(&mut list);
+            setter.set(history.clone());
 
             if let Some(elem) = ul_ref.cast::<Element>() {
                 Timeout::new(0, move || {
                     elem.set_scroll_top(elem.scroll_height());
                 })
                 .forget();
-                poll_log(id, ul_ref, log, time);
+                poll_log(id, ul_ref, setter, history, time);
             }
         }
     });
