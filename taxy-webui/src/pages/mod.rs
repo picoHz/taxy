@@ -45,6 +45,8 @@ pub enum Route {
     Upload,
     #[at("/certs/new_acme")]
     NewAcme,
+    #[at("/certs/:id/log")]
+    CertLogView { id: String },
     #[at("/sites/new")]
     NewSite,
     #[at("/sites/:id")]
@@ -132,6 +134,16 @@ impl Route {
                     route: Route::NewAcme,
                 },
             ],
+            Route::CertLogView { id } => vec![
+                BreadcrumbItem {
+                    name: "Certificates".into(),
+                    route: Route::Certs,
+                },
+                BreadcrumbItem {
+                    name: id.clone().into(),
+                    route: Route::CertLogView { id: id.clone() },
+                },
+            ],
             Route::PortView { id } => vec![
                 BreadcrumbItem {
                     name: "Ports".into(),
@@ -201,6 +213,7 @@ pub fn switch(routes: Route) -> Html {
         Route::Certs => html! { <cert_list::CertList /> },
         Route::SelfSign => html! { <self_sign::SelfSign /> },
         Route::NewAcme => html! { <new_acme::NewAcme /> },
+        Route::CertLogView { id } => html! { <log_view::LogView {id} /> },
         Route::Upload => html! { <upload::Upload /> },
         Route::NotFound => html! { <Redirect<Route> to={Route::Home}/> },
     }

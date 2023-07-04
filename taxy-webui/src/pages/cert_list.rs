@@ -394,6 +394,13 @@ pub fn cert_list() -> Html {
                     }
                 });
 
+                let id = entry.id.clone();
+                let navigator_cloned = navigator.clone();
+                let log_onclick = Callback::from(move |_|  {
+                    let id = id.clone();
+                    navigator_cloned.push(&Route::CertLogView {id});
+                });
+
                 let active_index_cloned = active_index.clone();
                 let dropdown_onclick = Callback::from(move |_|  {
                     active_index_cloned.set(if *active_index_cloned == i as i32 {
@@ -417,6 +424,12 @@ pub fn cert_list() -> Html {
 
                         <div class="list-item-controls">
                             <div class="buttons is-right">
+
+                                <button class="button" onclick={log_onclick}>
+                                    <span class="icon is-small">
+                                        <ion-icon name="receipt"></ion-icon>
+                                    </span>
+                                </button>
 
                                 <div class={classes!("dropdown", "is-right", is_active.then_some("is-active"))}>
                                     <div class="dropdown-trigger" onfocusout={dropdown_onfocusout}>
