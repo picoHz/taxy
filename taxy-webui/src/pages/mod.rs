@@ -62,7 +62,11 @@ impl Route {
             Route::Ports | Route::NewPort | Route::PortView { .. } | Route::PortLogView { .. } => {
                 Some(Route::Ports)
             }
-            Route::Certs | Route::SelfSign | Route::Upload | Route::NewAcme => Some(Route::Certs),
+            Route::Certs
+            | Route::SelfSign
+            | Route::Upload
+            | Route::NewAcme
+            | Route::CertLogView { .. } => Some(Route::Certs),
             Route::Sites | Route::NewSite | Route::SiteView { .. } => Some(Route::Sites),
             _ => None,
         }
