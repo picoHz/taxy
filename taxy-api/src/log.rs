@@ -18,11 +18,11 @@ impl TryFrom<u8> for LogLevel {
 
     fn try_from(value: u8) -> Result<Self, ()> {
         match value {
-            0 => Ok(LogLevel::Error),
-            1 => Ok(LogLevel::Warn),
-            2 => Ok(LogLevel::Info),
-            3 => Ok(LogLevel::Debug),
-            4 => Ok(LogLevel::Trace),
+            1 => Ok(LogLevel::Error),
+            2 => Ok(LogLevel::Warn),
+            3 => Ok(LogLevel::Info),
+            4 => Ok(LogLevel::Debug),
+            5 => Ok(LogLevel::Trace),
             _ => Err(()),
         }
     }
