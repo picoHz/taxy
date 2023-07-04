@@ -24,4 +24,4 @@ gloo-timers = "0.2.6"
 multiaddr = "0.17.0"
 url = "2.4.0"
 base64 = "0.21.2"
-time = "0.3.22"
+time = { version = "0.3.22", features = ["formatting"] }

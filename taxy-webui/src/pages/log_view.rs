@@ -2,7 +2,7 @@ use crate::{auth::use_ensure_auth, components::breadcrumb::Breadcrumb, API_ENDPO
 use gloo_net::http::Request;
 use gloo_timers::callback::Timeout;
 use taxy_api::log::SystemLogRow;
-use time::OffsetDateTime;
+use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 use web_sys::Element;
 use yew::prelude::*;
 
@@ -45,10 +45,13 @@ pub fn log_view(props: &Props) -> Html {
 
             <ul ref={ul_ref.clone()} class="log-viewer">
             { log.iter().map(|entry| {
+                let timestamp = entry.timestamp.format(&Rfc3339).unwrap();
                 html! {
                     <li>
-                        <span class="timestamp">{entry.timestamp.to_string()}</span>
-                        <span class={classes!("level", entry.level.to_string())}>{entry.level.to_string().to_ascii_uppercase()}</span>
+                        <span class="timestamp">{timestamp}</span>
+                        <span class={classes!("level", entry.level.to_string())}>{
+                            format!("{: <5}", entry.level.to_string().to_ascii_uppercase())
+                        }</span>
                         {entry.message.clone()}
                     </li>
                 }
