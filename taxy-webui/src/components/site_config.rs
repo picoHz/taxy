@@ -313,10 +313,12 @@ fn get_site(
                 }
             }
         }
-        parsed_routes.push(Route {
-            path,
-            servers: urls,
-        });
+        if !urls.is_empty() {
+            parsed_routes.push(Route {
+                path,
+                servers: urls,
+            });
+        }
     }
 
     if errors.is_empty() {
