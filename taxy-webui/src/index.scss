@@ -13,31 +13,41 @@ ul.log-viewer {
     li {
         padding: 4px 8px;
         font-family: monospace;
-        display: flex;
+
+        border-bottom: 1px solid #ddd;
     }
 
     span.timestamp {
-        color: #999;
-        margin-right: 5px;
+        margin-right: 10px;
     }
 
-    span.level {
-        margin-right: 5px;
+    span.fields {
+        color: #999;
+        margin-right: 10px;
+    }
 
-        .debug {
-            color: #999;
+    span.logmessage {
+        margin-right: 10px;
+    }
+
+    span.loglevel {
+        margin-right: 10px;
+        font-weight: bold;
+
+        &.debug {
+            color: #959;
         }
-        .info {
+        &.info {
             color: #333;
         }
-        .warn {
+        &.warn {
             color: #f90;
         }
-        .error {
+        &.error {
             color: #f00;
         }
-        .trace {
-            color: #999;
+        &.trace {
+            color: #159;
         }
     }
 }

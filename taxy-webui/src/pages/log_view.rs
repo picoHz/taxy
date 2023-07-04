@@ -46,13 +46,17 @@ pub fn log_view(props: &Props) -> Html {
             <ul ref={ul_ref.clone()} class="log-viewer">
             { log.iter().map(|entry| {
                 let timestamp = entry.timestamp.format(&Rfc3339).unwrap();
+                let fields = entry.fields.iter().map(|(k, v)| {
+                    format!("{}={}", k, v)
+                }).collect::<Vec<String>>().join(" ");
                 html! {
-                    <li>
+                    <li class="log">
                         <span class="timestamp">{timestamp}</span>
-                        <span class={classes!("level", entry.level.to_string())}>{
+                        <span class={classes!("loglevel", entry.level.to_string())}>{
                             format!("{: <5}", entry.level.to_string().to_ascii_uppercase())
                         }</span>
-                        {entry.message.clone()}
+                        <span class="logmessage">{entry.message.clone()}</span>
+                        <span class="fields">{fields}</span>
                     </li>
                 }
                 }).collect::<Html>()
