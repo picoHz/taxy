@@ -83,7 +83,7 @@ pub fn self_sign() -> Html {
 
     let is_loading = use_state(|| false);
 
-    let entry_cloned = entry.clone();
+    let entry_cloned = entry;
     let is_loading_cloned = is_loading.clone();
     let onsubmit = Callback::from(move |event: SubmitEvent| {
         event.prevent_default();
@@ -150,7 +150,7 @@ pub fn self_sign() -> Html {
                             <select onchange={ca_cert_onchange}>
                                 { ca_cert_list.iter().map(|cert| {
                                     html! {
-                                        <option selected={&*ca_cert == &cert.id} value={cert.id.clone()}>{format!("{} ({})", cert.issuer, cert.id)}</option>
+                                        <option selected={*ca_cert == cert.id} value={cert.id.clone()}>{format!("{} ({})", cert.issuer, cert.id)}</option>
                                     }
                                 }).collect::<Html>() }
                                 <option selected={ca_cert.is_empty()} value={""}>{"Generate"}</option>

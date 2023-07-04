@@ -26,7 +26,7 @@ pub fn log_view(props: &Props) -> Html {
             poll_log(
                 id.clone(),
                 ul_ref_cloned.clone(),
-                log_cloned.clone(),
+                log_cloned,
                 vec![],
                 None,
             );
