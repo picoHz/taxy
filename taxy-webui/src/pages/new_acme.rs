@@ -142,7 +142,7 @@ pub fn new_acme() -> Html {
 
                 <div class="field is-grouped is-grouped-right mx-5">
                     <p class="control">
-                        <button class="button is-light" onclick={cancel_onclick}>
+                        <button type="button" class="button is-light" onclick={cancel_onclick}>
                         {"Cancel"}
                         </button>
                     </p>

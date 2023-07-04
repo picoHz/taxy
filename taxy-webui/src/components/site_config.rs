@@ -238,14 +238,14 @@ pub fn site_config(props: &Props) -> Html {
                                     <input class={classes!("input", err.map(|_| "is-danger"))} type="text" autocapitalize="off" placeholder="Path" onchange={path_onchange} value={path.clone()} />
                                 </div>
                                 <div class="control">
-                                    <button class={classes!("button", err.map(|_| "is-danger"))} onclick={add_onclick}>
+                                    <button type="button" class={classes!("button", err.map(|_| "is-danger"))} onclick={add_onclick}>
                                         <span class="icon">
                                             <ion-icon name="add"></ion-icon>
                                         </span>
                                     </button>
                                 </div>
                                 <div class="control">
-                                    <button class={classes!("button", err.map(|_| "is-danger"))} onclick={remove_onclick} disabled={routes_len <= 1}>
+                                    <button type="button" class={classes!("button", err.map(|_| "is-danger"))} onclick={remove_onclick} disabled={routes_len <= 1}>
                                         <span class="icon">
                                             <ion-icon name="remove"></ion-icon>
                                         </span>

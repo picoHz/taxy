@@ -126,13 +126,13 @@ pub fn post_list() -> Html {
 
                         <div class="list-item-controls">
                             <div class="buttons is-right">
-                                <button class="button" onclick={log_onclick}>
+                                <button type="button" class="button" onclick={log_onclick}>
                                     <span class="icon is-small">
                                         <ion-icon name="receipt"></ion-icon>
                                     </span>
                                 </button>
 
-                                <button class="button" onclick={config_onclick}>
+                                <button type="button" class="button" onclick={config_onclick}>
                                     <span class="icon is-small">
                                         <ion-icon name="settings"></ion-icon>
                                     </span>
@@ -140,7 +140,7 @@ pub fn post_list() -> Html {
 
                                 <div class={classes!("dropdown", "is-right", is_active.then_some("is-active"))}>
                                     <div class="dropdown-trigger" onfocusout={dropdown_onfocusout}>
-                                        <button class="button" onclick={dropdown_onclick}>
+                                        <button type="button" class="button" onclick={dropdown_onclick}>
                                             <span class="icon is-small">
                                                 <ion-icon name="ellipsis-horizontal"></ion-icon>
                                             </span>
