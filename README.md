@@ -5,6 +5,8 @@ A reverse proxy server with a user-friendly WebUI.
 [![Crates.io](https://img.shields.io/crates/v/taxy.svg)](https://crates.io/crates/taxy)
 [![GitHub license](https://img.shields.io/github/license/picoHz/taxy.svg)](https://github.com/picoHz/taxy/blob/main/LICENSE)
 
+![Taxy WebUI Screenshot](https://raw.githubusercontent.com/picoHz/taxy/main/screenshot.png)
+
 ## Overview
 
 - Built with Rust for optimal performance and safety, powered by tokio and hyper
