@@ -6,6 +6,10 @@
     }
 }
 
+.navbar-item.is-active {
+    border-bottom: 2px solid #888;
+}
+
 ul.log-viewer {
     max-height: 500px;
     overflow: scroll;

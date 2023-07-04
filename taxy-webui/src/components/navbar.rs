@@ -51,7 +51,7 @@ pub fn navbar() -> Html {
             padded=true
             navburger={route != Route::Login}
             navbrand={html!{
-                <a class="navbar-item" onclick={home_onclick}>
+                <a class="navbar-item px-5" onclick={home_onclick}>
                     <ybc::Title size={ybc::HeaderSize::Is4}>{"Taxy"}</ybc::Title>
                 </a>
             }}
@@ -66,7 +66,7 @@ pub fn navbar() -> Html {
                         });
                         let is_active = root == entry.route;
                         html! {
-                            <a class={classes!("navbar-item", "pr-5", is_active.then_some("has-background-grey-lighter"))} {onclick}>
+                            <a class={classes!("navbar-item", "pr-5", is_active.then_some("is-active"))} {onclick}>
                                 <span class="icon-text">
                                     <span class="icon">
                                         <ion-icon name={entry.icon}></ion-icon>
