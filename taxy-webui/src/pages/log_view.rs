@@ -2,6 +2,7 @@ use crate::{auth::use_ensure_auth, components::breadcrumb::Breadcrumb, API_ENDPO
 use gloo_net::http::Request;
 use gloo_timers::callback::Timeout;
 use taxy_api::log::SystemLogRow;
+use time::OffsetDateTime;
 use web_sys::Element;
 use yew::prelude::*;
 
@@ -22,18 +23,7 @@ pub fn log_view(props: &Props) -> Html {
     let ul_ref_cloned = ul_ref.clone();
     use_effect_with_deps(
         move |_| {
-            wasm_bindgen_futures::spawn_local(async move {
-                if let Ok(entry) = get_log(&id).await {
-                    log_cloned.set(entry);
-
-                    if let Some(elem) = ul_ref_cloned.cast::<Element>() {
-                        Timeout::new(0, move || {
-                            elem.set_scroll_top(elem.scroll_height());
-                        })
-                        .forget();
-                    }
-                }
-            });
+            poll_log(id.clone(), ul_ref_cloned.clone(), log_cloned.clone(), None);
         },
         (),
     );
@@ -65,10 +55,35 @@ pub fn log_view(props: &Props) -> Html {
     }
 }
 
-async fn get_log(id: &str) -> Result<Vec<SystemLogRow>, gloo_net::Error> {
-    Request::get(&format!("{API_ENDPOINT}/logs/{id}"))
-        .send()
-        .await?
-        .json()
-        .await
+fn poll_log(
+    id: String,
+    ul_ref: NodeRef,
+    log: UseStateHandle<Vec<SystemLogRow>>,
+    time: Option<OffsetDateTime>,
+) {
+    wasm_bindgen_futures::spawn_local(async move {
+        if let Ok(entry) = get_log(&id, time).await {
+            let time = entry.last().map(|row| row.timestamp);
+            log.set(entry);
+
+            if let Some(elem) = ul_ref.cast::<Element>() {
+                Timeout::new(0, move || {
+                    elem.set_scroll_top(elem.scroll_height());
+                })
+                .forget();
+                poll_log(id, ul_ref, log, time);
+            }
+        }
+    });
+}
+
+async fn get_log(
+    id: &str,
+    time: Option<OffsetDateTime>,
+) -> Result<Vec<SystemLogRow>, gloo_net::Error> {
+    let mut req = Request::get(&format!("{API_ENDPOINT}/logs/{id}"));
+    if let Some(time) = time {
+        req = req.query([("since", &time.unix_timestamp().to_string())]);
+    }
+    req.send().await?.json().await
 }
