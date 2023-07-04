@@ -69,6 +69,14 @@ pub fn site_list() -> Html {
             <div class="list has-visible-pointer-controls">
             { list.into_iter().enumerate().map(|(i, entry)| {
                 let navigator = navigator.clone();
+
+                let id = entry.id.clone();
+                let navigator_cloned = navigator.clone();
+                let log_onclick = Callback::from(move |_|  {
+                    let id = id.clone();
+                    navigator_cloned.push(&Route::PortLogView {id});
+                });
+
                 let id = entry.id.clone();
                 let config_onclick = Callback::from(move |_|  {
                     let id = id.clone();
@@ -121,6 +129,13 @@ pub fn site_list() -> Html {
 
                         <div class="list-item-controls">
                             <div class="buttons is-right">
+
+                            <button class="button" onclick={log_onclick}>
+                                <span class="icon is-small">
+                                    <ion-icon name="receipt"></ion-icon>
+                                </span>
+                            </button>
+
                             <button class="button" onclick={config_onclick}>
                                 <span class="icon is-small">
                                     <ion-icon name="settings"></ion-icon>

@@ -37,6 +37,8 @@ pub enum Route {
     PortLogView { id: String },
     #[at("/sites")]
     Sites,
+    #[at("/sites/:id/log")]
+    SiteLogView { id: String },
     #[at("/certs")]
     Certs,
     #[at("/certs/self_sign")]
@@ -67,7 +69,9 @@ impl Route {
             | Route::Upload
             | Route::NewAcme
             | Route::CertLogView { .. } => Some(Route::Certs),
-            Route::Sites | Route::NewSite | Route::SiteView { .. } => Some(Route::Sites),
+            Route::Sites | Route::NewSite | Route::SiteView { .. } | Route::SiteLogView { .. } => {
+                Some(Route::Sites)
+            }
             _ => None,
         }
     }
@@ -104,6 +108,20 @@ impl Route {
                 name: "Sites".into(),
                 route: Route::Sites,
             }],
+            Route::SiteLogView { id } => vec![
+                BreadcrumbItem {
+                    name: "Sites".into(),
+                    route: Route::Sites,
+                },
+                BreadcrumbItem {
+                    name: id.clone().into(),
+                    route: Route::SiteView { id: id.clone() },
+                },
+                BreadcrumbItem {
+                    name: "Log".into(),
+                    route: Route::SiteLogView { id: id.clone() },
+                },
+            ],
             Route::Certs => vec![BreadcrumbItem {
                 name: "Certificates".into(),
                 route: Route::Certs,
@@ -212,6 +230,7 @@ pub fn switch(routes: Route) -> Html {
         Route::PortView { id } => html! { <port_view::PortView {id} /> },
         Route::PortLogView { id } => html! { <log_view::LogView {id} /> },
         Route::Sites => html! { <site_list::SiteList /> },
+        Route::SiteLogView { id } => html! { <log_view::LogView {id} /> },
         Route::SiteView { id } => html! { <site_view::SiteView {id} /> },
         Route::NewSite => html! { <new_site::NewSite /> },
         Route::Certs => html! { <cert_list::CertList /> },
