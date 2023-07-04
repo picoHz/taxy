@@ -110,6 +110,6 @@ impl LogReader {
             }
         }
 
-        Err(Error::WaitingLogTimedOut)
+        Ok(vec![])
     }
 }

@@ -63,9 +63,6 @@ pub enum Error {
     #[error("failed to fetch log")]
     FailedToFetchLog,
 
-    #[error("waiting log timed out")]
-    WaitingLogTimedOut,
-
     #[error("rpc error")]
     RpcError,
 
@@ -87,7 +84,6 @@ impl Error {
         match self {
             Self::IdNotFound { .. } => 404,
             Self::Unauthorized => 401,
-            Self::WaitingLogTimedOut => 408,
             _ => 400,
         }
     }
