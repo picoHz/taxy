@@ -62,9 +62,11 @@ fn poll_log(
     time: Option<OffsetDateTime>,
 ) {
     wasm_bindgen_futures::spawn_local(async move {
-        if let Ok(entry) = get_log(&id, time).await {
-            let time = entry.last().map(|row| row.timestamp);
-            log.set(entry);
+        if let Ok(mut list) = get_log(&id, time).await {
+            let time = list.last().map(|row| row.timestamp).or(time);
+            let mut new_log = (*log).clone();
+            new_log.append(&mut list);
+            log.set(new_log);
 
             if let Some(elem) = ul_ref.cast::<Element>() {
                 Timeout::new(0, move || {

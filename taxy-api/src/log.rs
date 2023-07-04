@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use time::OffsetDateTime;
 use utoipa::{IntoParams, ToSchema};
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Clone, Copy, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum LogLevel {
     Error,
@@ -40,7 +40,7 @@ impl ToString for LogLevel {
     }
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Clone, Serialize, Deserialize, ToSchema)]
 pub struct SystemLogRow {
     #[serde(
         serialize_with = "serialize_timestamp",
