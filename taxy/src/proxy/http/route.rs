@@ -17,6 +17,7 @@ impl Router {
                     .routes
                     .into_iter()
                     .map(move |route| FilteredRoute {
+                        resource_id: entry.id.clone(),
                         filter: RequestFilter::new(&entry.site.vhosts, &route),
                         route,
                     })
@@ -25,15 +26,19 @@ impl Router {
         Self { routes }
     }
 
-    pub fn get_route<T>(&self, req: &Request<T>) -> Option<(&Route, FilterResult)> {
-        self.routes
-            .iter()
-            .find_map(|route| route.filter.test(req).map(|res| (&route.route, res)))
+    pub fn get_route<T>(&self, req: &Request<T>) -> Option<(&Route, FilterResult, &str)> {
+        self.routes.iter().find_map(|route| {
+            route
+                .filter
+                .test(req)
+                .map(|res| (&route.route, res, route.resource_id.as_str()))
+        })
     }
 }
 
 #[derive(Debug)]
 pub struct FilteredRoute {
+    pub resource_id: String,
     pub filter: RequestFilter,
     pub route: Route,
 }

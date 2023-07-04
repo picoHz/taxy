@@ -233,8 +233,12 @@ pub async fn start(
         let mut hostname = String::new();
         let mut host = String::new();
 
+        let mut span = Span::current();
+
         let mut client_tls = false;
-        if let Some((route, res)) = router.get_route(&req) {
+        if let Some((route, res, resource_id)) = router.get_route(&req) {
+            span = span!(Level::INFO, "proxy", resource_id);
+
             let mut parts = Parts::default();
 
             parts.path_and_query = if let Some(query) = req.uri().query() {
@@ -279,6 +283,7 @@ pub async fn start(
         header_rewriter.pre_process(req.headers_mut(), remote.ip());
         header_rewriter.post_process(req.headers_mut());
 
+        let span_cloned = span.clone();
         async move {
             if hostname.is_empty() || domain_fronting {
                 let mut res = hyper::Response::new(hyper::Body::empty());
@@ -314,7 +319,7 @@ pub async fn start(
             }
 
             if upgrade {
-                return upgrade::connect(req, out).await;
+                return upgrade::connect(req, out).instrument(span).await;
             }
 
             let (mut sender, conn) = client::conn::Builder::new()
@@ -326,11 +331,14 @@ pub async fn start(
                     err
                 })?;
 
-            tokio::task::spawn(async move {
-                if let Err(err) = conn.await {
-                    error!("Connection failed: {:?}", err);
+            tokio::task::spawn(
+                async move {
+                    if let Err(err) = conn.await {
+                        error!("Connection failed: {:?}", err);
+                    }
                 }
-            });
+                .instrument(span),
+            );
 
             let accept_brotli = req
                 .headers()
@@ -363,6 +371,7 @@ pub async fn start(
                 Response::from_parts(parts, body)
             })
         }
+        .instrument(span_cloned)
     });
 
     tokio::task::spawn(async move {
