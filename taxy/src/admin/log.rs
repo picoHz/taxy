@@ -57,8 +57,10 @@ pub struct LogReader {
 
 impl LogReader {
     pub async fn new(path: &Path) -> anyhow::Result<Self> {
-        let mut opt = SqliteConnectOptions::new().filename(path).read_only(true);
-        opt.log_statements(log::LevelFilter::Trace);
+        let opt = SqliteConnectOptions::new()
+            .filename(path)
+            .read_only(true)
+            .log_statements(log::LevelFilter::Trace);
         let pool = SqlitePool::connect_with(opt).await?;
         Ok(Self { pool })
     }

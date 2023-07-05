@@ -93,10 +93,10 @@ pub struct DatabaseLayer {
 
 impl DatabaseLayer {
     pub async fn new(path: &Path, level_filter: LevelFilter) -> anyhow::Result<Self> {
-        let mut opt = SqliteConnectOptions::new()
+        let opt = SqliteConnectOptions::new()
             .filename(path)
-            .create_if_missing(true);
-        opt.log_statements(log::LevelFilter::Trace);
+            .create_if_missing(true)
+            .log_statements(log::LevelFilter::Trace);
         let pool = SqlitePool::connect_with(opt).await?;
 
         sqlx::query(
