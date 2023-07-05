@@ -95,7 +95,6 @@ pub struct PortOptions {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct NetworkInterface {
     pub name: String,
-    pub description: String,
     pub addrs: Vec<NetworkAddr>,
     pub mac: Option<String>,
 }
@@ -105,5 +104,5 @@ pub struct NetworkAddr {
     #[schema(value_type = String, example = "127.0.0.1")]
     pub ip: IpAddr,
     #[schema(value_type = String, example = "255.255.255.0")]
-    pub mask: IpAddr,
+    pub mask: Option<IpAddr>,
 }

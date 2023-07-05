@@ -1,6 +1,7 @@
 use super::RpcMethod;
 use crate::proxy::PortContext;
 use crate::server::state::ServerState;
+use network_interface::NetworkInterfaceConfig;
 use taxy_api::error::Error;
 use taxy_api::port::{NetworkAddr, NetworkInterface, Port, PortEntry, PortStatus};
 
@@ -130,22 +131,22 @@ impl RpcMethod for GetNetworkInterfaceList {
     type Output = Vec<NetworkInterface>;
 
     async fn call(self, _state: &mut ServerState) -> Result<Self::Output, Error> {
-        Ok(pnet_datalink::interfaces()
+        Ok(network_interface::NetworkInterface::show()
+            .map_err(|_| Error::FailedToListNetworkInterfaces)?
             .into_iter()
             .map(|iface| {
                 let addrs = iface
-                    .ips
+                    .addr
                     .into_iter()
                     .map(|net| NetworkAddr {
                         ip: net.ip(),
-                        mask: net.mask(),
+                        mask: net.netmask(),
                     })
                     .collect::<Vec<_>>();
                 NetworkInterface {
                     name: iface.name,
-                    description: iface.description,
                     addrs,
-                    mac: iface.mac.map(|mac| mac.to_string()),
+                    mac: iface.mac_addr,
                 }
             })
             .collect())

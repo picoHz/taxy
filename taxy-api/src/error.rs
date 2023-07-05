@@ -74,6 +74,9 @@ pub enum Error {
 
     #[error("failed to decrypt private key")]
     FailedToDecryptPrivateKey,
+
+    #[error("failed to list network interfaces")]
+    FailedToListNetworkInterfaces,
 }
 
 #[cfg(feature = "warp")]
