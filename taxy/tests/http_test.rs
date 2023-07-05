@@ -51,7 +51,7 @@ async fn http_proxy() -> anyhow::Result<()> {
         .match_header("x-real-ip", mockito::Matcher::Missing)
         .match_header("accept-encoding", "gzip, br")
         .match_header("transfer-encoding", "chunked")
-        .match_body(chunks.join("").as_str())
+        .match_body(chunks.concat().as_str())
         .with_body("Hello")
         .create_async()
         .await;
