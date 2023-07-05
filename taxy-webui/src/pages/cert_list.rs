@@ -288,9 +288,10 @@ pub fn cert_list() -> Html {
                     e.prevent_default();
                 });
                 let id = entry.id.clone();
+                let no_key = !entry.has_private_key;
                 let download_onclick = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
-                    if gloo_dialogs::confirm(&format!("Are you sure to download {id}.tar.gz?\nThis file contains the unencrypted private key.")) {
+                    if no_key || gloo_dialogs::confirm(&format!("Are you sure to download {id}.tar.gz?\nThis file contains the unencrypted private key.")) {
                         location::assign(&format!("{API_ENDPOINT}/certs/{id}/download"));
                     }
                 });
