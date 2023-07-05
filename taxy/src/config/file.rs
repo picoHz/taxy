@@ -64,7 +64,7 @@ impl FileStorage {
             .collect::<HashSet<_>>();
         for port in ports {
             let (id, entry): (String, Port) = port.clone().into();
-            doc[&id] = toml_edit::ser::to_document(&entry)?.as_item().clone();
+            doc[&id].clone_from(toml_edit::ser::to_document(&entry)?.as_item());
             unused.remove(&id);
         }
         for key in unused {
@@ -113,7 +113,7 @@ impl FileStorage {
             .collect::<HashSet<_>>();
         for site in sites {
             let (id, entry): (String, Site) = site.clone().into();
-            doc[&id] = toml_edit::ser::to_document(&entry)?.as_item().clone();
+            doc[&id].clone_from(toml_edit::ser::to_document(&entry)?.as_item());
             unused.remove(&id);
         }
         for key in unused {
@@ -146,7 +146,7 @@ impl FileStorage {
         };
 
         let (id, entry): (String, AcmeAccount) = acme.clone().into();
-        doc[&id] = toml_edit::ser::to_document(&entry)?.as_item().clone();
+        doc[&id].clone_from(toml_edit::ser::to_document(&entry)?.as_item());
 
         fs::write(path, doc.to_string()).await?;
         Ok(())
@@ -249,7 +249,7 @@ impl FileStorage {
         let account = Account {
             password: password_hash,
         };
-        doc[name] = toml_edit::ser::to_document(&account)?.as_item().clone();
+        doc[name].clone_from(toml_edit::ser::to_document(&account)?.as_item());
 
         fs::write(&path, doc.to_string()).await?;
         Ok(())

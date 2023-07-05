@@ -377,7 +377,7 @@ impl ServerState {
     }
 
     pub async fn set_config(&mut self, config: AppConfig) -> Result<(), Error> {
-        self.config = config.clone();
+        self.config.clone_from(&config);
         let _ = self
             .br_sender
             .send(ServerEvent::AppConfigUpdated { config });

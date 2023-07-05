@@ -47,7 +47,7 @@ impl TestStorage {
 #[async_trait::async_trait]
 impl Storage for TestStorage {
     async fn save_app_config(&self, config: &AppConfig) {
-        self.inner.lock().await.config = config.clone();
+        self.inner.lock().await.config.clone_from(config);
     }
 
     async fn load_app_config(&self) -> AppConfig {

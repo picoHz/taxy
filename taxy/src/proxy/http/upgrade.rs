@@ -8,7 +8,7 @@ pub async fn connect(
     stream: Box<dyn IoStream>,
 ) -> anyhow::Result<Response<Body>> {
     let mut client_req = Request::builder().uri(req.uri()).body(Body::empty())?;
-    *client_req.headers_mut() = req.headers().clone();
+    client_req.headers_mut().clone_from(req.headers());
 
     let (mut sender, conn) = client::conn::Builder::new()
         .handshake::<_, Body>(stream)

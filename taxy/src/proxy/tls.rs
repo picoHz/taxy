@@ -60,7 +60,9 @@ impl TlsTermination {
             .with_safe_defaults()
             .with_no_client_auth()
             .with_cert_resolver(resolver);
-        server_config.alpn_protocols = self.alpn_protocols.clone();
+        server_config
+            .alpn_protocols
+            .clone_from(&self.alpn_protocols);
 
         let server_config = Arc::new(server_config);
         self.acceptor = Some(TlsAcceptor::from(server_config));
