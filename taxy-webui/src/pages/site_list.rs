@@ -130,13 +130,13 @@ pub fn site_list() -> Html {
                         <div class="list-item-controls">
                             <div class="buttons is-right">
 
-                            <button type="button" class="button" onclick={log_onclick}>
+                            <button type="button" class="button" data-tooltip="Logs" onclick={log_onclick}>
                                 <span class="icon is-small">
                                     <ion-icon name="receipt"></ion-icon>
                                 </span>
                             </button>
 
-                            <button type="button" class="button" onclick={config_onclick}>
+                            <button type="button" class="button" data-tooltip="Configs" onclick={config_onclick}>
                                 <span class="icon is-small">
                                     <ion-icon name="settings"></ion-icon>
                                 </span>

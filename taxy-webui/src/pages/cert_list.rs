@@ -425,7 +425,7 @@ pub fn cert_list() -> Html {
                         <div class="list-item-controls">
                             <div class="buttons is-right">
 
-                                <button type="button" class="button" onclick={log_onclick}>
+                                <button type="button" class="button" data-tooltip="Logs" onclick={log_onclick}>
                                     <span class="icon is-small">
                                         <ion-icon name="receipt"></ion-icon>
                                     </span>
