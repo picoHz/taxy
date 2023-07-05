@@ -23,13 +23,7 @@ pub fn log_view(props: &Props) -> Html {
     let ul_ref_cloned = ul_ref.clone();
     use_effect_with_deps(
         move |_| {
-            poll_log(
-                id.clone(),
-                ul_ref_cloned.clone(),
-                log_cloned,
-                vec![],
-                None,
-            );
+            poll_log(id.clone(), ul_ref_cloned.clone(), log_cloned, vec![], None);
         },
         (),
     );
@@ -42,7 +36,15 @@ pub fn log_view(props: &Props) -> Html {
                     <Breadcrumb />
                 </p>
             </ybc::CardHeader>
-
+            if log.is_empty() {
+                <ybc::Hero body_classes="has-text-centered" body={
+                    html! {
+                    <p class="title has-text-grey-lighter">
+                        {"No Logs"}
+                    </p>
+                    }
+                } />
+            }
             <ul ref={ul_ref.clone()} class="log-viewer">
             { log.iter().map(|entry| {
                 let timestamp = entry.timestamp.format(&Rfc3339).unwrap();
