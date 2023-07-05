@@ -312,8 +312,20 @@ pub fn cert_list() -> Html {
                 html! {
                     <div class="list-item">
                         <div class="list-item-content">
-                            <div class="list-item-title">{title}</div>
-                            <div class="list-item-description">{&entry.id}</div>
+                            <div class="list-item-title">
+                            {title}
+                            </div>
+                            <div class="list-item-description">
+                                {&entry.id}
+                                if entry.has_private_key {
+                                    <span class="icon-text ml-2">
+                                    <span class="icon">
+                                        <ion-icon name="key"></ion-icon>
+                                    </span>
+                                    <span>{"Private Key"}</span>
+                                    </span>
+                                }
+                            </div>
                         </div>
 
                         <div class="list-item-controls">
