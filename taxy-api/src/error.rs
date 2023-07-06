@@ -60,8 +60,8 @@ pub enum Error {
     #[error("failed to fetch log")]
     FailedToFetchLog,
 
-    #[error("rpc error")]
-    RpcError,
+    #[error("failed to invoke rpc")]
+    FailedToInvokeRpc,
 
     #[error("failed to list network interfaces")]
     FailedToListNetworkInterfaces,

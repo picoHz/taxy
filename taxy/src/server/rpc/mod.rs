@@ -34,7 +34,7 @@ where
     T: RpcMethod,
 {
     async fn call(&mut self, state: &mut ServerState) -> Result<Box<dyn Any + Send + Sync>, Error> {
-        let this = self.inner.take().ok_or(Error::RpcError)?;
+        let this = self.inner.take().ok_or(Error::FailedToInvokeRpc)?;
         <T as RpcMethod>::call(this, state)
             .await
             .map(|r| Box::new(r) as Box<dyn Any + Send + Sync>)

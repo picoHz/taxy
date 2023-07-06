@@ -229,10 +229,10 @@ impl AppState {
 
         match rx.await {
             Ok(v) => match v {
-                Ok(value) => value.downcast().map_err(|_| Error::RpcError),
+                Ok(value) => value.downcast().map_err(|_| Error::FailedToInvokeRpc),
                 Err(err) => Err(err),
             },
-            Err(_) => Err(Error::RpcError),
+            Err(_) => Err(Error::FailedToInvokeRpc),
         }
     }
 }
