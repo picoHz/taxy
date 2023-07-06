@@ -218,7 +218,7 @@ impl ServerState {
         self.start_http_challenges().await;
     }
 
-    pub async fn update_port_ctx(&mut self, mut ctx: PortContext) {
+    pub async fn update_port_ctx(&mut self, mut ctx: PortContext) -> bool {
         let sites = self
             .sites
             .entries()
@@ -231,7 +231,7 @@ impl ServerState {
                 error!(?err, "failed to setup port");
             });
         }
-        self.ports.set(ctx);
+        self.ports.update(ctx)
     }
 
     async fn handle_http_challenge(&mut self, stream: &mut BufStream<TcpStream>) -> Option<String> {

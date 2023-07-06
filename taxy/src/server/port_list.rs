@@ -23,15 +23,21 @@ impl PortList {
         self.contexts.iter().find(|p| p.entry().id == *id)
     }
 
-    pub fn set(&mut self, ctx: PortContext) {
+    pub fn update(&mut self, ctx: PortContext) -> bool {
         if let Some(index) = self
             .contexts
             .iter()
             .position(|p| p.entry().id == ctx.entry().id)
         {
-            self.contexts[index].apply(ctx);
+            if self.contexts[index].entry != ctx.entry {
+                self.contexts[index].apply(ctx);
+                true
+            } else {
+                false
+            }
         } else {
             self.contexts.push(ctx);
+            true
         }
     }
 
