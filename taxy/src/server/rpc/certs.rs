@@ -2,10 +2,7 @@ use super::RpcMethod;
 use crate::{certs::Cert, server::state::ServerState};
 use flate2::{write::GzEncoder, Compression};
 use hyper::body::Bytes;
-use std::{
-    sync::Arc,
-    time::{Duration, SystemTime},
-};
+use std::{sync::Arc, time::SystemTime};
 use tar::Header;
 use taxy_api::{cert::CertInfo, error::Error};
 
@@ -97,7 +94,7 @@ fn cert_to_tar_gz(cert: &Cert) -> anyhow::Result<Bytes> {
 
         let mtime = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap_or(Duration::from_secs(0))
+            .unwrap_or_default()
             .as_secs();
 
         let mut header = Header::new_old();
