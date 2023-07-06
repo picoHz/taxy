@@ -138,9 +138,9 @@ impl Cert {
     ) -> Result<Self, Error> {
         let key = if let Some(pem_key) = &pem_key {
             let key_pem =
-                std::str::from_utf8(pem_key).map_err(|_| Error::FailedToDecryptPrivateKey)?;
+                std::str::from_utf8(pem_key).map_err(|_| Error::FailedToReadPrivateKey)?;
             let (_, key) =
-                SecretDocument::from_pem(key_pem).map_err(|_| Error::FailedToDecryptPrivateKey)?;
+                SecretDocument::from_pem(key_pem).map_err(|_| Error::FailedToReadPrivateKey)?;
             Some(key)
         } else {
             None
@@ -236,14 +236,10 @@ impl Cert {
 
     pub fn new_self_signed(san: &[SubjectName], ca: &Cert) -> Result<Self, Error> {
         let ca_pem =
-            std::str::from_utf8(&ca.pem_chain).map_err(|_| Error::FailedToDecryptPrivateKey)?;
-        let pem_key = ca
-            .pem_key
-            .as_ref()
-            .ok_or(Error::FailedToDecryptPrivateKey)?;
-        let key_pem = std::str::from_utf8(pem_key).map_err(|_| Error::FailedToDecryptPrivateKey)?;
-        let ca_keypair =
-            KeyPair::from_pem(key_pem).map_err(|_| Error::FailedToDecryptPrivateKey)?;
+            std::str::from_utf8(&ca.pem_chain).map_err(|_| Error::FailedToReadPrivateKey)?;
+        let pem_key = ca.pem_key.as_ref().ok_or(Error::FailedToReadPrivateKey)?;
+        let key_pem = std::str::from_utf8(pem_key).map_err(|_| Error::FailedToReadPrivateKey)?;
+        let ca_keypair = KeyPair::from_pem(key_pem).map_err(|_| Error::FailedToReadPrivateKey)?;
         let ca_params = CertificateParams::from_ca_cert_pem(ca_pem, ca_keypair)
             .map_err(|_| Error::FailedToGerateSelfSignedCertificate)?;
 
@@ -303,7 +299,7 @@ impl Cert {
             Ok(certified) => Ok(certified),
             Err(err) => {
                 error!(?err);
-                Err(Error::FailedToDecryptPrivateKey)
+                Err(Error::FailedToReadPrivateKey)
             }
         }
     }
@@ -316,7 +312,7 @@ impl Cert {
     }
 
     fn certified_impl(&self) -> anyhow::Result<CertifiedKey> {
-        let key = self.key.as_ref().ok_or(Error::FailedToDecryptPrivateKey)?;
+        let key = self.key.as_ref().ok_or(Error::FailedToReadPrivateKey)?;
         let key = key
             .decode_msg::<PrivateKeyInfo>()
             .map_err(|err| anyhow::anyhow!("{err}"))?;
