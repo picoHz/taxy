@@ -1,17 +1,21 @@
 use crate::command::ServerCommand;
 use crate::server::rpc::ErasedRpcMethod;
 use crate::server::rpc::{RpcCallback, RpcMethod, RpcWrapper};
+use futures::{Stream, TryStreamExt};
 use hyper::StatusCode;
 use std::any::Any;
 use std::collections::HashMap;
+use std::pin::Pin;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::task::{Context, Poll};
 use std::{convert::Infallible, net::SocketAddr, sync::Arc};
 use taxy_api::app::{AppConfig, AppInfo};
 use taxy_api::error::{Error, ErrorMessage};
 use taxy_api::event::ServerEvent;
 use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::{broadcast, mpsc, oneshot, Mutex};
+use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
 use tokio_stream::wrappers::BroadcastStream;
-use tokio_stream::StreamExt;
 use tracing::{error, info, trace, warn};
 use utoipa::OpenApi;
 use warp::filters::body::BodyDeserializeError;
@@ -82,23 +86,18 @@ pub async fn start_admin(
 
     let mut event_recv = event.subscribe();
 
+    let counter = app_state.data.lock().await.event_listener_counter.clone();
     let api_events = warp::path("events")
         .and(with_state(app_state.clone()))
         .and(warp::path::end())
         .and(warp::get())
         .map(move |_| {
             let event_stream = event_stream.clone();
-            warp::sse::reply(
-                warp::sse::keep_alive().stream(
-                    BroadcastStream::new(event_stream.recv)
-                        .map_while(|e| match e {
-                            Ok(ServerEvent::Shutdown) => None,
-                            Ok(event) => Some(event),
-                            _ => None,
-                        })
-                        .map(|e| Event::default().json_data(&e)),
-                ),
-            )
+            let counter = counter.clone();
+            warp::sse::reply(warp::sse::keep_alive().stream(StreamWrapper::new(
+                BroadcastStream::new(event_stream.recv),
+                counter,
+            )))
         });
 
     let options = warp::options().map(warp::reply);
@@ -159,6 +158,42 @@ pub struct AppState {
     data: Arc<Mutex<Data>>,
 }
 
+struct StreamWrapper {
+    inner: BroadcastStream<ServerEvent>,
+    counter: Arc<AtomicUsize>,
+}
+
+impl StreamWrapper {
+    fn new(stream: BroadcastStream<ServerEvent>, counter: Arc<AtomicUsize>) -> Self {
+        counter.fetch_add(1, Ordering::Relaxed);
+        Self {
+            inner: stream,
+            counter,
+        }
+    }
+}
+
+impl Stream for StreamWrapper {
+    type Item = Result<Event, BroadcastStreamRecvError>;
+
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        match self.inner.try_poll_next_unpin(cx) {
+            Poll::Ready(Some(Ok(event))) => {
+                Poll::Ready(Some(Ok(Event::default().json_data(&event).unwrap())))
+            }
+            Poll::Ready(Some(Err(err))) => Poll::Ready(Some(Err(err))),
+            Poll::Ready(None) => Poll::Ready(None),
+            Poll::Pending => Poll::Pending,
+        }
+    }
+}
+
+impl Drop for StreamWrapper {
+    fn drop(&mut self) {
+        self.counter.fetch_sub(1, Ordering::Release);
+    }
+}
+
 type CallbackData = Result<Box<dyn Any + Send + Sync>, Error>;
 
 struct Data {
@@ -169,6 +204,8 @@ struct Data {
 
     rpc_counter: usize,
     rpc_callbacks: HashMap<usize, oneshot::Sender<CallbackData>>,
+
+    event_listener_counter: Arc<AtomicUsize>,
 }
 
 impl AppState {
@@ -210,6 +247,7 @@ impl Data {
             log: Arc::new(LogReader::new(&log).await?),
             rpc_counter: 0,
             rpc_callbacks: HashMap::new(),
+            event_listener_counter: Arc::new(AtomicUsize::new(0)),
         })
     }
 }
