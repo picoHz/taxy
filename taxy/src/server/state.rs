@@ -44,6 +44,7 @@ pub struct ServerState {
     command_sender: mpsc::Sender<ServerCommand>,
     br_sender: broadcast::Sender<ServerEvent>,
     callback_sender: mpsc::Sender<RpcCallback>,
+    broadcast_events: bool,
 }
 
 impl ServerState {
@@ -75,6 +76,7 @@ impl ServerState {
             command_sender,
             br_sender,
             callback_sender,
+            broadcast_events: false,
         };
 
         for entry in ports {
@@ -102,6 +104,9 @@ impl ServerState {
                     error!(?err, "failed to add server cert");
                 }
                 self.update_certs().await;
+            }
+            ServerCommand::SetBroadcastEvents { enabled } => {
+                self.broadcast_events = enabled;
             }
             ServerCommand::StopHttpChallenges => {
                 self.pool.set_http_challenges(false);
@@ -167,11 +172,13 @@ impl ServerState {
         let _ = self
             .br_sender
             .send(ServerEvent::PortTableUpdated { entries });
-        for (entry, ctx) in self.ports.entries().cloned().zip(self.ports.as_slice()) {
-            let _ = self.br_sender.send(ServerEvent::PortStatusUpdated {
-                id: entry.id.clone(),
-                status: *ctx.status(),
-            });
+        if self.broadcast_events {
+            for (entry, ctx) in self.ports.entries().cloned().zip(self.ports.as_slice()) {
+                let _ = self.br_sender.send(ServerEvent::PortStatusUpdated {
+                    id: entry.id.clone(),
+                    status: *ctx.status(),
+                });
+            }
         }
     }
 

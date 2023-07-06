@@ -13,6 +13,7 @@ use taxy_api::app::{AppConfig, AppInfo};
 use taxy_api::error::{Error, ErrorMessage};
 use taxy_api::event::ServerEvent;
 use tokio::sync::broadcast::error::RecvError;
+use tokio::sync::mpsc::Sender;
 use tokio::sync::{broadcast, mpsc, oneshot, Mutex};
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
 use tokio_stream::wrappers::BroadcastStream;
@@ -46,6 +47,7 @@ pub async fn start_admin(
     let data = Arc::new(Mutex::new(data));
     let app_state = AppState {
         sender: command,
+        event_listener_counter: Arc::new(AtomicUsize::new(0)),
         data: data.clone(),
     };
 
@@ -86,7 +88,8 @@ pub async fn start_admin(
 
     let mut event_recv = event.subscribe();
 
-    let counter = app_state.data.lock().await.event_listener_counter.clone();
+    let counter = app_state.event_listener_counter.clone();
+    let sender = app_state.sender.clone();
     let api_events = warp::path("events")
         .and(with_state(app_state.clone()))
         .and(warp::path::end())
@@ -94,9 +97,11 @@ pub async fn start_admin(
         .map(move |_| {
             let event_stream = event_stream.clone();
             let counter = counter.clone();
+            let sender = sender.clone();
             warp::sse::reply(warp::sse::keep_alive().stream(StreamWrapper::new(
                 BroadcastStream::new(event_stream.recv),
                 counter,
+                sender,
             )))
         });
 
@@ -155,20 +160,29 @@ async fn handle_not_found() -> Result<&'static [u8], Rejection> {
 #[derive(Clone)]
 pub struct AppState {
     sender: mpsc::Sender<ServerCommand>,
+    event_listener_counter: Arc<AtomicUsize>,
     data: Arc<Mutex<Data>>,
 }
 
 struct StreamWrapper {
     inner: BroadcastStream<ServerEvent>,
     counter: Arc<AtomicUsize>,
+    sender: Sender<ServerCommand>,
 }
 
 impl StreamWrapper {
-    fn new(stream: BroadcastStream<ServerEvent>, counter: Arc<AtomicUsize>) -> Self {
-        counter.fetch_add(1, Ordering::Relaxed);
+    fn new(
+        stream: BroadcastStream<ServerEvent>,
+        counter: Arc<AtomicUsize>,
+        sender: Sender<ServerCommand>,
+    ) -> Self {
+        if counter.fetch_add(1, Ordering::Relaxed) == 0 {
+            let _ = sender.try_send(ServerCommand::SetBroadcastEvents { enabled: true });
+        }
         Self {
             inner: stream,
             counter,
+            sender,
         }
     }
 }
@@ -190,7 +204,11 @@ impl Stream for StreamWrapper {
 
 impl Drop for StreamWrapper {
     fn drop(&mut self) {
-        self.counter.fetch_sub(1, Ordering::Release);
+        if self.counter.fetch_sub(1, Ordering::Release) == 1 {
+            let _ = self
+                .sender
+                .try_send(ServerCommand::SetBroadcastEvents { enabled: false });
+        }
     }
 }
 
@@ -204,8 +222,6 @@ struct Data {
 
     rpc_counter: usize,
     rpc_callbacks: HashMap<usize, oneshot::Sender<CallbackData>>,
-
-    event_listener_counter: Arc<AtomicUsize>,
 }
 
 impl AppState {
@@ -247,7 +263,6 @@ impl Data {
             log: Arc::new(LogReader::new(&log).await?),
             rpc_counter: 0,
             rpc_callbacks: HashMap::new(),
-            event_listener_counter: Arc::new(AtomicUsize::new(0)),
         })
     }
 }
