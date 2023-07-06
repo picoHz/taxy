@@ -39,9 +39,6 @@ pub enum Error {
     #[error("failed to read private key")]
     FailedToReadPrivateKey,
 
-    #[error("certificate already exists: {id}")]
-    CertAlreadyExists { id: String },
-
     #[error("port id not found: {id}")]
     IdNotFound { id: String },
 
@@ -65,15 +62,6 @@ pub enum Error {
 
     #[error("rpc error")]
     RpcError,
-
-    #[error("failed to load app key")]
-    FailedToLoadAppKey,
-
-    #[error("failed to encrypt private key")]
-    FailedToEncryptPrivateKey,
-
-    #[error("failed to decrypt private key")]
-    FailedToDecryptPrivateKey,
 
     #[error("failed to list network interfaces")]
     FailedToListNetworkInterfaces,
