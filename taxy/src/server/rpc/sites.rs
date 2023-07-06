@@ -70,8 +70,9 @@ impl RpcMethod for UpdateSite {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.sites.update(self.entry)?;
-        state.update_sites().await;
+        if state.sites.update(self.entry)? {
+            state.update_sites().await;
+        }
         Ok(())
     }
 }

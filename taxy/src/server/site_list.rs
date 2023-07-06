@@ -1,3 +1,4 @@
+use indexmap::map::Entry;
 use indexmap::IndexMap;
 use taxy_api::error::Error;
 use taxy_api::site::SiteEntry;
@@ -36,12 +37,17 @@ impl SiteList {
         }
     }
 
-    pub fn update(&mut self, entry: SiteEntry) -> Result<(), Error> {
-        if !self.entries.contains_key(&entry.id) {
-            Err(Error::IdNotFound { id: entry.id })
-        } else {
-            self.entries.insert(entry.id.clone(), entry);
-            Ok(())
+    pub fn update(&mut self, entry: SiteEntry) -> Result<bool, Error> {
+        match self.entries.entry(entry.id.clone()) {
+            Entry::Occupied(mut e) => {
+                if e.get().site != entry.site {
+                    e.insert(entry);
+                    Ok(true)
+                } else {
+                    Ok(false)
+                }
+            }
+            Entry::Vacant(_) => Err(Error::IdNotFound { id: entry.id }),
         }
     }
 
