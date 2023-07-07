@@ -70,6 +70,15 @@ pub fn custom_acme(props: &Props) -> Html {
         }
     });
 
+    let renewal = use_state(|| 60);
+    let renewal_onchange = Callback::from({
+        let renewal = renewal.clone();
+        move |event: Event| {
+            let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
+            renewal.set(target.value().parse().unwrap_or(60));
+        }
+    });
+
     let prev_entry =
         use_state::<Result<AcmeRequest, HashMap<String, String>>, _>(|| Err(Default::default()));
     let entry = get_request(
@@ -79,6 +88,7 @@ pub fn custom_acme(props: &Props) -> Html {
         &eab_hmac_key,
         &email,
         &domain_name,
+        *renewal,
     );
     if entry != *prev_entry {
         prev_entry.set(entry.clone());
@@ -173,6 +183,24 @@ pub fn custom_acme(props: &Props) -> Html {
                 </div>
             </div>
             </div>
+
+            <div class="field is-horizontal m-5">
+            <div class="field-label is-normal">
+                <label class="label">{"Renewal"}</label>
+            </div>
+            <div class="field-body">
+                <div class="field has-addons">
+                    <p class="control">
+                        <input class="input" type="number" onchange={renewal_onchange} value={renewal.to_string()} min="1" />
+                    </p>
+                    <p class="control">
+                        <a class="button is-static">
+                        {"days"}
+                        </a>
+                    </p>
+                </div>
+            </div>
+            </div>
         </>
     }
 }
@@ -184,6 +212,7 @@ fn get_request(
     eab_hmac_key: &str,
     email: &str,
     domain_name: &str,
+    renewal: u64,
 ) -> Result<AcmeRequest, HashMap<String, String>> {
     let mut errors = HashMap::new();
 
@@ -243,7 +272,7 @@ fn get_request(
             provider: name.trim().to_string(),
             identifiers: vec![domain_name],
             challenge_type: "http-01".to_string(),
-            renewal_days: 60,
+            renewal_days: renewal,
             is_trusted: true,
         },
     })
