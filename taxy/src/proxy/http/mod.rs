@@ -325,11 +325,7 @@ pub async fn start(
             let (mut sender, conn) = client::conn::Builder::new()
                 .http2_only(client_http2)
                 .handshake(out)
-                .await
-                .map_err(|err| {
-                    println!("cerr: {:?}", err);
-                    err
-                })?;
+                .await?;
 
             tokio::task::spawn(
                 async move {
