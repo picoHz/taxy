@@ -1,34 +1,30 @@
 use crate::proxy::{PortContext, PortContextEvent, PortContextKind};
 use futures::{Stream, StreamExt};
-use once_cell::sync::Lazy;
 use std::collections::{HashMap, HashSet};
 use std::io;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::SocketAddr;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use taxy_api::port::SocketState;
 use tokio::net::{TcpListener, TcpStream};
 use tracing::{error, info, span, Instrument, Level};
 
-static RESERVED_ADDR: Lazy<SocketAddr> =
-    Lazy::new(|| SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 80));
-
 #[derive(Debug)]
 pub struct TcpListenerPool {
     listeners: Vec<TcpListenerStream>,
-    http_challenges: bool,
+    http_challenge_addr: Option<SocketAddr>,
 }
 
 impl TcpListenerPool {
     pub fn new() -> Self {
         Self {
             listeners: Vec::new(),
-            http_challenges: false,
+            http_challenge_addr: None,
         }
     }
 
-    pub fn set_http_challenges(&mut self, enabled: bool) {
-        self.http_challenges = enabled;
+    pub fn set_http_challenge_addr(&mut self, addr: Option<SocketAddr>) {
+        self.http_challenge_addr = addr;
     }
 
     pub fn has_active_listeners(&self) -> bool {
@@ -37,10 +33,10 @@ impl TcpListenerPool {
 
     pub async fn update(&mut self, ports: &mut [PortContext]) {
         let mut reserved_ports = Vec::new();
-        if self.http_challenges {
+        if let Some(reserved_addr) = self.http_challenge_addr {
             let port_used = ports.iter().any(|ctx| match ctx.kind() {
-                PortContextKind::Tcp(state) => state.listen.port() == RESERVED_ADDR.port(),
-                PortContextKind::Http(state) => state.listen.port() == RESERVED_ADDR.port(),
+                PortContextKind::Tcp(state) => state.listen.port() == reserved_addr.port(),
+                PortContextKind::Http(state) => state.listen.port() == reserved_addr.port(),
                 _ => false,
             });
             if !port_used {
@@ -80,7 +76,13 @@ impl TcpListenerPool {
             let bind = match ctx.kind() {
                 PortContextKind::Tcp(state) => state.listen,
                 PortContextKind::Http(state) => state.listen,
-                _ => *RESERVED_ADDR,
+                _ => {
+                    if let Some(addr) = self.http_challenge_addr {
+                        addr
+                    } else {
+                        continue;
+                    }
+                }
             };
             let (listener, state) = if let Some(listener) = listeners.remove(&bind) {
                 (Some(listener), SocketState::Listening)

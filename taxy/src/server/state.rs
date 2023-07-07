@@ -108,7 +108,7 @@ impl ServerState {
                 self.broadcast_events = enabled;
             }
             ServerCommand::StopHttpChallenges => {
-                self.pool.set_http_challenges(false);
+                self.pool.set_http_challenge_addr(None);
                 self.http_challenges.clear();
                 self.pool.update(self.ports.as_mut_slice()).await;
             }
@@ -356,7 +356,8 @@ impl ServerState {
             .collect();
 
         self.http_challenges = challenges;
-        self.pool.set_http_challenges(true);
+        self.pool
+            .set_http_challenge_addr(Some(self.config.http_challenge_addr));
         self.pool.update(self.ports.as_mut_slice()).await;
 
         let command = self.command_sender.clone();

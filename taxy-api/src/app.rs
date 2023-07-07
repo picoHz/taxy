@@ -1,6 +1,6 @@
 use serde_default::DefaultFromSerde;
 use serde_derive::{Deserialize, Serialize};
-use std::{path::PathBuf, time::Duration};
+use std::{net::SocketAddr, path::PathBuf, time::Duration};
 use utoipa::ToSchema;
 
 #[derive(Debug, DefaultFromSerde, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -12,6 +12,10 @@ pub struct AppConfig {
     #[serde(with = "humantime_serde", default = "default_admin_session_expiry")]
     #[schema(value_type = String, example = "1d")]
     pub admin_session_expiry: Duration,
+
+    #[serde(default = "default_http_challenge_addr")]
+    #[schema(value_type = String, example = "0.0.0.0:80")]
+    pub http_challenge_addr: SocketAddr,
 }
 
 fn default_background_task_interval() -> Duration {
@@ -20,6 +24,10 @@ fn default_background_task_interval() -> Duration {
 
 fn default_admin_session_expiry() -> Duration {
     Duration::from_secs(60 * 60)
+}
+
+fn default_http_challenge_addr() -> SocketAddr {
+    SocketAddr::from(([0, 0, 0, 0], 80))
 }
 
 #[derive(Clone, Serialize, ToSchema)]
