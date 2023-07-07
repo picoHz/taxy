@@ -69,18 +69,11 @@ impl CertList {
         self.certs.get(id)
     }
 
-    pub fn add(&mut self, cert: Arc<Cert>) -> Result<(), Error> {
-        if self.certs.contains_key(cert.id()) {
-            Err(Error::IdAlreadyExists {
-                id: cert.id().to_string(),
-            })
-        } else {
-            self.certs.insert(cert.id().to_string(), cert.clone());
-            self.certs.sort_unstable_by(|_, v1, _, v2| v1.cmp(v2));
-            if cert.kind == CertKind::Root {
-                self.update_root_certs();
-            }
-            Ok(())
+    pub fn add(&mut self, cert: Arc<Cert>) {
+        self.certs.insert(cert.id().to_string(), cert.clone());
+        self.certs.sort_unstable_by(|_, v1, _, v2| v1.cmp(v2));
+        if cert.kind == CertKind::Root {
+            self.update_root_certs();
         }
     }
 

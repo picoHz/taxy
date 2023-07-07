@@ -100,9 +100,7 @@ impl ServerState {
     pub async fn handle_command(&mut self, cmd: ServerCommand) {
         match cmd {
             ServerCommand::AddCert { cert } => {
-                if let Err(err) = self.certs.add(cert) {
-                    error!(?err, "failed to add server cert");
-                }
+                self.certs.add(cert.clone());
                 self.update_certs().await;
             }
             ServerCommand::SetBroadcastEvents { enabled } => {

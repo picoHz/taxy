@@ -43,7 +43,7 @@ impl RpcMethod for AddCert {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.certs.add(self.cert.clone())?;
+        state.certs.add(self.cert.clone());
         state.update_certs().await;
         state.storage.save_cert(&self.cert).await;
         Ok(())
