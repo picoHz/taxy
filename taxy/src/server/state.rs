@@ -102,6 +102,7 @@ impl ServerState {
             ServerCommand::AddCert { cert } => {
                 self.certs.add(cert.clone());
                 self.update_certs().await;
+                self.storage.save_cert(&cert).await;
             }
             ServerCommand::SetBroadcastEvents { enabled } => {
                 self.broadcast_events = enabled;
@@ -304,6 +305,10 @@ impl ServerState {
         let entries = self.acmes.entries();
         let entries = entries
             .filter(|entry| {
+                println!(
+                    "acme entry n: {:?}",
+                    self.certs.find_certs_by_acme(&entry.id)
+                );
                 self.certs
                     .find_certs_by_acme(&entry.id)
                     .iter()
@@ -320,6 +325,8 @@ impl ServerState {
                     > Duration::from_secs(60 * 60 * 24 * entry.acme.renewal_days)
             })
             .collect::<Vec<_>>();
+
+        println!("acme entries: {:?}", entries);
 
         if entries.is_empty() {
             return tokio::task::spawn(async {});
