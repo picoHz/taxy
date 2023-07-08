@@ -71,7 +71,11 @@ pub fn proxy_config(props: &Props) -> Html {
         }
     });
 
-    let ProxyKind::Http(http_proxy) = &props.proxy.kind;
+    let http_proxy = if let ProxyKind::Http(http_proxy) = &props.proxy.kind {
+        http_proxy
+    } else {
+        todo!()
+    };
     let vhosts = use_state(|| {
         http_proxy
             .vhosts

@@ -2,6 +2,7 @@ use std::{net::ToSocketAddrs, sync::Arc};
 use taxy::certs::Cert;
 use taxy_api::{
     port::{Port, PortEntry, PortOptions, UpstreamServer},
+    site::{Proxy, ProxyEntry, ProxyKind, TcpProxy},
     tls::TlsTermination,
 };
 use warp::Filter;
@@ -30,13 +31,22 @@ async fn tls_proxy() -> anyhow::Result<()> {
                 name: String::new(),
                 listen: "/ip4/127.0.0.1/tcp/51001/tls".parse().unwrap(),
                 opts: PortOptions {
-                    upstream_servers: vec![UpstreamServer {
-                        addr: "/dns/localhost/tcp/51000/tls".parse().unwrap(),
-                    }],
                     tls_termination: Some(TlsTermination {
                         server_names: vec!["localhost".into()],
                     }),
                 },
+            },
+        }])
+        .proxies(vec![ProxyEntry {
+            id: "test2".into(),
+            proxy: Proxy {
+                name: String::new(),
+                ports: vec!["test".into()],
+                kind: ProxyKind::Tcp(TcpProxy {
+                    upstream_servers: vec![UpstreamServer {
+                        addr: "/dns/localhost/tcp/51000/tls".parse().unwrap(),
+                    }],
+                }),
             },
         }])
         .certs(

@@ -86,8 +86,6 @@ impl From<PortEntry> for (String, Port) {
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct PortOptions {
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub upstream_servers: Vec<UpstreamServer>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tls_termination: Option<TlsTermination>,
 }

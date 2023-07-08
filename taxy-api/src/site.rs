@@ -1,3 +1,4 @@
+use crate::port::UpstreamServer;
 use crate::subject_name::SubjectName;
 use serde_derive::{Deserialize, Serialize};
 use url::Url;
@@ -17,7 +18,14 @@ pub struct Proxy {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(tag = "protocol", rename_all = "snake_case")]
 pub enum ProxyKind {
+    Tcp(TcpProxy),
     Http(HttpProxy),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct TcpProxy {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub upstream_servers: Vec<UpstreamServer>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]

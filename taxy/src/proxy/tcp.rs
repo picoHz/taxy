@@ -6,7 +6,7 @@ use std::{
     sync::Arc,
     time::SystemTime,
 };
-use taxy_api::error::Error;
+use taxy_api::{error::Error, site::ProxyKind};
 use taxy_api::{port::PortEntry, site::ProxyEntry};
 use tokio::{
     io::AsyncWriteExt,
@@ -45,13 +45,6 @@ impl TcpPortContext {
         info!("initializing tcp proxy");
 
         let listen = multiaddr_to_tcp(&entry.port.listen)?;
-
-        let mut servers = Vec::new();
-        for server in &entry.port.opts.upstream_servers {
-            let server = multiaddr_to_host(&server.addr)?;
-            servers.push(server);
-        }
-
         let tls_termination = if let Some(tls) = &entry.port.opts.tls_termination {
             Some(TlsTermination::new(tls, vec![])?)
         } else if entry.port.listen.iter().any(|p| p == Protocol::Tls) {
@@ -62,7 +55,7 @@ impl TcpPortContext {
 
         Ok(Self {
             listen,
-            servers,
+            servers: Default::default(),
             status: Default::default(),
             span,
             tls_termination,
@@ -72,16 +65,21 @@ impl TcpPortContext {
         })
     }
 
-    pub async fn setup(
-        &mut self,
-        certs: &CertList,
-        _proxies: Vec<ProxyEntry>,
-    ) -> Result<(), Error> {
+    pub async fn setup(&mut self, certs: &CertList, proxies: Vec<ProxyEntry>) -> Result<(), Error> {
         let config = ClientConfig::builder()
             .with_safe_defaults()
             .with_root_certificates(certs.root_certs().clone())
             .with_no_client_auth();
         self.tls_client_config = Some(Arc::new(config));
+
+        for proxy in proxies {
+            if let ProxyKind::Tcp(proxy) = proxy.proxy.kind {
+                for server in proxy.upstream_servers {
+                    let server = multiaddr_to_host(&server.addr)?;
+                    self.servers.push(server);
+                }
+            }
+        }
 
         if let Some(tls) = &mut self.tls_termination {
             self.status.state.tls = Some(tls.setup(certs).await);
