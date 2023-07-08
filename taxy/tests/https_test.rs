@@ -2,7 +2,7 @@ use std::{net::ToSocketAddrs, sync::Arc};
 use taxy::certs::Cert;
 use taxy_api::{
     port::{Port, PortEntry, PortOptions},
-    site::{Proxy, ProxyEntry, Route},
+    site::{HttpProxy, Proxy, ProxyEntry, ProxyKind, Route},
     tls::TlsTermination,
 };
 use warp::Filter;
@@ -43,13 +43,15 @@ async fn https_proxy() -> anyhow::Result<()> {
             proxy: Proxy {
                 name: String::new(),
                 ports: vec!["test".into()],
-                vhosts: vec![],
-                routes: vec![Route {
-                    path: "/".into(),
-                    servers: vec![taxy_api::site::Server {
-                        url: "https://localhost:53000/".parse().unwrap(),
+                kind: ProxyKind::Http(HttpProxy {
+                    vhosts: vec![],
+                    routes: vec![Route {
+                        path: "/".into(),
+                        servers: vec![taxy_api::site::Server {
+                            url: "https://localhost:53000/".parse().unwrap(),
+                        }],
                     }],
-                }],
+                }),
             },
         }])
         .certs(

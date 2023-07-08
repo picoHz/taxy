@@ -9,7 +9,7 @@ use taxy_api::event::ServerEvent;
 use taxy_api::log::{LogLevel, SystemLogRow};
 use taxy_api::port::{NetworkAddr, NetworkInterface, PortEntry, PortOptions, UpstreamServer};
 use taxy_api::port::{PortState, PortStatus, SocketState};
-use taxy_api::site::{ProxyEntry, Route, Server};
+use taxy_api::site::{HttpProxy, Proxy, ProxyEntry, ProxyKind, Route, Server};
 use taxy_api::tls::TlsState;
 use taxy_api::tls::TlsTermination;
 use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
@@ -72,6 +72,9 @@ use warp::{Rejection, Reply};
         ErrorMessage,
         ServerEvent,
         ProxyEntry,
+        Proxy,
+        ProxyKind,
+        HttpProxy,
         Route,
         Server,
         LoginRequest,

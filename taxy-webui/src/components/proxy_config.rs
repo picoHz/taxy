@@ -5,7 +5,7 @@ use gloo_net::http::Request;
 use multiaddr::Protocol;
 use std::collections::HashMap;
 use std::str::FromStr;
-use taxy_api::site::{Route, Server};
+use taxy_api::site::{HttpProxy, ProxyKind, Route, Server};
 use taxy_api::subject_name::SubjectName;
 use taxy_api::{port::PortEntry, site::Proxy};
 use url::Url;
@@ -25,8 +25,10 @@ fn create_default_site() -> Proxy {
     Proxy {
         name: String::new(),
         ports: vec![],
-        vhosts: vec![],
-        routes: vec![],
+        kind: ProxyKind::Http(HttpProxy {
+            vhosts: vec![],
+            routes: vec![],
+        }),
     }
 }
 
@@ -69,9 +71,9 @@ pub fn proxy_config(props: &Props) -> Html {
         }
     });
 
+    let ProxyKind::Http(http_proxy) = &props.proxy.kind;
     let vhosts = use_state(|| {
-        props
-            .proxy
+        http_proxy
             .vhosts
             .iter()
             .map(|host| host.to_string())
@@ -87,8 +89,7 @@ pub fn proxy_config(props: &Props) -> Html {
     });
 
     let routes = use_state(|| {
-        props
-            .proxy
+        http_proxy
             .routes
             .iter()
             .map(|route| {
@@ -325,8 +326,10 @@ fn get_site(
         Ok(Proxy {
             name: name.trim().to_string(),
             ports,
-            vhosts: hosts,
-            routes: parsed_routes,
+            kind: ProxyKind::Http(HttpProxy {
+                vhosts: hosts,
+                routes: parsed_routes,
+            }),
         })
     } else {
         Err(errors)

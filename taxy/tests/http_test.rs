@@ -2,7 +2,7 @@ use reqwest::Body;
 use serde_json::json;
 use taxy_api::{
     port::{Port, PortEntry},
-    site::{Proxy, ProxyEntry, Route},
+    site::{HttpProxy, Proxy, ProxyEntry, ProxyKind, Route},
 };
 use tokio::net::TcpListener;
 use tokio_stream::wrappers::TcpListenerStream;
@@ -74,13 +74,15 @@ async fn http_proxy() -> anyhow::Result<()> {
             proxy: Proxy {
                 name: String::new(),
                 ports: vec!["test".into()],
-                vhosts: vec!["localhost:52001".parse().unwrap()],
-                routes: vec![Route {
-                    path: "/".into(),
-                    servers: vec![taxy_api::site::Server {
-                        url: server.url().parse().unwrap(),
+                kind: ProxyKind::Http(HttpProxy {
+                    vhosts: vec!["localhost:52001".parse().unwrap()],
+                    routes: vec![Route {
+                        path: "/".into(),
+                        servers: vec![taxy_api::site::Server {
+                            url: server.url().parse().unwrap(),
+                        }],
                     }],
-                }],
+                }),
             },
         }])
         .build();

@@ -9,6 +9,19 @@ pub struct Proxy {
     pub name: String,
     #[schema(example = json!(["c56yqmqcvpmp49n14s2lexxl"]))]
     pub ports: Vec<String>,
+    #[serde(flatten)]
+    #[schema(inline)]
+    pub kind: ProxyKind,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(tag = "protocol", rename_all = "snake_case")]
+pub enum ProxyKind {
+    Http(HttpProxy),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct HttpProxy {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     #[schema(value_type = [String], example = json!(["example.com"]))]
     pub vhosts: Vec<SubjectName>,

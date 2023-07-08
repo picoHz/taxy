@@ -1,6 +1,6 @@
 use super::filter::{FilterResult, RequestFilter};
 use hyper::Request;
-use taxy_api::site::{ProxyEntry, Route};
+use taxy_api::site::{ProxyEntry, ProxyKind, Route};
 
 #[derive(Default, Debug)]
 pub struct Router {
@@ -12,15 +12,12 @@ impl Router {
         let routes = entries
             .into_iter()
             .flat_map(|entry| {
-                entry
-                    .proxy
-                    .routes
-                    .into_iter()
-                    .map(move |route| FilteredRoute {
-                        resource_id: entry.id.clone(),
-                        filter: RequestFilter::new(&entry.proxy.vhosts, &route),
-                        route,
-                    })
+                let ProxyKind::Http(proxy) = entry.proxy.kind;
+                proxy.routes.into_iter().map(move |route| FilteredRoute {
+                    resource_id: entry.id.clone(),
+                    filter: RequestFilter::new(&proxy.vhosts, &route),
+                    route,
+                })
             })
             .collect();
         Self { routes }
