@@ -7,7 +7,7 @@ pub mod auth;
 pub mod certs;
 pub mod config;
 pub mod ports;
-pub mod sites;
+pub mod proxies;
 
 #[async_trait::async_trait]
 pub trait RpcMethod: Any + Send + Sync {

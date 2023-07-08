@@ -2,7 +2,7 @@ use reqwest::Body;
 use serde_json::json;
 use taxy_api::{
     port::{Port, PortEntry},
-    site::{Route, Site, SiteEntry},
+    site::{Proxy, ProxyEntry, Route},
 };
 use tokio::net::TcpListener;
 use tokio_stream::wrappers::TcpListenerStream;
@@ -69,9 +69,9 @@ async fn http_proxy() -> anyhow::Result<()> {
                 opts: Default::default(),
             },
         }])
-        .sites(vec![SiteEntry {
+        .proxies(vec![ProxyEntry {
             id: "test2".into(),
-            site: Site {
+            proxy: Proxy {
                 name: String::new(),
                 ports: vec!["test".into()],
                 vhosts: vec!["localhost:52001".parse().unwrap()],

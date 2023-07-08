@@ -2,7 +2,7 @@ use crate::acme::AcmeInfo;
 use crate::app::AppConfig;
 use crate::cert::CertInfo;
 use crate::port::PortStatus;
-use crate::{port::PortEntry, site::SiteEntry};
+use crate::{port::PortEntry, site::ProxyEntry};
 use serde_derive::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -13,7 +13,7 @@ pub enum ServerEvent {
     PortTableUpdated { entries: Vec<PortEntry> },
     PortStatusUpdated { id: String, status: PortStatus },
     CertsUpdated { entries: Vec<CertInfo> },
-    SitesUpdated { entries: Vec<SiteEntry> },
+    ProxiesUpdated { entries: Vec<ProxyEntry> },
     AcmeUpdated { entries: Vec<AcmeInfo> },
     Shutdown,
 }

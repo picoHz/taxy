@@ -1,31 +1,31 @@
 use crate::{
     auth::use_ensure_auth,
-    components::{breadcrumb::Breadcrumb, site_config::SiteConfig},
+    components::{breadcrumb::Breadcrumb, proxy_config::ProxyConfig},
     pages::Route,
     API_ENDPOINT,
 };
 use gloo_net::http::Request;
 use std::collections::HashMap;
-use taxy_api::site::Site;
+use taxy_api::site::Proxy;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
-#[function_component(NewSite)]
+#[function_component(NewProxy)]
 pub fn new_site() -> Html {
     use_ensure_auth();
 
     let navigator = use_navigator().unwrap();
 
-    let entry = use_state::<Result<Site, HashMap<String, String>>, _>(|| Err(Default::default()));
+    let entry = use_state::<Result<Proxy, HashMap<String, String>>, _>(|| Err(Default::default()));
     let entry_cloned = entry.clone();
-    let on_changed: Callback<Result<Site, HashMap<String, String>>> =
+    let on_changed: Callback<Result<Proxy, HashMap<String, String>>> =
         Callback::from(move |updated| {
             entry_cloned.set(updated);
         });
 
     let navigator_cloned = navigator.clone();
     let cancel_onclick = Callback::from(move |_| {
-        navigator_cloned.push(&Route::Sites);
+        navigator_cloned.push(&Route::Proxies);
     });
 
     let is_loading = use_state(|| false);
@@ -43,7 +43,7 @@ pub fn new_site() -> Html {
             is_loading_cloned.set(true);
             wasm_bindgen_futures::spawn_local(async move {
                 if create_port(&entry).await.is_ok() {
-                    navigator.push(&Route::Sites);
+                    navigator.push(&Route::Proxies);
                 }
                 is_loading_cloned.set(false);
             });
@@ -60,7 +60,7 @@ pub fn new_site() -> Html {
             </ybc::CardHeader>
 
             <form {onsubmit}>
-                <SiteConfig {on_changed} />
+                <ProxyConfig {on_changed} />
 
                 <div class="field is-grouped is-grouped-right mx-5">
                     <p class="control">
@@ -80,8 +80,8 @@ pub fn new_site() -> Html {
     }
 }
 
-async fn create_port(entry: &Site) -> Result<(), gloo_net::Error> {
-    Request::post(&format!("{API_ENDPOINT}/sites"))
+async fn create_port(entry: &Proxy) -> Result<(), gloo_net::Error> {
+    Request::post(&format!("{API_ENDPOINT}/proxies"))
         .json(entry)?
         .send()
         .await?

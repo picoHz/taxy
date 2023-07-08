@@ -19,7 +19,7 @@ use multiaddr::{Multiaddr, Protocol};
 use std::{net::SocketAddr, sync::Arc, time::SystemTime};
 use taxy_api::error::Error;
 use taxy_api::port::{PortStatus, SocketState};
-use taxy_api::{port::PortEntry, site::SiteEntry};
+use taxy_api::{port::PortEntry, site::ProxyEntry};
 use tokio::net::{self, TcpSocket, TcpStream};
 use tokio::{
     io::{AsyncRead, AsyncWrite, BufStream},
@@ -86,8 +86,8 @@ impl HttpPortContext {
         })
     }
 
-    pub async fn setup(&mut self, certs: &CertList, sites: Vec<SiteEntry>) -> Result<(), Error> {
-        self.router = Arc::new(Router::new(sites));
+    pub async fn setup(&mut self, certs: &CertList, proxies: Vec<ProxyEntry>) -> Result<(), Error> {
+        self.router = Arc::new(Router::new(proxies));
 
         let config = ClientConfig::builder()
             .with_safe_defaults()

@@ -1,4 +1,4 @@
-use super::{acme, app_info, auth, certs, config, log, ports, sites};
+use super::{acme, app_info, auth, certs, config, log, ports, proxies};
 use taxy_api::acme::AcmeInfo;
 use taxy_api::acme::{AcmeRequest, ExternalAccountBinding};
 use taxy_api::app::{AppConfig, AppInfo};
@@ -9,7 +9,7 @@ use taxy_api::event::ServerEvent;
 use taxy_api::log::{LogLevel, SystemLogRow};
 use taxy_api::port::{NetworkAddr, NetworkInterface, PortEntry, PortOptions, UpstreamServer};
 use taxy_api::port::{PortState, PortStatus, SocketState};
-use taxy_api::site::{Route, Server, SiteEntry};
+use taxy_api::site::{ProxyEntry, Route, Server};
 use taxy_api::tls::TlsState;
 use taxy_api::tls::TlsTermination;
 use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
@@ -37,11 +37,11 @@ use warp::{Rejection, Reply};
         acme::get,
         acme::delete,
         acme::add,
-        sites::list,
-        sites::get,
-        sites::delete,
-        sites::post,
-        sites::put,
+        proxies::list,
+        proxies::get,
+        proxies::delete,
+        proxies::post,
+        proxies::put,
         log::get,
         certs::list,
         certs::get,
@@ -71,7 +71,7 @@ use warp::{Rejection, Reply};
         Error,
         ErrorMessage,
         ServerEvent,
-        SiteEntry,
+        ProxyEntry,
         Route,
         Server,
         LoginRequest,

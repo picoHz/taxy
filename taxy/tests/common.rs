@@ -5,7 +5,7 @@ use taxy::{
     config::storage::Storage,
     server::{Server, ServerChannels},
 };
-use taxy_api::{app::AppConfig, error::Error, port::PortEntry, site::SiteEntry};
+use taxy_api::{app::AppConfig, error::Error, port::PortEntry, site::ProxyEntry};
 use tokio::sync::Mutex;
 
 pub async fn with_server<S, F, O>(s: S, func: F) -> anyhow::Result<()>
@@ -32,7 +32,7 @@ pub struct TestStorage {
 struct Inner {
     pub config: AppConfig,
     pub ports: Vec<PortEntry>,
-    pub sites: Vec<SiteEntry>,
+    pub proxies: Vec<ProxyEntry>,
     pub certs: HashMap<String, Arc<Cert>>,
     pub acems: HashMap<String, AcmeEntry>,
     pub accounts: HashMap<String, String>,
@@ -62,12 +62,12 @@ impl Storage for TestStorage {
         self.inner.lock().await.ports.clone()
     }
 
-    async fn load_sites(&self) -> Vec<SiteEntry> {
-        self.inner.lock().await.sites.clone()
+    async fn load_proxies(&self) -> Vec<ProxyEntry> {
+        self.inner.lock().await.proxies.clone()
     }
 
-    async fn save_sites(&self, sites: &[SiteEntry]) {
-        self.inner.lock().await.sites = sites.to_vec();
+    async fn save_proxies(&self, proxies: &[ProxyEntry]) {
+        self.inner.lock().await.proxies = proxies.to_vec();
     }
 
     async fn save_cert(&self, cert: &Cert) {
@@ -147,8 +147,8 @@ impl TestStorageBuilder {
     }
 
     #[allow(dead_code)]
-    pub fn sites(mut self, sites: Vec<SiteEntry>) -> Self {
-        self.inner.sites = sites;
+    pub fn proxies(mut self, proxies: Vec<ProxyEntry>) -> Self {
+        self.inner.proxies = proxies;
         self
     }
 

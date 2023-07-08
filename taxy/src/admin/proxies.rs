@@ -1,6 +1,6 @@
 use super::{with_state, AppState};
-use crate::server::rpc::sites::*;
-use taxy_api::site::Site;
+use crate::server::rpc::proxies::*;
+use taxy_api::site::Proxy;
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
@@ -37,7 +37,7 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
             .and_then(post),
     );
 
-    warp::path("sites")
+    warp::path("proxies")
         .and(api_delete.or(api_get).or(api_put).or(api_list).or(api_post))
         .boxed()
 }
@@ -45,9 +45,9 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
 /// Get the list of site configurations.
 #[utoipa::path(
     get,
-    path = "/api/sites",
+    path = "/api/proxies",
     responses(
-        (status = 200, body = [SiteEntry])
+        (status = 200, body = [ProxyEntry])
     ),
     responses(
         (status = 401),
@@ -57,18 +57,18 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
     )
 )]
 pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
-    Ok(warp::reply::json(&state.call(GetSiteList).await?))
+    Ok(warp::reply::json(&state.call(GetProxyList).await?))
 }
 
 /// Get a site configuration.
 #[utoipa::path(
     get,
-    path = "/api/sites/{id}",
+    path = "/api/proxies/{id}",
     params(
         ("id" = String, Path, description = "Port configuration id")
     ),
     responses(
-        (status = 200, body = SiteEntry),
+        (status = 200, body = ProxyEntry),
         (status = 404),
         (status = 401),
     ),
@@ -77,15 +77,15 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
     )
 )]
 pub async fn get(state: AppState, id: String) -> Result<impl Reply, Rejection> {
-    Ok(warp::reply::json(&state.call(GetSite { id }).await?))
+    Ok(warp::reply::json(&state.call(GetProxy { id }).await?))
 }
 
 /// Delete a site configuration.
 #[utoipa::path(
     delete,
-    path = "/api/sites/{id}",
+    path = "/api/proxies/{id}",
     params(
-        ("id" = String, Path, description = "Site configuration id")
+        ("id" = String, Path, description = "Proxy configuration id")
     ),
     responses(
         (status = 200),
@@ -97,14 +97,14 @@ pub async fn get(state: AppState, id: String) -> Result<impl Reply, Rejection> {
     )
 )]
 pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {
-    Ok(warp::reply::json(&state.call(DeleteSite { id }).await?))
+    Ok(warp::reply::json(&state.call(DeleteProxy { id }).await?))
 }
 
 /// Create a new site configuration.
 #[utoipa::path(
     post,
-    path = "/api/sites",
-    request_body = SiteEntry,
+    path = "/api/proxies",
+    request_body = ProxyEntry,
     responses(
         (status = 200),
         (status = 400, body = Error),
@@ -114,18 +114,18 @@ pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection
         ("cookie"=[])
     )
 )]
-pub async fn post(state: AppState, entry: Site) -> Result<impl Reply, Rejection> {
-    Ok(warp::reply::json(&state.call(AddSite { entry }).await?))
+pub async fn post(state: AppState, entry: Proxy) -> Result<impl Reply, Rejection> {
+    Ok(warp::reply::json(&state.call(AddProxy { entry }).await?))
 }
 
 /// Update a site configuration.
 #[utoipa::path(
     put,
-    path = "/api/sites/{id}",
+    path = "/api/proxies/{id}",
     params(
-        ("id" = String, Path, description = "Site configuration name")
+        ("id" = String, Path, description = "Proxy configuration name")
     ),
-    request_body = SiteEntry,
+    request_body = ProxyEntry,
     responses(
         (status = 200),
         (status = 404),
@@ -136,7 +136,7 @@ pub async fn post(state: AppState, entry: Site) -> Result<impl Reply, Rejection>
         ("cookie"=[])
     )
 )]
-pub async fn put(state: AppState, entry: Site, id: String) -> Result<impl Reply, Rejection> {
+pub async fn put(state: AppState, entry: Proxy, id: String) -> Result<impl Reply, Rejection> {
     let entry = (id, entry).into();
-    Ok(warp::reply::json(&state.call(UpdateSite { entry }).await?))
+    Ok(warp::reply::json(&state.call(UpdateProxy { entry }).await?))
 }

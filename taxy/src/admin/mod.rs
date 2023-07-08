@@ -32,7 +32,7 @@ mod certs;
 mod config;
 mod log;
 mod ports;
-mod sites;
+mod proxies;
 mod static_file;
 mod swagger;
 
@@ -117,7 +117,7 @@ pub async fn start_admin(
             .or(app_info::api(app_state.clone()))
             .or(config::api(app_state.clone()))
             .or(ports::api(app_state.clone()))
-            .or(sites::api(app_state.clone()))
+            .or(proxies::api(app_state.clone()))
             .or(certs::api(app_state.clone()))
             .or(acme::api(app_state.clone()))
             .or(auth::api(app_state.clone()))

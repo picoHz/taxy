@@ -4,7 +4,7 @@ use std::{net::ToSocketAddrs, sync::Arc};
 use taxy::certs::Cert;
 use taxy_api::{
     port::{Port, PortEntry, PortOptions},
-    site::{Route, Site, SiteEntry},
+    site::{Proxy, ProxyEntry, Route},
     tls::TlsTermination,
 };
 use tokio_rustls::rustls::{client::ClientConfig, RootCertStore};
@@ -53,9 +53,9 @@ async fn wss_proxy() -> anyhow::Result<()> {
                 },
             },
         }])
-        .sites(vec![SiteEntry {
+        .proxies(vec![ProxyEntry {
             id: "test2".into(),
-            site: Site {
+            proxy: Proxy {
                 name: String::new(),
                 ports: vec!["test".into()],
                 vhosts: vec![],

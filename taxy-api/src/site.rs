@@ -4,7 +4,7 @@ use url::Url;
 use utoipa::ToSchema;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
-pub struct Site {
+pub struct Proxy {
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub name: String,
     #[schema(example = json!(["c56yqmqcvpmp49n14s2lexxl"]))]
@@ -16,22 +16,22 @@ pub struct Site {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
-pub struct SiteEntry {
+pub struct ProxyEntry {
     pub id: String,
     #[schema(inline)]
     #[serde(flatten)]
-    pub site: Site,
+    pub proxy: Proxy,
 }
 
-impl From<(String, Site)> for SiteEntry {
-    fn from((id, site): (String, Site)) -> Self {
-        Self { id, site }
+impl From<(String, Proxy)> for ProxyEntry {
+    fn from((id, proxy): (String, Proxy)) -> Self {
+        Self { id, proxy }
     }
 }
 
-impl From<SiteEntry> for (String, Site) {
-    fn from(entry: SiteEntry) -> Self {
-        (entry.id, entry.site)
+impl From<ProxyEntry> for (String, Proxy) {
+    fn from(entry: ProxyEntry) -> Self {
+        (entry.id, entry.proxy)
     }
 }
 

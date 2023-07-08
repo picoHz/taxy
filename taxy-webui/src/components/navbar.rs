@@ -16,9 +16,9 @@ const ITEMS: &[MenuItem] = {
             route: Route::Ports,
         },
         MenuItem {
-            name: "Sites",
-            icon: "globe",
-            route: Route::Sites,
+            name: "Proxies",
+            icon: "swap-horizontal",
+            route: Route::Proxies,
         },
         MenuItem {
             name: "Certificates",

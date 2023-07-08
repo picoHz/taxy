@@ -13,9 +13,9 @@ mod new_port;
 mod new_site;
 mod port_list;
 mod port_view;
+mod proxy_list;
+mod proxy_view;
 mod self_sign;
-mod site_list;
-mod site_view;
 mod upload;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, Routable)]
@@ -35,10 +35,10 @@ pub enum Route {
     PortView { id: String },
     #[at("/ports/:id/log")]
     PortLogView { id: String },
-    #[at("/sites")]
-    Sites,
-    #[at("/sites/:id/log")]
-    SiteLogView { id: String },
+    #[at("/proxies")]
+    Proxies,
+    #[at("/proxies/:id/log")]
+    ProxyLogView { id: String },
     #[at("/certs")]
     Certs,
     #[at("/certs/self_sign")]
@@ -49,10 +49,10 @@ pub enum Route {
     NewAcme,
     #[at("/certs/:id/log")]
     CertLogView { id: String },
-    #[at("/sites/new")]
-    NewSite,
-    #[at("/sites/:id")]
-    SiteView { id: String },
+    #[at("/proxies/new")]
+    NewProxy,
+    #[at("/proxies/:id")]
+    ProxyView { id: String },
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -69,9 +69,10 @@ impl Route {
             | Route::Upload
             | Route::NewAcme
             | Route::CertLogView { .. } => Some(Route::Certs),
-            Route::Sites | Route::NewSite | Route::SiteView { .. } | Route::SiteLogView { .. } => {
-                Some(Route::Sites)
-            }
+            Route::Proxies
+            | Route::NewProxy
+            | Route::ProxyView { .. }
+            | Route::ProxyLogView { .. } => Some(Route::Proxies),
             _ => None,
         }
     }
@@ -104,22 +105,22 @@ impl Route {
                     route: Route::NewPort,
                 },
             ],
-            Route::Sites => vec![BreadcrumbItem {
-                name: "Sites".into(),
-                route: Route::Sites,
+            Route::Proxies => vec![BreadcrumbItem {
+                name: "Proxies".into(),
+                route: Route::Proxies,
             }],
-            Route::SiteLogView { id } => vec![
+            Route::ProxyLogView { id } => vec![
                 BreadcrumbItem {
-                    name: "Sites".into(),
-                    route: Route::Sites,
+                    name: "Proxies".into(),
+                    route: Route::Proxies,
                 },
                 BreadcrumbItem {
                     name: id.clone().into(),
-                    route: Route::SiteView { id: id.clone() },
+                    route: Route::ProxyView { id: id.clone() },
                 },
                 BreadcrumbItem {
                     name: "Log".into(),
-                    route: Route::SiteLogView { id: id.clone() },
+                    route: Route::ProxyLogView { id: id.clone() },
                 },
             ],
             Route::Certs => vec![BreadcrumbItem {
@@ -190,24 +191,24 @@ impl Route {
                     route: Route::PortLogView { id: id.clone() },
                 },
             ],
-            Route::NewSite => vec![
+            Route::NewProxy => vec![
                 BreadcrumbItem {
-                    name: "Sites".into(),
-                    route: Route::Sites,
+                    name: "Proxies".into(),
+                    route: Route::Proxies,
                 },
                 BreadcrumbItem {
-                    name: "New Site".into(),
-                    route: Route::NewSite,
+                    name: "New Proxy".into(),
+                    route: Route::NewProxy,
                 },
             ],
-            Route::SiteView { id } => vec![
+            Route::ProxyView { id } => vec![
                 BreadcrumbItem {
-                    name: "Sites".into(),
-                    route: Route::Sites,
+                    name: "Proxies".into(),
+                    route: Route::Proxies,
                 },
                 BreadcrumbItem {
                     name: id.clone().into(),
-                    route: Route::SiteView { id: id.clone() },
+                    route: Route::ProxyView { id: id.clone() },
                 },
             ],
             Route::NotFound => vec![],
@@ -229,10 +230,10 @@ pub fn switch(routes: Route) -> Html {
         Route::NewPort => html! { <new_port::NewPort /> },
         Route::PortView { id } => html! { <port_view::PortView {id} /> },
         Route::PortLogView { id } => html! { <log_view::LogView {id} /> },
-        Route::Sites => html! { <site_list::SiteList /> },
-        Route::SiteLogView { id } => html! { <log_view::LogView {id} /> },
-        Route::SiteView { id } => html! { <site_view::SiteView {id} /> },
-        Route::NewSite => html! { <new_site::NewSite /> },
+        Route::Proxies => html! { <proxy_list::ProxyList /> },
+        Route::ProxyLogView { id } => html! { <log_view::LogView {id} /> },
+        Route::ProxyView { id } => html! { <proxy_view::ProxyView {id} /> },
+        Route::NewProxy => html! { <new_site::NewProxy /> },
         Route::Certs => html! { <cert_list::CertList /> },
         Route::SelfSign => html! { <self_sign::SelfSign /> },
         Route::NewAcme => html! { <new_acme::NewAcme /> },

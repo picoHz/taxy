@@ -7,7 +7,7 @@ use std::{
     time::SystemTime,
 };
 use taxy_api::error::Error;
-use taxy_api::{port::PortEntry, site::SiteEntry};
+use taxy_api::{port::PortEntry, site::ProxyEntry};
 use tokio::{
     io::AsyncWriteExt,
     net::{self, TcpSocket, TcpStream},
@@ -72,7 +72,11 @@ impl TcpPortContext {
         })
     }
 
-    pub async fn setup(&mut self, certs: &CertList, _sites: Vec<SiteEntry>) -> Result<(), Error> {
+    pub async fn setup(
+        &mut self,
+        certs: &CertList,
+        _proxies: Vec<ProxyEntry>,
+    ) -> Result<(), Error> {
         let config = ClientConfig::builder()
             .with_safe_defaults()
             .with_root_certificates(certs.root_certs().clone())

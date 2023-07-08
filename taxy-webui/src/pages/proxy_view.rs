@@ -1,13 +1,13 @@
 use crate::{
     auth::use_ensure_auth,
-    components::{breadcrumb::Breadcrumb, site_config::SiteConfig},
+    components::{breadcrumb::Breadcrumb, proxy_config::ProxyConfig},
     pages::Route,
-    store::SiteStore,
+    store::ProxyStore,
     API_ENDPOINT,
 };
 use gloo_net::http::Request;
 use std::collections::HashMap;
-use taxy_api::site::{Site, SiteEntry};
+use taxy_api::site::{Proxy, ProxyEntry};
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
@@ -17,19 +17,19 @@ pub struct Props {
     pub id: String,
 }
 
-#[function_component(SiteView)]
-pub fn site_view(props: &Props) -> Html {
+#[function_component(ProxyView)]
+pub fn proxy_view(props: &Props) -> Html {
     use_ensure_auth();
 
-    let (sites, _) = use_store::<SiteStore>();
-    let site = use_state(|| sites.entries.iter().find(|e| e.id == props.id).cloned());
+    let (proxies, _) = use_store::<ProxyStore>();
+    let site = use_state(|| proxies.entries.iter().find(|e| e.id == props.id).cloned());
     let id = props.id.clone();
-    let site_cloned = site.clone();
+    let proxy_cloned = site.clone();
     use_effect_with_deps(
         move |_| {
             wasm_bindgen_futures::spawn_local(async move {
                 if let Ok(entry) = get_site(&id).await {
-                    site_cloned.set(Some(entry));
+                    proxy_cloned.set(Some(entry));
                 }
             });
         },
@@ -40,12 +40,12 @@ pub fn site_view(props: &Props) -> Html {
 
     let navigator_cloned = navigator.clone();
     let cancel_onclick = Callback::from(move |_| {
-        navigator_cloned.push(&Route::Sites);
+        navigator_cloned.push(&Route::Proxies);
     });
 
-    let entry = use_state::<Result<Site, HashMap<String, String>>, _>(|| Err(Default::default()));
+    let entry = use_state::<Result<Proxy, HashMap<String, String>>, _>(|| Err(Default::default()));
     let entry_cloned = entry.clone();
-    let on_changed: Callback<Result<Site, HashMap<String, String>>> =
+    let on_changed: Callback<Result<Proxy, HashMap<String, String>>> =
         Callback::from(move |updated| {
             entry_cloned.set(updated);
         });
@@ -67,7 +67,7 @@ pub fn site_view(props: &Props) -> Html {
             is_loading_cloned.set(true);
             wasm_bindgen_futures::spawn_local(async move {
                 if update_site(&id, &entry).await.is_ok() {
-                    navigator.push(&Route::Sites);
+                    navigator.push(&Route::Proxies);
                 }
                 is_loading_cloned.set(false);
             });
@@ -83,9 +83,9 @@ pub fn site_view(props: &Props) -> Html {
                 </p>
             </ybc::CardHeader>
 
-            if let Some(site_entry) = &*site {
+            if let Some(proxy_entry) = &*site {
                 <form {onsubmit}>
-                    <SiteConfig site={site_entry.site.clone()} {on_changed} />
+                    <ProxyConfig proxy={proxy_entry.proxy.clone()} {on_changed} />
 
                     <div class="field is-grouped is-grouped-right mx-5 pb-5">
                         <p class="control">
@@ -115,16 +115,16 @@ pub fn site_view(props: &Props) -> Html {
     }
 }
 
-async fn get_site(id: &str) -> Result<SiteEntry, gloo_net::Error> {
-    Request::get(&format!("{API_ENDPOINT}/sites/{id}"))
+async fn get_site(id: &str) -> Result<ProxyEntry, gloo_net::Error> {
+    Request::get(&format!("{API_ENDPOINT}/proxies/{id}"))
         .send()
         .await?
         .json()
         .await
 }
 
-async fn update_site(id: &str, entry: &Site) -> Result<(), gloo_net::Error> {
-    Request::put(&format!("{API_ENDPOINT}/sites/{id}"))
+async fn update_site(id: &str, entry: &Proxy) -> Result<(), gloo_net::Error> {
+    Request::put(&format!("{API_ENDPOINT}/proxies/{id}"))
         .json(entry)?
         .send()
         .await?

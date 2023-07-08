@@ -1,77 +1,79 @@
 use super::RpcMethod;
 use crate::server::state::ServerState;
 use taxy_api::error::Error;
-use taxy_api::site::{Site, SiteEntry};
+use taxy_api::site::{Proxy, ProxyEntry};
 
-pub struct GetSiteList;
+pub struct GetProxyList;
 
 #[async_trait::async_trait]
-impl RpcMethod for GetSiteList {
-    type Output = Vec<SiteEntry>;
+impl RpcMethod for GetProxyList {
+    type Output = Vec<ProxyEntry>;
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        Ok(state.sites.entries().cloned().collect())
+        Ok(state.proxies.entries().cloned().collect())
     }
 }
 
-pub struct GetSite {
+pub struct GetProxy {
     pub id: String,
 }
 
 #[async_trait::async_trait]
-impl RpcMethod for GetSite {
-    type Output = SiteEntry;
+impl RpcMethod for GetProxy {
+    type Output = ProxyEntry;
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state
-            .sites
+            .proxies
             .get(&self.id)
             .cloned()
             .ok_or(Error::IdNotFound { id: self.id })
     }
 }
 
-pub struct DeleteSite {
+pub struct DeleteProxy {
     pub id: String,
 }
 
 #[async_trait::async_trait]
-impl RpcMethod for DeleteSite {
+impl RpcMethod for DeleteProxy {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.sites.delete(&self.id)?;
-        state.update_sites().await;
+        state.proxies.delete(&self.id)?;
+        state.update_proxies().await;
         Ok(())
     }
 }
 
-pub struct AddSite {
-    pub entry: Site,
+pub struct AddProxy {
+    pub entry: Proxy,
 }
 
 #[async_trait::async_trait]
-impl RpcMethod for AddSite {
+impl RpcMethod for AddProxy {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.sites.add((state.generate_id(), self.entry).into())?;
-        state.update_sites().await;
+        state
+            .proxies
+            .add((state.generate_id(), self.entry).into())?;
+        state.update_proxies().await;
         Ok(())
     }
 }
 
-pub struct UpdateSite {
-    pub entry: SiteEntry,
+pub struct UpdateProxy {
+    pub entry: ProxyEntry,
 }
 
 #[async_trait::async_trait]
-impl RpcMethod for UpdateSite {
+impl RpcMethod for UpdateProxy {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        if state.sites.update(self.entry)? {
-            state.update_sites().await;
+        if state.proxies.update(self.entry)? {
+            state.update_proxies().await;
         }
         Ok(())
     }

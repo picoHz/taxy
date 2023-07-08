@@ -1,28 +1,28 @@
 use crate::auth::use_ensure_auth;
 use crate::components::breadcrumb::Breadcrumb;
 use crate::pages::Route;
-use crate::store::{PortStore, SiteStore};
+use crate::store::{PortStore, ProxyStore};
 use crate::utils::format_multiaddr;
 use crate::API_ENDPOINT;
 use gloo_net::http::Request;
 use taxy_api::port::PortEntry;
-use taxy_api::site::SiteEntry;
+use taxy_api::site::ProxyEntry;
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
 
-#[function_component(SiteList)]
-pub fn site_list() -> Html {
+#[function_component(ProxyList)]
+pub fn proxy_list() -> Html {
     use_ensure_auth();
 
     let (ports, ports_dispatcher) = use_store::<PortStore>();
-    let (sites, sites_dispatcher) = use_store::<SiteStore>();
+    let (proxies, proxies_dispatcher) = use_store::<ProxyStore>();
 
     use_effect_with_deps(
         move |_| {
             wasm_bindgen_futures::spawn_local(async move {
                 if let Ok(res) = get_list().await {
-                    sites_dispatcher.set(SiteStore { entries: res });
+                    proxies_dispatcher.set(ProxyStore { entries: res });
                 }
             });
         },
@@ -41,12 +41,12 @@ pub fn site_list() -> Html {
     );
 
     let navigator = use_navigator().unwrap();
-    let list = sites.entries.clone();
+    let list = proxies.entries.clone();
     let active_index = use_state(|| -1);
 
     let navigator_cloned = navigator.clone();
-    let new_site_onclick = Callback::from(move |_| {
-        navigator_cloned.push(&Route::NewSite);
+    let new_proxy_onclick = Callback::from(move |_| {
+        navigator_cloned.push(&Route::NewProxy);
     });
 
     html! {
@@ -74,13 +74,13 @@ pub fn site_list() -> Html {
                 let navigator_cloned = navigator.clone();
                 let log_onclick = Callback::from(move |_|  {
                     let id = id.clone();
-                    navigator_cloned.push(&Route::PortLogView {id});
+                    navigator_cloned.push(&Route::ProxyLogView {id});
                 });
 
                 let id = entry.id.clone();
                 let config_onclick = Callback::from(move |_|  {
                     let id = id.clone();
-                    navigator.push(&Route::SiteView {id});
+                    navigator.push(&Route::ProxyView {id});
                 });
 
                 let delete_onmousedown = Callback::from(move |e: MouseEvent|  {
@@ -111,14 +111,14 @@ pub fn site_list() -> Html {
                 });
                 let is_active = *active_index == i as i32;
 
-                let ports = entry.site.ports.iter().filter_map(|port| {
+                let ports = entry.proxy.ports.iter().filter_map(|port| {
                     ports.entries.iter().find(|p| p.id == *port)
                 }).map(|entry| format_multiaddr(&entry.port.listen)).collect::<Vec<_>>().join(", ");
 
-                let title = if entry.site.name.is_empty() {
+                let title = if entry.proxy.name.is_empty() {
                     entry.id.clone()
                 } else {
-                    entry.site.name.clone()
+                    entry.proxy.name.clone()
                 };
                 html! {
                     <div class="list-item">
@@ -170,12 +170,12 @@ pub fn site_list() -> Html {
             }).collect::<Html>() }
             </div>
             <ybc::CardFooter>
-                <a class="card-footer-item" onclick={new_site_onclick}>
+                <a class="card-footer-item" onclick={new_proxy_onclick}>
                     <span class="icon-text">
                     <span class="icon">
                         <ion-icon name="add"></ion-icon>
                     </span>
-                    <span>{"New Site"}</span>
+                    <span>{"New Proxy"}</span>
                     </span>
                 </a>
             </ybc::CardFooter>
@@ -192,8 +192,8 @@ async fn get_ports() -> Result<Vec<PortEntry>, gloo_net::Error> {
         .await
 }
 
-async fn get_list() -> Result<Vec<SiteEntry>, gloo_net::Error> {
-    Request::get(&format!("{API_ENDPOINT}/sites"))
+async fn get_list() -> Result<Vec<ProxyEntry>, gloo_net::Error> {
+    Request::get(&format!("{API_ENDPOINT}/proxies"))
         .send()
         .await?
         .json()
@@ -201,7 +201,7 @@ async fn get_list() -> Result<Vec<SiteEntry>, gloo_net::Error> {
 }
 
 async fn delete_site(id: &str) -> Result<(), gloo_net::Error> {
-    Request::delete(&format!("{API_ENDPOINT}/sites/{id}"))
+    Request::delete(&format!("{API_ENDPOINT}/proxies/{id}"))
         .send()
         .await?;
     Ok(())

@@ -55,7 +55,7 @@ pub async fn login(state: AppState, req: LoginRequest) -> Result<impl Reply, Rej
             warp::reply::json(&LoginResponse { success: true }),
             "Set-Cookie",
             &format!(
-                "token={}; HttpOnly; SameSite=Strict; Secure",
+                "token={}; HttpOnly; SameProxy=Strict; Secure",
                 state.data.lock().await.sessions.new_token()
             ),
         ))

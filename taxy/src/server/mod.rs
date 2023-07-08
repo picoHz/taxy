@@ -11,8 +11,8 @@ mod acme_list;
 pub mod cert_list;
 mod listener;
 mod port_list;
+mod proxy_list;
 pub mod rpc;
-mod site_list;
 mod state;
 
 pub struct Server {

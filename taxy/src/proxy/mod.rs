@@ -6,7 +6,7 @@ use taxy_api::error::Error;
 use taxy_api::port::{PortStatus, SocketState};
 use taxy_api::{
     port::{Port, PortEntry},
-    site::SiteEntry,
+    site::ProxyEntry,
 };
 
 pub mod http;
@@ -61,10 +61,10 @@ impl PortContext {
         &mut self.kind
     }
 
-    pub async fn setup(&mut self, certs: &CertList, sites: Vec<SiteEntry>) -> Result<(), Error> {
+    pub async fn setup(&mut self, certs: &CertList, proxies: Vec<ProxyEntry>) -> Result<(), Error> {
         match &mut self.kind {
-            PortContextKind::Tcp(ctx) => ctx.setup(certs, sites).await,
-            PortContextKind::Http(ctx) => ctx.setup(certs, sites).await,
+            PortContextKind::Tcp(ctx) => ctx.setup(certs, proxies).await,
+            PortContextKind::Http(ctx) => ctx.setup(certs, proxies).await,
             PortContextKind::Reserved => Ok(()),
         }
     }

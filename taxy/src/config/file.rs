@@ -15,7 +15,7 @@ use taxy_api::{app::AppConfig, cert::CertKind};
 use taxy_api::{
     error::Error,
     port::{Port, PortEntry},
-    site::{Site, SiteEntry},
+    site::{Proxy, ProxyEntry},
 };
 use tokio::fs;
 use tokio::io::AsyncReadExt;
@@ -88,14 +88,14 @@ impl FileStorage {
         Ok(table.into_iter().map(|entry| entry.into()).collect())
     }
 
-    async fn load_sites_impl(&self, path: &Path) -> anyhow::Result<Vec<SiteEntry>> {
-        info!(?path, "load sites");
+    async fn load_proxies_impl(&self, path: &Path) -> anyhow::Result<Vec<ProxyEntry>> {
+        info!(?path, "load proxies");
         let content = fs::read_to_string(path).await?;
-        let table: IndexMap<String, Site> = toml::from_str(&content)?;
+        let table: IndexMap<String, Proxy> = toml::from_str(&content)?;
         Ok(table.into_iter().map(|entry| entry.into()).collect())
     }
 
-    async fn save_sites_impl(&self, path: &Path, sites: &[SiteEntry]) -> anyhow::Result<()> {
+    async fn save_proxies_impl(&self, path: &Path, proxies: &[ProxyEntry]) -> anyhow::Result<()> {
         fs::create_dir_all(path.parent().unwrap()).await?;
         info!(?path, "save config");
         let mut doc = match self.load_document(path).await {
@@ -111,8 +111,8 @@ impl FileStorage {
             .iter()
             .map(|(key, _)| key.to_string())
             .collect::<HashSet<_>>();
-        for site in sites {
-            let (id, entry): (String, Site) = site.clone().into();
+        for site in proxies {
+            let (id, entry): (String, Proxy) = site.clone().into();
             doc[&id].clone_from(toml_edit::ser::to_document(&entry)?.as_item());
             unused.remove(&id);
         }
@@ -339,19 +339,19 @@ impl Storage for FileStorage {
         }
     }
 
-    async fn save_sites(&self, sites: &[SiteEntry]) {
+    async fn save_proxies(&self, proxies: &[ProxyEntry]) {
         let dir = &self.dir;
-        let path = dir.join("sites.toml");
-        if let Err(err) = self.save_sites_impl(&path, sites).await {
+        let path = dir.join("proxies.toml");
+        if let Err(err) = self.save_proxies_impl(&path, proxies).await {
             error!(?path, "failed to save: {err}");
         }
     }
 
-    async fn load_sites(&self) -> Vec<SiteEntry> {
+    async fn load_proxies(&self) -> Vec<ProxyEntry> {
         let dir = &self.dir;
-        let path = dir.join("sites.toml");
-        match self.load_sites_impl(&path).await {
-            Ok(sites) => sites,
+        let path = dir.join("proxies.toml");
+        match self.load_proxies_impl(&path).await {
+            Ok(proxies) => proxies,
             Err(err) => {
                 warn!(?path, "failed to load: {err}");
                 Default::default()

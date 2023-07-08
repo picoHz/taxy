@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use taxy_api::site::{Route, Server};
 use taxy_api::subject_name::SubjectName;
-use taxy_api::{port::PortEntry, site::Site};
+use taxy_api::{port::PortEntry, site::Proxy};
 use url::Url;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use web_sys::{HtmlInputElement, HtmlOptionElement, HtmlSelectElement, HtmlTextAreaElement};
@@ -17,12 +17,12 @@ use yewdux::prelude::*;
 #[derive(Properties, PartialEq)]
 pub struct Props {
     #[prop_or_else(create_default_site)]
-    pub site: Site,
-    pub on_changed: Callback<Result<Site, HashMap<String, String>>>,
+    pub proxy: Proxy,
+    pub on_changed: Callback<Result<Proxy, HashMap<String, String>>>,
 }
 
-fn create_default_site() -> Site {
-    Site {
+fn create_default_site() -> Proxy {
+    Proxy {
         name: String::new(),
         ports: vec![],
         vhosts: vec![],
@@ -30,8 +30,8 @@ fn create_default_site() -> Site {
     }
 }
 
-#[function_component(SiteConfig)]
-pub fn site_config(props: &Props) -> Html {
+#[function_component(ProxyConfig)]
+pub fn proxy_config(props: &Props) -> Html {
     let (ports, dispatcher) = use_store::<PortStore>();
 
     use_effect_with_deps(
@@ -45,7 +45,7 @@ pub fn site_config(props: &Props) -> Html {
         (),
     );
 
-    let name = use_state(|| props.site.name.clone());
+    let name = use_state(|| props.proxy.name.clone());
     let name_onchange = Callback::from({
         let name = name.clone();
         move |event: Event| {
@@ -54,7 +54,7 @@ pub fn site_config(props: &Props) -> Html {
         }
     });
 
-    let bound_ports = use_state(|| props.site.ports.clone());
+    let bound_ports = use_state(|| props.proxy.ports.clone());
     let bound_ports_onchange = Callback::from({
         let bound_ports = bound_ports.clone();
         move |event: Event| {
@@ -71,7 +71,7 @@ pub fn site_config(props: &Props) -> Html {
 
     let vhosts = use_state(|| {
         props
-            .site
+            .proxy
             .vhosts
             .iter()
             .map(|host| host.to_string())
@@ -88,7 +88,7 @@ pub fn site_config(props: &Props) -> Html {
 
     let routes = use_state(|| {
         props
-            .site
+            .proxy
             .routes
             .iter()
             .map(|route| {
@@ -109,7 +109,7 @@ pub fn site_config(props: &Props) -> Html {
     }
 
     let prev_entry =
-        use_state::<Result<Site, HashMap<String, String>>, _>(|| Err(Default::default()));
+        use_state::<Result<Proxy, HashMap<String, String>>, _>(|| Err(Default::default()));
     let entry = get_site(&name, &bound_ports, &vhosts, &routes);
 
     if entry != *prev_entry {
@@ -278,7 +278,7 @@ fn get_site(
     ports: &[String],
     vhosts: &str,
     routes: &[(String, Vec<String>)],
-) -> Result<Site, HashMap<String, String>> {
+) -> Result<Proxy, HashMap<String, String>> {
     let mut errors = HashMap::new();
     let mut ports = ports.to_vec();
     ports.sort();
@@ -322,7 +322,7 @@ fn get_site(
     }
 
     if errors.is_empty() {
-        Ok(Site {
+        Ok(Proxy {
             name: name.trim().to_string(),
             ports,
             vhosts: hosts,

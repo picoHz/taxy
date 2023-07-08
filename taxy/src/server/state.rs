@@ -1,6 +1,6 @@
 use super::acme_list::AcmeList;
 use super::cert_list::CertList;
-use super::site_list::SiteList;
+use super::proxy_list::ProxyList;
 use super::{listener::TcpListenerPool, port_list::PortList, rpc::RpcCallback};
 use crate::config::storage::Storage;
 use crate::{
@@ -21,7 +21,7 @@ use std::{
 use taxy_api::app::AppConfig;
 use taxy_api::error::Error;
 use taxy_api::event::ServerEvent;
-use taxy_api::site::SiteEntry;
+use taxy_api::site::ProxyEntry;
 use tokio::{io::AsyncBufReadExt, task::JoinHandle};
 use tokio::{
     io::BufStream,
@@ -33,7 +33,7 @@ use warp::http::Response;
 use x509_parser::time::ASN1Time;
 
 pub struct ServerState {
-    pub sites: SiteList,
+    pub proxies: ProxyList,
     pub certs: CertList,
     pub acmes: AcmeList,
     pub ports: PortList,
@@ -62,10 +62,10 @@ impl ServerState {
         let certs = storage.load_certs().await;
         let acmes = storage.load_acmes().await;
         let ports = storage.load_ports().await;
-        let sites = storage.load_sites().await;
+        let proxies = storage.load_proxies().await;
 
         let mut this = Self {
-            sites: sites.into_iter().collect(),
+            proxies: proxies.into_iter().collect(),
             certs: CertList::new(certs).await,
             acmes: acmes.into_iter().collect(),
             ports: PortList::default(),
@@ -92,7 +92,7 @@ impl ServerState {
 
         this.update_port_statuses().await;
         this.update_certs().await;
-        this.update_sites().await;
+        this.update_proxies().await;
         this.update_acmes().await;
         this
     }
@@ -181,20 +181,24 @@ impl ServerState {
         }
     }
 
-    pub async fn update_sites(&mut self) {
-        let entries = self.sites.entries().cloned().collect::<Vec<_>>();
-        self.storage.save_sites(&entries).await;
-        let _ = self.br_sender.send(ServerEvent::SitesUpdated {
+    pub async fn update_proxies(&mut self) {
+        let entries = self.proxies.entries().cloned().collect::<Vec<_>>();
+        self.storage.save_proxies(&entries).await;
+        let _ = self.br_sender.send(ServerEvent::ProxiesUpdated {
             entries: entries.clone(),
         });
         for ctx in self.ports.as_mut_slice() {
-            let sites = entries
+            let proxies = entries
                 .iter()
-                .filter(|entry: &&SiteEntry| entry.site.ports.contains(&ctx.entry.id))
+                .filter(|entry: &&ProxyEntry| entry.proxy.ports.contains(&ctx.entry.id))
                 .cloned()
                 .collect();
             let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
-            if let Err(err) = ctx.setup(&self.certs, sites).instrument(span.clone()).await {
+            if let Err(err) = ctx
+                .setup(&self.certs, proxies)
+                .instrument(span.clone())
+                .await
+            {
                 span.in_scope(|| {
                     error!(?err, "failed to setup port");
                 });
@@ -207,13 +211,13 @@ impl ServerState {
             entries: self.certs.iter().map(|item| item.info()).collect(),
         });
         for ctx in self.ports.as_mut_slice() {
-            let sites = self
-                .sites
+            let proxies = self
+                .proxies
                 .entries()
-                .filter(|entry: &&SiteEntry| entry.site.ports.contains(&ctx.entry.id))
+                .filter(|entry: &&ProxyEntry| entry.proxy.ports.contains(&ctx.entry.id))
                 .cloned()
                 .collect();
-            let _ = ctx.setup(&self.certs, sites).await;
+            let _ = ctx.setup(&self.certs, proxies).await;
         }
     }
 
@@ -225,14 +229,18 @@ impl ServerState {
     }
 
     pub async fn update_port_ctx(&mut self, mut ctx: PortContext) -> bool {
-        let sites = self
-            .sites
+        let proxies = self
+            .proxies
             .entries()
-            .filter(|entry: &&SiteEntry| entry.site.ports.contains(&ctx.entry.id))
+            .filter(|entry: &&ProxyEntry| entry.proxy.ports.contains(&ctx.entry.id))
             .cloned()
             .collect();
         let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
-        if let Err(err) = ctx.setup(&self.certs, sites).instrument(span.clone()).await {
+        if let Err(err) = ctx
+            .setup(&self.certs, proxies)
+            .instrument(span.clone())
+            .await
+        {
             span.in_scope(|| {
                 error!(?err, "failed to setup port");
             });
@@ -259,14 +267,18 @@ impl ServerState {
     pub async fn run_background_tasks(&mut self) {
         let _ = self.start_http_challenges().await.await;
         for ctx in self.ports.as_mut_slice() {
-            let sites = self
-                .sites
+            let proxies = self
+                .proxies
                 .entries()
-                .filter(|entry: &&SiteEntry| entry.site.ports.contains(&ctx.entry.id))
+                .filter(|entry: &&ProxyEntry| entry.proxy.ports.contains(&ctx.entry.id))
                 .cloned()
                 .collect();
             let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
-            if let Err(err) = ctx.setup(&self.certs, sites).instrument(span.clone()).await {
+            if let Err(err) = ctx
+                .setup(&self.certs, proxies)
+                .instrument(span.clone())
+                .await
+            {
                 span.in_scope(|| {
                     error!(?err, "failed to refresh port");
                 });
@@ -399,7 +411,7 @@ impl ServerState {
             .entries()
             .map(|acme| acme.id.clone())
             .chain(self.ports.entries().map(|port| port.id.clone()))
-            .chain(self.sites.entries().map(|site| site.id.clone()))
+            .chain(self.proxies.entries().map(|site| site.id.clone()))
             .map(|id| id.to_ascii_lowercase())
             .collect::<HashSet<_>>();
 

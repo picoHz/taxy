@@ -1,5 +1,5 @@
 use crate::{
-    store::{AcmeStore, CertStore, PortStore, SiteStore},
+    store::{AcmeStore, CertStore, PortStore, ProxyStore},
     API_ENDPOINT,
 };
 use futures::StreamExt;
@@ -23,7 +23,7 @@ pub fn use_event_subscriber() {
     let (_, ports) = use_store::<PortStore>();
     let (_, certs) = use_store::<CertStore>();
     let (_, acme) = use_store::<AcmeStore>();
-    let (_, sites) = use_store::<SiteStore>();
+    let (_, proxies) = use_store::<ProxyStore>();
     if !event.active {
         let mut es = EventSource::new(&format!("{API_ENDPOINT}/events")).unwrap();
         let mut stream = es.subscribe("message").unwrap();
@@ -44,8 +44,8 @@ pub fn use_event_subscriber() {
                             ServerEvent::AcmeUpdated { entries } => {
                                 acme.set(AcmeStore { entries });
                             }
-                            ServerEvent::SitesUpdated { entries } => {
-                                sites.set(SiteStore { entries });
+                            ServerEvent::ProxiesUpdated { entries } => {
+                                proxies.set(ProxyStore { entries });
                             }
                             _ => (),
                         }
