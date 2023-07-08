@@ -22,13 +22,13 @@ pub enum ProxyKind {
     Http(HttpProxy),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct TcpProxy {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub upstream_servers: Vec<UpstreamServer>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct HttpProxy {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     #[schema(value_type = [String], example = json!(["example.com"]))]
