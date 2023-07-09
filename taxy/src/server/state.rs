@@ -168,6 +168,9 @@ impl ServerState {
         let entries = self.ports.entries().cloned().collect::<Vec<_>>();
         self.pool.update(self.ports.as_mut_slice()).await;
         self.storage.save_ports(&entries).await;
+        if self.proxies.remove_incompatible_ports(&entries) {
+            self.update_proxies().await;
+        }
         let _ = self
             .br_sender
             .send(ServerEvent::PortTableUpdated { entries });

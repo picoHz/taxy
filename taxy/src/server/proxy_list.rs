@@ -1,6 +1,8 @@
 use indexmap::map::Entry;
 use indexmap::IndexMap;
+use multiaddr::Protocol;
 use taxy_api::error::Error;
+use taxy_api::port::PortEntry;
 use taxy_api::site::{Proxy, ProxyEntry, ProxyKind};
 
 #[derive(Debug, Default)]
@@ -53,6 +55,33 @@ impl ProxyList {
             self.entries.remove(id);
             Ok(())
         }
+    }
+
+    pub fn remove_incompatible_ports(&mut self, ports: &[PortEntry]) -> bool {
+        let mut changed = false;
+        for entry in self.entries.values_mut() {
+            let len = entry.proxy.ports.len();
+            entry.proxy.ports = entry
+                .proxy
+                .ports
+                .drain(..)
+                .filter(|port| {
+                    ports
+                        .iter()
+                        .find(|p| p.id == *port)
+                        .map(|port| {
+                            port.port
+                                .listen
+                                .iter()
+                                .any(|item| matches!(item, Protocol::Http | Protocol::Https))
+                                ^ (matches!(entry.proxy.kind, ProxyKind::Tcp(_)))
+                        })
+                        .unwrap_or_default()
+                })
+                .collect();
+            changed |= len != entry.proxy.ports.len();
+        }
+        changed
     }
 
     fn remove_deplicate_ports(&mut self, proxy: &Proxy) {
