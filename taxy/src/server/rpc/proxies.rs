@@ -55,10 +55,9 @@ impl RpcMethod for AddProxy {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state
-            .proxies
-            .add((state.generate_id(), self.entry).into())?;
-        state.update_proxies().await;
+        if state.proxies.set((state.generate_id(), self.entry).into()) {
+            state.update_proxies().await;
+        }
         Ok(())
     }
 }
@@ -72,7 +71,7 @@ impl RpcMethod for UpdateProxy {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        if state.proxies.update(self.entry)? {
+        if state.proxies.set(self.entry) {
             state.update_proxies().await;
         }
         Ok(())

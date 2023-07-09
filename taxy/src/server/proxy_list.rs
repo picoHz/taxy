@@ -28,26 +28,20 @@ impl ProxyList {
         self.entries.values()
     }
 
-    pub fn add(&mut self, entry: ProxyEntry) -> Result<(), Error> {
-        if self.entries.contains_key(&entry.id) {
-            Err(Error::IdAlreadyExists { id: entry.id })
-        } else {
-            self.entries.insert(entry.id.clone(), entry);
-            Ok(())
-        }
-    }
-
-    pub fn update(&mut self, entry: ProxyEntry) -> Result<bool, Error> {
+    pub fn set(&mut self, entry: ProxyEntry) -> bool {
         match self.entries.entry(entry.id.clone()) {
             Entry::Occupied(mut e) => {
                 if e.get().proxy != entry.proxy {
                     e.insert(entry);
-                    Ok(true)
+                    true
                 } else {
-                    Ok(false)
+                    false
                 }
             }
-            Entry::Vacant(_) => Err(Error::IdNotFound { id: entry.id }),
+            Entry::Vacant(inner) => {
+                inner.insert(entry);
+                true
+            }
         }
     }
 
