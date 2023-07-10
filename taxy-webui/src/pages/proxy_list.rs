@@ -111,9 +111,13 @@ pub fn proxy_list() -> Html {
                 });
                 let is_active = *active_index == i as i32;
 
-                let ports = entry.proxy.ports.iter().filter_map(|port| {
-                    ports.entries.iter().find(|p| p.id == *port)
-                }).map(|entry| format_multiaddr(&entry.port.listen)).collect::<Vec<_>>().join(", ");
+                let ports = if entry.proxy.ports.is_empty() {
+                    "-".to_string()
+                } else {
+                    entry.proxy.ports.iter().filter_map(|port| {
+                        ports.entries.iter().find(|p| p.id == *port)
+                    }).map(|entry| format_multiaddr(&entry.port.listen)).collect::<Vec<_>>().join(", ")
+                };
 
                 let title = if entry.proxy.name.is_empty() {
                     entry.id.clone()
