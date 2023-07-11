@@ -2,14 +2,14 @@ use super::{acme, app_info, auth, certs, config, log, ports, proxies};
 use taxy_api::acme::AcmeInfo;
 use taxy_api::acme::{AcmeRequest, ExternalAccountBinding};
 use taxy_api::app::{AppConfig, AppInfo};
-use taxy_api::auth::LoginRequest;
+use taxy_api::auth::{LoginRequest, LoginResponse};
 use taxy_api::cert::{CertInfo, CertKind, CertMetadata, CertPostBody, SelfSignedCertRequest};
 use taxy_api::error::{Error, ErrorMessage};
 use taxy_api::event::ServerEvent;
 use taxy_api::log::{LogLevel, SystemLogRow};
 use taxy_api::port::{NetworkAddr, NetworkInterface, PortEntry, PortOptions, UpstreamServer};
 use taxy_api::port::{PortState, PortStatus, SocketState};
-use taxy_api::site::{HttpProxy, Proxy, ProxyEntry, ProxyKind, Route, Server};
+use taxy_api::site::{HttpProxy, Proxy, ProxyEntry, ProxyKind, Route, Server, TcpProxy};
 use taxy_api::tls::TlsState;
 use taxy_api::tls::TlsTermination;
 use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
@@ -75,9 +75,11 @@ use warp::{Rejection, Reply};
         Proxy,
         ProxyKind,
         HttpProxy,
+        TcpProxy,
         Route,
         Server,
         LoginRequest,
+        LoginResponse,
         LogLevel,
         SystemLogRow,
         NetworkInterface,
