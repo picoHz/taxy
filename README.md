@@ -1,3 +1,6 @@
+<div align="center">
+<img alt="edition logo" src="https://github.com/picoHz/taxy/blob/main/logo.svg?raw=true" width="150" />
+
 # Taxy
 
 A reverse proxy server with a user-friendly WebUI.
@@ -5,7 +8,7 @@ A reverse proxy server with a user-friendly WebUI.
 [![Crates.io](https://img.shields.io/crates/v/taxy.svg)](https://crates.io/crates/taxy)
 [![GitHub license](https://img.shields.io/github/license/picoHz/taxy.svg)](https://github.com/picoHz/taxy/blob/main/LICENSE)
 
-![Taxy WebUI Screenshot](https://raw.githubusercontent.com/picoHz/taxy/main/screenshot.png)
+</div>
 
 ## Overview
 
@@ -16,6 +19,10 @@ A reverse proxy server with a user-friendly WebUI.
 - Import TLS certificates from GUI or generate a self-signed certificate
 - Let's Encrypt support (ACME v2) for seamless certificate provisioning
 - Automatic HTTP brotli compression
+
+## Screenshot
+
+![Taxy WebUI Screenshot](https://raw.githubusercontent.com/picoHz/taxy/main/screenshot.png)
 
 ## Web UI Demo
 
