@@ -4,6 +4,7 @@ pub mod auth;
 pub mod cert;
 pub mod error;
 pub mod event;
+pub mod health_check;
 pub mod log;
 pub mod port;
 pub mod site;
