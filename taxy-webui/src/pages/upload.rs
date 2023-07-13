@@ -182,7 +182,7 @@ async fn upload_cert(
 
     Request::post(&format!("{API_ENDPOINT}/certs/upload"))
         .query([("kind", kind.to_string())])
-        .body(form_data)
+        .body(form_data)?
         .send()
         .await?;
 
