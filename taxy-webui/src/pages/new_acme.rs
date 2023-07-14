@@ -20,11 +20,11 @@ pub enum Provider {
 }
 
 impl Provider {
-    fn html(&self, on_changed: Callback<Result<AcmeRequest, HashMap<String, String>>>) -> Html {
+    fn html(&self, onchanged: Callback<Result<AcmeRequest, HashMap<String, String>>>) -> Html {
         match self {
-            Provider::LetsEncrypt => html! { <LetsEncrypt staging={false} {on_changed} /> },
-            Provider::LetsEncryptStaging => html! { <LetsEncrypt staging={true} {on_changed} /> },
-            Provider::Custom => html! { <CustomAcme {on_changed} /> },
+            Provider::LetsEncrypt => html! { <LetsEncrypt staging={false} {onchanged} /> },
+            Provider::LetsEncryptStaging => html! { <LetsEncrypt staging={true} {onchanged} /> },
+            Provider::Custom => html! { <CustomAcme {onchanged} /> },
         }
     }
 }
@@ -64,7 +64,7 @@ pub fn new_acme() -> Html {
     let entry =
         use_state::<Result<AcmeRequest, HashMap<String, String>>, _>(|| Err(Default::default()));
     let entry_cloned = entry.clone();
-    let on_changed: Callback<Result<AcmeRequest, HashMap<String, String>>> =
+    let onchanged: Callback<Result<AcmeRequest, HashMap<String, String>>> =
         Callback::from(move |updated| {
             entry_cloned.set(updated);
         });
@@ -138,7 +138,7 @@ pub fn new_acme() -> Html {
                     </div>
                 </div>
 
-                { provider.html(on_changed) }
+                { provider.html(onchanged) }
 
                 <div class="field is-grouped is-grouped-right mx-5">
                     <p class="control">

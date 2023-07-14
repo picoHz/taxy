@@ -17,7 +17,7 @@ use yew::prelude::*;
 pub struct Props {
     #[prop_or_else(create_default_port)]
     pub port: Port,
-    pub on_changed: Callback<Result<Port, HashMap<String, String>>>,
+    pub onchanged: Callback<Result<Port, HashMap<String, String>>>,
 }
 
 fn create_default_port() -> Port {
@@ -137,7 +137,7 @@ pub fn port_config(props: &Props) -> Html {
     let entry = get_port(&name, &protocol, &interface, *port, &tls_server_names);
     if entry != *prev_entry {
         prev_entry.set(entry.clone());
-        props.on_changed.emit(entry);
+        props.onchanged.emit(entry);
     }
 
     html! {

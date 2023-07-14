@@ -34,7 +34,7 @@ const PROTOCOLS: &[ProxyProtocol] = &[ProxyProtocol::Http, ProxyProtocol::Tcp];
 pub struct Props {
     #[prop_or_else(create_default_site)]
     pub proxy: Proxy,
-    pub on_changed: Callback<Result<Proxy, HashMap<String, String>>>,
+    pub onchanged: Callback<Result<Proxy, HashMap<String, String>>>,
 }
 
 fn create_default_site() -> Proxy {
@@ -108,7 +108,7 @@ pub fn proxy_config(props: &Props) -> Html {
         Ok(ProxyKind::Http(Default::default()))
     });
     let http_proxy_cloned = http_proxy.clone();
-    let http_proxy_on_changed: Callback<Result<HttpProxy, HashMap<String, String>>> =
+    let http_proxy_onchanged: Callback<Result<HttpProxy, HashMap<String, String>>> =
         Callback::from(move |updated: Result<HttpProxy, HashMap<String, String>>| {
             http_proxy_cloned.set(updated.map(ProxyKind::Http));
         });
@@ -117,7 +117,7 @@ pub fn proxy_config(props: &Props) -> Html {
         Ok(ProxyKind::Http(Default::default()))
     });
     let tcp_proxy_cloned = tcp_proxy.clone();
-    let tcp_proxy_on_changed: Callback<Result<TcpProxy, HashMap<String, String>>> =
+    let tcp_proxy_onchanged: Callback<Result<TcpProxy, HashMap<String, String>>> =
         Callback::from(move |updated: Result<TcpProxy, HashMap<String, String>>| {
             tcp_proxy_cloned.set(updated.map(ProxyKind::Tcp));
         });
@@ -136,7 +136,7 @@ pub fn proxy_config(props: &Props) -> Html {
 
     if entry != *prev_entry {
         prev_entry.set(entry.clone());
-        props.on_changed.emit(entry);
+        props.onchanged.emit(entry);
     }
 
     let compatible_ports = ports.entries.iter().filter(|entry| {
@@ -218,9 +218,9 @@ pub fn proxy_config(props: &Props) -> Html {
             </div>
 
             if *protocol == ProxyProtocol::Http {
-                <HttpProxyConfig on_changed={http_proxy_on_changed} proxy={http_proxy} />
+                <HttpProxyConfig onchanged={http_proxy_onchanged} proxy={http_proxy} />
             } else {
-                <TcpProxyConfig on_changed={tcp_proxy_on_changed} proxy={tcp_proxy} />
+                <TcpProxyConfig onchanged={tcp_proxy_onchanged} proxy={tcp_proxy} />
             }
         </>
     }

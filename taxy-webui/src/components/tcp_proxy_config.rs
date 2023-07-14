@@ -11,7 +11,7 @@ use yew::prelude::*;
 pub struct Props {
     #[prop_or_default]
     pub proxy: TcpProxy,
-    pub on_changed: Callback<Result<TcpProxy, HashMap<String, String>>>,
+    pub onchanged: Callback<Result<TcpProxy, HashMap<String, String>>>,
 }
 
 #[function_component(TcpProxyConfig)]
@@ -34,7 +34,7 @@ pub fn tls_proxy_config(props: &Props) -> Html {
 
     if entry != *prev_entry {
         prev_entry.set(entry.clone());
-        props.on_changed.emit(entry);
+        props.onchanged.emit(entry);
     }
 
     let err = Default::default();

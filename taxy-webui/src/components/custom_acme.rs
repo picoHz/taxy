@@ -11,7 +11,7 @@ use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct Props {
-    pub on_changed: Callback<Result<AcmeRequest, HashMap<String, String>>>,
+    pub onchanged: Callback<Result<AcmeRequest, HashMap<String, String>>>,
 }
 
 #[function_component(CustomAcme)]
@@ -92,7 +92,7 @@ pub fn custom_acme(props: &Props) -> Html {
     );
     if entry != *prev_entry {
         prev_entry.set(entry.clone());
-        props.on_changed.emit(entry);
+        props.onchanged.emit(entry);
     }
 
     html! {

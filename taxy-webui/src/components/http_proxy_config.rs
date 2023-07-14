@@ -11,7 +11,7 @@ use yew::prelude::*;
 pub struct Props {
     #[prop_or_default]
     pub proxy: HttpProxy,
-    pub on_changed: Callback<Result<HttpProxy, HashMap<String, String>>>,
+    pub onchanged: Callback<Result<HttpProxy, HashMap<String, String>>>,
 }
 
 #[function_component(HttpProxyConfig)]
@@ -61,7 +61,7 @@ pub fn http_proxy_config(props: &Props) -> Html {
 
     if entry != *prev_entry {
         prev_entry.set(entry.clone());
-        props.on_changed.emit(entry);
+        props.onchanged.emit(entry);
     }
 
     let err = Default::default();

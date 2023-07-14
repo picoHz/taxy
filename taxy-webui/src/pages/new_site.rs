@@ -18,7 +18,7 @@ pub fn new_site() -> Html {
 
     let entry = use_state::<Result<Proxy, HashMap<String, String>>, _>(|| Err(Default::default()));
     let entry_cloned = entry.clone();
-    let on_changed: Callback<Result<Proxy, HashMap<String, String>>> =
+    let onchanged: Callback<Result<Proxy, HashMap<String, String>>> =
         Callback::from(move |updated| {
             entry_cloned.set(updated);
         });
@@ -60,7 +60,7 @@ pub fn new_site() -> Html {
             </ybc::CardHeader>
 
             <form {onsubmit}>
-                <ProxyConfig {on_changed} />
+                <ProxyConfig {onchanged} />
 
                 <div class="field is-grouped is-grouped-right mx-5">
                     <p class="control">

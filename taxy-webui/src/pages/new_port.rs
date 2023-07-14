@@ -17,7 +17,7 @@ pub fn new_port() -> Html {
     let navigator = use_navigator().unwrap();
     let entry = use_state::<Result<Port, HashMap<String, String>>, _>(|| Err(Default::default()));
     let entry_cloned = entry.clone();
-    let on_changed: Callback<Result<Port, HashMap<String, String>>> =
+    let onchanged: Callback<Result<Port, HashMap<String, String>>> =
         Callback::from(move |updated| {
             entry_cloned.set(updated);
         });
@@ -59,7 +59,7 @@ pub fn new_port() -> Html {
             </ybc::CardHeader>
 
             <form {onsubmit}>
-                <PortConfig {on_changed} />
+                <PortConfig {onchanged} />
 
                 <div class="field is-grouped is-grouped-right mx-5">
                     <p class="control">

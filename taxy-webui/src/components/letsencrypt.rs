@@ -10,7 +10,7 @@ use yew::prelude::*;
 #[derive(Properties, PartialEq)]
 pub struct Props {
     pub staging: bool,
-    pub on_changed: Callback<Result<AcmeRequest, HashMap<String, String>>>,
+    pub onchanged: Callback<Result<AcmeRequest, HashMap<String, String>>>,
 }
 
 #[function_component(LetsEncrypt)]
@@ -38,7 +38,7 @@ pub fn letsencrypt(props: &Props) -> Html {
     let entry = get_request(&email, &domain_name, props.staging);
     if entry != *prev_entry {
         prev_entry.set(entry.clone());
-        props.on_changed.emit(entry);
+        props.onchanged.emit(entry);
     }
 
     html! {

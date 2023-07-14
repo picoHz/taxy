@@ -46,7 +46,7 @@ pub fn port_view(props: &Props) -> Html {
 
     let entry = use_state::<Result<Port, HashMap<String, String>>, _>(|| Err(Default::default()));
     let entry_cloned = entry.clone();
-    let on_changed: Callback<Result<Port, HashMap<String, String>>> =
+    let onchanged: Callback<Result<Port, HashMap<String, String>>> =
         Callback::from(move |updated| {
             entry_cloned.set(updated);
         });
@@ -86,7 +86,7 @@ pub fn port_view(props: &Props) -> Html {
 
             if let Some(port_entry) = &*port {
                 <form {onsubmit}>
-                    <PortConfig port={port_entry.port.clone()} {on_changed} />
+                    <PortConfig port={port_entry.port.clone()} {onchanged} />
 
                     <div class="field is-grouped is-grouped-right mx-5 pb-5">
                         <p class="control">
