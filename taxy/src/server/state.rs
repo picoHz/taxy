@@ -290,6 +290,8 @@ impl ServerState {
         self.remove_expired_certs();
     }
 
+    pub async fn run_healthchecks(&mut self) {}
+
     fn remove_expired_certs(&mut self) {
         let mut removing_items = Vec::new();
         for acme in self.acmes.entries() {
