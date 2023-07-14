@@ -1,5 +1,6 @@
 use super::acme_list::AcmeList;
 use super::cert_list::CertList;
+use super::health_checker::HealthChecker;
 use super::proxy_list::ProxyList;
 use super::{listener::TcpListenerPool, port_list::PortList, rpc::RpcCallback};
 use crate::config::storage::Storage;
@@ -38,6 +39,7 @@ pub struct ServerState {
     pub acmes: AcmeList,
     pub ports: PortList,
     pub storage: Box<dyn Storage>,
+    health_checker: HealthChecker,
     config: AppConfig,
     pool: TcpListenerPool,
     http_challenges: HashMap<String, String>,
@@ -70,6 +72,7 @@ impl ServerState {
             acmes: acmes.into_iter().collect(),
             ports: PortList::default(),
             storage: Box::new(storage),
+            health_checker: HealthChecker::new(),
             config,
             pool: TcpListenerPool::new(),
             http_challenges: HashMap::new(),
@@ -187,6 +190,7 @@ impl ServerState {
     pub async fn update_proxies(&mut self) {
         let entries = self.proxies.entries().cloned().collect::<Vec<_>>();
         self.storage.save_proxies(&entries).await;
+        self.health_checker.update(&entries);
         let _ = self.br_sender.send(ServerEvent::ProxiesUpdated {
             entries: entries.clone(),
         });
@@ -290,7 +294,9 @@ impl ServerState {
         self.remove_expired_certs();
     }
 
-    pub async fn run_healthchecks(&mut self) {}
+    pub async fn run_healthchecks(&mut self) {
+        self.health_checker.start_checks().await;
+    }
 
     fn remove_expired_certs(&mut self) {
         let mut removing_items = Vec::new();
