@@ -40,7 +40,6 @@ async fn ws_proxy() -> anyhow::Result<()> {
         .proxies(vec![ProxyEntry {
             id: "test2".into(),
             proxy: Proxy {
-                name: String::new(),
                 ports: vec!["test".into()],
                 kind: ProxyKind::Http(HttpProxy {
                     vhosts: vec!["localhost:54001".parse().unwrap()],
@@ -51,6 +50,7 @@ async fn ws_proxy() -> anyhow::Result<()> {
                         }],
                     }],
                 }),
+                ..Default::default()
             },
         }])
         .build();

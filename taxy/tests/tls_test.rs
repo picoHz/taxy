@@ -40,13 +40,13 @@ async fn tls_proxy() -> anyhow::Result<()> {
         .proxies(vec![ProxyEntry {
             id: "test2".into(),
             proxy: Proxy {
-                name: String::new(),
                 ports: vec!["test".into()],
                 kind: ProxyKind::Tcp(TcpProxy {
                     upstream_servers: vec![UpstreamServer {
                         addr: "/dns/localhost/tcp/51000/tls".parse().unwrap(),
                     }],
                 }),
+                ..Default::default()
             },
         }])
         .certs(

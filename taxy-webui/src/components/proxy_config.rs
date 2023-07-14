@@ -32,20 +32,9 @@ const PROTOCOLS: &[ProxyProtocol] = &[ProxyProtocol::Http, ProxyProtocol::Tcp];
 
 #[derive(Properties, PartialEq)]
 pub struct Props {
-    #[prop_or_else(create_default_site)]
+    #[prop_or_default]
     pub proxy: Proxy,
     pub onchanged: Callback<Result<Proxy, HashMap<String, String>>>,
-}
-
-fn create_default_site() -> Proxy {
-    Proxy {
-        name: String::new(),
-        ports: vec![],
-        kind: ProxyKind::Http(HttpProxy {
-            vhosts: vec![],
-            routes: vec![],
-        }),
-    }
 }
 
 #[function_component(ProxyConfig)]

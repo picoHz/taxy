@@ -1,18 +1,24 @@
 use crate::port::UpstreamServer;
 use crate::subject_name::SubjectName;
+use serde_default::DefaultFromSerde;
 use serde_derive::{Deserialize, Serialize};
 use url::Url;
 use utoipa::ToSchema;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, DefaultFromSerde, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct Proxy {
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub name: String,
+    #[serde(default)]
     #[schema(example = json!(["c56yqmqcvpmp49n14s2lexxl"]))]
     pub ports: Vec<String>,
-    #[serde(flatten)]
+    #[serde(flatten, default = "default_kind")]
     #[schema(inline)]
     pub kind: ProxyKind,
+}
+
+fn default_kind() -> ProxyKind {
+    ProxyKind::Http(HttpProxy::default())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]

@@ -41,7 +41,6 @@ async fn https_proxy() -> anyhow::Result<()> {
         .proxies(vec![ProxyEntry {
             id: "test2".into(),
             proxy: Proxy {
-                name: String::new(),
                 ports: vec!["test".into()],
                 kind: ProxyKind::Http(HttpProxy {
                     vhosts: vec![],
@@ -52,6 +51,7 @@ async fn https_proxy() -> anyhow::Result<()> {
                         }],
                     }],
                 }),
+                ..Default::default()
             },
         }])
         .certs(

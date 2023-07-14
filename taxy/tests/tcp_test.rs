@@ -27,13 +27,13 @@ async fn tcp_proxy() -> anyhow::Result<()> {
         .proxies(vec![ProxyEntry {
             id: "test2".into(),
             proxy: Proxy {
-                name: String::new(),
                 ports: vec!["test".into()],
                 kind: ProxyKind::Tcp(TcpProxy {
                     upstream_servers: vec![UpstreamServer {
                         addr: "/ip4/127.0.0.1/tcp/50000".parse().unwrap(),
                     }],
                 }),
+                ..Default::default()
             },
         }])
         .build();
