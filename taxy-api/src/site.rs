@@ -1,5 +1,5 @@
-use crate::port::UpstreamServer;
 use crate::subject_name::SubjectName;
+use crate::{health_check::HealthCheck, port::UpstreamServer};
 use serde_default::DefaultFromSerde;
 use serde_derive::{Deserialize, Serialize};
 use url::Url;
@@ -12,6 +12,8 @@ pub struct Proxy {
     #[serde(default)]
     #[schema(example = json!(["c56yqmqcvpmp49n14s2lexxl"]))]
     pub ports: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub health_check: Option<HealthCheck>,
     #[serde(flatten, default = "default_kind")]
     #[schema(inline)]
     pub kind: ProxyKind,

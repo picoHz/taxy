@@ -41,6 +41,7 @@ async fn ws_proxy() -> anyhow::Result<()> {
             id: "test2".into(),
             proxy: Proxy {
                 ports: vec!["test".into()],
+                health_check: None,
                 kind: ProxyKind::Http(HttpProxy {
                     vhosts: vec!["localhost:54001".parse().unwrap()],
                     routes: vec![Route {

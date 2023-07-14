@@ -237,6 +237,7 @@ fn get_site(
         Ok(Proxy {
             name: name.trim().to_string(),
             ports,
+            health_check: None,
             kind: kind.clone(),
         })
     } else {
