@@ -104,6 +104,14 @@ impl PortContext {
             PortContextKind::Reserved => (),
         }
     }
+
+    pub fn run_healthchecks(&mut self) {
+        match &mut self.kind {
+            PortContextKind::Tcp(ctx) => ctx.run_healthchecks(),
+            PortContextKind::Http(ctx) => ctx.run_healthchecks(),
+            PortContextKind::Reserved => (),
+        }
+    }
 }
 
 #[derive(Debug)]

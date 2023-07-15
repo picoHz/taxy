@@ -2,7 +2,7 @@ use self::route::Router;
 use super::{tls::TlsTermination, PortContextEvent};
 use crate::{
     proxy::http::compression::{is_compressed, CompressionStream},
-    server::cert_list::CertList,
+    server::{cert_list::CertList, health_checker::HealthChecker},
 };
 use header::HeaderRewriter;
 use hyper::{
@@ -47,6 +47,7 @@ pub struct HttpPortContext {
     tls_termination: Option<TlsTermination>,
     tls_client_config: Option<Arc<ClientConfig>>,
     router: Arc<Router>,
+    health_checker: HealthChecker,
     round_robin_counter: usize,
     stop_notifier: Arc<Notify>,
 }
@@ -81,12 +82,15 @@ impl HttpPortContext {
             tls_termination,
             tls_client_config: None,
             router: Arc::new(Default::default()),
+            health_checker: HealthChecker::new(),
             round_robin_counter: 0,
             stop_notifier: Arc::new(Notify::new()),
         })
     }
 
     pub async fn setup(&mut self, certs: &CertList, proxies: Vec<ProxyEntry>) -> Result<(), Error> {
+        self.health_checker.update(&proxies);
+
         self.router = Arc::new(Router::new(proxies));
 
         let config = ClientConfig::builder()
@@ -131,6 +135,8 @@ impl HttpPortContext {
     pub fn reset(&mut self) {
         self.stop_notifier.notify_waiters();
     }
+
+    pub fn run_healthchecks(&mut self) {}
 
     pub fn start_proxy(&mut self, stream: BufStream<TcpStream>) {
         let span = self.span.clone();

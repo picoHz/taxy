@@ -1,5 +1,5 @@
 use super::{tls::TlsTermination, PortContextEvent, PortStatus, SocketState};
-use crate::server::cert_list::CertList;
+use crate::server::{cert_list::CertList, health_checker::HealthChecker};
 use multiaddr::{Multiaddr, Protocol};
 use std::{
     net::{IpAddr, SocketAddr},
@@ -32,6 +32,7 @@ pub struct TcpPortContext {
     span: Span,
     tls_termination: Option<TlsTermination>,
     tls_client_config: Option<Arc<ClientConfig>>,
+    health_checker: HealthChecker,
     round_robin_counter: usize,
     stop_notifier: Arc<Notify>,
 }
@@ -60,6 +61,7 @@ impl TcpPortContext {
             span,
             tls_termination,
             tls_client_config: None,
+            health_checker: HealthChecker::new(),
             round_robin_counter: 0,
             stop_notifier: Arc::new(Notify::new()),
         })
@@ -71,6 +73,8 @@ impl TcpPortContext {
             .with_root_certificates(certs.root_certs().clone())
             .with_no_client_auth();
         self.tls_client_config = Some(Arc::new(config));
+
+        self.health_checker.update(&proxies);
 
         for proxy in proxies {
             if let ProxyKind::Tcp(proxy) = proxy.proxy.kind {
@@ -84,6 +88,7 @@ impl TcpPortContext {
         if let Some(tls) = &mut self.tls_termination {
             self.status.state.tls = Some(tls.setup(certs).await);
         }
+
         Ok(())
     }
 
@@ -117,6 +122,8 @@ impl TcpPortContext {
     pub fn reset(&mut self) {
         self.stop_notifier.notify_waiters();
     }
+
+    pub fn run_healthchecks(&mut self) {}
 
     pub fn start_proxy(&mut self, mut stream: BufStream<TcpStream>) {
         if self.servers.is_empty() {

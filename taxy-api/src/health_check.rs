@@ -1,6 +1,7 @@
 use serde_default::DefaultFromSerde;
 use serde_derive::{Deserialize, Serialize};
 use std::time::Duration;
+use time::OffsetDateTime;
 use utoipa::ToSchema;
 
 #[derive(Debug, DefaultFromSerde, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -53,4 +54,31 @@ pub struct TcpHealthCheck {
 
     #[serde(default)]
     pub expect: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct HealthCheckResult {
+    pub alive: bool,
+    #[serde(
+        serialize_with = "serialize_timestamp",
+        deserialize_with = "deserialize_timestamp"
+    )]
+    #[schema(value_type = u64)]
+    pub timestamp: OffsetDateTime,
+}
+
+fn serialize_timestamp<S>(timestamp: &OffsetDateTime, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    serializer.serialize_i64(timestamp.unix_timestamp())
+}
+
+fn deserialize_timestamp<'de, D>(deserializer: D) -> Result<OffsetDateTime, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::Deserialize;
+    let timestamp = i64::deserialize(deserializer)?;
+    OffsetDateTime::from_unix_timestamp(timestamp).map_err(serde::de::Error::custom)
 }
