@@ -276,7 +276,7 @@ fn with_state(state: AppState) -> impl Filter<Extract = (AppState,), Error = Rej
                 async move {
                     if let Some(token) = token {
                         let mut data = data.lock().await;
-                        let expiry = data.config.admin_session_expiry;
+                        let expiry = data.config.admin.session_expiry;
                         if data.sessions.verify(&token, expiry) {
                             return Ok(());
                         }

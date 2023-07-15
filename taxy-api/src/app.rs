@@ -9,9 +9,8 @@ pub struct AppConfig {
     #[schema(value_type = String, example = "1h")]
     pub background_task_interval: Duration,
 
-    #[serde(with = "humantime_serde", default = "default_admin_session_expiry")]
-    #[schema(value_type = String, example = "1d")]
-    pub admin_session_expiry: Duration,
+    #[serde(default)]
+    pub admin: AdminConfig,
 
     #[serde(default = "default_http_challenge_addr")]
     #[schema(value_type = String, example = "0.0.0.0:80")]
@@ -19,10 +18,6 @@ pub struct AppConfig {
 }
 
 fn default_background_task_interval() -> Duration {
-    Duration::from_secs(60 * 60)
-}
-
-fn default_admin_session_expiry() -> Duration {
     Duration::from_secs(60 * 60)
 }
 
@@ -46,4 +41,15 @@ pub struct AppInfo {
     pub config_path: PathBuf,
     #[schema(value_type = String, example = "/home/taxy/.config/taxy")]
     pub log_path: PathBuf,
+}
+
+#[derive(Debug, DefaultFromSerde, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct AdminConfig {
+    #[serde(with = "humantime_serde", default = "default_admin_session_expiry")]
+    #[schema(value_type = String, example = "1d")]
+    pub session_expiry: Duration,
+}
+
+fn default_admin_session_expiry() -> Duration {
+    Duration::from_secs(60 * 60)
 }
