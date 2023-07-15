@@ -11,6 +11,7 @@ pub struct ErrorMessage {
 
 #[derive(Debug, Clone, Error, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case", tag = "message")]
+#[non_exhaustive]
 pub enum Error {
     #[error("invalid listening address: {addr}")]
     InvalidListeningAddress {

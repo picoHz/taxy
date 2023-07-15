@@ -8,6 +8,7 @@ use utoipa::ToSchema;
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case", tag = "event")]
+#[non_exhaustive]
 pub enum ServerEvent {
     AppConfigUpdated { config: AppConfig },
     PortTableUpdated { entries: Vec<PortEntry> },
