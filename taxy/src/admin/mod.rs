@@ -5,9 +5,11 @@ use futures::{Stream, TryStreamExt};
 use hyper::StatusCode;
 use std::any::Any;
 use std::collections::HashMap;
+use std::net::IpAddr;
 use std::pin::Pin;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::task::{Context, Poll};
+use std::time::Instant;
 use std::{convert::Infallible, net::SocketAddr, sync::Arc};
 use taxy_api::app::{AppConfig, AppInfo};
 use taxy_api::error::{Error, ErrorMessage};
@@ -222,6 +224,8 @@ struct Data {
 
     rpc_counter: usize,
     rpc_callbacks: HashMap<usize, oneshot::Sender<CallbackData>>,
+
+    rate_limiter: HashMap<IpAddr, (usize, Instant)>,
 }
 
 impl AppState {
@@ -263,6 +267,7 @@ impl Data {
             log: Arc::new(LogReader::new(&log).await?),
             rpc_counter: 0,
             rpc_callbacks: HashMap::new(),
+            rate_limiter: HashMap::new(),
         })
     }
 }

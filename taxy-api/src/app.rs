@@ -43,13 +43,28 @@ pub struct AppInfo {
     pub log_path: PathBuf,
 }
 
-#[derive(Debug, DefaultFromSerde, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, DefaultFromSerde, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct AdminConfig {
     #[serde(with = "humantime_serde", default = "default_admin_session_expiry")]
     #[schema(value_type = String, example = "1d")]
     pub session_expiry: Duration,
+
+    #[serde(default = "default_max_attempts")]
+    pub max_login_attempts: u32,
+
+    #[serde(with = "humantime_serde", default = "default_login_attempts_reset")]
+    #[schema(value_type = String, example = "15m")]
+    pub login_attempts_reset: Duration,
 }
 
 fn default_admin_session_expiry() -> Duration {
     Duration::from_secs(60 * 60)
+}
+
+fn default_max_attempts() -> u32 {
+    5
+}
+
+fn default_login_attempts_reset() -> Duration {
+    Duration::from_secs(60 * 15)
 }

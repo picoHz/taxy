@@ -58,6 +58,9 @@ pub enum Error {
     #[error("invalid login credentials")]
     InvalidLoginCredentials,
 
+    #[error("too many login attempts")]
+    TooManyLoginAttempts,
+
     #[error("failed to fetch log")]
     FailedToFetchLog,
 

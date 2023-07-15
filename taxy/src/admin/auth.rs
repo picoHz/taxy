@@ -4,22 +4,26 @@ use rand::distributions::{Alphanumeric, DistString};
 use serde_json::Value;
 use std::{
     collections::HashMap,
+    net::SocketAddr,
     time::{Duration, Instant},
 };
-use taxy_api::auth::{LoginRequest, LoginResponse};
+use taxy_api::{
+    auth::{LoginRequest, LoginResponse},
+    error::Error,
+};
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 const MINIMUM_SESSION_EXPIRY: Duration = Duration::from_secs(60 * 5); // 5 minutes
 const SESSION_TOKEN_LENGTH: usize = 32;
 
 pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
-    let app_state_clone = app_state.clone();
-    let api_login = warp::post()
-        .and(warp::path("login"))
-        .map(move || app_state_clone.clone())
-        .and(warp::body::json())
-        .and(warp::path::end())
-        .and_then(login);
+    let api_login = warp::post().and(
+        rate_limit(app_state.clone())
+            .and(warp::path("login"))
+            .and(warp::body::json())
+            .and(warp::path::end())
+            .and_then(login),
+    );
 
     let api_logout = warp::get().and(warp::path("logout")).and(
         with_state(app_state)
@@ -109,4 +113,34 @@ impl SessionStore {
     pub fn remove(&mut self, token: &str) {
         self.tokens.remove(token);
     }
+}
+
+fn rate_limit(state: AppState) -> impl Filter<Extract = (AppState,), Error = Rejection> + Clone {
+    let data = state.data.clone();
+    warp::any()
+        .and(
+            warp::addr::remote().and_then(move |addr: Option<SocketAddr>| {
+                let data = data.clone();
+                async move {
+                    let mut data = data.lock().await;
+                    let config = data.config.admin;
+                    let rate_limiter = &mut data.rate_limiter;
+                    *rate_limiter = rate_limiter
+                        .drain()
+                        .filter(|(_, (_, t))| t.elapsed() < config.login_attempts_reset)
+                        .collect();
+                    let addr = addr.map(|addr| addr.ip()).unwrap_or([0, 0, 0, 0].into());
+                    let entry = rate_limiter
+                        .entry(addr)
+                        .or_insert_with(|| (0, Instant::now()));
+                    entry.0 += 1;
+                    if entry.0 > config.max_login_attempts as _ {
+                        Err(warp::reject::custom(Error::TooManyLoginAttempts))
+                    } else {
+                        Ok(())
+                    }
+                }
+            }),
+        )
+        .map(move |_| state.clone())
 }
