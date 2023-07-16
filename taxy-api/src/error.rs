@@ -79,6 +79,8 @@ impl Error {
         match self {
             Self::IdNotFound { .. } => 404,
             Self::Unauthorized => 401,
+            Self::TooManyLoginAttempts => 429,
+            Self::FailedToFetchLog | Self::FailedToInvokeRpc => 500,
             _ => 400,
         }
     }
