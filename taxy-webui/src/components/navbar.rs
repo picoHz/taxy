@@ -52,11 +52,11 @@ pub fn navbar() -> Html {
 
     html! {
         <ybc::Navbar
-            classes={classes!("is-light")}
+            classes={classes!("is-primary")}
             padded=true
             navburger={route != Route::Login}
             navbrand={html!{
-                <a class="navbar-item px-5" onclick={home_onclick}>
+                <a class="navbar-item px-5 taxy-logo" onclick={home_onclick}>
                     <ybc::Title size={ybc::HeaderSize::Is4}>{"Taxy"}</ybc::Title>
                 </a>
             }}
