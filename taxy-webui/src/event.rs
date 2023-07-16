@@ -20,7 +20,7 @@ struct EventSession {
 #[hook]
 pub fn use_event_subscriber() {
     let (event, dispatcher) = use_store::<EventSession>();
-    let (_, ports) = use_store::<PortStore>();
+    let (ports, ports_dispatcher) = use_store::<PortStore>();
     let (_, certs) = use_store::<CertStore>();
     let (_, acme) = use_store::<AcmeStore>();
     let (_, proxies) = use_store::<ProxyStore>();
@@ -36,7 +36,10 @@ pub fn use_event_subscriber() {
                     if let Ok(event) = serde_json::from_str::<ServerEvent>(&s) {
                         match event {
                             ServerEvent::PortTableUpdated { entries } => {
-                                ports.set(PortStore { entries });
+                                ports_dispatcher.set(PortStore {
+                                    entries,
+                                    ..(*ports).clone()
+                                });
                             }
                             ServerEvent::CertsUpdated { entries } => {
                                 certs.set(CertStore { entries });
@@ -46,6 +49,11 @@ pub fn use_event_subscriber() {
                             }
                             ServerEvent::ProxiesUpdated { entries } => {
                                 proxies.set(ProxyStore { entries });
+                            }
+                            ServerEvent::PortStatusUpdated { id, status } => {
+                                let mut cloned = (*ports).clone();
+                                cloned.statuses.insert(id, status);
+                                ports_dispatcher.set(cloned);
                             }
                             _ => (),
                         }

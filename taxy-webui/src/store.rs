@@ -1,5 +1,11 @@
 use serde_derive::{Deserialize, Serialize};
-use taxy_api::{acme::AcmeInfo, cert::CertInfo, port::PortEntry, site::ProxyEntry};
+use std::collections::HashMap;
+use taxy_api::{
+    acme::AcmeInfo,
+    cert::CertInfo,
+    port::{PortEntry, PortStatus},
+    site::ProxyEntry,
+};
 use yewdux::prelude::*;
 
 #[derive(Default, Clone, PartialEq, Serialize, Deserialize, Store)]
@@ -11,6 +17,7 @@ pub struct SessionStore {
 #[derive(Default, Clone, PartialEq, Store)]
 pub struct PortStore {
     pub entries: Vec<PortEntry>,
+    pub statuses: HashMap<String, PortStatus>,
 }
 
 #[derive(Default, Clone, PartialEq, Store)]

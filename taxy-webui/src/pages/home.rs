@@ -19,11 +19,16 @@ pub fn dashboard() -> Html {
     let (ports, ports_dispatcher) = use_store::<PortStore>();
     let (proxies, proxies_dispatcher) = use_store::<ProxyStore>();
     let (certs, certs_dispatcher) = use_store::<CertStore>();
+
+    let ports_cloned = ports.clone();
     use_effect_with_deps(
         move |_| {
             wasm_bindgen_futures::spawn_local(async move {
                 if let Ok(res) = get_port_list().await {
-                    ports_dispatcher.set(PortStore { entries: res });
+                    ports_dispatcher.set(PortStore {
+                        entries: res,
+                        ..(*ports_cloned).clone()
+                    });
                 }
                 if let Ok(res) = get_proxy_list().await {
                     proxies_dispatcher.set(ProxyStore { entries: res });

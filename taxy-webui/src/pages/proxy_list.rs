@@ -29,11 +29,15 @@ pub fn proxy_list() -> Html {
         (),
     );
 
+    let ports_cloned = ports.clone();
     use_effect_with_deps(
         move |_| {
             wasm_bindgen_futures::spawn_local(async move {
                 if let Ok(res) = get_ports().await {
-                    ports_dispatcher.set(PortStore { entries: res });
+                    ports_dispatcher.set(PortStore {
+                        entries: res,
+                        ..(*ports_cloned).clone()
+                    });
                 }
             });
         },

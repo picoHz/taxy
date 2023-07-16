@@ -5,7 +5,8 @@ use crate::store::PortStore;
 use crate::utils::format_multiaddr;
 use crate::API_ENDPOINT;
 use gloo_net::http::Request;
-use taxy_api::port::PortEntry;
+use std::collections::HashMap;
+use taxy_api::port::{PortEntry, PortStatus, SocketState};
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
@@ -19,7 +20,16 @@ pub fn post_list() -> Html {
         move |_| {
             wasm_bindgen_futures::spawn_local(async move {
                 if let Ok(res) = get_list().await {
-                    dispatcher.set(PortStore { entries: res });
+                    let mut statuses = HashMap::new();
+                    for entry in &res {
+                        if let Ok(status) = get_status(&entry.id).await {
+                            statuses.insert(entry.id.clone(), status);
+                        }
+                    }
+                    dispatcher.set(PortStore {
+                        entries: res,
+                        statuses,
+                    });
                 }
             });
         },
@@ -56,6 +66,7 @@ pub fn post_list() -> Html {
             { list.into_iter().enumerate().map(|(i, entry)| {
                 let navigator = navigator.clone();
                 let active_index = active_index.clone();
+                let status = ports.statuses.get(&entry.id).cloned().unwrap_or_default();
 
                 let id = entry.id.clone();
                 let navigator_cloned = navigator.clone();
@@ -117,11 +128,21 @@ pub fn post_list() -> Html {
                 } else {
                     entry.port.name.clone()
                 };
+                let (status_text, tag) = match status.state.socket {
+                    SocketState::Listening => ("Listening", "is-success"),
+                    SocketState::PortAlreadyInUse => ("Port Already In Use", "is-danger"),
+                    SocketState::PermissionDenied => ("Permission Denied", "is-danger"),
+                    SocketState::AddressNotAvailable => ("Address Not Available", "is-danger"),
+                    SocketState::Error => ("Error", "is-danger"),
+                    SocketState::Unknown => ("Unknown", "is-light"),
+                };
                 html! {
                     <div class="list-item">
                         <div class="list-item-content">
                             <div class="list-item-title">{title}</div>
-                            <div class="list-item-description">{format_multiaddr(&entry.port.listen)}</div>
+                            <div class="list-item-description">
+                            <span class={classes!("tag", "is-success", "mr-3", tag)}>{status_text}</span>
+                            {format_multiaddr(&entry.port.listen)}</div>
                         </div>
 
                         <div class="list-item-controls">
@@ -190,6 +211,14 @@ pub fn post_list() -> Html {
 
 async fn get_list() -> Result<Vec<PortEntry>, gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/ports"))
+        .send()
+        .await?
+        .json()
+        .await
+}
+
+async fn get_status(id: &str) -> Result<PortStatus, gloo_net::Error> {
+    Request::get(&format!("{API_ENDPOINT}/ports/{id}/status"))
         .send()
         .await?
         .json()

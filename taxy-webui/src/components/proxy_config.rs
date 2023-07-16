@@ -41,11 +41,15 @@ pub struct Props {
 pub fn proxy_config(props: &Props) -> Html {
     let (ports, dispatcher) = use_store::<PortStore>();
 
+    let ports_cloned = ports.clone();
     use_effect_with_deps(
         move |_| {
             wasm_bindgen_futures::spawn_local(async move {
                 if let Ok(res) = get_ports().await {
-                    dispatcher.set(PortStore { entries: res });
+                    dispatcher.set(PortStore {
+                        entries: res,
+                        ..(*ports_cloned).clone()
+                    });
                 }
             });
         },
