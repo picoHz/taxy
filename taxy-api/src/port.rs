@@ -1,7 +1,10 @@
 use crate::tls::{TlsState, TlsTermination};
 use multiaddr::Multiaddr;
 use serde_derive::{Deserialize, Serialize};
-use std::{net::IpAddr, time::SystemTime};
+use std::{
+    net::IpAddr,
+    time::{Duration, SystemTime},
+};
 use utoipa::ToSchema;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -19,7 +22,10 @@ pub enum SocketState {
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct PortStatus {
     pub state: PortState,
-    #[serde(serialize_with = "serialize_started_at")]
+    #[serde(
+        serialize_with = "serialize_started_at",
+        deserialize_with = "deserialize_started_at"
+    )]
     #[schema(value_type = Option<u64>)]
     pub started_at: Option<SystemTime>,
 }
@@ -45,6 +51,21 @@ where
         serializer.serialize_some(&started_at)
     } else {
         serializer.serialize_none()
+    }
+}
+
+fn deserialize_started_at<'de, D>(deserializer: D) -> Result<Option<SystemTime>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::Deserialize;
+    let started_at = Option::<u64>::deserialize(deserializer)?;
+    if let Some(started_at) = started_at {
+        Ok(Some(
+            SystemTime::UNIX_EPOCH + Duration::from_secs(started_at),
+        ))
+    } else {
+        Ok(None)
     }
 }
 
