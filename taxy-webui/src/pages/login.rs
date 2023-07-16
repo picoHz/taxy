@@ -79,7 +79,7 @@ pub fn login() -> Html {
                     if let Some(redirect) = query.redirect {
                         navigator.replace(&redirect);
                     } else {
-                        navigator.push(&Route::Home);
+                        navigator.push(&Route::Dashboard);
                     }
                 }
                 ApiResult::Err(err) => {

@@ -11,6 +11,11 @@ struct MenuItem {
 const ITEMS: &[MenuItem] = {
     &[
         MenuItem {
+            name: "Dashboard",
+            icon: "grid",
+            route: Route::Dashboard,
+        },
+        MenuItem {
             name: "Ports",
             icon: "wifi",
             route: Route::Ports,
@@ -36,7 +41,7 @@ pub fn navbar() -> Html {
     let navigator_cloned = navigator.clone();
     let home_onclick = Callback::from(move |e: MouseEvent| {
         e.prevent_default();
-        navigator_cloned.push(&Route::Home);
+        navigator_cloned.push(&Route::Dashboard);
     });
 
     let navigator_cloned = navigator.clone();
