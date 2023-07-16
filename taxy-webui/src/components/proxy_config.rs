@@ -52,6 +52,15 @@ pub fn proxy_config(props: &Props) -> Html {
         (),
     );
 
+    let name = use_state(|| props.proxy.name.clone());
+    let name_onchange = Callback::from({
+        let name = name.clone();
+        move |event: Event| {
+            let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
+            name.set(target.value());
+        }
+    });
+
     let protocol = use_state(|| {
         if matches!(props.proxy.kind, ProxyKind::Http(_)) {
             ProxyProtocol::Http
@@ -66,15 +75,6 @@ pub fn proxy_config(props: &Props) -> Html {
             if let Ok(index) = target.value().parse::<usize>() {
                 protocol.set(PROTOCOLS[index]);
             }
-        }
-    });
-
-    let name = use_state(|| props.proxy.name.clone());
-    let name_onchange = Callback::from({
-        let name = name.clone();
-        move |event: Event| {
-            let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
-            name.set(target.value());
         }
     });
 
@@ -153,6 +153,19 @@ pub fn proxy_config(props: &Props) -> Html {
         <>
             <div class="field is-horizontal m-5">
                 <div class="field-label is-normal">
+                <label class="label">{"Name"}</label>
+                </div>
+                <div class="field-body">
+                    <div class="field">
+                        <p class="control is-expanded">
+                        <input class="input" type="text" value={name.to_string()} onchange={name_onchange} />
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field is-horizontal m-5">
+                <div class="field-label is-normal">
                     <label class="label">{"Protocol"}</label>
                 </div>
                 <div class="field-body">
@@ -168,19 +181,6 @@ pub fn proxy_config(props: &Props) -> Html {
                         </select>
                         </div>
                     </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="field is-horizontal m-5">
-                <div class="field-label is-normal">
-                <label class="label">{"Name"}</label>
-                </div>
-                <div class="field-body">
-                    <div class="field">
-                        <p class="control is-expanded">
-                        <input class="input" type="text" value={name.to_string()} onchange={name_onchange} />
-                        </p>
                     </div>
                 </div>
             </div>
