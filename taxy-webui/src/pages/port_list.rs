@@ -2,7 +2,7 @@ use crate::auth::use_ensure_auth;
 use crate::components::breadcrumb::Breadcrumb;
 use crate::pages::Route;
 use crate::store::PortStore;
-use crate::utils::format_multiaddr;
+use crate::utils::convert_multiaddr;
 use crate::API_ENDPOINT;
 use gloo_net::http::Request;
 use std::collections::HashMap;
@@ -136,13 +136,18 @@ pub fn post_list() -> Html {
                     SocketState::Error => ("Error", "is-danger"),
                     SocketState::Unknown => ("Unknown", "is-light"),
                 };
+                let (protocol, addr) = convert_multiaddr(&entry.port.listen);
                 html! {
                     <div class="list-item">
                         <div class="list-item-content">
                             <div class="list-item-title">{title}</div>
-                            <div class="list-item-description">
-                            <span class={classes!("tag", "is-success", "mr-3", tag)}>{status_text}</span>
-                            {format_multiaddr(&entry.port.listen)}</div>
+                            <div class="list-item-description field is-grouped">
+                                <span class={classes!("tag", "is-success", "mr-2", tag)}>{status_text}</span>
+                                <span class="tags has-addons">
+                                    <span class="tag is-dark">{protocol}</span>
+                                    <span class="tag is-info">{addr}</span>
+                                </span>
+                            </div>
                         </div>
 
                         <div class="list-item-controls">

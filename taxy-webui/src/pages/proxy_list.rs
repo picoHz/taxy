@@ -2,7 +2,7 @@ use crate::auth::use_ensure_auth;
 use crate::components::breadcrumb::Breadcrumb;
 use crate::pages::Route;
 use crate::store::{PortStore, ProxyStore};
-use crate::utils::format_multiaddr;
+use crate::utils::convert_multiaddr;
 use crate::API_ENDPOINT;
 use gloo_net::http::Request;
 use taxy_api::port::PortEntry;
@@ -116,11 +116,19 @@ pub fn proxy_list() -> Html {
                 let is_active = *active_index == i as i32;
 
                 let ports = if entry.proxy.ports.is_empty() {
-                    "-".to_string()
+                    html!{ <span class="tag is-light">{"No Ports"}</span> }
                 } else {
                     entry.proxy.ports.iter().filter_map(|port| {
                         ports.entries.iter().find(|p| p.id == *port)
-                    }).map(|entry| format_multiaddr(&entry.port.listen)).collect::<Vec<_>>().join(", ")
+                    }).map(|entry| {
+                        let (protocol, addr) = convert_multiaddr(&entry.port.listen);
+                        html! {
+                            <span class="tags has-addons">
+                                <span class="tag is-dark">{protocol}</span>
+                                <span class="tag is-info">{addr}</span>
+                            </span>
+                        }
+                    }).collect::<Html>()
                 };
 
                 let title = if entry.proxy.name.is_empty() {
@@ -132,7 +140,9 @@ pub fn proxy_list() -> Html {
                     <div class="list-item">
                         <div class="list-item-content">
                             <div class="list-item-title">{title}</div>
-                            <div class="list-item-description">{ports}</div>
+                            <div class="list-item-description field is-grouped">
+                                {ports}
+                            </div>
                         </div>
 
                         <div class="list-item-controls">

@@ -1,6 +1,11 @@
 use multiaddr::{Multiaddr, Protocol};
 
 pub fn format_multiaddr(addr: &Multiaddr) -> String {
+    let (kind, interface) = convert_multiaddr(addr);
+    format!("{kind} [{interface}]")
+}
+
+pub fn convert_multiaddr(addr: &Multiaddr) -> (&str, String) {
     let mut interface = String::new();
 
     let mut kind = "";
@@ -32,5 +37,5 @@ pub fn format_multiaddr(addr: &Multiaddr) -> String {
         }
     }
 
-    format!("{kind} [{interface}]")
+    (kind, interface)
 }
