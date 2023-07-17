@@ -8,7 +8,7 @@ A reverse proxy server with a user-friendly WebUI.
 [![Crates.io](https://img.shields.io/crates/v/taxy.svg)](https://crates.io/crates/taxy)
 [![GitHub license](https://img.shields.io/github/license/picoHz/taxy.svg)](https://github.com/picoHz/taxy/blob/main/LICENSE)
 [![Rust](https://github.com/picoHz/taxy/actions/workflows/rust.yml/badge.svg)](https://github.com/picoHz/taxy/actions/workflows/rust.yml)
-[![dependency status](https://deps.rs/crate/taxy/0.3.0/status.svg)](https://deps.rs/crate/taxy/0.3.0)
+[![dependency status](https://deps.rs/crate/taxy/latest/status.svg)](https://deps.rs/crate/taxy/latest)
 
 </div>
 
