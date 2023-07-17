@@ -20,7 +20,7 @@ struct EventSession {
 #[hook]
 pub fn use_event_subscriber() {
     let (event, dispatcher) = use_store::<EventSession>();
-    let (ports, ports_dispatcher) = use_store::<PortStore>();
+    let (_, ports) = use_store::<PortStore>();
     let (_, certs) = use_store::<CertStore>();
     let (_, acme) = use_store::<AcmeStore>();
     let (_, proxies) = use_store::<ProxyStore>();
@@ -36,9 +36,12 @@ pub fn use_event_subscriber() {
                     if let Ok(event) = serde_json::from_str::<ServerEvent>(&s) {
                         match event {
                             ServerEvent::PortTableUpdated { entries } => {
-                                ports_dispatcher.set(PortStore {
-                                    entries,
-                                    ..(*ports).clone()
+                                ports.reduce(|state| {
+                                    PortStore {
+                                        entries,
+                                        ..(*state).clone()
+                                    }
+                                    .into()
                                 });
                             }
                             ServerEvent::CertsUpdated { entries } => {
@@ -51,9 +54,11 @@ pub fn use_event_subscriber() {
                                 proxies.set(ProxyStore { entries });
                             }
                             ServerEvent::PortStatusUpdated { id, status } => {
-                                let mut cloned = (*ports).clone();
-                                cloned.statuses.insert(id, status);
-                                ports_dispatcher.set(cloned);
+                                ports.reduce(|state| {
+                                    let mut cloned = (*state).clone();
+                                    cloned.statuses.insert(id, status);
+                                    cloned.into()
+                                });
                             }
                             _ => (),
                         }
