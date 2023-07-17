@@ -4,6 +4,7 @@ use crate::{
     proxy::http::compression::{is_compressed, CompressionStream},
     server::cert_list::CertList,
 };
+use futures::FutureExt;
 use header::HeaderRewriter;
 use hyper::{
     client,
@@ -13,18 +14,20 @@ use hyper::{
         HeaderValue,
     },
     server::conn::Http,
-    Response, Uri,
+    Body, Response, StatusCode, Uri,
 };
 use multiaddr::{Multiaddr, Protocol};
 use std::{net::SocketAddr, sync::Arc, time::SystemTime};
 use taxy_api::error::Error;
 use taxy_api::port::{PortStatus, SocketState};
 use taxy_api::{port::PortEntry, site::ProxyEntry};
+use thiserror::Error;
 use tokio::net::{self, TcpSocket, TcpStream};
 use tokio::{
     io::{AsyncRead, AsyncWrite, BufStream},
     sync::Notify,
 };
+use tokio_rustls::rustls;
 use tokio_rustls::{
     rustls::{client::ServerName, ClientConfig},
     TlsAcceptor, TlsConnector,
@@ -286,12 +289,14 @@ pub async fn start(
         let span_cloned = span.clone();
         async move {
             if hostname.is_empty() || domain_fronting {
-                let mut res = hyper::Response::new(hyper::Body::empty());
-                *res.status_mut() = hyper::StatusCode::BAD_GATEWAY;
-                return Ok::<_, anyhow::Error>(res);
+                return Err(ProxyError::InvalidHostName.into());
             }
 
-            let resolved = net::lookup_host(&host).await?.next().unwrap();
+            let resolved = net::lookup_host(&host)
+                .await
+                .map_err(|_| ProxyError::DnsLookupFailed)?
+                .next()
+                .ok_or(ProxyError::DnsLookupFailed)?;
             debug!(host, %resolved);
 
             info!(target: "taxy::access_log", remote = %remote, %local, %resolved);
@@ -367,6 +372,7 @@ pub async fn start(
                 Response::from_parts(parts, body)
             })
         }
+        .map(map_response)
         .instrument(span_cloned)
     });
 
@@ -393,6 +399,57 @@ fn multiaddr_to_tcp(addr: &Multiaddr) -> Result<SocketAddr, Error> {
             Ok(SocketAddr::new(std::net::IpAddr::V6(*addr), *port))
         }
         _ => Err(Error::InvalidListeningAddress { addr: addr.clone() }),
+    }
+}
+
+fn map_response(res: Result<Response<Body>, anyhow::Error>) -> Result<Response<Body>, Error> {
+    match res {
+        Ok(res) => Ok(res),
+        Err(err) => {
+            let code = map_error(err);
+            let mut res = Response::new(Body::empty());
+            *res.status_mut() = code;
+            Ok(res)
+        }
+    }
+}
+
+fn map_error(err: anyhow::Error) -> StatusCode {
+    if let Some(err) = err.downcast_ref::<ProxyError>() {
+        return err.code();
+    }
+    if let Ok(err) = err.downcast::<std::io::Error>() {
+        if err.kind() == std::io::ErrorKind::TimedOut {
+            return StatusCode::GATEWAY_TIMEOUT;
+        }
+        if let Some(inner) = err.into_inner() {
+            if let Some(err) = inner.downcast_ref::<rustls::Error>() {
+                if matches!(*err, rustls::Error::InvalidCertificate(_)) {
+                    return StatusCode::from_u16(526).unwrap();
+                } else {
+                    return StatusCode::from_u16(525).unwrap();
+                }
+            }
+        }
+    }
+    StatusCode::BAD_GATEWAY
+}
+
+#[derive(Debug, Clone, Error)]
+enum ProxyError {
+    #[error("invalid hostname")]
+    InvalidHostName,
+
+    #[error("dns lookup failed")]
+    DnsLookupFailed,
+}
+
+impl ProxyError {
+    fn code(&self) -> StatusCode {
+        match self {
+            Self::InvalidHostName => StatusCode::BAD_GATEWAY,
+            Self::DnsLookupFailed => StatusCode::from_u16(523).unwrap(),
+        }
     }
 }
 
