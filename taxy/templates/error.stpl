@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gateway Error</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+            background-color: #f6f6f6;
+        }
+
+        .error-container {
+            text-align: center;
+        }
+
+        .error-code {
+            font-size: 48px;
+            color: #303030;
+        }
+
+        .error-text {
+            font-size: 24px;
+            color: #303030;
+        }
+
+        .powered-by {
+            margin-top: 20px;
+        }
+
+        .powered-by a {
+            font-size: 14px;
+            color: #808080;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-code"><%= code %></div>
+        <% if code == 523 { %>
+            <div class="error-text">Origin Is Unreachable</div>
+        <% } else if code == 525 { %>
+            <div class="error-text">SSL Handshake Failed</div>
+        <% } else if code == 526 { %>
+            <div class="error-text">Invalid SSL Certificate</div>
+        <% } else { %>
+            <div class="error-text">Bad Gateway</div>
+        <% } %>
+        <div class="powered-by">
+            <a href="https://github.com/picoHz/taxy" target="_blank" rel="noopener noreferrer">Powered by Taxy</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,7 +1,10 @@
 use self::route::Router;
 use super::{tls::TlsTermination, PortContextEvent};
 use crate::{
-    proxy::http::compression::{is_compressed, CompressionStream},
+    proxy::http::{
+        compression::{is_compressed, CompressionStream},
+        error::ProxyError,
+    },
     server::cert_list::CertList,
 };
 use futures::FutureExt;
@@ -14,20 +17,18 @@ use hyper::{
         HeaderValue,
     },
     server::conn::Http,
-    Body, Response, StatusCode, Uri,
+    Response, Uri,
 };
 use multiaddr::{Multiaddr, Protocol};
 use std::{net::SocketAddr, sync::Arc, time::SystemTime};
 use taxy_api::error::Error;
 use taxy_api::port::{PortStatus, SocketState};
 use taxy_api::{port::PortEntry, site::ProxyEntry};
-use thiserror::Error;
 use tokio::net::{self, TcpSocket, TcpStream};
 use tokio::{
     io::{AsyncRead, AsyncWrite, BufStream},
     sync::Notify,
 };
-use tokio_rustls::rustls;
 use tokio_rustls::{
     rustls::{client::ServerName, ClientConfig},
     TlsAcceptor, TlsConnector,
@@ -35,6 +36,7 @@ use tokio_rustls::{
 use tracing::{debug, error, info, span, Instrument, Level, Span};
 
 mod compression;
+mod error;
 mod filter;
 mod header;
 mod route;
@@ -372,7 +374,7 @@ pub async fn start(
                 Response::from_parts(parts, body)
             })
         }
-        .map(map_response)
+        .map(error::map_response)
         .instrument(span_cloned)
     });
 
@@ -399,57 +401,6 @@ fn multiaddr_to_tcp(addr: &Multiaddr) -> Result<SocketAddr, Error> {
             Ok(SocketAddr::new(std::net::IpAddr::V6(*addr), *port))
         }
         _ => Err(Error::InvalidListeningAddress { addr: addr.clone() }),
-    }
-}
-
-fn map_response(res: Result<Response<Body>, anyhow::Error>) -> Result<Response<Body>, Error> {
-    match res {
-        Ok(res) => Ok(res),
-        Err(err) => {
-            let code = map_error(err);
-            let mut res = Response::new(Body::empty());
-            *res.status_mut() = code;
-            Ok(res)
-        }
-    }
-}
-
-fn map_error(err: anyhow::Error) -> StatusCode {
-    if let Some(err) = err.downcast_ref::<ProxyError>() {
-        return err.code();
-    }
-    if let Ok(err) = err.downcast::<std::io::Error>() {
-        if err.kind() == std::io::ErrorKind::TimedOut {
-            return StatusCode::GATEWAY_TIMEOUT;
-        }
-        if let Some(inner) = err.into_inner() {
-            if let Some(err) = inner.downcast_ref::<rustls::Error>() {
-                if matches!(*err, rustls::Error::InvalidCertificate(_)) {
-                    return StatusCode::from_u16(526).unwrap();
-                } else {
-                    return StatusCode::from_u16(525).unwrap();
-                }
-            }
-        }
-    }
-    StatusCode::BAD_GATEWAY
-}
-
-#[derive(Debug, Clone, Error)]
-enum ProxyError {
-    #[error("invalid hostname")]
-    InvalidHostName,
-
-    #[error("dns lookup failed")]
-    DnsLookupFailed,
-}
-
-impl ProxyError {
-    fn code(&self) -> StatusCode {
-        match self {
-            Self::InvalidHostName => StatusCode::BAD_GATEWAY,
-            Self::DnsLookupFailed => StatusCode::from_u16(523).unwrap(),
-        }
     }
 }
 
