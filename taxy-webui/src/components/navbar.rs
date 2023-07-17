@@ -39,12 +39,6 @@ pub fn navbar() -> Html {
     let route = use_route::<Route>().unwrap();
 
     let navigator_cloned = navigator.clone();
-    let home_onclick = Callback::from(move |e: MouseEvent| {
-        e.prevent_default();
-        navigator_cloned.push(&Route::Dashboard);
-    });
-
-    let navigator_cloned = navigator.clone();
     let logout_onclick = Callback::from(move |e: MouseEvent| {
         e.prevent_default();
         navigator_cloned.push(&Route::Logout);
@@ -56,9 +50,9 @@ pub fn navbar() -> Html {
             padded=true
             navburger={route != Route::Login}
             navbrand={html!{
-                <a class="navbar-item px-5 taxy-logo" onclick={home_onclick}>
-                    <ybc::Title size={ybc::HeaderSize::Is4}>{"Taxy"}</ybc::Title>
-                </a>
+                <span class="navbar-item taxy-logo">
+                    <img src="/assets/logo.svg" class="is-48x48" alt="Taxy Logo" />
+                </span>
             }}
             navstart={html!{
                 if let Some(root) = route.root() {
