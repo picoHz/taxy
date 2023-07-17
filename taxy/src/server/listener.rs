@@ -102,7 +102,7 @@ impl TcpListenerPool {
                         let _enter = span.enter();
                         error!(%bind, %err, "failed to listen on tcp port");
                         let error = match err.kind() {
-                            io::ErrorKind::AddrInUse => SocketState::PortAlreadyInUse,
+                            io::ErrorKind::AddrInUse => SocketState::AddressAlreadyInUse,
                             io::ErrorKind::PermissionDenied => SocketState::PermissionDenied,
                             io::ErrorKind::AddrNotAvailable => SocketState::AddressNotAvailable,
                             _ => SocketState::Error,

@@ -130,7 +130,7 @@ pub fn post_list() -> Html {
                 };
                 let (status_text, tag) = match status.state.socket {
                     SocketState::Listening => ("Listening", "is-success"),
-                    SocketState::PortAlreadyInUse => ("Port Already In Use", "is-danger"),
+                    SocketState::AddressAlreadyInUse => ("Address Already In Use", "is-danger"),
                     SocketState::PermissionDenied => ("Permission Denied", "is-danger"),
                     SocketState::AddressNotAvailable => ("Address Not Available", "is-danger"),
                     SocketState::Error => ("Error", "is-danger"),
