@@ -140,7 +140,7 @@ pub fn proxy_list() -> Html {
                     <div class="list-item">
                         <div class="list-item-content">
                             <div class="list-item-title">{title}</div>
-                            <div class="list-item-description field is-grouped">
+                            <div class="list-item-description field is-grouped mt-1">
                                 {ports}
                             </div>
                         </div>

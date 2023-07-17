@@ -141,7 +141,7 @@ pub fn post_list() -> Html {
                     <div class="list-item">
                         <div class="list-item-content">
                             <div class="list-item-title">{title}</div>
-                            <div class="list-item-description field is-grouped">
+                            <div class="list-item-description field is-grouped mt-1">
                                 <span class={classes!("tag", "is-success", "mr-2", tag)}>{status_text}</span>
                                 <span class="tags has-addons">
                                     <span class="tag is-dark">{protocol}</span>
