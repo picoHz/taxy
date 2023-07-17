@@ -391,7 +391,6 @@ pub fn cert_list() -> Html {
             { acme_list.into_iter().enumerate().map(|(i, entry)| {
                 let subject_names = entry.identifiers.join(", ");
                 let provider = entry.provider.to_string();
-                let title = format!("{} ({})", subject_names, provider);
 
                 let delete_onmousedown = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
@@ -431,8 +430,8 @@ pub fn cert_list() -> Html {
                 html! {
                     <div class="list-item">
                         <div class="list-item-content">
-                            <div class="list-item-title">{title}</div>
-                            <div class="list-item-description">{&entry.id}</div>
+                            <div class="list-item-title">{subject_names}</div>
+                            <div class="list-item-description">{provider}</div>
                         </div>
 
                         <div class="list-item-controls">
