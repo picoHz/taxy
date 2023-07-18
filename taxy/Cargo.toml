@@ -16,6 +16,7 @@ default-run = "taxy"
 
 [dependencies]
 anyhow = "1.0.71"
+arc-swap = "1.6.0"
 argon2 = "0.5.0"
 async-trait = "0.1.71"
 backoff = { version = "0.4.0", features = ["tokio"] }

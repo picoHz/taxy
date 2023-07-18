@@ -6,7 +6,7 @@ use hyper::{
 };
 use std::{iter, net::IpAddr};
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct HeaderRewriter {
     trust_upstream_headers: bool,
     use_std_forwarded: bool,

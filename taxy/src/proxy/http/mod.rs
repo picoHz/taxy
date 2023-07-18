@@ -7,6 +7,7 @@ use crate::{
     },
     server::cert_list::CertList,
 };
+use arc_swap::{ArcSwap, Cache};
 use futures::FutureExt;
 use header::HeaderRewriter;
 use hyper::{
@@ -51,7 +52,7 @@ pub struct HttpPortContext {
     span: Span,
     tls_termination: Option<TlsTermination>,
     tls_client_config: Option<Arc<ClientConfig>>,
-    router: Arc<Router>,
+    shared: Arc<ArcSwap<SharedContext>>,
     round_robin_counter: usize,
     stop_notifier: Arc<Notify>,
 }
@@ -85,14 +86,24 @@ impl HttpPortContext {
             span,
             tls_termination,
             tls_client_config: None,
-            router: Arc::new(Default::default()),
+            shared: Arc::new(ArcSwap::from_pointee(SharedContext {
+                router: Default::default(),
+                header_rewriter: Default::default(),
+            })),
             round_robin_counter: 0,
             stop_notifier: Arc::new(Notify::new()),
         })
     }
 
     pub async fn setup(&mut self, certs: &CertList, proxies: Vec<ProxyEntry>) -> Result<(), Error> {
-        self.router = Arc::new(Router::new(proxies));
+        self.shared.store(Arc::new(SharedContext {
+            router: Router::new(proxies),
+            header_rewriter: HeaderRewriter::builder()
+                .trust_upstream_headers(false)
+                .use_std_forwarded(true)
+                .set_via(HeaderValue::from_static("taxy"))
+                .build(),
+        }));
 
         let config = ClientConfig::builder()
             .with_safe_defaults()
@@ -146,15 +157,9 @@ impl HttpPortContext {
             .as_ref()
             .and_then(|tls| tls.acceptor.clone());
 
-        let header_rewriter = HeaderRewriter::builder()
-            .trust_upstream_headers(false)
-            .use_std_forwarded(true)
-            .set_via(HeaderValue::from_static("taxy"))
-            .build();
-
         let stop_notifier = self.stop_notifier.clone();
-        let router = self.router.clone();
         let round_robin_counter = self.round_robin_counter;
+        let shared_cache = Cache::new(Arc::clone(&self.shared));
 
         tokio::spawn(
             async move {
@@ -162,8 +167,7 @@ impl HttpPortContext {
                     stream,
                     tls_client_config,
                     tls_acceptor,
-                    header_rewriter,
-                    router,
+                    shared_cache,
                     round_robin_counter,
                     stop_notifier,
                 )
@@ -178,12 +182,11 @@ impl HttpPortContext {
     }
 }
 
-pub async fn start(
+async fn start(
     mut stream: BufStream<TcpStream>,
     tls_client_config: Option<Arc<ClientConfig>>,
     tls_acceptor: Option<TlsAcceptor>,
-    header_rewriter: HeaderRewriter,
-    router: Arc<Router>,
+    shared_cache: Cache<Arc<ArcSwap<SharedContext>>, Arc<SharedContext>>,
     round_robin_counter: usize,
     stop_notifier: Arc<Notify>,
 ) -> anyhow::Result<()> {
@@ -217,8 +220,9 @@ pub async fn start(
         stream = Box::new(accepted);
     }
 
-    let router = router.clone();
+    let mut shared_cache = shared_cache.clone();
     let service = hyper::service::service_fn(move |mut req| {
+        let shared = shared_cache.load();
         let tls_client_config = tls_client_config.clone();
         let upgrade = req.headers().contains_key(UPGRADE);
 
@@ -241,7 +245,7 @@ pub async fn start(
         let mut span = Span::current();
 
         let mut client_tls = false;
-        if let Some((route, res, resource_id)) = router.get_route(&req) {
+        if let Some((route, res, resource_id)) = shared.router.get_route(&req) {
             span = span!(Level::INFO, "proxy", resource_id);
 
             let mut parts = Parts::default();
@@ -285,8 +289,10 @@ pub async fn start(
             }
         }
 
-        header_rewriter.pre_process(req.headers_mut(), remote.ip());
-        header_rewriter.post_process(req.headers_mut());
+        shared
+            .header_rewriter
+            .pre_process(req.headers_mut(), remote.ip());
+        shared.header_rewriter.post_process(req.headers_mut());
 
         let span_cloned = span.clone();
         async move {
@@ -402,6 +408,12 @@ fn multiaddr_to_tcp(addr: &Multiaddr) -> Result<SocketAddr, Error> {
         }
         _ => Err(Error::InvalidListeningAddress { addr: addr.clone() }),
     }
+}
+
+#[derive(Debug)]
+struct SharedContext {
+    pub router: Router,
+    pub header_rewriter: HeaderRewriter,
 }
 
 pub trait IoStream: AsyncRead + AsyncWrite + Unpin + Send {}
