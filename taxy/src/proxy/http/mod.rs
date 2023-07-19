@@ -44,6 +44,7 @@ mod route;
 mod upgrade;
 
 const MAX_BUFFER_SIZE: usize = 4096;
+const HTTP2_MAX_FRAME_SIZE: usize = 16384;
 
 #[derive(Debug)]
 pub struct HttpPortContext {
@@ -337,6 +338,7 @@ async fn start(
 
             let (mut sender, conn) = client::conn::Builder::new()
                 .http2_only(client_http2)
+                .http2_max_frame_size(Some(HTTP2_MAX_FRAME_SIZE as u32))
                 .handshake(out)
                 .await?;
 
@@ -349,11 +351,12 @@ async fn start(
                 .instrument(span),
             );
 
-            let accept_brotli = req
-                .headers()
-                .get(hyper::header::ACCEPT_ENCODING)
-                .map(|value| value.to_str().unwrap_or_default().contains("br"))
-                .unwrap_or_default();
+            let accept_brotli = client_http2
+                && req
+                    .headers()
+                    .get(hyper::header::ACCEPT_ENCODING)
+                    .map(|value| value.to_str().unwrap_or_default().contains("br"))
+                    .unwrap_or_default();
 
             let result = Result::<_, anyhow::Error>::Ok(sender.send_request(req).await?);
             result.map(|res| {
@@ -371,7 +374,7 @@ async fn start(
                         if accept_brotli {
                             entry.insert(HeaderValue::from_static("br"));
                             parts.headers.remove(hyper::header::CONTENT_LENGTH);
-                            let stream = CompressionStream::new(body);
+                            let stream = CompressionStream::new(body, HTTP2_MAX_FRAME_SIZE);
                             return Response::from_parts(parts, hyper::Body::wrap_stream(stream));
                         }
                     }

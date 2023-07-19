@@ -17,8 +17,8 @@ pub struct CompressionStream {
 }
 
 impl CompressionStream {
-    pub fn new(body: Body) -> Self {
-        let writer = CompressorWriter::new(Vec::new(), 4096, 8, 22);
+    pub fn new(body: Body, buffer_size: usize) -> Self {
+        let writer = CompressorWriter::new(Vec::new(), buffer_size, 8, 22);
         Self {
             body,
             writer: Some(writer),
