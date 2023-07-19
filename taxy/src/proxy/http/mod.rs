@@ -280,9 +280,8 @@ async fn start(
 
                 parts.authority = host.parse().ok();
 
-                if let Some(req_host) = req.headers_mut().get_mut(HOST) {
-                    *req_host = HeaderValue::from_str(&host).unwrap();
-                }
+                req.headers_mut()
+                    .insert(HOST, HeaderValue::from_str(&host).unwrap());
             }
 
             if let Ok(uri) = Uri::from_parts(parts) {
@@ -357,6 +356,13 @@ async fn start(
                     .get(hyper::header::ACCEPT_ENCODING)
                     .map(|value| value.to_str().unwrap_or_default().contains("br"))
                     .unwrap_or_default();
+
+            *req.version_mut() = if client_http2 {
+                hyper::Version::HTTP_2
+            } else {
+                hyper::Version::HTTP_11
+            };
+            println!("{:?}", req);
 
             let result = Result::<_, anyhow::Error>::Ok(sender.send_request(req).await?);
             result.map(|res| {
