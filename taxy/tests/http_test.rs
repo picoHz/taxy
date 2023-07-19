@@ -136,3 +136,47 @@ async fn http_proxy() -> anyhow::Result<()> {
     mock_stream.assert_async().await;
     Ok(())
 }
+
+#[tokio::test]
+async fn http_proxy_dns_error() -> anyhow::Result<()> {
+    let listener = TcpListener::bind("127.0.0.1:52100").await.unwrap();
+    let hello = warp::path!("hello").map(|| "Hello".to_string());
+    tokio::spawn(warp::serve(hello).run_incoming(TcpListenerStream::new(listener)));
+
+    let config = TestStorage::builder()
+        .ports(vec![PortEntry {
+            id: "test".into(),
+            port: Port {
+                name: String::new(),
+                listen: "/ip4/127.0.0.1/tcp/52101/http".parse().unwrap(),
+                opts: Default::default(),
+            },
+        }])
+        .proxies(vec![ProxyEntry {
+            id: "test2".into(),
+            proxy: Proxy {
+                ports: vec!["test".into()],
+                kind: ProxyKind::Http(HttpProxy {
+                    vhosts: vec!["localhost:52101".parse().unwrap()],
+                    routes: vec![Route {
+                        path: "/".into(),
+                        servers: vec![taxy_api::site::Server {
+                            url: "https://example.nodomain/".parse().unwrap(),
+                        }],
+                    }],
+                }),
+                ..Default::default()
+            },
+        }])
+        .build();
+
+    with_server(config, |_| async move {
+        let client = reqwest::Client::builder().build()?;
+        let resp = client.get("http://localhost:52101/hello").send().await?;
+        assert_eq!(resp.status(), 523);
+        Ok(())
+    })
+    .await?;
+
+    Ok(())
+}
