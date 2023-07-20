@@ -44,30 +44,12 @@ pub fn tls_proxy_config(props: &Props) -> Html {
         <>
             <div class="field is-horizontal m-5">
             <div class="field-label is-normal">
-            <label class="label">{"Upstream Servers"}</label>
+            <label class="label">{"Upstream Server"}</label>
             </div>
 
             <div class="is-flex-grow-5" style="flex-basis: 0">
 
             { upstream_servers.iter().enumerate().map(|(i, (host, port))| {
-                let servers_len = upstream_servers.len();
-
-                let upstream_servers_cloned = upstream_servers.clone();
-                let add_onclick = Callback::from(move |_| {
-                    let mut servers = (*upstream_servers_cloned).clone();
-                    servers.insert(i + 1, ("example.com".into(), 8080));
-                    upstream_servers_cloned.set(servers);
-                });
-
-                let upstream_servers_cloned = upstream_servers.clone();
-                let remove_onclick = Callback::from(move |_| {
-                    if servers_len > 1 {
-                        let mut servers = (*upstream_servers_cloned).clone();
-                        servers.remove(i);
-                        upstream_servers_cloned.set(servers);
-                    }
-                });
-
                 let upstream_servers_cloned = upstream_servers.clone();
                 let host_onchange = Callback::from(move |event: Event| {
                     let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
@@ -96,20 +78,6 @@ pub fn tls_proxy_config(props: &Props) -> Html {
                             </div>
                             <div class="control">
                                 <input class={classes!("input", err.map(|_| "is-danger"))} type="number" placeholder="Port" max="65535" min="1" onchange={port_onchange} value={port.to_string()} />
-                            </div>
-                            <div class="control">
-                                <button type="button" class={classes!("button", err.map(|_| "is-danger"))} onclick={add_onclick}>
-                                    <span class="icon">
-                                        <ion-icon name="add"></ion-icon>
-                                    </span>
-                                </button>
-                            </div>
-                            <div class="control">
-                                <button type="button" class={classes!("button", err.map(|_| "is-danger"))} onclick={remove_onclick} disabled={servers_len <= 1}>
-                                    <span class="icon">
-                                        <ion-icon name="remove"></ion-icon>
-                                    </span>
-                                </button>
                             </div>
                         </div>
                     </div>
