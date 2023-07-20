@@ -49,7 +49,6 @@ async fn wss_proxy() -> anyhow::Result<()> {
                     tls_termination: Some(TlsTermination {
                         server_names: vec!["localhost".into()],
                     }),
-                    ..Default::default()
                 },
             },
         }])

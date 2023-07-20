@@ -34,7 +34,6 @@ async fn https_proxy() -> anyhow::Result<()> {
                     tls_termination: Some(TlsTermination {
                         server_names: vec!["localhost".into()],
                     }),
-                    ..Default::default()
                 },
             },
         }])
@@ -130,7 +129,6 @@ async fn https_proxy_invalid_cert() -> anyhow::Result<()> {
                     tls_termination: Some(TlsTermination {
                         server_names: vec!["localhost".into()],
                     }),
-                    ..Default::default()
                 },
             },
         }])
