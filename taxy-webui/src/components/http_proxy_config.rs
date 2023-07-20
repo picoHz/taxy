@@ -4,7 +4,7 @@ use taxy_api::site::{HttpProxy, Route, Server};
 use taxy_api::subject_name::SubjectName;
 use url::Url;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
-use web_sys::{HtmlInputElement, HtmlTextAreaElement};
+use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
@@ -126,7 +126,7 @@ pub fn http_proxy_config(props: &Props) -> Html {
 
                     let routes_cloned = routes.clone();
                     let servers_onchange = Callback::from(move |event: Event| {
-                        let target: HtmlTextAreaElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
+                        let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
                         let mut routes = (*routes_cloned).clone();
                         routes[i].1 = target.value().split('\n').map(|s| s.to_string()).collect();
                         routes_cloned.set(routes);
@@ -139,8 +139,13 @@ pub fn http_proxy_config(props: &Props) -> Html {
                         <div class={classes!(not_first.then_some("mt-3"))}>
                             <div class={classes!("field-body")}>
                             <div class="field has-addons">
+                                <p class="control">
+                                    <a class="button is-static">
+                                        {"Path"}
+                                    </a>
+                                </p>
                                 <div class="control is-expanded">
-                                    <input class={classes!("input", err.map(|_| "is-danger"))} type="text" autocapitalize="off" placeholder="Path" onchange={path_onchange} value={path.clone()} />
+                                    <input class={classes!("input", err.map(|_| "is-danger"))} type="text" autocapitalize="off" placeholder="/" onchange={path_onchange} value={path.clone()} />
                                 </div>
                                 <div class="control">
                                     <button type="button" class={classes!("button", err.map(|_| "is-danger"))} onclick={add_onclick}>
@@ -159,10 +164,15 @@ pub fn http_proxy_config(props: &Props) -> Html {
                             </div>
                         </div>
                         <div class="mt-2">
-                            <div class="field">
-                                <div class="control">
-                                    <textarea class={classes!("textarea", err.map(|_| "is-danger"))} autocapitalize="off" placeholder="https://example.com/backend" onchange={servers_onchange} value={servers.join("\n").to_string()}></textarea>
-                                </div>
+                            <div class="field has-addons">
+                                <p class="control">
+                                    <a class="button is-static">
+                                        {"Destination"}
+                                    </a>
+                                </p>
+                                <p class="control is-expanded">
+                                <input class={classes!("input", err.map(|_| "is-danger"))} type="url" placeholder="https://example.com/backend" value={servers.join("\n").to_string()} onchange={servers_onchange} />
+                                </p>
                             </div>
                         </div>
                         if let Some(err) = err {
