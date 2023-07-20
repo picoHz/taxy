@@ -3250,7 +3250,7 @@ dependencies = [
 
 [[package]]
 name = "taxy-api"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "base64 0.21.2",
  "humantime-serde",
