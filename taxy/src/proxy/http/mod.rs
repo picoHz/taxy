@@ -54,7 +54,6 @@ pub struct HttpPortContext {
     tls_termination: Option<TlsTermination>,
     tls_client_config: Option<Arc<ClientConfig>>,
     shared: Arc<ArcSwap<SharedContext>>,
-    round_robin_counter: usize,
     stop_notifier: Arc<Notify>,
 }
 
@@ -91,7 +90,6 @@ impl HttpPortContext {
                 router: Default::default(),
                 header_rewriter: Default::default(),
             })),
-            round_robin_counter: 0,
             stop_notifier: Arc::new(Notify::new()),
         })
     }
@@ -120,7 +118,6 @@ impl HttpPortContext {
 
     pub fn apply(&mut self, new: Self) {
         *self = Self {
-            round_robin_counter: self.round_robin_counter,
             stop_notifier: self.stop_notifier.clone(),
             ..new
         };
@@ -159,7 +156,6 @@ impl HttpPortContext {
             .and_then(|tls| tls.acceptor.clone());
 
         let stop_notifier = self.stop_notifier.clone();
-        let round_robin_counter = self.round_robin_counter;
         let shared_cache = Cache::new(Arc::clone(&self.shared));
 
         tokio::spawn(
@@ -169,7 +165,6 @@ impl HttpPortContext {
                     tls_client_config,
                     tls_acceptor,
                     shared_cache,
-                    round_robin_counter,
                     stop_notifier,
                 )
                 .await
@@ -179,7 +174,6 @@ impl HttpPortContext {
             }
             .instrument(span),
         );
-        self.round_robin_counter = self.round_robin_counter.wrapping_add(1);
     }
 }
 
@@ -188,7 +182,6 @@ async fn start(
     tls_client_config: Option<Arc<ClientConfig>>,
     tls_acceptor: Option<TlsAcceptor>,
     shared_cache: Cache<Arc<ArcSwap<SharedContext>>, Arc<SharedContext>>,
-    round_robin_counter: usize,
     stop_notifier: Arc<Notify>,
 ) -> anyhow::Result<()> {
     let remote = stream.get_ref().peer_addr()?;
@@ -258,7 +251,7 @@ async fn start(
             };
 
             if !route.servers.is_empty() {
-                let server = &route.servers[round_robin_counter % route.servers.len()];
+                let server = &route.servers[0];
 
                 parts.scheme = Some(if server.url.scheme() == "http" {
                     Scheme::HTTP
