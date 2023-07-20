@@ -1,6 +1,6 @@
 use crate::certs::{acme::AcmeEntry, Cert};
 use std::sync::Arc;
-use taxy_api::{app::AppConfig, error::Error, port::PortEntry, site::ProxyEntry};
+use taxy_api::{app::AppConfig, error::Error, id::ShortId, port::PortEntry, site::ProxyEntry};
 
 #[async_trait::async_trait]
 pub trait Storage: Send + Sync + 'static {
@@ -12,7 +12,7 @@ pub trait Storage: Send + Sync + 'static {
     async fn save_proxies(&self, proxies: &[ProxyEntry]);
     async fn save_cert(&self, cert: &Cert);
     async fn save_acme(&self, acme: &AcmeEntry);
-    async fn delete_acme(&self, id: &str);
+    async fn delete_acme(&self, id: &ShortId);
     async fn delete_cert(&self, id: &str);
     async fn load_acmes(&self) -> Vec<AcmeEntry>;
     async fn load_certs(&self) -> Vec<Arc<Cert>>;

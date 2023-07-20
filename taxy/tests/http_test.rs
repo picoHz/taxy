@@ -62,7 +62,7 @@ async fn http_proxy() -> anyhow::Result<()> {
 
     let config = TestStorage::builder()
         .ports(vec![PortEntry {
-            id: "test".into(),
+            id: "test".parse().unwrap(),
             port: Port {
                 name: String::new(),
                 listen: "/ip4/127.0.0.1/tcp/52001/http".parse().unwrap(),
@@ -70,9 +70,9 @@ async fn http_proxy() -> anyhow::Result<()> {
             },
         }])
         .proxies(vec![ProxyEntry {
-            id: "test2".into(),
+            id: "test2".parse().unwrap(),
             proxy: Proxy {
-                ports: vec!["test".into()],
+                ports: vec!["test".parse().unwrap()],
                 kind: ProxyKind::Http(HttpProxy {
                     vhosts: vec!["localhost:52001".parse().unwrap()],
                     routes: vec![Route {
@@ -112,7 +112,7 @@ async fn http_proxy() -> anyhow::Result<()> {
             .await?;
         assert_eq!(resp, "Hello");
 
-        let stream = tokio_stream::iter(chunks.into_iter().map(|s| Ok::<_, ::std::io::Error>(s)));
+        let stream = tokio_stream::iter(chunks.into_iter().map(Ok::<_, ::std::io::Error>));
         let body = Body::wrap_stream(stream);
 
         let resp = client
@@ -145,7 +145,7 @@ async fn http_proxy_dns_error() -> anyhow::Result<()> {
 
     let config = TestStorage::builder()
         .ports(vec![PortEntry {
-            id: "test".into(),
+            id: "test".parse().unwrap(),
             port: Port {
                 name: String::new(),
                 listen: "/ip4/127.0.0.1/tcp/52101/http".parse().unwrap(),
@@ -153,9 +153,9 @@ async fn http_proxy_dns_error() -> anyhow::Result<()> {
             },
         }])
         .proxies(vec![ProxyEntry {
-            id: "test2".into(),
+            id: "test2".parse().unwrap(),
             proxy: Proxy {
-                ports: vec!["test".into()],
+                ports: vec!["test".parse().unwrap()],
                 kind: ProxyKind::Http(HttpProxy {
                     vhosts: vec!["localhost:52101".parse().unwrap()],
                     routes: vec![Route {

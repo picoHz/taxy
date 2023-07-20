@@ -17,7 +17,7 @@ async fn tcp_proxy() -> anyhow::Result<()> {
 
     let config = TestStorage::builder()
         .ports(vec![PortEntry {
-            id: "test".into(),
+            id: "test".parse().unwrap(),
             port: Port {
                 name: String::new(),
                 listen: "/ip4/127.0.0.1/tcp/50001".parse().unwrap(),
@@ -25,9 +25,9 @@ async fn tcp_proxy() -> anyhow::Result<()> {
             },
         }])
         .proxies(vec![ProxyEntry {
-            id: "test2".into(),
+            id: "test2".parse().unwrap(),
             proxy: Proxy {
-                ports: vec!["test".into()],
+                ports: vec!["test".parse().unwrap()],
                 kind: ProxyKind::Tcp(TcpProxy {
                     upstream_servers: vec![UpstreamServer {
                         addr: "/ip4/127.0.0.1/tcp/50000".parse().unwrap(),

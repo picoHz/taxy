@@ -6,6 +6,7 @@ use crate::API_ENDPOINT;
 use gloo_net::http::Request;
 use multiaddr::Protocol;
 use std::collections::HashMap;
+use taxy_api::id::ShortId;
 use taxy_api::site::{HttpProxy, ProxyKind, TcpProxy};
 use taxy_api::{port::PortEntry, site::Proxy};
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
@@ -91,7 +92,7 @@ pub fn proxy_config(props: &Props) -> Html {
             let opts = target.selected_options();
             for i in 0..opts.length() {
                 let opt: HtmlOptionElement = opts.item(i).unwrap_throw().dyn_into().unwrap_throw();
-                ports.push(opt.value());
+                ports.push(opt.value().parse::<ShortId>().unwrap_throw());
             }
             bound_ports.set(ports);
         }
@@ -199,7 +200,7 @@ pub fn proxy_config(props: &Props) -> Html {
                             <select class="is-expanded" multiple={true} size="3" onchange={bound_ports_onchange}>
                                 { compatible_ports.map(|entry| {
                                     html! {
-                                        <option selected={bound_ports.contains(&entry.id)} value={entry.id.clone()}>
+                                        <option selected={bound_ports.contains(&entry.id)} value={entry.id.to_string()}>
                                             {format_multiaddr(&entry.port.listen)}
                                         </option>
                                     }
@@ -221,7 +222,7 @@ pub fn proxy_config(props: &Props) -> Html {
 
 fn get_site(
     name: &str,
-    ports: &[String],
+    ports: &[ShortId],
     kind: &Result<ProxyKind, HashMap<String, String>>,
 ) -> Result<Proxy, HashMap<String, String>> {
     let mut errors = HashMap::new();

@@ -1,5 +1,5 @@
 use crate::proxy::PortContext;
-use taxy_api::port::PortEntry;
+use taxy_api::{id::ShortId, port::PortEntry};
 
 #[derive(Default)]
 pub struct PortList {
@@ -19,7 +19,7 @@ impl PortList {
         &mut self.contexts
     }
 
-    pub fn get(&self, id: &str) -> Option<&PortContext> {
+    pub fn get(&self, id: &ShortId) -> Option<&PortContext> {
         self.contexts.iter().find(|p| p.entry().id == *id)
     }
 
@@ -41,7 +41,7 @@ impl PortList {
         }
     }
 
-    pub fn delete(&mut self, id: &str) -> bool {
+    pub fn delete(&mut self, id: &ShortId) -> bool {
         if let Some(index) = self.contexts.iter().position(|p| p.entry().id == *id) {
             self.contexts.remove(index).reset();
             true
@@ -50,7 +50,7 @@ impl PortList {
         }
     }
 
-    pub fn reset(&mut self, id: &str) -> bool {
+    pub fn reset(&mut self, id: &ShortId) -> bool {
         if let Some(index) = self.contexts.iter().position(|p| p.entry().id == *id) {
             self.contexts[index].reset();
             true

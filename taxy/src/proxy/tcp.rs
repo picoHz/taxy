@@ -37,7 +37,8 @@ pub struct TcpPortContext {
 
 impl TcpPortContext {
     pub fn new(entry: &PortEntry) -> Result<Self, Error> {
-        let span = span!(Level::INFO, "proxy", resource_id = entry.id, listen = ?entry.port.listen);
+        let span =
+            span!(Level::INFO, "proxy", resource_id = ?entry.id, listen = ?entry.port.listen);
         let enter = span.clone();
         let _enter = enter.enter();
 

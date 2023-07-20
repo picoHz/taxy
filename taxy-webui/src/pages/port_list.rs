@@ -6,7 +6,10 @@ use crate::utils::convert_multiaddr;
 use crate::API_ENDPOINT;
 use gloo_net::http::Request;
 use std::collections::HashMap;
-use taxy_api::port::{PortEntry, PortStatus, SocketState};
+use taxy_api::{
+    id::ShortId,
+    port::{PortEntry, PortStatus, SocketState},
+};
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
@@ -23,7 +26,7 @@ pub fn post_list() -> Html {
                     let mut statuses = HashMap::new();
                     for entry in &res {
                         if let Ok(status) = get_status(&entry.id).await {
-                            statuses.insert(entry.id.clone(), status);
+                            statuses.insert(entry.id, status);
                         }
                     }
                     dispatcher.set(PortStore {
@@ -68,28 +71,28 @@ pub fn post_list() -> Html {
                 let active_index = active_index.clone();
                 let status = ports.statuses.get(&entry.id).cloned().unwrap_or_default();
 
-                let id = entry.id.clone();
+                let id = entry.id;
                 let navigator_cloned = navigator.clone();
                 let log_onclick = Callback::from(move |_|  {
-                    let id = id.clone();
+                    let id = id;
                     navigator_cloned.push(&Route::PortLogView {id});
                 });
 
-                let id = entry.id.clone();
+                let id = entry.id;
                 let navigator_cloned = navigator.clone();
                 let config_onclick = Callback::from(move |_|  {
-                    let id = id.clone();
+                    let id = id;
                     navigator_cloned.push(&Route::PortView {id});
                 });
 
                 let delete_onmousedown = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                 });
-                let id = entry.id.clone();
+                let id = entry.id;
                 let delete_onclick = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                     if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
-                        let id = id.clone();
+                        let id = id;
                         wasm_bindgen_futures::spawn_local(async move {
                             let _ = delete_port(&id).await;
                         });
@@ -99,11 +102,11 @@ pub fn post_list() -> Html {
                 let reset_onmousedown = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                 });
-                let id = entry.id.clone();
+                let id = entry.id;
                 let reset_onclick = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                     if gloo_dialogs::confirm(&format!("Are you sure to reset {id}?\nThis operation closes all existing connections. ")) {
-                        let id = id.clone();
+                        let id = id;
                         wasm_bindgen_futures::spawn_local(async move {
                             let _ = reset_port(&id).await;
                         });
@@ -124,7 +127,7 @@ pub fn post_list() -> Html {
                 });
                 let is_active = *active_index == i as i32;
                 let title = if entry.port.name.is_empty() {
-                    entry.id.clone()
+                    entry.id.to_string()
                 } else {
                     entry.port.name.clone()
                 };
@@ -222,7 +225,7 @@ async fn get_list() -> Result<Vec<PortEntry>, gloo_net::Error> {
         .await
 }
 
-async fn get_status(id: &str) -> Result<PortStatus, gloo_net::Error> {
+async fn get_status(id: &ShortId) -> Result<PortStatus, gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/ports/{id}/status"))
         .send()
         .await?
@@ -230,14 +233,14 @@ async fn get_status(id: &str) -> Result<PortStatus, gloo_net::Error> {
         .await
 }
 
-async fn delete_port(id: &str) -> Result<(), gloo_net::Error> {
+async fn delete_port(id: &ShortId) -> Result<(), gloo_net::Error> {
     Request::delete(&format!("{API_ENDPOINT}/ports/{id}"))
         .send()
         .await?;
     Ok(())
 }
 
-async fn reset_port(id: &str) -> Result<(), gloo_net::Error> {
+async fn reset_port(id: &ShortId) -> Result<(), gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/ports/{id}/reset"))
         .send()
         .await?;

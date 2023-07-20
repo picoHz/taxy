@@ -5,6 +5,7 @@ use crate::store::{PortStore, ProxyStore};
 use crate::utils::convert_multiaddr;
 use crate::API_ENDPOINT;
 use gloo_net::http::Request;
+use taxy_api::id::ShortId;
 use taxy_api::port::PortEntry;
 use taxy_api::site::ProxyEntry;
 use yew::prelude::*;
@@ -74,27 +75,27 @@ pub fn proxy_list() -> Html {
             { list.into_iter().enumerate().map(|(i, entry)| {
                 let navigator = navigator.clone();
 
-                let id = entry.id.clone();
+                let id = entry.id;
                 let navigator_cloned = navigator.clone();
                 let log_onclick = Callback::from(move |_|  {
-                    let id = id.clone();
+                    let id = id;
                     navigator_cloned.push(&Route::ProxyLogView {id});
                 });
 
-                let id = entry.id.clone();
+                let id = entry.id;
                 let config_onclick = Callback::from(move |_|  {
-                    let id = id.clone();
+                    let id = id;
                     navigator.push(&Route::ProxyView {id});
                 });
 
                 let delete_onmousedown = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                 });
-                let id = entry.id.clone();
+                let id = entry.id;
                 let delete_onclick = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                     if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
-                        let id = id.clone();
+                        let id = id;
                         wasm_bindgen_futures::spawn_local(async move {
                             let _ = delete_site(&id).await;
                         });
@@ -132,7 +133,7 @@ pub fn proxy_list() -> Html {
                 };
 
                 let title = if entry.proxy.name.is_empty() {
-                    entry.id.clone()
+                    entry.id.to_string()
                 } else {
                     entry.proxy.name.clone()
                 };
@@ -218,7 +219,7 @@ async fn get_list() -> Result<Vec<ProxyEntry>, gloo_net::Error> {
         .await
 }
 
-async fn delete_site(id: &str) -> Result<(), gloo_net::Error> {
+async fn delete_site(id: &ShortId) -> Result<(), gloo_net::Error> {
     Request::delete(&format!("{API_ENDPOINT}/proxies/{id}"))
         .send()
         .await?;

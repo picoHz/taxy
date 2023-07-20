@@ -5,7 +5,7 @@ use taxy::{
     config::storage::Storage,
     server::{Server, ServerChannels},
 };
-use taxy_api::{app::AppConfig, error::Error, port::PortEntry, site::ProxyEntry};
+use taxy_api::{app::AppConfig, error::Error, id::ShortId, port::PortEntry, site::ProxyEntry};
 use tokio::sync::Mutex;
 
 pub async fn with_server<S, F, O>(s: S, func: F) -> anyhow::Result<()>
@@ -34,7 +34,7 @@ struct Inner {
     pub ports: Vec<PortEntry>,
     pub proxies: Vec<ProxyEntry>,
     pub certs: HashMap<String, Arc<Cert>>,
-    pub acems: HashMap<String, AcmeEntry>,
+    pub acems: HashMap<ShortId, AcmeEntry>,
     pub accounts: HashMap<String, String>,
 }
 
@@ -83,10 +83,10 @@ impl Storage for TestStorage {
             .lock()
             .await
             .acems
-            .insert(acme.id().to_string(), acme.clone());
+            .insert(*acme.id(), acme.clone());
     }
 
-    async fn delete_acme(&self, id: &str) {
+    async fn delete_acme(&self, id: &ShortId) {
         self.inner.lock().await.acems.remove(id);
     }
 
@@ -159,7 +159,7 @@ impl TestStorageBuilder {
     }
 
     #[allow(dead_code)]
-    pub fn acems(mut self, acems: HashMap<String, AcmeEntry>) -> Self {
+    pub fn acems(mut self, acems: HashMap<ShortId, AcmeEntry>) -> Self {
         self.inner.acems = acems;
         self
     }

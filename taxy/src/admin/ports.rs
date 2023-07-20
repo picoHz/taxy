@@ -1,6 +1,6 @@
 use super::{with_state, AppState};
 use crate::server::rpc::ports::*;
-use taxy_api::port::Port;
+use taxy_api::{id::ShortId, port::Port};
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
@@ -104,7 +104,7 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
         ("cookie"=[])
     )
 )]
-pub async fn get(state: AppState, id: String) -> Result<impl Reply, Rejection> {
+pub async fn get(state: AppState, id: ShortId) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(&state.call(GetPort { id }).await?))
 }
 
@@ -124,7 +124,7 @@ pub async fn get(state: AppState, id: String) -> Result<impl Reply, Rejection> {
         ("cookie"=[])
     )
 )]
-pub async fn status(state: AppState, id: String) -> Result<impl Reply, Rejection> {
+pub async fn status(state: AppState, id: ShortId) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(&state.call(GetPortStatus { id }).await?))
 }
 
@@ -144,7 +144,7 @@ pub async fn status(state: AppState, id: String) -> Result<impl Reply, Rejection
         ("cookie"=[])
     )
 )]
-pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {
+pub async fn delete(state: AppState, id: ShortId) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(&state.call(DeletePort { id }).await?))
 }
 
@@ -184,7 +184,7 @@ pub async fn post(state: AppState, entry: Port) -> Result<impl Reply, Rejection>
         ("cookie"=[])
     )
 )]
-pub async fn put(state: AppState, entry: Port, id: String) -> Result<impl Reply, Rejection> {
+pub async fn put(state: AppState, entry: Port, id: ShortId) -> Result<impl Reply, Rejection> {
     let entry = (id, entry).into();
     Ok(warp::reply::json(&state.call(UpdatePort { entry }).await?))
 }
@@ -205,7 +205,7 @@ pub async fn put(state: AppState, entry: Port, id: String) -> Result<impl Reply,
         ("cookie"=[])
     )
 )]
-pub async fn reset(state: AppState, id: String) -> Result<impl Reply, Rejection> {
+pub async fn reset(state: AppState, id: ShortId) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(&state.call(ResetPort { id }).await?))
 }
 

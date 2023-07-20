@@ -11,7 +11,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
-use taxy_api::{app::AppConfig, cert::CertKind};
+use taxy_api::{app::AppConfig, cert::CertKind, id::ShortId};
 use taxy_api::{
     error::Error,
     port::{Port, PortEntry},
@@ -63,7 +63,8 @@ impl FileStorage {
             .map(|(key, _)| key.to_string())
             .collect::<HashSet<_>>();
         for port in ports {
-            let (id, entry): (String, Port) = port.clone().into();
+            let (id, entry): (ShortId, Port) = port.clone().into();
+            let id = id.to_string();
             doc[&id].clone_from(toml_edit::ser::to_document(&entry)?.as_item());
             unused.remove(&id);
         }
@@ -84,14 +85,14 @@ impl FileStorage {
     async fn load_ports_impl(&self, path: &Path) -> anyhow::Result<Vec<PortEntry>> {
         info!(?path, "load config");
         let content = fs::read_to_string(path).await?;
-        let table: IndexMap<String, Port> = toml::from_str(&content)?;
+        let table: IndexMap<ShortId, Port> = toml::from_str(&content)?;
         Ok(table.into_iter().map(|entry| entry.into()).collect())
     }
 
     async fn load_proxies_impl(&self, path: &Path) -> anyhow::Result<Vec<ProxyEntry>> {
         info!(?path, "load proxies");
         let content = fs::read_to_string(path).await?;
-        let table: IndexMap<String, Proxy> = toml::from_str(&content)?;
+        let table: IndexMap<ShortId, Proxy> = toml::from_str(&content)?;
         Ok(table.into_iter().map(|entry| entry.into()).collect())
     }
 
@@ -112,7 +113,8 @@ impl FileStorage {
             .map(|(key, _)| key.to_string())
             .collect::<HashSet<_>>();
         for site in proxies {
-            let (id, entry): (String, Proxy) = site.clone().into();
+            let (id, entry): (ShortId, Proxy) = site.clone().into();
+            let id = id.to_string();
             doc[&id].clone_from(toml_edit::ser::to_document(&entry)?.as_item());
             unused.remove(&id);
         }
@@ -145,14 +147,15 @@ impl FileStorage {
             }
         };
 
-        let (id, entry): (String, AcmeAccount) = acme.clone().into();
+        let (id, entry): (ShortId, AcmeAccount) = acme.clone().into();
+        let id = id.to_string();
         doc[&id].clone_from(toml_edit::ser::to_document(&entry)?.as_item());
 
         fs::write(path, doc.to_string()).await?;
         Ok(())
     }
 
-    async fn delete_acme_impl(&self, path: &Path, id: &str) -> anyhow::Result<()> {
+    async fn delete_acme_impl(&self, path: &Path, id: &ShortId) -> anyhow::Result<()> {
         info!(?path, "delete acme");
         let mut doc = match self.load_document(path).await {
             Ok(doc) => doc,
@@ -162,7 +165,7 @@ impl FileStorage {
             }
         };
 
-        doc.remove(id);
+        doc.remove(&id.to_string());
         fs::write(path, doc.to_string()).await?;
         Ok(())
     }
@@ -225,7 +228,7 @@ impl FileStorage {
     pub async fn load_acmes_impl(&self, path: &Path) -> anyhow::Result<Vec<AcmeEntry>> {
         info!(?path, "load acmes");
         let content = fs::read_to_string(path).await?;
-        let table: IndexMap<String, AcmeAccount> = toml::from_str(&content)?;
+        let table: IndexMap<ShortId, AcmeAccount> = toml::from_str(&content)?;
         Ok(table.into_iter().map(|entry| entry.into()).collect())
     }
 
@@ -377,7 +380,7 @@ impl Storage for FileStorage {
         }
     }
 
-    async fn delete_acme(&self, id: &str) {
+    async fn delete_acme(&self, id: &ShortId) {
         let path = self.dir.join("acme.toml");
         if let Err(err) = self.delete_acme_impl(&path, id).await {
             error!(?path, "failed to delete: {err}");

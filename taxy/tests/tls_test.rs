@@ -26,7 +26,7 @@ async fn tls_proxy() -> anyhow::Result<()> {
 
     let config = TestStorage::builder()
         .ports(vec![PortEntry {
-            id: "test".into(),
+            id: "test".parse().unwrap(),
             port: Port {
                 name: String::new(),
                 listen: "/ip4/127.0.0.1/tcp/51001/tls".parse().unwrap(),
@@ -38,9 +38,9 @@ async fn tls_proxy() -> anyhow::Result<()> {
             },
         }])
         .proxies(vec![ProxyEntry {
-            id: "test2".into(),
+            id: "test2".parse().unwrap(),
             proxy: Proxy {
-                ports: vec!["test".into()],
+                ports: vec!["test".parse().unwrap()],
                 kind: ProxyKind::Tcp(TcpProxy {
                     upstream_servers: vec![UpstreamServer {
                         addr: "/dns/localhost/tcp/51000/tls".parse().unwrap(),

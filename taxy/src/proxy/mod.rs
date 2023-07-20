@@ -3,6 +3,7 @@ use crate::server::cert_list::CertList;
 use multiaddr::{Multiaddr, Protocol};
 use once_cell::sync::OnceCell;
 use taxy_api::error::Error;
+use taxy_api::id::ShortId;
 use taxy_api::port::{PortStatus, SocketState};
 use taxy_api::{
     port::{Port, PortEntry},
@@ -38,7 +39,7 @@ impl PortContext {
     pub fn reserved() -> Self {
         Self {
             entry: PortEntry {
-                id: String::new(),
+                id: ShortId::new(),
                 port: Port {
                     name: String::new(),
                     listen: Multiaddr::empty(),

@@ -2,27 +2,25 @@ use indexmap::map::Entry;
 use indexmap::IndexMap;
 use multiaddr::Protocol;
 use taxy_api::error::Error;
+use taxy_api::id::ShortId;
 use taxy_api::port::PortEntry;
 use taxy_api::site::{Proxy, ProxyEntry, ProxyKind};
 
 #[derive(Debug, Default)]
 pub struct ProxyList {
-    entries: IndexMap<String, ProxyEntry>,
+    entries: IndexMap<ShortId, ProxyEntry>,
 }
 
 impl FromIterator<ProxyEntry> for ProxyList {
     fn from_iter<I: IntoIterator<Item = ProxyEntry>>(iter: I) -> Self {
         Self {
-            entries: iter
-                .into_iter()
-                .map(|site| (site.id.clone(), site))
-                .collect(),
+            entries: iter.into_iter().map(|site| (site.id, site)).collect(),
         }
     }
 }
 
 impl ProxyList {
-    pub fn get(&self, id: &str) -> Option<&ProxyEntry> {
+    pub fn get(&self, id: &ShortId) -> Option<&ProxyEntry> {
         self.entries.get(id)
     }
 
@@ -32,7 +30,7 @@ impl ProxyList {
 
     pub fn set(&mut self, entry: ProxyEntry) -> bool {
         self.remove_deplicate_ports(&entry.proxy);
-        match self.entries.entry(entry.id.clone()) {
+        match self.entries.entry(entry.id) {
             Entry::Occupied(mut e) => {
                 if e.get().proxy != entry.proxy {
                     e.insert(entry);
@@ -48,7 +46,7 @@ impl ProxyList {
         }
     }
 
-    pub fn delete(&mut self, id: &str) -> Result<(), Error> {
+    pub fn delete(&mut self, id: &ShortId) -> Result<(), Error> {
         if !self.entries.contains_key(id) {
             Err(Error::IdNotFound { id: id.to_string() })
         } else {

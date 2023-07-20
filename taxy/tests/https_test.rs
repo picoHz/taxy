@@ -26,7 +26,7 @@ async fn https_proxy() -> anyhow::Result<()> {
 
     let config = TestStorage::builder()
         .ports(vec![PortEntry {
-            id: "test".into(),
+            id: "test".parse().unwrap(),
             port: Port {
                 name: String::new(),
                 listen: "/ip4/127.0.0.1/tcp/53001/https".parse().unwrap(),
@@ -39,9 +39,9 @@ async fn https_proxy() -> anyhow::Result<()> {
             },
         }])
         .proxies(vec![ProxyEntry {
-            id: "test2".into(),
+            id: "test2".parse().unwrap(),
             proxy: Proxy {
-                ports: vec!["test".into()],
+                ports: vec!["test".parse().unwrap()],
                 kind: ProxyKind::Http(HttpProxy {
                     vhosts: vec![],
                     routes: vec![Route {
@@ -122,7 +122,7 @@ async fn https_proxy_invalid_cert() -> anyhow::Result<()> {
 
     let config = TestStorage::builder()
         .ports(vec![PortEntry {
-            id: "test".into(),
+            id: "test".parse().unwrap(),
             port: Port {
                 name: String::new(),
                 listen: "/ip4/127.0.0.1/tcp/53101/https".parse().unwrap(),
@@ -135,9 +135,9 @@ async fn https_proxy_invalid_cert() -> anyhow::Result<()> {
             },
         }])
         .proxies(vec![ProxyEntry {
-            id: "test2".into(),
+            id: "test2".parse().unwrap(),
             proxy: Proxy {
-                ports: vec!["test".into()],
+                ports: vec!["test".parse().unwrap()],
                 kind: ProxyKind::Http(HttpProxy {
                     vhosts: vec![],
                     routes: vec![Route {

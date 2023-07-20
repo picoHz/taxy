@@ -21,6 +21,7 @@ use std::{
 use taxy_api::app::AppConfig;
 use taxy_api::error::Error;
 use taxy_api::event::ServerEvent;
+use taxy_api::id::ShortId;
 use taxy_api::site::ProxyEntry;
 use tokio::{io::AsyncBufReadExt, task::JoinHandle};
 use tokio::{
@@ -177,7 +178,7 @@ impl ServerState {
         if self.broadcast_events {
             for (entry, ctx) in self.ports.entries().cloned().zip(self.ports.as_slice()) {
                 let _ = self.br_sender.send(ServerEvent::PortStatusUpdated {
-                    id: entry.id.clone(),
+                    id: entry.id,
                     status: *ctx.status(),
                 });
             }
@@ -196,7 +197,7 @@ impl ServerState {
                 .filter(|entry: &&ProxyEntry| entry.proxy.ports.contains(&ctx.entry.id))
                 .cloned()
                 .collect();
-            let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
+            let span = span!(Level::INFO, "port", resource_id = ?ctx.entry.id);
             if let Err(err) = ctx
                 .setup(&self.certs, proxies)
                 .instrument(span.clone())
@@ -238,7 +239,7 @@ impl ServerState {
             .filter(|entry: &&ProxyEntry| entry.proxy.ports.contains(&ctx.entry.id))
             .cloned()
             .collect();
-        let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
+        let span = span!(Level::INFO, "port", resource_id = ?ctx.entry.id);
         if let Err(err) = ctx
             .setup(&self.certs, proxies)
             .instrument(span.clone())
@@ -276,7 +277,7 @@ impl ServerState {
                 .filter(|entry: &&ProxyEntry| entry.proxy.ports.contains(&ctx.entry.id))
                 .cloned()
                 .collect();
-            let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
+            let span = span!(Level::INFO, "port", resource_id = ?ctx.entry.id);
             if let Err(err) = ctx
                 .setup(&self.certs, proxies)
                 .instrument(span.clone())
@@ -343,7 +344,7 @@ impl ServerState {
 
         let mut requests = Vec::new();
         for entry in entries {
-            let span = span!(Level::INFO, "acme", resource_id = entry.id);
+            let span = span!(Level::INFO, "acme", resource_id = ?entry.id);
             span.in_scope(|| {
                 info!(
                     provider = entry.acme.provider,
@@ -372,7 +373,7 @@ impl ServerState {
         let command = self.command_sender.clone();
         tokio::task::spawn(async move {
             for mut req in requests {
-                let span = span!(Level::INFO, "acme", resource_id = req.id);
+                let span = span!(Level::INFO, "acme", resource_id = ?req.id);
                 match req.start_challenge().instrument(span.clone()).await {
                     Ok(cert) => {
                         span.in_scope(|| {
@@ -406,16 +407,15 @@ impl ServerState {
         Ok(())
     }
 
-    pub fn generate_id(&self) -> String {
+    pub fn generate_id(&self) -> ShortId {
         const TABLE: &[u8] = b"bcdfghjklmnpqrstvwxyz";
 
         let used_ids = self
             .acmes
             .entries()
-            .map(|acme| acme.id.clone())
-            .chain(self.ports.entries().map(|port| port.id.clone()))
-            .chain(self.proxies.entries().map(|site| site.id.clone()))
-            .map(|id| id.to_ascii_lowercase())
+            .map(|acme| acme.id)
+            .chain(self.ports.entries().map(|port| port.id))
+            .chain(self.proxies.entries().map(|site| site.id))
             .collect::<HashSet<_>>();
 
         let mut rng = rand::thread_rng();
@@ -428,7 +428,9 @@ impl ServerState {
                 "{}-{}",
                 str::from_utf8(&id[..3]).unwrap(),
                 str::from_utf8(&id[3..]).unwrap()
-            );
+            )
+            .parse()
+            .unwrap();
             if !used_ids.contains(&id) {
                 return id;
             }

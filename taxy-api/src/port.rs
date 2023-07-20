@@ -1,4 +1,7 @@
-use crate::tls::{TlsState, TlsTermination};
+use crate::{
+    id::ShortId,
+    tls::{TlsState, TlsTermination},
+};
 use multiaddr::Multiaddr;
 use serde_derive::{Deserialize, Serialize};
 use std::{
@@ -77,14 +80,14 @@ pub struct UpstreamServer {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct PortEntry {
-    pub id: String,
+    pub id: ShortId,
     #[schema(inline)]
     #[serde(flatten)]
     pub port: Port,
 }
 
-impl From<(String, Port)> for PortEntry {
-    fn from((id, port): (String, Port)) -> Self {
+impl From<(ShortId, Port)> for PortEntry {
+    fn from((id, port): (ShortId, Port)) -> Self {
         Self { id, port }
     }
 }
@@ -99,7 +102,7 @@ pub struct Port {
     pub opts: PortOptions,
 }
 
-impl From<PortEntry> for (String, Port) {
+impl From<PortEntry> for (ShortId, Port) {
     fn from(entry: PortEntry) -> Self {
         (entry.id, entry.port)
     }

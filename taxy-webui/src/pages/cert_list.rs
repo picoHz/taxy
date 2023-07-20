@@ -7,6 +7,7 @@ use gloo_net::http::Request;
 use serde_derive::{Deserialize, Serialize};
 use taxy_api::acme::AcmeInfo;
 use taxy_api::cert::{CertInfo, CertKind, UploadQuery};
+use taxy_api::id::ShortId;
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
@@ -395,21 +396,21 @@ pub fn cert_list() -> Html {
                 let delete_onmousedown = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                 });
-                let id = entry.id.clone();
+                let id = entry.id;
                 let delete_onclick = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                     if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
-                        let id = id.clone();
+                        let id = id;
                         wasm_bindgen_futures::spawn_local(async move {
                             let _ = delete_acme(&id).await;
                         });
                     }
                 });
 
-                let id = entry.id.clone();
+                let id = entry.id;
                 let navigator_cloned = navigator.clone();
                 let log_onclick = Callback::from(move |_|  {
-                    let id = id.clone();
+                    let id = id.to_string();
                     navigator_cloned.push(&Route::CertLogView {id});
                 });
 
@@ -509,7 +510,7 @@ async fn delete_server_cert(id: &str) -> Result<(), gloo_net::Error> {
     Ok(())
 }
 
-async fn delete_acme(id: &str) -> Result<(), gloo_net::Error> {
+async fn delete_acme(id: &ShortId) -> Result<(), gloo_net::Error> {
     Request::delete(&format!("{API_ENDPOINT}/acme/{id}"))
         .send()
         .await?;

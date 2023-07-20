@@ -8,14 +8,17 @@ use crate::{
     API_ENDPOINT,
 };
 use gloo_net::http::Request;
-use taxy_api::port::{Port, PortEntry};
+use taxy_api::{
+    id::ShortId,
+    port::{Port, PortEntry},
+};
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct Props {
-    pub id: String,
+    pub id: ShortId,
 }
 
 #[function_component(PortView)]
@@ -24,7 +27,7 @@ pub fn port_view(props: &Props) -> Html {
 
     let (ports, _) = use_store::<PortStore>();
     let port = use_state(|| ports.entries.iter().find(|e| e.id == props.id).cloned());
-    let id = props.id.clone();
+    let id = props.id;
     let port_cloned = port.clone();
     use_effect_with_deps(
         move |_| {
@@ -53,7 +56,7 @@ pub fn port_view(props: &Props) -> Html {
 
     let is_loading = use_state(|| false);
 
-    let id = props.id.clone();
+    let id = props.id;
     let entry_cloned = entry.clone();
     let is_loading_cloned = is_loading.clone();
     let onsubmit = Callback::from(move |event: SubmitEvent| {
@@ -62,7 +65,7 @@ pub fn port_view(props: &Props) -> Html {
             return;
         }
         let navigator = navigator.clone();
-        let id = id.clone();
+        let id = id;
         let is_loading_cloned = is_loading_cloned.clone();
         if let Ok(entry) = (*entry_cloned).clone() {
             is_loading_cloned.set(true);
@@ -116,7 +119,7 @@ pub fn port_view(props: &Props) -> Html {
     }
 }
 
-async fn get_port(id: &str) -> Result<PortEntry, gloo_net::Error> {
+async fn get_port(id: &ShortId) -> Result<PortEntry, gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/ports/{id}"))
         .send()
         .await?
@@ -124,7 +127,7 @@ async fn get_port(id: &str) -> Result<PortEntry, gloo_net::Error> {
         .await
 }
 
-async fn update_port(id: &str, entry: &Port) -> Result<(), gloo_net::Error> {
+async fn update_port(id: &ShortId, entry: &Port) -> Result<(), gloo_net::Error> {
     Request::put(&format!("{API_ENDPOINT}/ports/{id}"))
         .json(entry)?
         .send()

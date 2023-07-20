@@ -7,14 +7,17 @@ use crate::{
 };
 use gloo_net::http::Request;
 use std::collections::HashMap;
-use taxy_api::site::{Proxy, ProxyEntry};
+use taxy_api::{
+    id::ShortId,
+    site::{Proxy, ProxyEntry},
+};
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct Props {
-    pub id: String,
+    pub id: ShortId,
 }
 
 #[function_component(ProxyView)]
@@ -23,7 +26,7 @@ pub fn proxy_view(props: &Props) -> Html {
 
     let (proxies, _) = use_store::<ProxyStore>();
     let site = use_state(|| proxies.entries.iter().find(|e| e.id == props.id).cloned());
-    let id = props.id.clone();
+    let id = props.id;
     let proxy_cloned = site.clone();
     use_effect_with_deps(
         move |_| {
@@ -52,7 +55,7 @@ pub fn proxy_view(props: &Props) -> Html {
 
     let is_loading = use_state(|| false);
 
-    let id = props.id.clone();
+    let id = props.id;
     let entry_cloned = entry.clone();
     let is_loading_cloned = is_loading.clone();
     let onsubmit = Callback::from(move |event: SubmitEvent| {
@@ -61,7 +64,7 @@ pub fn proxy_view(props: &Props) -> Html {
             return;
         }
         let navigator = navigator.clone();
-        let id = id.clone();
+        let id = id;
         let is_loading_cloned = is_loading_cloned.clone();
         if let Ok(entry) = (*entry_cloned).clone() {
             is_loading_cloned.set(true);
@@ -115,7 +118,7 @@ pub fn proxy_view(props: &Props) -> Html {
     }
 }
 
-async fn get_site(id: &str) -> Result<ProxyEntry, gloo_net::Error> {
+async fn get_site(id: &ShortId) -> Result<ProxyEntry, gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/proxies/{id}"))
         .send()
         .await?
@@ -123,7 +126,7 @@ async fn get_site(id: &str) -> Result<ProxyEntry, gloo_net::Error> {
         .await
 }
 
-async fn update_site(id: &str, entry: &Proxy) -> Result<(), gloo_net::Error> {
+async fn update_site(id: &ShortId, entry: &Proxy) -> Result<(), gloo_net::Error> {
     Request::put(&format!("{API_ENDPOINT}/proxies/{id}"))
         .json(entry)?
         .send()

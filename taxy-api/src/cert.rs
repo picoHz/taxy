@@ -1,3 +1,4 @@
+use crate::id::ShortId;
 use crate::subject_name::SubjectName;
 use serde_default::DefaultFromSerde;
 use serde_derive::{Deserialize, Serialize};
@@ -69,7 +70,7 @@ fn default_cert_kind() -> CertKind {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, ToSchema)]
 pub struct CertMetadata {
-    pub acme_id: String,
+    pub acme_id: ShortId,
     #[serde(
         serialize_with = "serialize_created_at",
         deserialize_with = "deserialize_created_at"

@@ -1,6 +1,7 @@
 use crate::acme::AcmeInfo;
 use crate::app::AppConfig;
 use crate::cert::CertInfo;
+use crate::id::ShortId;
 use crate::port::PortStatus;
 use crate::{port::PortEntry, site::ProxyEntry};
 use serde_derive::{Deserialize, Serialize};
@@ -12,7 +13,7 @@ use utoipa::ToSchema;
 pub enum ServerEvent {
     AppConfigUpdated { config: AppConfig },
     PortTableUpdated { entries: Vec<PortEntry> },
-    PortStatusUpdated { id: String, status: PortStatus },
+    PortStatusUpdated { id: ShortId, status: PortStatus },
     CertsUpdated { entries: Vec<CertInfo> },
     ProxiesUpdated { entries: Vec<ProxyEntry> },
     AcmeUpdated { entries: Vec<AcmeInfo> },

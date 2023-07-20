@@ -1,4 +1,4 @@
-use crate::subject_name::SubjectName;
+use crate::{id::ShortId, subject_name::SubjectName};
 use base64::{engine::general_purpose, Engine as _};
 use serde_derive::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -24,7 +24,7 @@ fn default_renewal_days() -> u64 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct AcmeInfo {
-    pub id: String,
+    pub id: ShortId,
     #[schema(example = "Let's Encrypt")]
     pub provider: String,
     #[schema(example = json!(["example.com"]))]

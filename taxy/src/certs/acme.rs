@@ -15,6 +15,7 @@ use std::{
 use taxy_api::{
     acme::Acme,
     cert::{CertKind, CertMetadata},
+    id::ShortId,
 };
 use taxy_api::{acme::AcmeInfo, subject_name::SubjectName};
 use taxy_api::{acme::AcmeRequest, error::Error};
@@ -22,7 +23,7 @@ use tracing::{error, info};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct AcmeEntry {
-    pub id: String,
+    pub id: ShortId,
     #[serde(flatten)]
     pub acme: Acme,
     #[serde(
@@ -42,7 +43,7 @@ impl fmt::Debug for AcmeEntry {
 }
 
 impl AcmeEntry {
-    pub async fn new(id: String, req: AcmeRequest) -> Result<Self, Error> {
+    pub async fn new(id: ShortId, req: AcmeRequest) -> Result<Self, Error> {
         let contact = req.contacts.iter().map(|c| c.as_str()).collect::<Vec<_>>();
         let external_account = req
             .eab
@@ -77,13 +78,13 @@ impl AcmeEntry {
         AcmeOrder::new(self).await
     }
 
-    pub fn id(&self) -> &str {
+    pub fn id(&self) -> &ShortId {
         &self.id
     }
 
     pub fn info(&self) -> AcmeInfo {
         AcmeInfo {
-            id: self.id.to_string(),
+            id: self.id,
             provider: self.acme.provider.to_string(),
             identifiers: self
                 .acme
@@ -107,7 +108,7 @@ pub struct AcmeAccount {
     pub account: Account,
 }
 
-impl From<AcmeEntry> for (String, AcmeAccount) {
+impl From<AcmeEntry> for (ShortId, AcmeAccount) {
     fn from(entry: AcmeEntry) -> Self {
         (
             entry.id,
@@ -119,8 +120,8 @@ impl From<AcmeEntry> for (String, AcmeAccount) {
     }
 }
 
-impl From<(String, AcmeAccount)> for AcmeEntry {
-    fn from((id, entry): (String, AcmeAccount)) -> Self {
+impl From<(ShortId, AcmeAccount)> for AcmeEntry {
+    fn from((id, entry): (ShortId, AcmeAccount)) -> Self {
         Self {
             id,
             acme: entry.acme,
@@ -130,7 +131,7 @@ impl From<(String, AcmeAccount)> for AcmeEntry {
 }
 
 pub struct AcmeOrder {
-    pub id: String,
+    pub id: ShortId,
     pub challenge_type: ChallengeType,
     pub identifiers: Vec<Identifier>,
     pub http_challenges: HashMap<String, String>,
@@ -189,7 +190,7 @@ impl AcmeOrder {
             _ => bail!("challenge type is not supported"),
         };
         Ok(Self {
-            id: entry.id.clone(),
+            id: entry.id,
             challenge_type,
             identifiers,
             http_challenges,
@@ -244,7 +245,7 @@ impl AcmeOrder {
         };
 
         let metadata = CertMetadata {
-            acme_id: self.id.clone(),
+            acme_id: self.id,
             created_at: SystemTime::now(),
             is_trusted: self.is_trusted,
         };

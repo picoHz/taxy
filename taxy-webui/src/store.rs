@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use taxy_api::{
     acme::AcmeInfo,
     cert::CertInfo,
+    id::ShortId,
     port::{PortEntry, PortStatus},
     site::ProxyEntry,
 };
@@ -17,7 +18,7 @@ pub struct SessionStore {
 #[derive(Default, Clone, PartialEq, Store)]
 pub struct PortStore {
     pub entries: Vec<PortEntry>,
-    pub statuses: HashMap<String, PortStatus>,
+    pub statuses: HashMap<ShortId, PortStatus>,
 }
 
 #[derive(Default, Clone, PartialEq, Store)]

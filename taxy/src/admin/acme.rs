@@ -1,6 +1,6 @@
 use super::{with_state, AppState};
 use crate::server::rpc::acme::*;
-use taxy_api::acme::AcmeRequest;
+use taxy_api::{acme::AcmeRequest, id::ShortId};
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
@@ -66,7 +66,7 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
         ("cookie"=[])
     )
 )]
-pub async fn get(state: AppState, id: String) -> Result<impl Reply, Rejection> {
+pub async fn get(state: AppState, id: ShortId) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(&state.call(GetAcme { id }).await?))
 }
 
@@ -104,6 +104,6 @@ pub async fn add(state: AppState, request: AcmeRequest) -> Result<impl Reply, Re
         ("cookie"=[])
     )
 )]
-pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {
+pub async fn delete(state: AppState, id: ShortId) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(&state.call(DeleteAcme { id }).await?))
 }

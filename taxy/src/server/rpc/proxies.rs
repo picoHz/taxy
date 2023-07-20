@@ -1,6 +1,7 @@
 use super::RpcMethod;
 use crate::server::state::ServerState;
 use taxy_api::error::Error;
+use taxy_api::id::ShortId;
 use taxy_api::site::{Proxy, ProxyEntry};
 
 pub struct GetProxyList;
@@ -15,7 +16,7 @@ impl RpcMethod for GetProxyList {
 }
 
 pub struct GetProxy {
-    pub id: String,
+    pub id: ShortId,
 }
 
 #[async_trait::async_trait]
@@ -27,12 +28,14 @@ impl RpcMethod for GetProxy {
             .proxies
             .get(&self.id)
             .cloned()
-            .ok_or(Error::IdNotFound { id: self.id })
+            .ok_or(Error::IdNotFound {
+                id: self.id.to_string(),
+            })
     }
 }
 
 pub struct DeleteProxy {
-    pub id: String,
+    pub id: ShortId,
 }
 
 #[async_trait::async_trait]

@@ -3,6 +3,7 @@ use crate::{certs::acme::AcmeEntry, server::state::ServerState};
 use taxy_api::{
     acme::{AcmeInfo, AcmeRequest},
     error::Error,
+    id::ShortId,
 };
 
 pub struct GetAcmeList;
@@ -17,7 +18,7 @@ impl RpcMethod for GetAcmeList {
 }
 
 pub struct GetAcme {
-    pub id: String,
+    pub id: ShortId,
 }
 
 #[async_trait::async_trait]
@@ -29,7 +30,9 @@ impl RpcMethod for GetAcme {
             .acmes
             .get(&self.id)
             .map(|acme| acme.info())
-            .ok_or(Error::IdNotFound { id: self.id })
+            .ok_or(Error::IdNotFound {
+                id: self.id.to_string(),
+            })
     }
 }
 
@@ -51,7 +54,7 @@ impl RpcMethod for AddAcme {
 }
 
 pub struct DeleteAcme {
-    pub id: String,
+    pub id: ShortId,
 }
 
 #[async_trait::async_trait]

@@ -3,6 +3,8 @@ use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 use utoipa::ToSchema;
 
+use crate::id::ShortId;
+
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct ErrorMessage {
     pub message: String,
@@ -40,11 +42,14 @@ pub enum Error {
     #[error("failed to read private key")]
     FailedToReadPrivateKey,
 
+    #[error("invalid short id: {id}")]
+    InvalidShortId { id: String },
+
     #[error("port id not found: {id}")]
     IdNotFound { id: String },
 
     #[error("port id already exists: {id}")]
-    IdAlreadyExists { id: String },
+    IdAlreadyExists { id: ShortId },
 
     #[error("acme account creation failed")]
     AcmeAccountCreationFailed,

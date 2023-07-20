@@ -3,6 +3,7 @@ use crate::proxy::PortContext;
 use crate::server::state::ServerState;
 use network_interface::NetworkInterfaceConfig;
 use taxy_api::error::Error;
+use taxy_api::id::ShortId;
 use taxy_api::port::{NetworkAddr, NetworkInterface, Port, PortEntry, PortStatus};
 
 pub struct GetPortList;
@@ -17,7 +18,7 @@ impl RpcMethod for GetPortList {
 }
 
 pub struct GetPort {
-    pub id: String,
+    pub id: ShortId,
 }
 
 #[async_trait::async_trait]
@@ -29,12 +30,14 @@ impl RpcMethod for GetPort {
             .ports
             .get(&self.id)
             .map(|port| port.entry().clone())
-            .ok_or(Error::IdNotFound { id: self.id })
+            .ok_or(Error::IdNotFound {
+                id: self.id.to_string(),
+            })
     }
 }
 
 pub struct GetPortStatus {
-    pub id: String,
+    pub id: ShortId,
 }
 
 #[async_trait::async_trait]
@@ -46,12 +49,14 @@ impl RpcMethod for GetPortStatus {
             .ports
             .get(&self.id)
             .map(|port| *port.status())
-            .ok_or(Error::IdNotFound { id: self.id })
+            .ok_or(Error::IdNotFound {
+                id: self.id.to_string(),
+            })
     }
 }
 
 pub struct DeletePort {
-    pub id: String,
+    pub id: ShortId,
 }
 
 #[async_trait::async_trait]
@@ -63,7 +68,9 @@ impl RpcMethod for DeletePort {
             state.update_port_statuses().await;
             Ok(())
         } else {
-            Err(Error::IdNotFound { id: self.id })
+            Err(Error::IdNotFound {
+                id: self.id.to_string(),
+            })
         }
     }
 }
@@ -104,13 +111,15 @@ impl RpcMethod for UpdatePort {
             }
             Ok(())
         } else {
-            Err(Error::IdNotFound { id: self.entry.id })
+            Err(Error::IdNotFound {
+                id: self.entry.id.to_string(),
+            })
         }
     }
 }
 
 pub struct ResetPort {
-    pub id: String,
+    pub id: ShortId,
 }
 
 #[async_trait::async_trait]
@@ -121,7 +130,9 @@ impl RpcMethod for ResetPort {
         if state.ports.reset(&self.id) {
             Ok(())
         } else {
-            Err(Error::IdNotFound { id: self.id })
+            Err(Error::IdNotFound {
+                id: self.id.to_string(),
+            })
         }
     }
 }

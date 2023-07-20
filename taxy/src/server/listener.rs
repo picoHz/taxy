@@ -72,7 +72,7 @@ impl TcpListenerPool {
             .chain(reserved_ports.iter_mut())
             .enumerate()
         {
-            let span = span!(Level::INFO, "port", resource_id = ctx.entry.id);
+            let span = span!(Level::INFO, "port", resource_id = ?ctx.entry.id);
             let bind = match ctx.kind() {
                 PortContextKind::Tcp(state) => state.listen,
                 PortContextKind::Http(state) => state.listen,

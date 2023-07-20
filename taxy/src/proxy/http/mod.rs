@@ -59,7 +59,8 @@ pub struct HttpPortContext {
 
 impl HttpPortContext {
     pub fn new(entry: &PortEntry) -> Result<Self, Error> {
-        let span = span!(Level::INFO, "proxy", resource_id = entry.id, listen = ?entry.port.listen);
+        let span =
+            span!(Level::INFO, "proxy", resource_id = ?entry.id, listen = ?entry.port.listen);
         let enter = span.clone();
         let _enter = enter.enter();
 
@@ -240,7 +241,7 @@ async fn start(
 
         let mut client_tls = false;
         if let Some((route, res, resource_id)) = shared.router.get_route(&req) {
-            span = span!(Level::INFO, "proxy", resource_id);
+            span = span!(Level::INFO, "proxy", ?resource_id);
 
             let mut parts = Parts::default();
 

@@ -1,5 +1,5 @@
-use crate::port::UpstreamServer;
 use crate::subject_name::SubjectName;
+use crate::{id::ShortId, port::UpstreamServer};
 use serde_default::DefaultFromSerde;
 use serde_derive::{Deserialize, Serialize};
 use url::Url;
@@ -11,7 +11,7 @@ pub struct Proxy {
     pub name: String,
     #[serde(default)]
     #[schema(example = json!(["c56yqmqcvpmp49n14s2lexxl"]))]
-    pub ports: Vec<String>,
+    pub ports: Vec<ShortId>,
     #[serde(flatten, default = "default_kind")]
     #[schema(inline)]
     pub kind: ProxyKind,
@@ -44,19 +44,19 @@ pub struct HttpProxy {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct ProxyEntry {
-    pub id: String,
+    pub id: ShortId,
     #[schema(inline)]
     #[serde(flatten)]
     pub proxy: Proxy,
 }
 
-impl From<(String, Proxy)> for ProxyEntry {
-    fn from((id, proxy): (String, Proxy)) -> Self {
+impl From<(ShortId, Proxy)> for ProxyEntry {
+    fn from((id, proxy): (ShortId, Proxy)) -> Self {
         Self { id, proxy }
     }
 }
 
-impl From<ProxyEntry> for (String, Proxy) {
+impl From<ProxyEntry> for (ShortId, Proxy) {
     fn from(entry: ProxyEntry) -> Self {
         (entry.id, entry.proxy)
     }

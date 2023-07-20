@@ -1,6 +1,6 @@
 use super::{with_state, AppState};
 use crate::server::rpc::proxies::*;
-use taxy_api::site::Proxy;
+use taxy_api::{id::ShortId, site::Proxy};
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
@@ -76,7 +76,7 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
         ("cookie"=[])
     )
 )]
-pub async fn get(state: AppState, id: String) -> Result<impl Reply, Rejection> {
+pub async fn get(state: AppState, id: ShortId) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(&state.call(GetProxy { id }).await?))
 }
 
@@ -96,7 +96,7 @@ pub async fn get(state: AppState, id: String) -> Result<impl Reply, Rejection> {
         ("cookie"=[])
     )
 )]
-pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {
+pub async fn delete(state: AppState, id: ShortId) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(&state.call(DeleteProxy { id }).await?))
 }
 
@@ -136,7 +136,7 @@ pub async fn post(state: AppState, entry: Proxy) -> Result<impl Reply, Rejection
         ("cookie"=[])
     )
 )]
-pub async fn put(state: AppState, entry: Proxy, id: String) -> Result<impl Reply, Rejection> {
+pub async fn put(state: AppState, entry: Proxy, id: ShortId) -> Result<impl Reply, Rejection> {
     let entry = (id, entry).into();
     Ok(warp::reply::json(&state.call(UpdateProxy { entry }).await?))
 }

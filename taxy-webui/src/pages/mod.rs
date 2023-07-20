@@ -1,5 +1,6 @@
 use serde_derive::{Deserialize, Serialize};
 use std::borrow::Cow;
+use taxy_api::id::ShortId;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
@@ -32,13 +33,13 @@ pub enum Route {
     #[at("/ports/new")]
     NewPort,
     #[at("/ports/:id")]
-    PortView { id: String },
+    PortView { id: ShortId },
     #[at("/ports/:id/log")]
-    PortLogView { id: String },
+    PortLogView { id: ShortId },
     #[at("/proxies")]
     Proxies,
     #[at("/proxies/:id/log")]
-    ProxyLogView { id: String },
+    ProxyLogView { id: ShortId },
     #[at("/certs")]
     Certs,
     #[at("/certs/self_sign")]
@@ -52,7 +53,7 @@ pub enum Route {
     #[at("/proxies/new")]
     NewProxy,
     #[at("/proxies/:id")]
-    ProxyView { id: String },
+    ProxyView { id: ShortId },
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -116,12 +117,12 @@ impl Route {
                     route: Route::Proxies,
                 },
                 BreadcrumbItem {
-                    name: id.clone().into(),
-                    route: Route::ProxyView { id: id.clone() },
+                    name: id.to_string().into(),
+                    route: Route::ProxyView { id: *id },
                 },
                 BreadcrumbItem {
                     name: "Log".into(),
-                    route: Route::ProxyLogView { id: id.clone() },
+                    route: Route::ProxyLogView { id: *id },
                 },
             ],
             Route::Certs => vec![BreadcrumbItem {
@@ -174,8 +175,8 @@ impl Route {
                     route: Route::Ports,
                 },
                 BreadcrumbItem {
-                    name: id.clone().into(),
-                    route: Route::PortView { id: id.clone() },
+                    name: id.to_string().into(),
+                    route: Route::PortView { id: *id },
                 },
             ],
             Route::PortLogView { id } => vec![
@@ -184,12 +185,12 @@ impl Route {
                     route: Route::Ports,
                 },
                 BreadcrumbItem {
-                    name: id.clone().into(),
-                    route: Route::PortView { id: id.clone() },
+                    name: id.to_string().into(),
+                    route: Route::PortView { id: *id },
                 },
                 BreadcrumbItem {
                     name: "Log".into(),
-                    route: Route::PortLogView { id: id.clone() },
+                    route: Route::PortLogView { id: *id },
                 },
             ],
             Route::NewProxy => vec![
@@ -208,8 +209,8 @@ impl Route {
                     route: Route::Proxies,
                 },
                 BreadcrumbItem {
-                    name: id.clone().into(),
-                    route: Route::ProxyView { id: id.clone() },
+                    name: id.to_string().into(),
+                    route: Route::ProxyView { id: *id },
                 },
             ],
             Route::NotFound => vec![],
@@ -230,9 +231,9 @@ pub fn switch(routes: Route) -> Html {
         Route::Ports => html! { <port_list::PortList /> },
         Route::NewPort => html! { <new_port::NewPort /> },
         Route::PortView { id } => html! { <port_view::PortView {id} /> },
-        Route::PortLogView { id } => html! { <log_view::LogView {id} /> },
+        Route::PortLogView { id } => html! { <log_view::LogView id={id.to_string()} /> },
         Route::Proxies => html! { <proxy_list::ProxyList /> },
-        Route::ProxyLogView { id } => html! { <log_view::LogView {id} /> },
+        Route::ProxyLogView { id } => html! { <log_view::LogView id={id.to_string()} /> },
         Route::ProxyView { id } => html! { <proxy_view::ProxyView {id} /> },
         Route::NewProxy => html! { <new_site::NewProxy /> },
         Route::Certs => html! { <cert_list::CertList /> },
