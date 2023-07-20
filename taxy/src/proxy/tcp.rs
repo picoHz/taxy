@@ -32,7 +32,6 @@ pub struct TcpPortContext {
     span: Span,
     tls_termination: Option<TlsTermination>,
     tls_client_config: Option<Arc<ClientConfig>>,
-    round_robin_counter: usize,
     stop_notifier: Arc<Notify>,
 }
 
@@ -60,7 +59,6 @@ impl TcpPortContext {
             span,
             tls_termination,
             tls_client_config: None,
-            round_robin_counter: 0,
             stop_notifier: Arc::new(Notify::new()),
         })
     }
@@ -89,7 +87,6 @@ impl TcpPortContext {
 
     pub fn apply(&mut self, new: Self) {
         *self = Self {
-            round_robin_counter: self.round_robin_counter,
             stop_notifier: self.stop_notifier.clone(),
             ..new
         };
@@ -125,7 +122,7 @@ impl TcpPortContext {
         }
 
         let span = self.span.clone();
-        let conn = self.servers[self.round_robin_counter % self.servers.len()].clone();
+        let conn = self.servers[0].clone();
         let tls_client_config = self
             .tls_client_config
             .as_ref()
@@ -148,7 +145,6 @@ impl TcpPortContext {
             }
             .instrument(span),
         );
-        self.round_robin_counter = self.round_robin_counter.wrapping_add(1);
     }
 }
 
