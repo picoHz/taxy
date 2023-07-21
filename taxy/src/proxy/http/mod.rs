@@ -35,6 +35,7 @@ use tokio_rustls::{
     TlsAcceptor, TlsConnector,
 };
 use tracing::{debug, error, info, span, Instrument, Level, Span};
+use warp::host::Authority;
 
 mod compression;
 mod error;
@@ -234,9 +235,7 @@ async fn start(
             debug!("domain fronting detected");
         }
 
-        let mut hostname = String::new();
-        let mut host = String::new();
-
+        let mut destination: Option<(ServerName, Authority)> = None;
         let mut span = Span::current();
 
         let mut client_tls = false;
@@ -261,21 +260,11 @@ async fn start(
                 });
                 client_tls = parts.scheme == Some(Scheme::HTTPS);
 
-                hostname = server
-                    .url
-                    .host()
-                    .map(|host| host.to_string())
-                    .unwrap_or_default();
-                host = format!(
-                    "{}:{}",
-                    hostname,
-                    server.url.port_or_known_default().unwrap_or_default()
-                );
-
-                parts.authority = host.parse().ok();
-
+                let authority = server.authority.clone();
                 req.headers_mut()
-                    .insert(HOST, HeaderValue::from_str(&host).unwrap());
+                    .insert(HOST, HeaderValue::from_str(authority.as_str()).unwrap());
+                parts.authority = Some(authority);
+                destination = Some((server.server_name.clone(), server.authority.clone()));
             }
 
             if let Ok(uri) = Uri::from_parts(parts) {
@@ -290,16 +279,22 @@ async fn start(
 
         let span_cloned = span.clone();
         async move {
-            if hostname.is_empty() || domain_fronting {
+            if domain_fronting {
                 return Err(ProxyError::InvalidHostName.into());
             }
 
-            let resolved = net::lookup_host(&host)
+            let (server_name, authority) = if let Some(destination) = destination {
+                destination
+            } else {
+                return Err(ProxyError::InvalidHostName.into());
+            };
+
+            let resolved = net::lookup_host(authority.as_str())
                 .await
                 .map_err(|_| ProxyError::DnsLookupFailed)?
                 .next()
                 .ok_or(ProxyError::DnsLookupFailed)?;
-            debug!(host, %resolved);
+            debug!(%authority, %resolved);
 
             info!(target: "taxy::access_log", remote = %remote, %local, %resolved);
 
@@ -318,9 +313,7 @@ async fn start(
             if let Some(config) = tls_client_config.filter(|_| client_tls) {
                 debug!(%resolved, "client: tls handshake");
                 let tls = TlsConnector::from(config.clone());
-                let tls_stream = tls
-                    .connect(ServerName::try_from(hostname.as_str()).unwrap(), out)
-                    .await?;
+                let tls_stream = tls.connect(server_name, out).await?;
                 client_http2 = tls_stream.get_ref().1.alpn_protocol() == Some(b"h2");
                 out = Box::new(tls_stream);
             }

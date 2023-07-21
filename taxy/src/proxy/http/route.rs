@@ -1,9 +1,13 @@
 use super::filter::{FilterResult, RequestFilter};
 use hyper::Request;
 use taxy_api::{
+    error::Error,
     id::ShortId,
-    site::{ProxyEntry, ProxyKind, Route},
+    site::{ProxyEntry, ProxyKind, Route, Server},
 };
+use tokio_rustls::rustls::ServerName;
+use url::Url;
+use warp::host::Authority;
 
 #[derive(Default, Debug)]
 pub struct Router {
@@ -22,14 +26,14 @@ impl Router {
                 http.routes.into_iter().map(move |route| FilteredRoute {
                     resource_id: id,
                     filter: RequestFilter::new(&http.vhosts, &route),
-                    route,
+                    route: route.try_into().unwrap(),
                 })
             })
             .collect();
         Self { routes }
     }
 
-    pub fn get_route<T>(&self, req: &Request<T>) -> Option<(&Route, FilterResult, ShortId)> {
+    pub fn get_route<T>(&self, req: &Request<T>) -> Option<(&ParsedRoute, FilterResult, ShortId)> {
         self.routes.iter().find_map(|route| {
             route
                 .filter
@@ -43,5 +47,64 @@ impl Router {
 pub struct FilteredRoute {
     pub resource_id: ShortId,
     pub filter: RequestFilter,
-    pub route: Route,
+    pub route: ParsedRoute,
+}
+
+#[derive(Debug)]
+pub struct ParsedRoute {
+    pub path: String,
+    pub servers: Vec<ParsedServer>,
+}
+
+impl TryFrom<Route> for ParsedRoute {
+    type Error = Error;
+
+    fn try_from(route: Route) -> Result<Self, Self::Error> {
+        let servers = route
+            .servers
+            .into_iter()
+            .map(ParsedServer::try_from)
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Self {
+            path: route.path,
+            servers,
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct ParsedServer {
+    pub url: Url,
+    pub authority: Authority,
+    pub server_name: ServerName,
+}
+
+impl TryFrom<Server> for ParsedServer {
+    type Error = Error;
+
+    fn try_from(server: Server) -> Result<Self, Self::Error> {
+        let hostname = server
+            .url
+            .host_str()
+            .ok_or_else(|| Error::InvalidServerUrl {
+                url: server.url.clone(),
+            })?;
+        let authority = format!(
+            "{}:{}",
+            hostname,
+            server.url.port_or_known_default().unwrap_or_default()
+        )
+        .parse()
+        .map_err(|_| Error::InvalidServerUrl {
+            url: server.url.clone(),
+        })?;
+        let server_name = ServerName::try_from(hostname).map_err(|_| Error::InvalidServerUrl {
+            url: server.url.clone(),
+        })?;
+        Ok(Self {
+            url: server.url,
+            authority,
+            server_name,
+        })
+    }
 }

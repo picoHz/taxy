@@ -1,6 +1,7 @@
 use multiaddr::Multiaddr;
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
+use url::Url;
 use utoipa::ToSchema;
 
 use crate::id::ShortId;
@@ -29,6 +30,9 @@ pub enum Error {
 
     #[error("invalid subject name: {name}")]
     InvalidSubjectName { name: String },
+
+    #[error("invalid server url: {url}")]
+    InvalidServerUrl { url: Url },
 
     #[error("missing TLS termination config")]
     TlsTerminationConfigMissing,
