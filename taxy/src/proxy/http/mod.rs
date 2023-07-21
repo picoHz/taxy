@@ -351,13 +351,6 @@ async fn start(
                     .map(|value| value.to_str().unwrap_or_default().contains("br"))
                     .unwrap_or_default();
 
-            *req.version_mut() = if client_http2 {
-                hyper::Version::HTTP_2
-            } else {
-                hyper::Version::HTTP_11
-            };
-            println!("{:?}", req);
-
             let result = Result::<_, anyhow::Error>::Ok(sender.send_request(req).await?);
             result.map(|res| {
                 let (mut parts, body) = res.into_parts();
