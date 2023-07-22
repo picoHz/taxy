@@ -10,12 +10,15 @@ pub enum ProxyError {
 
     #[error("dns lookup failed")]
     DnsLookupFailed,
+
+    #[error("no route found")]
+    NoRouteFound,
 }
 
 impl ProxyError {
     fn code(&self) -> StatusCode {
         match self {
-            Self::InvalidHostName => StatusCode::BAD_GATEWAY,
+            Self::InvalidHostName | Self::NoRouteFound => StatusCode::BAD_GATEWAY,
             Self::DnsLookupFailed => StatusCode::from_u16(523).unwrap(),
         }
     }
