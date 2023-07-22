@@ -6,7 +6,7 @@ use crate::proxy::http::{error::ProxyError, upgrade, IoStream, HTTP2_MAX_FRAME_S
 use dashmap::DashMap;
 use hyper::{
     client::{self, conn::Connection, conn::SendRequest},
-    header::{HOST, UPGRADE},
+    header::UPGRADE,
     http::{uri::Scheme, HeaderValue},
     Body, Request, Response,
 };
@@ -21,15 +21,13 @@ use warp::host::Authority;
 
 pub struct ConnectionPool {
     tls_client_config: Option<Arc<ClientConfig>>,
-    sni: Option<String>,
     connections: DashMap<Conn, mpsc::Sender<Req>>,
 }
 
 impl ConnectionPool {
-    pub fn new(tls_client_config: Option<Arc<ClientConfig>>, sni: Option<String>) -> Self {
+    pub fn new(tls_client_config: Option<Arc<ClientConfig>>) -> Self {
         Self {
             tls_client_config,
-            sni,
             connections: DashMap::new(),
         }
     }
@@ -39,20 +37,6 @@ impl ConnectionPool {
             scheme: req.uri().scheme().unwrap().clone(),
             authority: req.uri().authority().unwrap().clone(),
         };
-
-        let header_host = req
-            .headers()
-            .get(HOST)
-            .and_then(|h| h.to_str().ok().and_then(|host| host.split(':').next()));
-
-        let domain_fronting = match (&self.sni, header_host) {
-            (Some(sni), Some(header)) => !sni.eq_ignore_ascii_case(header),
-            _ => false,
-        };
-
-        if domain_fronting {
-            return Err(ProxyError::InvalidHostName.into());
-        }
 
         if req.headers().contains_key(UPGRADE) {
             return start_upgrading_connection(conn, req, self.tls_client_config.clone()).await;

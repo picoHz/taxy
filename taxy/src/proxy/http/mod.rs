@@ -211,14 +211,25 @@ async fn start(
         stream = Box::new(accepted);
     }
 
-    let pool = Arc::new(ConnectionPool::new(tls_client_config.clone(), sni.clone()));
-
+    let pool = Arc::new(ConnectionPool::new(tls_client_config.clone()));
     let mut shared_cache = shared_cache.clone();
     let service = hyper::service::service_fn(move |mut req| {
+        let header_host = req
+            .headers()
+            .get(HOST)
+            .and_then(|h| h.to_str().ok().and_then(|host| host.split(':').next()));
+
+        let domain_fronting = match (&sni, header_host) {
+            (Some(sni), Some(header)) => !sni.eq_ignore_ascii_case(header),
+            _ => false,
+        };
+
         let pool = pool.clone();
         let shared = shared_cache.load();
 
-        let req = if let Some((route, res, _)) = shared.router.get_route(&req) {
+        let req = if domain_fronting {
+            Err(ProxyError::InvalidHostName)
+        } else if let Some((route, res, _)) = shared.router.get_route(&req) {
             let mut parts = Parts::default();
 
             parts.path_and_query = if let Some(query) = req.uri().query() {
@@ -250,17 +261,16 @@ async fn start(
                 .header_rewriter
                 .pre_process(req.headers_mut(), remote.ip());
             shared.header_rewriter.post_process(req.headers_mut());
-            Some(req)
+            Ok(req)
         } else {
-            None
+            Err(ProxyError::NoRouteFound)
         };
 
         async move {
-            if let Some(req) = req {
-                pool.request(req).await
-            } else {
-                map_response(Err(ProxyError::NoRouteFound.into()))
-            }
+            map_response(match req {
+                Ok(req) => pool.request(req).await,
+                Err(err) => Err(err.into()),
+            })
         }
     });
 
