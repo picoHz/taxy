@@ -1,6 +1,6 @@
 use core::panic;
 use futures::{FutureExt, SinkExt, StreamExt};
-use std::{net::ToSocketAddrs, sync::Arc};
+use std::sync::Arc;
 use taxy::certs::Cert;
 use taxy_api::{
     port::{Port, PortEntry, PortOptions},
@@ -13,10 +13,13 @@ use url::Url;
 use warp::Filter;
 
 mod common;
-use common::{with_server, TestStorage};
+use common::{alloc_port, with_server, TestStorage};
 
 #[tokio::test]
 async fn wss_proxy() -> anyhow::Result<()> {
+    let listen_port = alloc_port()?;
+    let proxy_port = alloc_port()?;
+
     let root = Arc::new(Cert::new_ca().unwrap());
     let cert = Arc::new(Cert::new_self_signed(&["localhost".parse().unwrap()], &root).unwrap());
 
@@ -31,7 +34,7 @@ async fn wss_proxy() -> anyhow::Result<()> {
         })
     });
 
-    let addr = "localhost:55000".to_socket_addrs().unwrap().next().unwrap();
+    let addr = listen_port.socket_addr();
     let (_, server) = warp::serve(routes)
         .tls()
         .cert(&cert.pem_chain)
@@ -44,7 +47,7 @@ async fn wss_proxy() -> anyhow::Result<()> {
             id: "test".parse().unwrap(),
             port: Port {
                 name: String::new(),
-                listen: "/ip4/127.0.0.1/tcp/55001/https".parse().unwrap(),
+                listen: proxy_port.multiaddr_https(),
                 opts: PortOptions {
                     tls_termination: Some(TlsTermination {
                         server_names: vec!["localhost".into()],
@@ -61,7 +64,7 @@ async fn wss_proxy() -> anyhow::Result<()> {
                     routes: vec![Route {
                         path: "/".into(),
                         servers: vec![taxy_api::site::Server {
-                            url: "https://localhost:55000/".parse().unwrap(),
+                            url: listen_port.https_url("/"),
                         }],
                     }],
                 }),
@@ -89,7 +92,10 @@ async fn wss_proxy() -> anyhow::Result<()> {
         .with_no_client_auth();
 
     with_server(config, |_| async move {
-        let url = Url::parse("wss://localhost:55001/ws")?;
+        let url = Url::parse(&format!(
+            "wss://localhost:{}/ws",
+            proxy_port.socket_addr().port()
+        ))?;
         let (mut ws_stream, _) = connect_async_tls_with_config(
             url,
             None,

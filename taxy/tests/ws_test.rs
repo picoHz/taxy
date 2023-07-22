@@ -10,10 +10,13 @@ use url::Url;
 use warp::Filter;
 
 mod common;
-use common::{with_server, TestStorage};
+use common::{alloc_port, with_server, TestStorage};
 
 #[tokio::test]
 async fn ws_proxy() -> anyhow::Result<()> {
+    let listen_port = alloc_port()?;
+    let proxy_port = alloc_port()?;
+
     let routes = warp::path("ws").and(warp::ws()).map(|ws: warp::ws::Ws| {
         ws.on_upgrade(|websocket| {
             let (tx, rx) = websocket.split();
@@ -25,7 +28,7 @@ async fn ws_proxy() -> anyhow::Result<()> {
         })
     });
 
-    let listener = TcpListener::bind("127.0.0.1:54000").await.unwrap();
+    let listener = TcpListener::bind(listen_port.socket_addr()).await.unwrap();
     tokio::spawn(warp::serve(routes).run_incoming(TcpListenerStream::new(listener)));
 
     let config = TestStorage::builder()
@@ -33,7 +36,7 @@ async fn ws_proxy() -> anyhow::Result<()> {
             id: "test".parse().unwrap(),
             port: Port {
                 name: String::new(),
-                listen: "/ip4/127.0.0.1/tcp/54001/http".parse().unwrap(),
+                listen: proxy_port.multiaddr_http(),
                 opts: Default::default(),
             },
         }])
@@ -42,11 +45,11 @@ async fn ws_proxy() -> anyhow::Result<()> {
             proxy: Proxy {
                 ports: vec!["test".parse().unwrap()],
                 kind: ProxyKind::Http(HttpProxy {
-                    vhosts: vec!["localhost:54001".parse().unwrap()],
+                    vhosts: vec![proxy_port.subject_name()],
                     routes: vec![Route {
                         path: "/".into(),
                         servers: vec![taxy_api::site::Server {
-                            url: "http://127.0.0.1:54000/".parse().unwrap(),
+                            url: listen_port.http_url("/"),
                         }],
                     }],
                 }),
@@ -56,7 +59,10 @@ async fn ws_proxy() -> anyhow::Result<()> {
         .build();
 
     with_server(config, |_| async move {
-        let url = Url::parse("ws://localhost:54001/ws")?;
+        let url = Url::parse(&format!(
+            "ws://localhost:{}/ws",
+            proxy_port.socket_addr().port()
+        ))?;
         let (mut ws_stream, _) = connect_async(url).await?;
         ws_stream
             .send(Message::Text("Hello, server!".to_string()))

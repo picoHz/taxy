@@ -1,4 +1,4 @@
-use std::{net::ToSocketAddrs, sync::Arc};
+use std::sync::Arc;
 use taxy::certs::Cert;
 use taxy_api::{
     port::{Port, PortEntry, PortOptions, UpstreamServer},
@@ -8,14 +8,17 @@ use taxy_api::{
 use warp::Filter;
 
 mod common;
-use common::{with_server, TestStorage};
+use common::{alloc_port, with_server, TestStorage};
 
 #[tokio::test]
 async fn tls_proxy() -> anyhow::Result<()> {
+    let listen_port = alloc_port()?;
+    let proxy_port = alloc_port()?;
+
     let root = Arc::new(Cert::new_ca().unwrap());
     let cert = Arc::new(Cert::new_self_signed(&["localhost".parse().unwrap()], &root).unwrap());
 
-    let addr = "localhost:51000".to_socket_addrs().unwrap().next().unwrap();
+    let addr = listen_port.socket_addr();
     let hello = warp::path!("hello").map(|| "Hello".to_string());
     let (_, server) = warp::serve(hello)
         .tls()
@@ -29,7 +32,7 @@ async fn tls_proxy() -> anyhow::Result<()> {
             id: "test".parse().unwrap(),
             port: Port {
                 name: String::new(),
-                listen: "/ip4/127.0.0.1/tcp/51001/tls".parse().unwrap(),
+                listen: proxy_port.multiaddr_tls(),
                 opts: PortOptions {
                     tls_termination: Some(TlsTermination {
                         server_names: vec!["localhost".into()],
@@ -43,7 +46,12 @@ async fn tls_proxy() -> anyhow::Result<()> {
                 ports: vec!["test".parse().unwrap()],
                 kind: ProxyKind::Tcp(TcpProxy {
                     upstream_servers: vec![UpstreamServer {
-                        addr: "/dns/localhost/tcp/51000/tls".parse().unwrap(),
+                        addr: format!(
+                            "/dns/localhost/tcp/{}/tls",
+                            listen_port.socket_addr().port()
+                        )
+                        .parse()
+                        .unwrap(),
                     }],
                 }),
                 ..Default::default()
@@ -66,7 +74,7 @@ async fn tls_proxy() -> anyhow::Result<()> {
             .add_root_certificate(ca)
             .build()?;
         let resp = client
-            .get("https://localhost:51001/hello")
+            .get(proxy_port.https_url("/hello"))
             .send()
             .await?
             .text()

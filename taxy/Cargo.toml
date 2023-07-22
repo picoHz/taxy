@@ -79,6 +79,7 @@ built = "0.6.1"
 
 [dev-dependencies]
 mockito = "1.1.0"
+net2 = "0.2.39"
 reqwest = { version = "0.11.18", default-features = false, features = ["rustls-tls", "gzip", "brotli", "json", "stream"] }
 tokio-tungstenite = { version = "0.19.0", features = ["rustls-tls-native-roots"] }
 warp = { version = "0.3.5", features = ["tls"] }

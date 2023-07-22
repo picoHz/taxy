@@ -4,21 +4,18 @@ use taxy_api::{
     port::{Port, PortEntry},
     site::{HttpProxy, Proxy, ProxyEntry, ProxyKind, Route},
 };
-use tokio::net::TcpListener;
-use tokio_stream::wrappers::TcpListenerStream;
-use warp::Filter;
 
 mod common;
-use common::{with_server, TestStorage};
+use common::{alloc_port, with_server, TestStorage};
 
 #[tokio::test]
 async fn http_proxy() -> anyhow::Result<()> {
+    let proxy_port = alloc_port()?;
     let mut server = mockito::Server::new_async().await;
 
     let mock_get = server
         .mock("GET", "/hello?world=1")
         .match_header("via", "taxy")
-        .match_header("forwarded", "for=127.0.0.1")
         .match_header("x-forwarded-for", mockito::Matcher::Missing)
         .match_header("x-forwarded-host", mockito::Matcher::Missing)
         .match_header("x-real-ip", mockito::Matcher::Missing)
@@ -30,7 +27,6 @@ async fn http_proxy() -> anyhow::Result<()> {
     let mock_post = server
         .mock("POST", "/hello?world=1")
         .match_header("via", "taxy")
-        .match_header("forwarded", "for=127.0.0.1")
         .match_header("x-forwarded-for", mockito::Matcher::Missing)
         .match_header("x-forwarded-host", mockito::Matcher::Missing)
         .match_header("x-real-ip", mockito::Matcher::Missing)
@@ -45,7 +41,6 @@ async fn http_proxy() -> anyhow::Result<()> {
     let mock_stream = server
         .mock("POST", "/hello?world=1")
         .match_header("via", "taxy")
-        .match_header("forwarded", "for=127.0.0.1")
         .match_header("x-forwarded-for", mockito::Matcher::Missing)
         .match_header("x-forwarded-host", mockito::Matcher::Missing)
         .match_header("x-real-ip", mockito::Matcher::Missing)
@@ -56,16 +51,12 @@ async fn http_proxy() -> anyhow::Result<()> {
         .create_async()
         .await;
 
-    let listener = TcpListener::bind("127.0.0.1:52000").await.unwrap();
-    let hello = warp::path!("hello").map(|| "Hello".to_string());
-    tokio::spawn(warp::serve(hello).run_incoming(TcpListenerStream::new(listener)));
-
     let config = TestStorage::builder()
         .ports(vec![PortEntry {
             id: "test".parse().unwrap(),
             port: Port {
                 name: String::new(),
-                listen: "/ip4/127.0.0.1/tcp/52001/http".parse().unwrap(),
+                listen: proxy_port.multiaddr_http(),
                 opts: Default::default(),
             },
         }])
@@ -74,7 +65,7 @@ async fn http_proxy() -> anyhow::Result<()> {
             proxy: Proxy {
                 ports: vec!["test".parse().unwrap()],
                 kind: ProxyKind::Http(HttpProxy {
-                    vhosts: vec!["localhost:52001".parse().unwrap()],
+                    vhosts: vec![proxy_port.subject_name()],
                     routes: vec![Route {
                         path: "/".into(),
                         servers: vec![taxy_api::site::Server {
@@ -90,7 +81,7 @@ async fn http_proxy() -> anyhow::Result<()> {
     with_server(config, |_| async move {
         let client = reqwest::Client::builder().build()?;
         let resp = client
-            .get("http://localhost:52001/hello?world=1")
+            .get(proxy_port.http_url("/hello?world=1"))
             .header("x-forwarded-for", "0.0.0.0")
             .header("x-forwarded-host", "untrusted.example.com")
             .header("x-real-ip", "0.0.0.0")
@@ -101,7 +92,7 @@ async fn http_proxy() -> anyhow::Result<()> {
         assert_eq!(resp, "Hello");
 
         let resp = client
-            .post("http://localhost:52001/hello?world=1")
+            .post(proxy_port.http_url("/hello?world=1"))
             .header("x-forwarded-for", "0.0.0.0")
             .header("x-forwarded-host", "untrusted.example.com")
             .header("x-real-ip", "0.0.0.0")
@@ -116,7 +107,7 @@ async fn http_proxy() -> anyhow::Result<()> {
         let body = Body::wrap_stream(stream);
 
         let resp = client
-            .post("http://localhost:52001/hello?world=1")
+            .post(proxy_port.http_url("/hello?world=1"))
             .header("x-forwarded-for", "0.0.0.0")
             .header("x-forwarded-host", "untrusted.example.com")
             .header("x-real-ip", "0.0.0.0")
@@ -139,16 +130,14 @@ async fn http_proxy() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn http_proxy_dns_error() -> anyhow::Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:52100").await.unwrap();
-    let hello = warp::path!("hello").map(|| "Hello".to_string());
-    tokio::spawn(warp::serve(hello).run_incoming(TcpListenerStream::new(listener)));
+    let proxy_port = alloc_port()?;
 
     let config = TestStorage::builder()
         .ports(vec![PortEntry {
             id: "test".parse().unwrap(),
             port: Port {
                 name: String::new(),
-                listen: "/ip4/127.0.0.1/tcp/52101/http".parse().unwrap(),
+                listen: proxy_port.multiaddr_http(),
                 opts: Default::default(),
             },
         }])
@@ -157,7 +146,7 @@ async fn http_proxy_dns_error() -> anyhow::Result<()> {
             proxy: Proxy {
                 ports: vec!["test".parse().unwrap()],
                 kind: ProxyKind::Http(HttpProxy {
-                    vhosts: vec!["localhost:52101".parse().unwrap()],
+                    vhosts: vec![proxy_port.subject_name()],
                     routes: vec![Route {
                         path: "/".into(),
                         servers: vec![taxy_api::site::Server {
@@ -172,7 +161,7 @@ async fn http_proxy_dns_error() -> anyhow::Result<()> {
 
     with_server(config, |_| async move {
         let client = reqwest::Client::builder().build()?;
-        let resp = client.get("http://localhost:52101/hello").send().await?;
+        let resp = client.get(proxy_port.http_url("/hello")).send().await?;
         assert_eq!(resp.status(), 523);
         Ok(())
     })

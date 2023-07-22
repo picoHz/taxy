@@ -1,12 +1,24 @@
+#![allow(dead_code)]
+
 use futures::Future;
-use std::{collections::HashMap, sync::Arc};
+use multiaddr::Multiaddr;
+use net2::TcpBuilder;
+use std::{
+    collections::HashMap,
+    net::{SocketAddr, ToSocketAddrs},
+    sync::Arc,
+};
 use taxy::{
     certs::{acme::AcmeEntry, Cert},
     config::storage::Storage,
     server::{Server, ServerChannels},
 };
-use taxy_api::{app::AppConfig, error::Error, id::ShortId, port::PortEntry, site::ProxyEntry};
+use taxy_api::{
+    app::AppConfig, error::Error, id::ShortId, port::PortEntry, site::ProxyEntry,
+    subject_name::SubjectName,
+};
 use tokio::sync::Mutex;
+use url::Url;
 
 pub async fn with_server<S, F, O>(s: S, func: F) -> anyhow::Result<()>
 where
@@ -134,37 +146,31 @@ impl TestStorageBuilder {
         }
     }
 
-    #[allow(dead_code)]
     pub fn config(mut self, config: AppConfig) -> Self {
         self.inner.config = config;
         self
     }
 
-    #[allow(dead_code)]
     pub fn ports(mut self, ports: Vec<PortEntry>) -> Self {
         self.inner.ports = ports;
         self
     }
 
-    #[allow(dead_code)]
     pub fn proxies(mut self, proxies: Vec<ProxyEntry>) -> Self {
         self.inner.proxies = proxies;
         self
     }
 
-    #[allow(dead_code)]
     pub fn certs(mut self, certs: HashMap<String, Arc<Cert>>) -> Self {
         self.inner.certs = certs;
         self
     }
 
-    #[allow(dead_code)]
     pub fn acems(mut self, acems: HashMap<ShortId, AcmeEntry>) -> Self {
         self.inner.acems = acems;
         self
     }
 
-    #[allow(dead_code)]
     pub fn accounts(mut self, accounts: HashMap<String, String>) -> Self {
         self.inner.accounts = accounts;
         self
@@ -174,5 +180,76 @@ impl TestStorageBuilder {
         TestStorage {
             inner: Mutex::new(self.inner),
         }
+    }
+}
+
+pub fn alloc_port() -> Result<TestPort, std::io::Error> {
+    let addr = "localhost:0".to_socket_addrs().unwrap().next().unwrap();
+    let addr = if addr.is_ipv4() {
+        TcpBuilder::new_v4()?
+    } else {
+        TcpBuilder::new_v6()?
+    }
+    .reuse_address(true)?
+    .bind(addr)?
+    .local_addr()?;
+    Ok(TestPort { addr })
+}
+
+pub struct TestPort {
+    addr: SocketAddr,
+}
+
+impl TestPort {
+    pub fn socket_addr(&self) -> SocketAddr {
+        self.addr
+    }
+
+    pub fn subject_name(&self) -> SubjectName {
+        format!("localhost:{}", self.addr.port()).parse().unwrap()
+    }
+
+    pub fn multiaddr_http(&self) -> Multiaddr {
+        let protocol = if self.addr.is_ipv4() { "ip4" } else { "ip6" };
+        let addr = self.addr.ip();
+        format!("/{protocol}/{addr}/tcp/{}/http", self.addr.port())
+            .parse()
+            .unwrap()
+    }
+
+    pub fn multiaddr_https(&self) -> Multiaddr {
+        let protocol = if self.addr.is_ipv4() { "ip4" } else { "ip6" };
+        let addr = self.addr.ip();
+        format!("/{protocol}/{addr}/tcp/{}/https", self.addr.port())
+            .parse()
+            .unwrap()
+    }
+
+    pub fn multiaddr_tcp(&self) -> Multiaddr {
+        let protocol = if self.addr.is_ipv4() { "ip4" } else { "ip6" };
+        let addr = self.addr.ip();
+        format!("/{protocol}/{addr}/tcp/{}", self.addr.port())
+            .parse()
+            .unwrap()
+    }
+
+    pub fn multiaddr_tls(&self) -> Multiaddr {
+        let protocol = if self.addr.is_ipv4() { "ip4" } else { "ip6" };
+        let addr = self.addr.ip();
+        format!("/{protocol}/{addr}/tcp/{}/tls", self.addr.port())
+            .parse()
+            .unwrap()
+    }
+
+    pub fn http_url(&self, path: &str) -> Url {
+        format!("http://localhost:{}{path}", self.addr.port())
+            .parse()
+            .unwrap()
+    }
+
+    pub fn https_url(&self, path: &str) -> Url {
+        format!("https://localhost:{}{path}", self.addr.port())
+            .parse()
+            .unwrap()
     }
 }

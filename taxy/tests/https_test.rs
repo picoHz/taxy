@@ -1,4 +1,4 @@
-use std::{net::ToSocketAddrs, sync::Arc};
+use std::sync::Arc;
 use taxy::certs::Cert;
 use taxy_api::{
     port::{Port, PortEntry, PortOptions},
@@ -8,14 +8,17 @@ use taxy_api::{
 use warp::Filter;
 
 mod common;
-use common::{with_server, TestStorage};
+use common::{alloc_port, with_server, TestStorage};
 
 #[tokio::test]
 async fn https_proxy() -> anyhow::Result<()> {
+    let listen_port = alloc_port()?;
+    let proxy_port = alloc_port()?;
+
     let root = Arc::new(Cert::new_ca().unwrap());
     let cert = Arc::new(Cert::new_self_signed(&["localhost".parse().unwrap()], &root).unwrap());
 
-    let addr = "localhost:53000".to_socket_addrs().unwrap().next().unwrap();
+    let addr = listen_port.socket_addr();
     let hello = warp::path!("hello").map(|| "Hello".to_string());
     let (_, server) = warp::serve(hello)
         .tls()
@@ -29,7 +32,7 @@ async fn https_proxy() -> anyhow::Result<()> {
             id: "test".parse().unwrap(),
             port: Port {
                 name: String::new(),
-                listen: "/ip4/127.0.0.1/tcp/53001/https".parse().unwrap(),
+                listen: proxy_port.multiaddr_https(),
                 opts: PortOptions {
                     tls_termination: Some(TlsTermination {
                         server_names: vec!["localhost".into()],
@@ -46,7 +49,7 @@ async fn https_proxy() -> anyhow::Result<()> {
                     routes: vec![Route {
                         path: "/".into(),
                         servers: vec![taxy_api::site::Server {
-                            url: "https://localhost:53000/".parse().unwrap(),
+                            url: listen_port.https_url("/"),
                         }],
                     }],
                 }),
@@ -69,7 +72,7 @@ async fn https_proxy() -> anyhow::Result<()> {
             .add_root_certificate(ca.clone())
             .build()?;
         let resp = client
-            .get("https://localhost:53001/hello")
+            .get(proxy_port.https_url("/hello"))
             .send()
             .await?
             .text()
@@ -81,7 +84,7 @@ async fn https_proxy() -> anyhow::Result<()> {
             .add_root_certificate(ca.clone())
             .build()?;
         let resp = client
-            .get("https://localhost:53001/hello")
+            .get(proxy_port.https_url("/hello"))
             .send()
             .await?
             .text()
@@ -93,7 +96,7 @@ async fn https_proxy() -> anyhow::Result<()> {
             .add_root_certificate(ca)
             .build()?;
         let resp = client
-            .get("https://localhost:53001/hello")
+            .get(proxy_port.https_url("/hello"))
             .send()
             .await?
             .text()
@@ -107,10 +110,13 @@ async fn https_proxy() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn https_proxy_invalid_cert() -> anyhow::Result<()> {
+    let listen_port = alloc_port()?;
+    let proxy_port = alloc_port()?;
+
     let root = Arc::new(Cert::new_ca().unwrap());
     let cert = Arc::new(Cert::new_self_signed(&["localhost".parse().unwrap()], &root).unwrap());
 
-    let addr = "localhost:53100".to_socket_addrs().unwrap().next().unwrap();
+    let addr = listen_port.socket_addr();
     let hello = warp::path!("hello").map(|| "Hello".to_string());
     let (_, server) = warp::serve(hello)
         .tls()
@@ -124,7 +130,7 @@ async fn https_proxy_invalid_cert() -> anyhow::Result<()> {
             id: "test".parse().unwrap(),
             port: Port {
                 name: String::new(),
-                listen: "/ip4/127.0.0.1/tcp/53101/https".parse().unwrap(),
+                listen: proxy_port.multiaddr_https(),
                 opts: PortOptions {
                     tls_termination: Some(TlsTermination {
                         server_names: vec!["localhost".into()],
@@ -141,7 +147,7 @@ async fn https_proxy_invalid_cert() -> anyhow::Result<()> {
                     routes: vec![Route {
                         path: "/".into(),
                         servers: vec![taxy_api::site::Server {
-                            url: "https://localhost:53100/".parse().unwrap(),
+                            url: listen_port.https_url("/"),
                         }],
                     }],
                 }),
@@ -156,21 +162,21 @@ async fn https_proxy_invalid_cert() -> anyhow::Result<()> {
         let client = reqwest::Client::builder()
             .add_root_certificate(ca.clone())
             .build()?;
-        let resp = client.get("https://localhost:53101/hello").send().await?;
+        let resp = client.get(proxy_port.https_url("/hello")).send().await?;
         assert_eq!(resp.status(), 526);
 
         let client = reqwest::Client::builder()
             .http1_only()
             .add_root_certificate(ca.clone())
             .build()?;
-        let resp = client.get("https://localhost:53101/hello").send().await?;
+        let resp = client.get(proxy_port.https_url("/hello")).send().await?;
         assert_eq!(resp.status(), 526);
 
         let client = reqwest::Client::builder()
             .http2_prior_knowledge()
             .add_root_certificate(ca)
             .build()?;
-        let resp = client.get("https://localhost:53101/hello").send().await?;
+        let resp = client.get(proxy_port.https_url("/hello")).send().await?;
         assert_eq!(resp.status(), 526);
 
         Ok(())

@@ -7,11 +7,14 @@ use tokio_stream::wrappers::TcpListenerStream;
 use warp::Filter;
 
 mod common;
-use common::{with_server, TestStorage};
+use common::{alloc_port, with_server, TestStorage};
 
 #[tokio::test]
 async fn tcp_proxy() -> anyhow::Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:50000").await.unwrap();
+    let listen_port = alloc_port()?;
+    let proxy_port = alloc_port()?;
+
+    let listener = TcpListener::bind(listen_port.socket_addr()).await.unwrap();
     let hello = warp::path!("hello").map(|| "Hello".to_string());
     tokio::spawn(warp::serve(hello).run_incoming(TcpListenerStream::new(listener)));
 
@@ -20,7 +23,7 @@ async fn tcp_proxy() -> anyhow::Result<()> {
             id: "test".parse().unwrap(),
             port: Port {
                 name: String::new(),
-                listen: "/ip4/127.0.0.1/tcp/50001".parse().unwrap(),
+                listen: proxy_port.multiaddr_tcp(),
                 opts: Default::default(),
             },
         }])
@@ -30,7 +33,7 @@ async fn tcp_proxy() -> anyhow::Result<()> {
                 ports: vec!["test".parse().unwrap()],
                 kind: ProxyKind::Tcp(TcpProxy {
                     upstream_servers: vec![UpstreamServer {
-                        addr: "/ip4/127.0.0.1/tcp/50000".parse().unwrap(),
+                        addr: listen_port.multiaddr_tcp(),
                     }],
                 }),
                 ..Default::default()
@@ -39,7 +42,7 @@ async fn tcp_proxy() -> anyhow::Result<()> {
         .build();
 
     with_server(config, |_| async move {
-        let resp = reqwest::get("http://127.0.0.1:50001/hello")
+        let resp = reqwest::get(proxy_port.http_url("/hello"))
             .await?
             .text()
             .await?;
