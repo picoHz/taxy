@@ -36,6 +36,7 @@ mod compression;
 mod error;
 mod filter;
 mod header;
+mod hyper_tls;
 mod pool;
 mod route;
 mod upgrade;
@@ -211,7 +212,7 @@ async fn start(
         stream = Box::new(accepted);
     }
 
-    let pool = Arc::new(ConnectionPool::new(tls_client_config.clone()));
+    let pool = Arc::new(ConnectionPool::new(tls_client_config.unwrap().clone()));
     let mut shared_cache = shared_cache.clone();
     let service = hyper::service::service_fn(move |mut req| {
         let header_host = req
