@@ -26,3 +26,4 @@ multiaddr = "0.18.0"
 url = "2.4.0"
 base64 = "0.21.2"
 time = { version = "0.3.23", features = ["formatting"] }
+gloo-events = "0.1.2"

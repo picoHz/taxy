@@ -1,11 +1,16 @@
-use crate::{auth::LoginQuery, pages::Route, API_ENDPOINT};
+use crate::{
+    auth::{test_token, LoginQuery},
+    pages::Route,
+    API_ENDPOINT,
+};
+use gloo_events::EventListener;
 use gloo_net::http::Request;
 use serde_derive::Deserialize;
 use taxy_api::{
     auth::{LoginRequest, LoginResponse},
     error::ErrorMessage,
 };
-use wasm_bindgen::{JsCast, UnwrapThrowExt};
+use wasm_bindgen::{prelude::wasm_bindgen, JsCast, UnwrapThrowExt};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_router::prelude::*;
@@ -17,9 +22,28 @@ enum ApiResult<T> {
     Err(ErrorMessage),
 }
 
+#[wasm_bindgen(module = "/js/logout.js")]
+extern "C" {
+    fn logout();
+}
+
 #[function_component(Login)]
 pub fn login() -> Html {
     let navigator = use_navigator().unwrap();
+
+    use_effect_with_deps(
+        move |_| {
+            EventListener::new(&gloo_utils::document(), "visibilitychange", move |_event| {
+                wasm_bindgen_futures::spawn_local(async move {
+                    if !test_token().await {
+                        logout();
+                    }
+                });
+            })
+            .forget();
+        },
+        (),
+    );
 
     let location = use_location().unwrap();
     let query: LoginQuery = location.query().unwrap_or_default();

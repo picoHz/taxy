@@ -3293,6 +3293,7 @@ dependencies = [
  "futures",
  "getrandom",
  "gloo-dialogs",
+ "gloo-events",
  "gloo-net",
  "gloo-timers",
  "gloo-utils",
