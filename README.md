@@ -15,12 +15,12 @@ A reverse proxy server with a user-friendly WebUI.
 ## Overview
 
 - Built with Rust for optimal performance and safety, powered by tokio and hyper
-- Supports TCP, TLS, HTTP1, and HTTP2 protocols, including HTTP upgrading and WebSocket.
+- Supports TCP, TLS, HTTP1, and HTTP2, including HTTP upgrading and WebSocket
 - Intuitive and user-friendly WebUI for easy configuration
-- Live configuration updates without restarting the service
+- Live configuration updates via REST API without restarting the service
 - Import TLS certificates from GUI or generate a self-signed certificate
-- Let's Encrypt support (ACME v2) for seamless certificate provisioning
-- Automatic HTTP brotli compression
+- Let's Encrypt support (ACME v2, HTTP challenge only) for seamless certificate provisioning
+- Supports automatic HTTP Brotli compression
 
 ## Screenshot
 
