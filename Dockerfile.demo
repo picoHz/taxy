@@ -1,0 +1,31 @@
+FROM rust:latest as builder
+
+# Install cargo-binstall
+RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+
+# Add Cargo.toml
+COPY Cargo.toml .
+
+# Install pre-built taxy
+RUN cargo binstall -y taxy
+
+# Prepare the final image
+FROM debian:bookworm-slim as runtime
+
+# Install dependencies for the Rust binary
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the Rust binary from the builder stage
+COPY --from=builder /usr/local/cargo/bin/taxy .
+
+# Add admin user
+RUN ./taxy add-user admin -p admin
+
+# Set the entrypoint to run the Rust binary
+ENTRYPOINT ["./taxy", "start", "--webui", "0.0.0.0:8080"]
