@@ -14,17 +14,21 @@ use hyper::{
         HeaderValue,
     },
     server::conn::Http,
-    Uri,
+    service::service_fn,
+    Response, StatusCode, Uri,
 };
 use multiaddr::{Multiaddr, Protocol};
 use std::{net::SocketAddr, sync::Arc, time::SystemTime};
 use taxy_api::error::Error;
 use taxy_api::port::{PortStatus, SocketState};
 use taxy_api::{port::PortEntry, site::ProxyEntry};
-use tokio::net::TcpStream;
 use tokio::{
     io::{AsyncRead, AsyncWrite, BufStream},
     sync::Notify,
+};
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::TcpStream,
 };
 use tokio_rustls::{
     rustls::{client::ServerName, ClientConfig},
@@ -184,11 +188,14 @@ async fn start(
     stop_notifier: Arc<Notify>,
 ) -> anyhow::Result<()> {
     let remote = stream.get_ref().peer_addr()?;
+    let (mut client_stream, server_stream) = tokio::io::duplex(MAX_BUFFER_SIZE);
 
-    let (mut client_strem, server_stream) = tokio::io::duplex(MAX_BUFFER_SIZE);
+    let first_byte = stream.read_u8().await?;
+    client_stream.write_u8(first_byte).await?;
+
     tokio::spawn(async move {
         tokio::select! {
-            result = tokio::io::copy_bidirectional(&mut stream, &mut client_strem) => {
+            result = tokio::io::copy_bidirectional(&mut stream, &mut client_stream) => {
                 if let Err(err) = result {
                     error!("{err}");
                 }
@@ -198,6 +205,18 @@ async fn start(
             },
         }
     });
+
+    if tls_acceptor.is_some() && first_byte != 0x16 {
+        tokio::task::spawn(async move {
+            if let Err(err) = Http::new()
+                .serve_connection(server_stream, service_fn(redirect))
+                .await
+            {
+                error!("Failed to serve the connection: {:?}", err);
+            }
+        });
+        return Ok(());
+    }
 
     let mut stream: Box<dyn IoStream> = Box::new(server_stream);
     let mut server_http2 = false;
@@ -316,4 +335,28 @@ pub struct Connection {
     pub name: ServerName,
     pub port: u16,
     pub tls: bool,
+}
+
+async fn redirect(
+    req: hyper::Request<hyper::Body>,
+) -> Result<Response<hyper::Body>, hyper::http::Error> {
+    if let Ok(uri) = get_secure_uri(&req) {
+        Response::builder()
+            .header("Location", uri.to_string())
+            .status(StatusCode::PERMANENT_REDIRECT)
+            .body(hyper::Body::empty())
+    } else {
+        Response::builder()
+            .status(StatusCode::BAD_REQUEST)
+            .body(hyper::Body::from("TLS required\r\n"))
+    }
+}
+
+fn get_secure_uri(req: &hyper::Request<hyper::Body>) -> anyhow::Result<Uri> {
+    let mut parts = req.uri().clone().into_parts();
+    if let Some(host) = req.headers().get(HOST) {
+        parts.authority = Some(host.to_str()?.parse()?);
+    }
+    parts.scheme = Some(Scheme::HTTPS);
+    Ok(Uri::from_parts(parts)?)
 }
