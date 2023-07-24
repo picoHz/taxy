@@ -231,7 +231,7 @@ async fn start(
         stream = Box::new(accepted);
     }
 
-    let pool = Arc::new(ConnectionPool::new(tls_client_config.unwrap().clone()));
+    let pool = Arc::new(ConnectionPool::new(tls_client_config.unwrap()));
     let mut shared_cache = shared_cache.clone();
     let service = hyper::service::service_fn(move |mut req| {
         let header_host = req
