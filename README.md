@@ -30,7 +30,7 @@ A reverse proxy server with a user-friendly WebUI.
 
 Visit https://taxy.onrender.com/. (username: `admin`, password: `admin`)
 
-You can access the REST API documentation on https://taxy.onrender.com/swagger-ui.
+Please note, you can change the configuration freely, but due to the instance being behind a firewall, the configured proxies are not accessible from the outside.
 
 ## Installation
 
