@@ -7,7 +7,7 @@ taxy-api = { path = "./taxy-api" }
 
 [profile.release]
 strip = true
+lto = true
 
 [profile.dev.package.argon2]
 opt-level = 3
-
