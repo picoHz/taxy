@@ -36,6 +36,10 @@ jobs:
         run: cargo b --bin taxy --release
       - name: Make archive
         run: tar -C target/release -Jcvf taxy-x86_64-unknown-linux-gnu.tar.xz taxy
+      - name: Build project (all features)
+        run: cargo b --bin taxy --release --all-features
+      - name: Make archive (all features)
+        run: tar -C target/release -Jcvf taxy-swagger-x86_64-unknown-linux-gnu.tar.xz taxy
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -194,6 +198,10 @@ jobs:
         run: cross build -p taxy --release --target ${{ matrix.toolchain }}
       - name: Make archive
         run: tar -C target/${{ matrix.toolchain }}/release -Jcvf taxy-${{ matrix.toolchain }}.tar.xz taxy
+      - name: Build project (all features)
+        run: cross build -p taxy --release --all-features --target ${{ matrix.toolchain }}
+      - name: Make archive (all features)
+        run: tar -C target/${{ matrix.toolchain }}/release -Jcvf taxy-swagger-${{ matrix.toolchain }}.tar.xz taxy
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

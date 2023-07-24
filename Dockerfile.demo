@@ -7,7 +7,7 @@ RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/ca
 COPY Cargo.toml .
 
 # Install pre-built taxy
-RUN cargo binstall -y taxy
+RUN cargo binstall -y --pkg-url="{ repo }/releases/download/v{ version }/{ name }-swagger-{ target }{ archive-suffix }" taxy
 
 # Prepare the final image
 FROM debian:bookworm-slim as runtime
