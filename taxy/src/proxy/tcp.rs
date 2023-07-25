@@ -17,7 +17,7 @@ use tokio::{
     sync::Notify,
 };
 use tokio_rustls::{
-    rustls::{client::ServerName, ClientConfig},
+    rustls::{client::ServerName, ClientConfig, RootCertStore},
     TlsAcceptor, TlsConnector,
 };
 use tracing::{debug, error, info, span, Instrument, Level, Span};
@@ -31,7 +31,7 @@ pub struct TcpPortContext {
     status: PortStatus,
     span: Span,
     tls_termination: Option<TlsTermination>,
-    tls_client_config: Option<Arc<ClientConfig>>,
+    tls_client_config: Arc<ClientConfig>,
     stop_notifier: Arc<Notify>,
 }
 
@@ -59,7 +59,12 @@ impl TcpPortContext {
             status: Default::default(),
             span,
             tls_termination,
-            tls_client_config: None,
+            tls_client_config: Arc::new(
+                ClientConfig::builder()
+                    .with_safe_defaults()
+                    .with_root_certificates(RootCertStore::empty())
+                    .with_no_client_auth(),
+            ),
             stop_notifier: Arc::new(Notify::new()),
         })
     }
@@ -69,7 +74,7 @@ impl TcpPortContext {
             .with_safe_defaults()
             .with_root_certificates(certs.root_certs().clone())
             .with_no_client_auth();
-        self.tls_client_config = Some(Arc::new(config));
+        self.tls_client_config = Arc::new(config);
 
         for proxy in proxies {
             if let ProxyKind::Tcp(proxy) = proxy.proxy.kind {
@@ -124,11 +129,11 @@ impl TcpPortContext {
 
         let span = self.span.clone();
         let conn = self.servers[0].clone();
-        let tls_client_config = self
-            .tls_client_config
-            .as_ref()
-            .filter(|_| conn.tls)
-            .cloned();
+        let tls_client_config = if conn.tls {
+            Some(self.tls_client_config.clone())
+        } else {
+            None
+        };
         let tls_acceptor = self
             .tls_termination
             .as_ref()

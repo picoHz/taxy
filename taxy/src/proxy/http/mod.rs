@@ -31,7 +31,7 @@ use tokio::{
     net::TcpStream,
 };
 use tokio_rustls::{
-    rustls::{client::ServerName, ClientConfig},
+    rustls::{client::ServerName, ClientConfig, RootCertStore},
     TlsAcceptor,
 };
 use tracing::{debug, error, info, span, Instrument, Level, Span};
@@ -54,7 +54,7 @@ pub struct HttpPortContext {
     status: PortStatus,
     span: Span,
     tls_termination: Option<TlsTermination>,
-    tls_client_config: Option<Arc<ClientConfig>>,
+    tls_client_config: Arc<ClientConfig>,
     shared: Arc<ArcSwap<SharedContext>>,
     stop_notifier: Arc<Notify>,
 }
@@ -88,7 +88,12 @@ impl HttpPortContext {
             status: Default::default(),
             span,
             tls_termination,
-            tls_client_config: None,
+            tls_client_config: Arc::new(
+                ClientConfig::builder()
+                    .with_safe_defaults()
+                    .with_root_certificates(RootCertStore::empty())
+                    .with_no_client_auth(),
+            ),
             shared: Arc::new(ArcSwap::from_pointee(SharedContext {
                 router: Default::default(),
                 header_rewriter: Default::default(),
@@ -111,7 +116,7 @@ impl HttpPortContext {
             .with_safe_defaults()
             .with_root_certificates(certs.root_certs().clone())
             .with_no_client_auth();
-        self.tls_client_config = Some(Arc::new(config));
+        self.tls_client_config = Arc::new(config);
 
         if let Some(tls) = &mut self.tls_termination {
             self.status.state.tls = Some(tls.setup(certs).await);
@@ -182,7 +187,7 @@ impl HttpPortContext {
 
 async fn start(
     mut stream: BufStream<TcpStream>,
-    tls_client_config: Option<Arc<ClientConfig>>,
+    tls_client_config: Arc<ClientConfig>,
     tls_acceptor: Option<TlsAcceptor>,
     shared_cache: Cache<Arc<ArcSwap<SharedContext>>, Arc<SharedContext>>,
     stop_notifier: Arc<Notify>,
@@ -231,7 +236,7 @@ async fn start(
         stream = Box::new(accepted);
     }
 
-    let pool = Arc::new(ConnectionPool::new(tls_client_config.unwrap()));
+    let pool = Arc::new(ConnectionPool::new(tls_client_config));
     let mut shared_cache = shared_cache.clone();
     let service = hyper::service::service_fn(move |mut req| {
         let header_host = req
