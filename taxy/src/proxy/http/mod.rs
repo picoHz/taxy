@@ -61,8 +61,7 @@ pub struct HttpPortContext {
 
 impl HttpPortContext {
     pub fn new(entry: &PortEntry) -> Result<Self, Error> {
-        let span =
-            span!(Level::INFO, "proxy", resource_id = ?entry.id, listen = ?entry.port.listen);
+        let span = span!(Level::INFO, "proxy", resource_id = entry.id.to_string(), listen = ?entry.port.listen);
         let enter = span.clone();
         let _enter = enter.enter();
 
@@ -165,6 +164,7 @@ impl HttpPortContext {
 
         let stop_notifier = self.stop_notifier.clone();
         let shared_cache = Cache::new(Arc::clone(&self.shared));
+        let span_cloned = span.clone();
 
         tokio::spawn(
             async move {
@@ -174,6 +174,7 @@ impl HttpPortContext {
                     tls_acceptor,
                     shared_cache,
                     stop_notifier,
+                    span_cloned,
                 )
                 .await
                 {
@@ -191,6 +192,7 @@ async fn start(
     tls_acceptor: Option<TlsAcceptor>,
     shared_cache: Cache<Arc<ArcSwap<SharedContext>>, Arc<SharedContext>>,
     stop_notifier: Arc<Notify>,
+    span: Span,
 ) -> anyhow::Result<()> {
     let remote = stream.get_ref().peer_addr()?;
     let (mut client_stream, server_stream) = tokio::io::duplex(MAX_BUFFER_SIZE);
@@ -198,28 +200,34 @@ async fn start(
     let first_byte = stream.read_u8().await?;
     client_stream.write_u8(first_byte).await?;
 
-    tokio::spawn(async move {
-        tokio::select! {
-            result = tokio::io::copy_bidirectional(&mut stream, &mut client_stream) => {
-                if let Err(err) = result {
-                    error!("{err}");
-                }
-            },
-            _ = stop_notifier.notified() => {
-                debug!("stop");
-            },
+    tokio::spawn(
+        async move {
+            tokio::select! {
+                result = tokio::io::copy_bidirectional(&mut stream, &mut client_stream) => {
+                    if let Err(err) = result {
+                        error!("{err}");
+                    }
+                },
+                _ = stop_notifier.notified() => {
+                    debug!("stop");
+                },
+            }
         }
-    });
+        .instrument(span.clone()),
+    );
 
     if tls_acceptor.is_some() && first_byte != 0x16 {
-        tokio::task::spawn(async move {
-            if let Err(err) = Http::new()
-                .serve_connection(server_stream, service_fn(redirect))
-                .await
-            {
-                error!("Failed to serve the connection: {:?}", err);
+        tokio::task::spawn(
+            async move {
+                if let Err(err) = Http::new()
+                    .serve_connection(server_stream, service_fn(redirect))
+                    .await
+                {
+                    error!("Failed to serve the connection: {:?}", err);
+                }
             }
-        });
+            .instrument(span.clone()),
+        );
         return Ok(());
     }
 
@@ -238,7 +246,12 @@ async fn start(
 
     let pool = Arc::new(ConnectionPool::new(tls_client_config));
     let mut shared_cache = shared_cache.clone();
+    let span_cloned = span.clone();
     let service = hyper::service::service_fn(move |mut req| {
+        let span = span_cloned.clone();
+        let enter = span.clone();
+        let _enter = enter.enter();
+
         let header_host = req
             .headers()
             .get(HOST)
@@ -297,17 +310,21 @@ async fn start(
                 Err(err) => Err(err.into()),
             })
         }
+        .instrument(span)
     });
 
-    tokio::task::spawn(async move {
-        let http = Http::new()
-            .http2_only(server_http2)
-            .serve_connection(stream, service)
-            .with_upgrades();
-        if let Err(err) = http.await {
-            error!("Failed to serve the connection: {:?}", err);
+    tokio::task::spawn(
+        async move {
+            let http = Http::new()
+                .http2_only(server_http2)
+                .serve_connection(stream, service)
+                .with_upgrades();
+            if let Err(err) = http.await {
+                error!("Failed to serve the connection: {:?}", err);
+            }
         }
-    });
+        .instrument(span.clone()),
+    );
 
     Ok(())
 }

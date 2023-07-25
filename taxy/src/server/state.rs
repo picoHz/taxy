@@ -197,7 +197,7 @@ impl ServerState {
                 .filter(|entry: &&ProxyEntry| entry.proxy.ports.contains(&ctx.entry.id))
                 .cloned()
                 .collect();
-            let span = span!(Level::INFO, "port", resource_id = ?ctx.entry.id);
+            let span = span!(Level::INFO, "port", resource_id = ctx.entry.id.to_string());
             if let Err(err) = ctx
                 .setup(&self.certs, proxies)
                 .instrument(span.clone())
@@ -239,7 +239,7 @@ impl ServerState {
             .filter(|entry: &&ProxyEntry| entry.proxy.ports.contains(&ctx.entry.id))
             .cloned()
             .collect();
-        let span = span!(Level::INFO, "port", resource_id = ?ctx.entry.id);
+        let span = span!(Level::INFO, "port", resource_id = ctx.entry.id.to_string());
         if let Err(err) = ctx
             .setup(&self.certs, proxies)
             .instrument(span.clone())
@@ -277,7 +277,7 @@ impl ServerState {
                 .filter(|entry: &&ProxyEntry| entry.proxy.ports.contains(&ctx.entry.id))
                 .cloned()
                 .collect();
-            let span = span!(Level::INFO, "port", resource_id = ?ctx.entry.id);
+            let span = span!(Level::INFO, "port", resource_id = ctx.entry.id.to_string());
             if let Err(err) = ctx
                 .setup(&self.certs, proxies)
                 .instrument(span.clone())
@@ -344,7 +344,7 @@ impl ServerState {
 
         let mut requests = Vec::new();
         for entry in entries {
-            let span = span!(Level::INFO, "acme", resource_id = ?entry.id);
+            let span = span!(Level::INFO, "acme", resource_id = entry.id.to_string());
             span.in_scope(|| {
                 info!(
                     provider = entry.acme.provider,
@@ -373,7 +373,7 @@ impl ServerState {
         let command = self.command_sender.clone();
         tokio::task::spawn(async move {
             for mut req in requests {
-                let span = span!(Level::INFO, "acme", resource_id = ?req.id);
+                let span = span!(Level::INFO, "acme", resource_id = req.id.to_string());
                 match req.start_challenge().instrument(span.clone()).await {
                     Ok(cert) => {
                         span.in_scope(|| {
