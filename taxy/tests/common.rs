@@ -6,11 +6,12 @@ use net2::TcpBuilder;
 use std::{
     collections::HashMap,
     net::{SocketAddr, ToSocketAddrs},
+    path::Path,
     sync::Arc,
 };
 use taxy::{
     certs::{acme::AcmeEntry, Cert},
-    config::storage::Storage,
+    config::{new_appinfo, storage::Storage},
     server::{Server, ServerChannels},
 };
 use taxy_api::{
@@ -26,7 +27,8 @@ where
     F: FnOnce(ServerChannels) -> O,
     O: Future<Output = anyhow::Result<()>> + Send + 'static,
 {
-    let (server, channels) = Server::new(s).await;
+    let app_info = new_appinfo(Path::new("."), Path::new("."));
+    let (server, channels) = Server::new(app_info, s).await;
     let event_send = channels.event.clone();
     let task = tokio::spawn(server.start());
     func(channels).await?;

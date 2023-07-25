@@ -1,6 +1,7 @@
 use clap::ValueEnum;
 use dashmap::DashMap;
 use sqlx::{sqlite::SqliteConnectOptions, ConnectOptions, SqlitePool};
+use std::time::Duration;
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
@@ -118,6 +119,15 @@ impl DatabaseLayer {
             span_map: DashMap::new(),
             level_filter,
         })
+    }
+
+    pub async fn cleanup(&self, retention: Duration) -> anyhow::Result<()> {
+        let timestamp = OffsetDateTime::now_utc() - retention;
+        sqlx::query("DELETE FROM system_log WHERE timestamp < ?")
+            .bind(timestamp)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
     }
 }
 

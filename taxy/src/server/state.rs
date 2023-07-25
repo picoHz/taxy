@@ -3,6 +3,7 @@ use super::cert_list::CertList;
 use super::proxy_list::ProxyList;
 use super::{listener::TcpListenerPool, port_list::PortList, rpc::RpcCallback};
 use crate::config::storage::Storage;
+use crate::log::DatabaseLayer;
 use crate::{
     command::ServerCommand,
     proxy::{PortContext, PortContextKind},
@@ -18,7 +19,7 @@ use std::{
     sync::Arc,
     time::{Duration, SystemTime},
 };
-use taxy_api::app::AppConfig;
+use taxy_api::app::{AppConfig, AppInfo};
 use taxy_api::error::Error;
 use taxy_api::event::ServerEvent;
 use taxy_api::id::ShortId;
@@ -268,7 +269,11 @@ impl ServerState {
         None
     }
 
-    pub async fn run_background_tasks(&mut self) {
+    pub async fn run_background_tasks(&mut self, app_info: &AppInfo) {
+        if let Err(err) = self.cleanup_old_logs(app_info).await {
+            error!(?err, "failed to cleanup old logs");
+        }
+
         let _ = self.start_http_challenges().await.await;
         for ctx in self.ports.as_mut_slice() {
             let proxies = self
@@ -315,6 +320,15 @@ impl ServerState {
                 entries: self.certs.iter().map(|item| item.info()).collect(),
             });
         }
+    }
+
+    async fn cleanup_old_logs(&mut self, app_info: &AppInfo) -> anyhow::Result<()> {
+        let path = app_info.log_path.join("log.db");
+        let database = DatabaseLayer::new(&path, tracing::level_filters::LevelFilter::OFF).await?;
+        database
+            .cleanup(self.config.log.database_log_retention)
+            .await?;
+        Ok(())
     }
 
     async fn start_http_challenges(&mut self) -> JoinHandle<()> {

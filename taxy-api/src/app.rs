@@ -12,6 +12,9 @@ pub struct AppConfig {
     #[serde(default)]
     pub admin: AdminConfig,
 
+    #[serde(default)]
+    pub log: LogConfig,
+
     #[serde(default = "default_http_challenge_addr")]
     #[schema(value_type = String, example = "0.0.0.0:80")]
     pub http_challenge_addr: SocketAddr,
@@ -67,4 +70,15 @@ fn default_max_attempts() -> u32 {
 
 fn default_login_attempts_reset() -> Duration {
     Duration::from_secs(60 * 15)
+}
+
+#[derive(Debug, DefaultFromSerde, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct LogConfig {
+    #[serde(with = "humantime_serde", default = "default_database_log_retention")]
+    #[schema(value_type = String, example = "3months")]
+    pub database_log_retention: Duration,
+}
+
+fn default_database_log_retention() -> Duration {
+    Duration::from_secs(60 * 60 * 24 * 30 * 3)
 }

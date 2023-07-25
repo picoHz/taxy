@@ -2,6 +2,7 @@ use self::rpc::RpcCallback;
 use self::state::ServerState;
 use crate::command::ServerCommand;
 use crate::config::storage::Storage;
+use taxy_api::app::AppInfo;
 use taxy_api::event::ServerEvent;
 use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::{broadcast, mpsc};
@@ -16,13 +17,14 @@ pub mod rpc;
 mod state;
 
 pub struct Server {
+    app_info: AppInfo,
     server_state: ServerState,
     command_recv: mpsc::Receiver<ServerCommand>,
     event_recv: broadcast::Receiver<ServerEvent>,
 }
 
 impl Server {
-    pub async fn new<S>(config: S) -> (Self, ServerChannels)
+    pub async fn new<S>(app_info: AppInfo, config: S) -> (Self, ServerChannels)
     where
         S: Storage,
     {
@@ -37,6 +39,7 @@ impl Server {
         )
         .await;
         let server = Self {
+            app_info,
             server_state,
             command_recv,
             event_recv: event_send.subscribe(),
@@ -50,7 +53,13 @@ impl Server {
     }
 
     pub async fn start(self) -> anyhow::Result<()> {
-        start_server(self.server_state, self.command_recv, self.event_recv).await
+        start_server(
+            self.app_info,
+            self.server_state,
+            self.command_recv,
+            self.event_recv,
+        )
+        .await
     }
 }
 
@@ -67,6 +76,7 @@ impl ServerChannels {
 }
 
 async fn start_server(
+    app_info: AppInfo,
     mut server: ServerState,
     mut command_recv: mpsc::Receiver<ServerCommand>,
     mut event_recv: broadcast::Receiver<ServerEvent>,
@@ -103,7 +113,7 @@ async fn start_server(
             }
             _ = background_task_interval.tick() => {
                 info!("Starting background tasks (interval: {:?})", background_task_interval.period());
-                server.run_background_tasks().await;
+                server.run_background_tasks(&app_info).await;
                 let mut new_interval = tokio::time::interval(server.config().background_task_interval);
                 new_interval.tick().await;
                 background_task_interval = new_interval;
