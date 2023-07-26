@@ -194,6 +194,7 @@ async fn start(
     stop_notifier: Arc<Notify>,
     span: Span,
 ) -> anyhow::Result<()> {
+    let local = stream.get_ref().local_addr()?;
     let remote = stream.get_ref().peer_addr()?;
     let (mut client_stream, server_stream) = tokio::io::duplex(MAX_BUFFER_SIZE);
 
@@ -216,7 +217,7 @@ async fn start(
         .instrument(span.clone()),
     );
 
-    if tls_acceptor.is_some() && first_byte != 0x16 {
+    if tls_acceptor.is_some() && local.port() != 80 && first_byte != 0x16 {
         tokio::task::spawn(
             async move {
                 if let Err(err) = Http::new()
