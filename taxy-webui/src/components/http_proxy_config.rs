@@ -167,7 +167,7 @@ pub fn http_proxy_config(props: &Props) -> Html {
                             <div class="field has-addons">
                                 <p class="control">
                                     <a class="button is-static">
-                                        {"Destination"}
+                                        {"Target"}
                                     </a>
                                 </p>
                                 <p class="control is-expanded">

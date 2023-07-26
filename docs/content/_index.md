@@ -107,7 +107,7 @@ Now you can create a proxy in the "Proxies" section. You need to specify the por
 3. Select the protocol to use. In this example, we will use "HTTP / HTTPS".
 4. Select the port you bound earlier. You can choose multiple ports if you want to.
 5. Left the "Virtual Host" field empty to match all hosts.
-6. Enter the target URL. In this example, we will use the admin panel "http://localhost:46492". Put the URL in the "Destination" field.
+6. Enter the target URL. In this example, we will use the admin panel "http://localhost:46492". Put the URL in the "Target" field.
 7. Click on "Create".
 8. Make sure the created port appears in the list. The proxy is now active and you can access the admin panel via the proxy.
 
