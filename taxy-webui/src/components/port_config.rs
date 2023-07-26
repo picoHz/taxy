@@ -5,10 +5,7 @@ use std::{
     collections::HashMap,
     net::{Ipv4Addr, Ipv6Addr},
 };
-use taxy_api::{
-    port::{NetworkInterface, Port},
-    tls::TlsTermination,
-};
+use taxy_api::port::{NetworkInterface, Port};
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use web_sys::{HtmlInputElement, HtmlSelectElement};
 use yew::prelude::*;
@@ -115,26 +112,9 @@ pub fn port_config(props: &Props) -> Html {
         }
     });
 
-    let tls_server_names = use_state(|| {
-        props
-            .port
-            .opts
-            .tls_termination
-            .as_ref()
-            .map(|tls| tls.server_names.join(", "))
-            .unwrap_or_default()
-    });
-    let tls_server_names_onchange = Callback::from({
-        let tls_server_names = tls_server_names.clone();
-        move |event: Event| {
-            let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
-            tls_server_names.set(target.value());
-        }
-    });
-
     let prev_entry =
         use_state::<Result<Port, HashMap<String, String>>, _>(|| Err(Default::default()));
-    let entry = get_port(&name, &protocol, &interface, *port, &tls_server_names);
+    let entry = get_port(&name, &protocol, &interface, *port);
     if entry != *prev_entry {
         prev_entry.set(entry.clone());
         props.onchanged.emit(entry);
@@ -202,24 +182,6 @@ pub fn port_config(props: &Props) -> Html {
                     </div>
                 </div>
             </div>
-
-            if &*protocol == "tls" || &*protocol == "https" {
-                <div class="field is-horizontal m-5">
-                    <div class="field-label is-normal">
-                    <label class="label">{"TLS Server Names"}</label>
-                    </div>
-                    <div class="field-body">
-                        <div class="field">
-                            <p class="control is-expanded">
-                            <input class="input" type="text" autocapitalize="off" placeholder="Server Names" value={tls_server_names.to_string()} onchange={tls_server_names_onchange} />
-                            </p>
-                            <p class="help">
-                            {"You can use commas to list multiple names, e.g, example.com, *.test.examle.com."}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            }
         </>
     }
 }
@@ -251,7 +213,6 @@ fn get_port(
     protocol: &str,
     interface: &str,
     port: u16,
-    tls_server_names: &str,
 ) -> Result<Port, HashMap<String, String>> {
     let mut errors = HashMap::new();
     let mut addr = Multiaddr::empty();
@@ -288,20 +249,11 @@ fn get_port(
         }
     }
 
-    let mut opts = Port {
+    let opts = Port {
         name: name.trim().to_string(),
         listen: addr,
         opts: Default::default(),
     };
-    if protocol == "tls" || protocol == "https" {
-        opts.opts.tls_termination = Some(TlsTermination {
-            server_names: tls_server_names
-                .split(',')
-                .map(|s| s.trim().to_string())
-                .filter(|s| !s.is_empty())
-                .collect(),
-        });
-    }
 
     if errors.is_empty() {
         Ok(opts)
