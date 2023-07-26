@@ -1,13 +1,17 @@
 [package]
 name = "taxy"
-version = "0.3.6"
+version = "0.3.7"
 edition = "2021"
 include = ["/src", "/templates", "/build.rs", "/LICENSE", "/dist/webui"]
 build = "build.rs"
 description = "A reverse proxy server with a user-friendly WebUI"
 authors = ["picoHz <picoHz@outlook.com>"]
 keywords = ["tcp", "http", "tls", "proxy", "reverse-proxy"]
-categories = ["network-programming", "web-programming", "web-programming::websocket"]
+categories = [
+    "network-programming",
+    "web-programming",
+    "web-programming::websocket",
+]
 license = "MIT"
 repository = "https://github.com/picoHz/taxy"
 homepage = "https://taxy.dev/"
@@ -49,19 +53,31 @@ rpassword = "7.2.0"
 rustls-native-certs = "0.6.3"
 rustls-pemfile = "1.0.3"
 sailfish = "0.7.0"
-serde = {version = "1.0.171", features = ["rc"]}
+serde = { version = "1.0.171", features = ["rc"] }
 serde_default = "0.1.0"
 serde_derive = "1.0.171"
 serde_json = "1.0.102"
 serde_qs = "0.12.0"
 sha2 = "0.10.7"
-sqlx = { version = "0.7.0", features = ["runtime-tokio-rustls", "sqlite", "time"] }
+sqlx = { version = "0.7.0", features = [
+    "runtime-tokio-rustls",
+    "sqlite",
+    "time",
+] }
 tar = "0.4.38"
-taxy-api = { version = "0.1.9", features = ["warp"] }
+taxy-api = { version = "0.1.10", features = ["warp"] }
 thiserror = "1.0.43"
 time = { version = "0.3.23", features = ["serde"] }
-tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread", "net", "signal", "io-util"] }
-tokio-rustls = { version = "0.24.1", default-features = false, features = ["tls12"] }
+tokio = { version = "1.29.1", features = [
+    "macros",
+    "rt-multi-thread",
+    "net",
+    "signal",
+    "io-util",
+] }
+tokio-rustls = { version = "0.24.1", default-features = false, features = [
+    "tls12",
+] }
 tokio-stream = { version = "0.1.14", features = ["sync", "net"] }
 toml = "0.7.6"
 toml_edit = { version = "0.19.12", features = ["serde"] }
@@ -80,6 +96,14 @@ built = "0.6.1"
 [dev-dependencies]
 mockito = "1.1.0"
 net2 = "0.2.39"
-reqwest = { version = "0.11.18", default-features = false, features = ["rustls-tls", "gzip", "brotli", "json", "stream"] }
-tokio-tungstenite = { version = "0.19.0", features = ["rustls-tls-native-roots"] }
+reqwest = { version = "0.11.18", default-features = false, features = [
+    "rustls-tls",
+    "gzip",
+    "brotli",
+    "json",
+    "stream",
+] }
+tokio-tungstenite = { version = "0.19.0", features = [
+    "rustls-tls-native-roots",
+] }
 warp = { version = "0.3.5", features = ["tls"] }
