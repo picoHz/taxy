@@ -1,0 +1,67 @@
+{% extends "juice/templates/index.html" %}
+{% block hero %}
+<section class="text-center">
+    <h1 class="heading-text" style="font-size: 50px">
+        <span class="taxy-name">Taxy:</span> Effortless Web Proxy
+    </h1>
+    <h3 class="title-text">
+        A Rust-based reverse proxy server with a built-in WebUI.
+    </h3>
+    <img class="hero-image" style="width: 70%" src="{{ get_url(path="screenshot.png") }}">
+</section>
+
+<div class="explore-more text" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})">
+    Getting Started ⤵︎
+</div>
+<style>
+    .hero section {
+        padding: 0 5rem;
+    }
+
+    .taxy-name {
+        color: var(--primary-color);
+        background-color: var(--primary-text-color);
+        padding: 0.2rem 0.5rem;
+        border-radius: 0.5rem;
+    }
+
+    @media screen and (max-width: 640px) {
+        .hero section {
+            padding: 0;
+        }
+
+        .hero-image {
+            display: none
+        }
+    }
+
+    .hero-image {
+        border: 1px solid var(--primary-text-color);
+        border-radius: 12px;
+    }
+</style>
+{% endblock hero %}
+
+{% block favicon %}
+<link rel="apple-touch-icon" sizes="180x180" href="{{ get_url(path="apple-touch-icon.png") }}">
+<link rel="icon" type="image/png" sizes="32x32" href="{{ get_url(path="favicon-32x32.png") }}">
+<link rel="icon" type="image/png" sizes="16x16" href="{{ get_url(path="favicon-16x16.png") }}">
+<meta name="msapplication-TileColor" content="#ffc40d">
+<meta name="theme-color" content="#ffffff">
+{% endblock favicon %}
+
+{% block fonts %}
+<link href="https://fonts.googleapis.com/css2?family=Merriweather+Sans:wght@400;800&display=swap" rel="stylesheet">
+{% endblock fonts %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ get_url(path="taxy.css") }}">
+{% endblock head %}
+
+{% block footer %}
+<footer>
+    <small class="subtext">
+        Zola theme by <a href="https://huhu.io">Huhu.io</a> © 2021
+    </small>
+</footer>
+{% endblock footer %}
