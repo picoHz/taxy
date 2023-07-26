@@ -25,7 +25,7 @@ pub fn convert_multiaddr(addr: &Multiaddr) -> (&str, String) {
                 kind = "TCP";
             }
             Protocol::Tls => {
-                kind = "TLS";
+                kind = "TCP over TLS";
             }
             Protocol::Http => {
                 kind = "HTTP";

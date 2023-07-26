@@ -24,7 +24,7 @@ impl ToString for ProxyProtocol {
     fn to_string(&self) -> String {
         match self {
             ProxyProtocol::Http => "HTTP / HTTPS".to_string(),
-            ProxyProtocol::Tcp => "TCP / TLS".to_string(),
+            ProxyProtocol::Tcp => "TCP / TCP over TLS".to_string(),
         }
     }
 }
