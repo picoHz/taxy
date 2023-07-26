@@ -34,40 +34,53 @@ Please note, you can change the configuration freely, but due to the instance be
 
 ## Installation
 
-To build the Taxy binary, ensure that you have the Rust toolchain installed.
+There are multiple ways to install Taxy.
 
-Once you have successfully built and started taxy, you can access the admin panel at http://localhost:46492/.
+### Cargo binstall (recommended)
 
-### From crates.io
+[cargo-binstall](https://github.com/cargo-bins/) automatically downloads and installs pre-built binaries for your platform. If there is no pre-built binary available, it will fall back to `cargo install`.
 
-The package on crates.io contains the WebUI as a static asset, so you don't need to build it yourself.
+You need to install [cargo-binstall](https://github.com/cargo-bins/cargo-binstall#installation) first.
 
-Install "Taxy" using Cargo:
-
-```bash
-cargo install taxy
-
-# Create admin user
-taxy add-user admin
-password?: ******
-
-# Start server
-taxy start
-```
-
-### From git
-
-To build the Web UI, make sure you have [trunk](https://trunkrs.dev/) installed on your system.
-
-Clone the repository and install the package:
+Then you can install Taxy with:
 
 ```bash
-git clone https://github.com/picoHz/taxy
-cd taxy/taxy-webui
-trunk build --release
-cd ..
-cargo install --path .
+$ cargo binstall taxy
 ```
+
+### Cargo install
+
+You need to have the Rust toolchain installed. If you don't, please follow the instructions on [rustup.rs](https://rustup.rs/).
+
+The package on crates.io comes bundled with the WebUI as a static asset. Thus, you don't need to build it yourself (which would require [trunk](https://trunkrs.dev/) and wasm toolchain).
+
+```bash
+$ cargo install taxy
+```
+
+### Github Releases
+
+Alternatively, you can directly download the latest pre-built binaries from the [releases page](https://github.com/picoHz/taxy/releases).
+
+You simply put the extracted binary somewhere in your `$PATH` and you're good to go.
+
+## Starting the server
+
+First, you need to create a user to access the admin panel. You will be prompted for a password.
+
+```bash
+# Create a user
+$ taxy add-user admin
+$ password?: ******
+```
+
+Then, you can start the server.
+
+```bash
+$ taxy start
+```
+
+Once the server is running, you can access the admin panel at [http://localhost:46492/](http://localhost:46492/).
 
 ## Development
 
@@ -85,10 +98,3 @@ cargo run
 cd webui
 trunk serve --proxy-backend=http://localhost:46492/api/
 ```
-
-## FAQ
-
-### Why don't changes to the configuration take effect immediately?
-
-Updating the configuration solely impacts new connections.
-When browsers maintain active TCP streams, subsequent requests will continue to follow the prior configuration.
