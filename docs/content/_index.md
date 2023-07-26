@@ -28,17 +28,11 @@ There are multiple ways to install Taxy.
 
 You need to install [cargo-binstall](https://github.com/cargo-bins/cargo-binstall#installation) first.
 
-```bash
-$ curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-```
-
 Then you can install Taxy with:
 
 ```bash
 $ cargo binstall taxy
 ```
-
-In case it falls back to `cargo install`, you need to have the Rust toolchain installed as explained in the next section.
 
 ## Cargo install
 
