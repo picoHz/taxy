@@ -1,11 +1,15 @@
 [package]
 name = "taxy-api"
 description = "Type definitions and API for taxy"
-version = "0.1.9"
+version = "0.1.10"
 edition = "2021"
 authors = ["picoHz <picoHz@outlook.com>"]
 keywords = ["tcp", "http", "tls", "proxy", "reverse-proxy"]
-categories = ["network-programming", "web-programming", "web-programming::websocket"]
+categories = [
+    "network-programming",
+    "web-programming",
+    "web-programming::websocket",
+]
 license = "MIT"
 repository = "https://github.com/picoHz/taxy"
 homepage = "https://taxy.dev/"
@@ -14,7 +18,7 @@ homepage = "https://taxy.dev/"
 base64 = "0.21.2"
 humantime-serde = "1.1.1"
 multiaddr = "0.18.0"
-serde = {version = "1.0.171", features = ["rc"]}
+serde = { version = "1.0.171", features = ["rc"] }
 serde_default = "0.1.0"
 serde_derive = "1.0.171"
 serde_json = "1.0.102"
