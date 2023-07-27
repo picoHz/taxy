@@ -50,6 +50,7 @@ pub fn login() -> Html {
 
     let username = use_state(String::new);
     let password = use_state(String::new);
+    let totp = use_state(|| Option::<String>::None);
     let error: UseStateHandle<Option<ErrorMessage>> = use_state(|| Option::<ErrorMessage>::None);
 
     let oninput_username = Callback::from({
@@ -76,6 +77,20 @@ pub fn login() -> Html {
         }
     });
 
+    let totp_cloned = totp.clone();
+    let oninput_totp = Callback::from({
+        let totp = totp_cloned.clone();
+        move |input_event: InputEvent| {
+            let target: HtmlInputElement = input_event
+                .target()
+                .unwrap_throw()
+                .dyn_into()
+                .unwrap_throw();
+            totp.set(Some(target.value()));
+        }
+    });
+
+    let totp_cloned = totp.clone();
     let error_cloned = error.clone();
     let onsubmit = Callback::from(move |event: SubmitEvent| {
         event.prevent_default();
@@ -83,15 +98,25 @@ pub fn login() -> Html {
         let navigator = navigator.clone();
         let username = username.clone();
         let password = password.clone();
+        let totp = totp_cloned.clone();
         let query = query.clone();
         let error = error_cloned.clone();
+
+        let method = if let Some(totp) = &*totp {
+            LoginMethod::Totp {
+                token: totp.to_string(),
+            }
+        } else {
+            LoginMethod::Password {
+                password: password.to_string(),
+            }
+        };
+
         wasm_bindgen_futures::spawn_local(async move {
             let login: ApiResult<LoginResponse> = Request::post(&format!("{API_ENDPOINT}/login"))
                 .json(&LoginRequest {
                     username: username.to_string(),
-                    method: LoginMethod::Password {
-                        password: password.to_string(),
-                    },
+                    method,
                 })
                 .unwrap()
                 .send()
@@ -101,13 +126,14 @@ pub fn login() -> Html {
                 .await
                 .unwrap();
             match login {
-                ApiResult::Ok(_) => {
+                ApiResult::Ok(LoginResponse::Success) => {
                     if let Some(redirect) = query.redirect {
                         navigator.replace(&redirect);
                     } else {
                         navigator.push(&Route::Dashboard);
                     }
                 }
+                ApiResult::Ok(LoginResponse::TotpRequired) => totp.set(Some(String::new())),
                 ApiResult::Err(err) => {
                     error.set(Some(err));
                 }
@@ -130,14 +156,21 @@ pub fn login() -> Html {
                         </article>
                     }
                     <form {onsubmit}>
-                        <label class={classes!("label", "mt-5")}>{ "Username" }</label>
-                        <div class={classes!("control")}>
-                            <input class="input" type="text" autocapitalize="off" oninput={oninput_username} />
-                        </div>
-                        <label class={classes!("label", "mt-5")}>{ "Password" }</label>
-                        <div class={classes!("control")}>
-                            <input class="input" type="password" oninput={oninput_password} />
-                        </div>
+                        if let Some(totp) = &*totp {
+                            <label class={classes!("label", "mt-5")}>{ "TOTP" }</label>
+                            <div class={classes!("control")}>
+                                <input class="input" type="number" value={totp.to_string()} autocapitalize="off" oninput={oninput_totp} />
+                            </div>
+                        } else {
+                            <label class={classes!("label", "mt-5")}>{ "Username" }</label>
+                            <div class={classes!("control")}>
+                                <input class="input" type="text" autocapitalize="off" oninput={oninput_username} />
+                            </div>
+                            <label class={classes!("label", "mt-5")}>{ "Password" }</label>
+                            <div class={classes!("control")}>
+                                <input class="input" type="password" oninput={oninput_password} />
+                            </div>
+                        }
                         <div class={classes!("control", "mt-5")}>
                             <input type="submit" value={"Login"} class={classes!("button", "is-primary", "is-fullwidth")} />
                         </div>

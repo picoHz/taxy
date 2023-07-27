@@ -65,7 +65,7 @@ fn default_admin_session_expiry() -> Duration {
 }
 
 fn default_max_attempts() -> u32 {
-    5
+    10
 }
 
 fn default_login_attempts_reset() -> Duration {

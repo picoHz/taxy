@@ -8,7 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 use taxy_api::{
-    auth::{LoginRequest, LoginResponse},
+    auth::{LoginMethod, LoginRequest, LoginResponse},
     error::Error,
 };
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
@@ -21,6 +21,7 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
         rate_limit(app_state.clone())
             .and(warp::path("login"))
             .and(warp::body::json())
+            .and(warp::cookie::optional("token"))
             .and(warp::path::end())
             .and_then(login),
     );
@@ -45,25 +46,48 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
         (status = 400),
     )
 )]
-pub async fn login(state: AppState, request: LoginRequest) -> Result<impl Reply, Rejection> {
+pub async fn login(
+    state: AppState,
+    request: LoginRequest,
+    token: Option<String>,
+) -> Result<impl Reply, Rejection> {
     let username = request.username.clone();
+
+    if let LoginMethod::Totp { .. } = &request.method {
+        let mut data = state.data.lock().await;
+        let expiry = data.config.admin.session_expiry;
+        let ok = data
+            .sessions
+            .verify(SessionKind::Login, &token.unwrap_or_default(), expiry)
+            .map(|session| session.username == username)
+            .unwrap_or_default();
+        if !ok {
+            return Err(warp::reject::custom(Error::InvalidLoginCredentials));
+        }
+    }
+
     let result = state.call(VerifyAccount { request }).await;
-    if let Err(err) = result {
-        Err(warp::reject::custom(err))
-    } else {
-        Ok(warp::reply::with_header(
-            warp::reply::json(&LoginResponse::Success),
-            "Set-Cookie",
-            &format!(
-                "token={}; HttpOnly; SameProxy=Strict; Secure",
-                state
-                    .data
-                    .lock()
-                    .await
-                    .sessions
-                    .new_token(SessionKind::Admin, &username)
-            ),
-        ))
+    match result {
+        Err(err) => Err(warp::reject::custom(err)),
+        Ok(res) => {
+            let session = match *res {
+                LoginResponse::Success => SessionKind::Admin,
+                _ => SessionKind::Login,
+            };
+            Ok(warp::reply::with_header(
+                warp::reply::json(&res),
+                "Set-Cookie",
+                &format!(
+                    "token={}; HttpOnly; SameProxy=Strict; Secure",
+                    state
+                        .data
+                        .lock()
+                        .await
+                        .sessions
+                        .new_token(session, &username)
+                ),
+            ))
+        }
     }
 }
 
@@ -98,6 +122,7 @@ pub struct Session {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SessionKind {
+    Login,
     Admin,
 }
 

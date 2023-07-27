@@ -131,7 +131,10 @@ impl Storage for TestStorage {
     }
 
     async fn verify_account(&self, request: LoginRequest) -> Result<LoginResponse, Error> {
-        let LoginMethod::Password { password } = request.method;
+        let password = match request.method {
+            LoginMethod::Password { password } => password,
+            _ => return Err(Error::InvalidLoginCredentials),
+        };
         let inner = self.inner.lock().await;
         if let Some(p) = inner.accounts.get(&request.username) {
             if *p == password {

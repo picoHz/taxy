@@ -25,6 +25,7 @@ use taxy_api::{
 use tokio::fs;
 use tokio::io::AsyncReadExt;
 use toml_edit::Document;
+use totp_rs::{Secret, TOTP};
 use tracing::{error, info, warn};
 
 pub struct FileStorage {
@@ -256,6 +257,7 @@ impl FileStorage {
 
         let account = Account {
             password: password_hash,
+            totp: None,
         };
         doc[name].clone_from(toml_edit::ser::to_document(&account)?.as_item());
 
@@ -270,12 +272,12 @@ impl FileStorage {
         Ok(toml::from_str(&content)?)
     }
 
-    async fn verify_account(&self, name: &str, password: &str) -> bool {
+    async fn verify_password(&self, name: &str, password: &str) -> Result<LoginResponse, Error> {
         let accounts = match self.load_accounts().await {
             Ok(accounts) => accounts,
             Err(err) => {
                 error!(?err, "failed to load accounts: {err}");
-                return false;
+                return Err(Error::InvalidLoginCredentials);
             }
         };
 
@@ -283,7 +285,7 @@ impl FileStorage {
             Some(account) => account,
             None => {
                 error!(?name, "account not found: {name}");
-                return false;
+                return Err(Error::InvalidLoginCredentials);
             }
         };
 
@@ -291,17 +293,59 @@ impl FileStorage {
             Ok(parsed_hash) => parsed_hash,
             Err(err) => {
                 error!(?err, "failed to parse password hash: {err}");
-                return false;
+                return Err(Error::InvalidLoginCredentials);
             }
         };
 
         let argon2 = Argon2::default();
         if let Err(err) = argon2.verify_password(password.as_bytes(), &parsed_hash) {
             error!(?err, "failed to verify password: {err}");
-            return false;
+            return Err(Error::InvalidLoginCredentials);
         }
 
-        true
+        if account.totp.is_some() {
+            return Ok(LoginResponse::TotpRequired);
+        }
+
+        Ok(LoginResponse::Success)
+    }
+
+    async fn verify_totp(&self, name: &str, token: &str) -> Result<LoginResponse, Error> {
+        let accounts = match self.load_accounts().await {
+            Ok(accounts) => accounts,
+            Err(err) => {
+                error!(?err, "failed to load accounts: {err}");
+                return Err(Error::InvalidLoginCredentials);
+            }
+        };
+
+        let account = match accounts.get(name) {
+            Some(account) => account,
+            None => {
+                error!(?name, "account not found: {name}");
+                return Err(Error::InvalidLoginCredentials);
+            }
+        };
+
+        let secret = match &account.totp {
+            Some(totp) => Secret::Encoded(totp.clone())
+                .to_bytes()
+                .map_err(|_| Error::InvalidLoginCredentials)?,
+            None => {
+                error!(?name, "totp not found: {name}");
+                return Err(Error::InvalidLoginCredentials);
+            }
+        };
+
+        let totp = TOTP {
+            secret,
+            ..Default::default()
+        };
+
+        if totp.check_current(token).unwrap_or_default() {
+            return Ok(LoginResponse::Success);
+        }
+        Err(Error::InvalidLoginCredentials)
     }
 }
 
@@ -445,11 +489,11 @@ impl Storage for FileStorage {
     }
 
     async fn verify_account(&self, request: LoginRequest) -> Result<LoginResponse, Error> {
-        let LoginMethod::Password { password } = request.method;
-        if self.verify_account(&request.username, &password).await {
-            Ok(LoginResponse::Success)
-        } else {
-            Err(Error::InvalidLoginCredentials)
+        match request.method {
+            LoginMethod::Password { password } => {
+                self.verify_password(&request.username, &password).await
+            }
+            LoginMethod::Totp { token } => self.verify_totp(&request.username, &token).await,
         }
     }
 }
@@ -457,4 +501,7 @@ impl Storage for FileStorage {
 #[derive(Clone, Serialize, Deserialize)]
 struct Account {
     pub password: String,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub totp: Option<String>,
 }
