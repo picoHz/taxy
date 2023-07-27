@@ -48,7 +48,7 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
 pub async fn login(state: AppState, req: LoginRequest) -> Result<impl Reply, Rejection> {
     let result = state
         .call(VerifyAccount {
-            username: req.username,
+            username: req.username.clone(),
             password: req.password,
         })
         .await;
@@ -60,7 +60,12 @@ pub async fn login(state: AppState, req: LoginRequest) -> Result<impl Reply, Rej
             "Set-Cookie",
             &format!(
                 "token={}; HttpOnly; SameProxy=Strict; Secure",
-                state.data.lock().await.sessions.new_token()
+                state
+                    .data
+                    .lock()
+                    .await
+                    .sessions
+                    .new_token(SessionKind::Admin, &req.username)
             ),
         ))
     }
@@ -88,26 +93,47 @@ pub async fn logout(state: AppState, token: String) -> Result<impl Reply, Reject
     ))
 }
 
+#[derive(Debug, Clone)]
+pub struct Session {
+    pub kind: SessionKind,
+    pub username: String,
+    pub started_at: Instant,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SessionKind {
+    Admin,
+}
+
 #[derive(Default)]
 pub struct SessionStore {
-    tokens: HashMap<String, Instant>,
+    tokens: HashMap<String, Session>,
 }
 
 impl SessionStore {
-    pub fn new_token(&mut self) -> String {
+    pub fn new_token(&mut self, kind: SessionKind, username: &str) -> String {
         let token = Alphanumeric.sample_string(&mut rand::thread_rng(), SESSION_TOKEN_LENGTH);
-        self.tokens.insert(token.clone(), Instant::now());
+        self.tokens.insert(
+            token.clone(),
+            Session {
+                kind,
+                username: username.to_string(),
+                started_at: Instant::now(),
+            },
+        );
         token
     }
 
-    pub fn verify(&mut self, token: &str, expiry: Duration) -> bool {
+    pub fn verify(&mut self, kind: SessionKind, token: &str, expiry: Duration) -> Option<&Session> {
         let expiry = expiry.max(MINIMUM_SESSION_EXPIRY);
         self.tokens = self
             .tokens
             .drain()
-            .filter(|(_, t)| t.elapsed() < expiry)
+            .filter(|(_, t)| t.started_at.elapsed() < expiry)
             .collect();
-        self.tokens.contains_key(token)
+        self.tokens
+            .get(token)
+            .filter(|session| session.kind == kind)
     }
 
     pub fn remove(&mut self, token: &str) {

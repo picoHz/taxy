@@ -1,3 +1,5 @@
+use self::auth::{SessionKind, SessionStore};
+use self::log::LogReader;
 use crate::command::ServerCommand;
 use crate::server::rpc::ErasedRpcMethod;
 use crate::server::rpc::{RpcCallback, RpcMethod, RpcWrapper};
@@ -23,9 +25,6 @@ use tracing::{error, info, trace, warn};
 use utoipa::OpenApi;
 use warp::filters::body::BodyDeserializeError;
 use warp::{sse::Event, Filter, Rejection, Reply};
-
-use self::auth::SessionStore;
-use self::log::LogReader;
 
 mod acme;
 mod app_info;
@@ -282,7 +281,11 @@ fn with_state(state: AppState) -> impl Filter<Extract = (AppState,), Error = Rej
                     if let Some(token) = token {
                         let mut data = data.lock().await;
                         let expiry = data.config.admin.session_expiry;
-                        if data.sessions.verify(&token, expiry) {
+                        if data
+                            .sessions
+                            .verify(SessionKind::Admin, &token, expiry)
+                            .is_some()
+                        {
                             return Ok(());
                         }
                     }
