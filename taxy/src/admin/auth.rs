@@ -45,18 +45,14 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
         (status = 400),
     )
 )]
-pub async fn login(state: AppState, req: LoginRequest) -> Result<impl Reply, Rejection> {
-    let result = state
-        .call(VerifyAccount {
-            username: req.username.clone(),
-            password: req.password,
-        })
-        .await;
+pub async fn login(state: AppState, request: LoginRequest) -> Result<impl Reply, Rejection> {
+    let username = request.username.clone();
+    let result = state.call(VerifyAccount { request }).await;
     if let Err(err) = result {
         Err(warp::reject::custom(err))
     } else {
         Ok(warp::reply::with_header(
-            warp::reply::json(&LoginResponse { success: true }),
+            warp::reply::json(&LoginResponse::Success),
             "Set-Cookie",
             &format!(
                 "token={}; HttpOnly; SameProxy=Strict; Secure",
@@ -65,7 +61,7 @@ pub async fn login(state: AppState, req: LoginRequest) -> Result<impl Reply, Rej
                     .lock()
                     .await
                     .sessions
-                    .new_token(SessionKind::Admin, &req.username)
+                    .new_token(SessionKind::Admin, &username)
             ),
         ))
     }

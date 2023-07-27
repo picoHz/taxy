@@ -5,11 +5,22 @@ use utoipa::ToSchema;
 pub struct LoginRequest {
     #[schema(example = "admin")]
     pub username: String,
-    #[schema(example = "passw0rd")]
-    pub password: String,
+    #[schema(inline)]
+    #[serde(flatten)]
+    pub method: LoginMethod,
+}
+
+#[derive(Deserialize, Serialize, ToSchema)]
+#[serde(tag = "method", rename_all = "snake_case")]
+pub enum LoginMethod {
+    Password {
+        #[schema(example = "passw0rd")]
+        password: String,
+    },
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
-pub struct LoginResponse {
-    pub success: bool,
+#[serde(rename_all = "snake_case")]
+pub enum LoginResponse {
+    Success,
 }

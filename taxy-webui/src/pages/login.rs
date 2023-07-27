@@ -7,7 +7,7 @@ use gloo_events::EventListener;
 use gloo_net::http::Request;
 use serde_derive::Deserialize;
 use taxy_api::{
-    auth::{LoginRequest, LoginResponse},
+    auth::{LoginMethod, LoginRequest, LoginResponse},
     error::ErrorMessage,
 };
 use wasm_bindgen::{prelude::wasm_bindgen, JsCast, UnwrapThrowExt};
@@ -89,7 +89,9 @@ pub fn login() -> Html {
             let login: ApiResult<LoginResponse> = Request::post(&format!("{API_ENDPOINT}/login"))
                 .json(&LoginRequest {
                     username: username.to_string(),
-                    password: password.to_string(),
+                    method: LoginMethod::Password {
+                        password: password.to_string(),
+                    },
                 })
                 .unwrap()
                 .send()

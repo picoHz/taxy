@@ -15,7 +15,12 @@ use taxy::{
     server::{Server, ServerChannels},
 };
 use taxy_api::{
-    app::AppConfig, error::Error, id::ShortId, port::PortEntry, site::ProxyEntry,
+    app::AppConfig,
+    auth::{LoginMethod, LoginRequest, LoginResponse},
+    error::Error,
+    id::ShortId,
+    port::PortEntry,
+    site::ProxyEntry,
     subject_name::SubjectName,
 };
 use tokio::sync::Mutex;
@@ -125,11 +130,12 @@ impl Storage for TestStorage {
         Ok(())
     }
 
-    async fn verify_account(&self, name: &str, password: &str) -> Result<(), Error> {
+    async fn verify_account(&self, request: LoginRequest) -> Result<LoginResponse, Error> {
+        let LoginMethod::Password { password } = request.method;
         let inner = self.inner.lock().await;
-        if let Some(p) = inner.accounts.get(name) {
-            if p == password {
-                return Ok(());
+        if let Some(p) = inner.accounts.get(&request.username) {
+            if *p == password {
+                return Ok(LoginResponse::Success);
             }
         }
         Err(Error::InvalidLoginCredentials)

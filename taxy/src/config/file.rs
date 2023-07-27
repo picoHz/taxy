@@ -11,7 +11,12 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
-use taxy_api::{app::AppConfig, cert::CertKind, id::ShortId};
+use taxy_api::{
+    app::AppConfig,
+    auth::{LoginMethod, LoginRequest, LoginResponse},
+    cert::CertKind,
+    id::ShortId,
+};
 use taxy_api::{
     error::Error,
     port::{Port, PortEntry},
@@ -439,9 +444,10 @@ impl Storage for FileStorage {
             .map_err(|_| Error::FailedToCreateAccount)
     }
 
-    async fn verify_account(&self, name: &str, password: &str) -> Result<(), Error> {
-        if self.verify_account(name, password).await {
-            Ok(())
+    async fn verify_account(&self, request: LoginRequest) -> Result<LoginResponse, Error> {
+        let LoginMethod::Password { password } = request.method;
+        if self.verify_account(&request.username, &password).await {
+            Ok(LoginResponse::Success)
         } else {
             Err(Error::InvalidLoginCredentials)
         }
