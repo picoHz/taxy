@@ -50,6 +50,10 @@ Alternatively, you can directly download the latest pre-built binaries from the 
 
 You simply put the extracted binary somewhere in your `$PATH` and you're good to go.
 
+# Development
+
+Please refer to the [Development](/development) section for details.
+
 # First setup
 
 First, you need to create a user to access the admin panel. You will be prompted for a password.
