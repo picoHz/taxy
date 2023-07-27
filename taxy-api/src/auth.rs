@@ -1,6 +1,14 @@
 use serde_derive::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
+#[derive(Clone, Serialize, Deserialize)]
+pub struct Account {
+    pub password: String,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub totp: Option<String>,
+}
+
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct LoginRequest {
     #[schema(example = "admin")]

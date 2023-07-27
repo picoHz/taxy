@@ -16,7 +16,7 @@ use taxy::{
 };
 use taxy_api::{
     app::AppConfig,
-    auth::{LoginMethod, LoginRequest, LoginResponse},
+    auth::{Account, LoginMethod, LoginRequest, LoginResponse},
     error::Error,
     id::ShortId,
     port::PortEntry,
@@ -121,13 +121,16 @@ impl Storage for TestStorage {
         self.inner.lock().await.certs.values().cloned().collect()
     }
 
-    async fn add_account(&self, name: &str, password: &str) -> Result<(), Error> {
+    async fn add_account(&self, name: &str, password: &str, _totp: bool) -> Result<Account, Error> {
         self.inner
             .lock()
             .await
             .accounts
             .insert(name.to_string(), password.to_string());
-        Ok(())
+        Ok(Account {
+            password: password.to_string(),
+            totp: None,
+        })
     }
 
     async fn verify_account(&self, request: LoginRequest) -> Result<LoginResponse, Error> {

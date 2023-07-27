@@ -94,7 +94,10 @@ async fn add_user(args: taxy::args::AddUserArgs) -> anyhow::Result<()> {
     } else {
         rpassword::prompt_password("password?: ")?
     };
-    config.add_account(&args.name, &password).await?;
+    let account = config.add_account(&args.name, &password, args.totp).await?;
+    if let Some(totp) = account.totp {
+        println!("\nUse this code to setup your TOTP client:\n{totp}\n");
+    }
     Ok(())
 }
 

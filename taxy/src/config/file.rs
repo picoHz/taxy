@@ -5,7 +5,6 @@ use crate::certs::{
 };
 use argon2::{password_hash::SaltString, Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use indexmap::map::IndexMap;
-use serde_derive::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     path::{Path, PathBuf},
@@ -13,7 +12,7 @@ use std::{
 };
 use taxy_api::{
     app::AppConfig,
-    auth::{LoginMethod, LoginRequest, LoginResponse},
+    auth::{Account, LoginMethod, LoginRequest, LoginResponse},
     cert::CertKind,
     id::ShortId,
 };
@@ -238,7 +237,12 @@ impl FileStorage {
         Ok(table.into_iter().map(|entry| entry.into()).collect())
     }
 
-    async fn add_account_impl(&self, name: &str, password: &str) -> anyhow::Result<()> {
+    async fn add_account_impl(
+        &self,
+        name: &str,
+        password: &str,
+        totp: bool,
+    ) -> anyhow::Result<Account> {
         fs::create_dir_all(&self.dir).await?;
         let path = self.dir.join("accounts.toml");
         info!(?path, "save account");
@@ -257,12 +261,16 @@ impl FileStorage {
 
         let account = Account {
             password: password_hash,
-            totp: None,
+            totp: if totp {
+                Some(TOTP::default().get_secret_base32())
+            } else {
+                None
+            },
         };
         doc[name].clone_from(toml_edit::ser::to_document(&account)?.as_item());
 
         fs::write(&path, doc.to_string()).await?;
-        Ok(())
+        Ok(account)
     }
 
     async fn load_accounts(&self) -> anyhow::Result<HashMap<String, Account>> {
@@ -482,8 +490,8 @@ impl Storage for FileStorage {
         certs
     }
 
-    async fn add_account(&self, name: &str, password: &str) -> Result<(), Error> {
-        self.add_account_impl(name, password)
+    async fn add_account(&self, name: &str, password: &str, totp: bool) -> Result<Account, Error> {
+        self.add_account_impl(name, password, totp)
             .await
             .map_err(|_| Error::FailedToCreateAccount)
     }
@@ -496,12 +504,4 @@ impl Storage for FileStorage {
             LoginMethod::Totp { token } => self.verify_totp(&request.username, &token).await,
         }
     }
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-struct Account {
-    pub password: String,
-
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub totp: Option<String>,
 }

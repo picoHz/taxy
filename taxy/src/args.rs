@@ -80,4 +80,7 @@ pub struct AddUserArgs {
 
     #[clap(long, short, value_name = "DIR", env = "TAXY_CONFIG_DIR")]
     pub config_dir: Option<PathBuf>,
+
+    #[clap(long)]
+    pub totp: bool,
 }

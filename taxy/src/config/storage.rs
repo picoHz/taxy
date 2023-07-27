@@ -2,7 +2,7 @@ use crate::certs::{acme::AcmeEntry, Cert};
 use std::sync::Arc;
 use taxy_api::{
     app::AppConfig,
-    auth::{LoginRequest, LoginResponse},
+    auth::{Account, LoginRequest, LoginResponse},
     error::Error,
     id::ShortId,
     port::PortEntry,
@@ -23,6 +23,6 @@ pub trait Storage: Send + Sync + 'static {
     async fn delete_cert(&self, id: &str);
     async fn load_acmes(&self) -> Vec<AcmeEntry>;
     async fn load_certs(&self) -> Vec<Arc<Cert>>;
-    async fn add_account(&self, name: &str, password: &str) -> Result<(), Error>;
+    async fn add_account(&self, name: &str, password: &str, totp: bool) -> Result<Account, Error>;
     async fn verify_account(&self, request: LoginRequest) -> Result<LoginResponse, Error>;
 }

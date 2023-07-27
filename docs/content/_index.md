@@ -64,6 +64,17 @@ $ taxy add-user admin
 $ password?: ******
 ```
 
+If you want to use TOTP for two-factor authentication, you can enable it with the `--totp` flag.
+
+```bash
+# Create a user with TOTP enabled
+$ taxy add-user admin --totp
+$ password?: ******
+
+Use this code to setup your TOTP client:
+EXAMPLECODEEXAMPLECODE
+```
+
 Then, you can start the server.
 
 ```bash
