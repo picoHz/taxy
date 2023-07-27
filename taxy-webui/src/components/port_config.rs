@@ -5,7 +5,10 @@ use std::{
     collections::HashMap,
     net::{Ipv4Addr, Ipv6Addr},
 };
-use taxy_api::port::{NetworkInterface, Port};
+use taxy_api::{
+    port::{NetworkInterface, Port, PortOptions},
+    tls::TlsTermination,
+};
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use web_sys::{HtmlInputElement, HtmlSelectElement};
 use yew::prelude::*;
@@ -252,7 +255,11 @@ fn get_port(
     let opts = Port {
         name: name.trim().to_string(),
         listen: addr,
-        opts: Default::default(),
+        opts: PortOptions {
+            tls_termination: Some(TlsTermination::default())
+                .filter(|_| protocol == "tls" || protocol == "https"),
+            ..Default::default()
+        },
     };
 
     if errors.is_empty() {

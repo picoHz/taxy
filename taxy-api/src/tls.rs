@@ -1,3 +1,4 @@
+use serde_default::DefaultFromSerde;
 use serde_derive::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -7,8 +8,9 @@ pub enum TlsState {
     Active,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, DefaultFromSerde, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct TlsTermination {
+    #[serde(default)]
     #[schema(example = json!(["*.example.com"]))]
     pub server_names: Vec<String>,
 }
