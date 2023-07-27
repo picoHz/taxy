@@ -28,5 +28,12 @@ pre {
 
 .nav-item {
     margin: 0 0.6rem;
-    font-size: 1.4rem;
+    font-size: 1.2rem;
+}
+
+@media screen and (max-width: 768px) {
+    .nav-item {
+        margin: 0 0.4rem;
+        font-size: 1.0rem;
+    }
 }
