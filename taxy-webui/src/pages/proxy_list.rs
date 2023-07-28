@@ -124,10 +124,12 @@ pub fn proxy_list() -> Html {
                     }).map(|entry| {
                         let (protocol, addr) = convert_multiaddr(&entry.port.listen);
                         html! {
-                            <span class="tags has-addons">
-                                <span class="tag is-dark">{protocol}</span>
-                                <span class="tag is-info">{addr}</span>
-                            </span>
+                            <div class="control">
+                                <span class="tags has-addons">
+                                    <span class="tag is-dark">{protocol}</span>
+                                    <span class="tag is-info">{addr}</span>
+                                </span>
+                            </div>
                         }
                     }).collect::<Html>()
                 };
