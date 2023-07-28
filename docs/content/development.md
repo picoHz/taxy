@@ -4,55 +4,55 @@ description = "Development"
 weight = 0
 +++
 
-The source code is available on [GitHub](https://github.com/picoHz/taxy).
+Our project's source code is available on [GitHub](https://github.com/picoHz/taxy).
 
 # Prerequisites
 
-- Stable Rust toolchain
-- WASM toolchain
-- [Trunk](https://trunkrs.dev/)
+Before getting started, make sure to install the following prerequisites:
 
-# Install dependencies
+- Rust toolchain: You can install it using [rustup.rs](https://rustup.rs/)
+- WASM toolchain: After installing the Rust toolchain, add the WASM target by executing `rustup target add wasm32-unknown-unknown` in your terminal
+- [Trunk](https://trunkrs.dev/): Visit the website for installation instructions
 
-## Rust Toolchain
+# Development Setup
 
-See [rustup.rs](https://rustup.rs/).
+To set up the development environment, follow these steps:
 
-## WASM Toolchain
+1. Clone the repository: `git clone https://github.com/picoHz/taxy`
+2. Start the server:
 
-```bash
-$ rustup target add wasm32-unknown-unknown
-```
+   ```bash
+   cd taxy
+   cargo run
+   ```
 
-## Trunk
+3. In a separate terminal, start `trunk serve` for the WebUI:
 
-See [trunkrs.dev](https://trunkrs.dev/).
+   ```bash
+   cd webui
+   trunk serve --proxy-backend=http://localhost:46492/api/
+   ```
 
-# Debug Build
+# Building for Release
 
-```bash
-$ git clone https://github.com/picoHz/taxy
+To build the project for a release, execute the following steps:
 
-# Start the server
-$ cd taxy
-$ cargo run
+1. Build the WebUI:
 
-# In a separate terminal, start `trunk serve` for the WebUI
-$ cd webui
-$ trunk serve --proxy-backend=http://localhost:46492/api/
-```
+   ```bash
+   cd taxy/taxy-webui
+   trunk build --release
+   ```
 
-# Release Build
+2. In a separate terminal, build the project:
 
-```bash
-# Build the WebUI
-$ cd taxy/taxy-webui
-$ trunk build --release
+   ```bash
+   cd ..
+   cargo build --release
+   ```
 
-# In a separate terminal, start `trunk serve` for the WebUI
-$ cd ..
-$ cargo build --release
+3. Start the server:
 
-# Start the server
-$ target/release/taxy start
-```
+   ```bash
+   target/release/taxy start
+   ```
