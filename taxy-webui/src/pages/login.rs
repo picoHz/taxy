@@ -92,12 +92,14 @@ pub fn login() -> Html {
 
     let totp_cloned = totp.clone();
     let error_cloned = error.clone();
+    let username_cloned = username.clone();
+    let password_cloned = password.clone();
     let onsubmit = Callback::from(move |event: SubmitEvent| {
         event.prevent_default();
 
         let navigator = navigator.clone();
-        let username = username.clone();
-        let password = password.clone();
+        let username = username_cloned.clone();
+        let password = password_cloned.clone();
         let totp = totp_cloned.clone();
         let query = query.clone();
         let error = error_cloned.clone();
@@ -157,9 +159,12 @@ pub fn login() -> Html {
                     }
                     <form {onsubmit}>
                         if let Some(totp) = &*totp {
-                            <label class={classes!("label", "mt-5")}>{ "TOTP" }</label>
+                            <label class={classes!("label", "mt-5")}>{ "One Time Password" }</label>
                             <div class={classes!("control")}>
                                 <input class="input" type="number" value={totp.to_string()} autocapitalize="off" oninput={oninput_totp} />
+                            </div>
+                            <div class={classes!("control", "mt-5")}>
+                                <input type="submit" value={"Continue"} disabled={totp.is_empty()} class={classes!("button", "is-primary", "is-fullwidth")} />
                             </div>
                         } else {
                             <label class={classes!("label", "mt-5")}>{ "Username" }</label>
@@ -170,10 +175,10 @@ pub fn login() -> Html {
                             <div class={classes!("control")}>
                                 <input class="input" type="password" oninput={oninput_password} />
                             </div>
+                            <div class={classes!("control", "mt-5")}>
+                                <input type="submit" value={"Login"} disabled={username.is_empty() || password.is_empty()} class={classes!("button", "is-primary", "is-fullwidth")} />
+                            </div>
                         }
-                        <div class={classes!("control", "mt-5")}>
-                            <input type="submit" value={"Login"} class={classes!("button", "is-primary", "is-fullwidth")} />
-                        </div>
                     </form>
                 </ybc::Field>
             </ybc::Column>
