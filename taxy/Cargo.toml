@@ -1,6 +1,6 @@
 [package]
 name = "taxy"
-version = "0.3.8"
+version = "0.3.9"
 edition = "2021"
 include = ["/src", "/templates", "/build.rs", "/LICENSE", "/dist/webui"]
 build = "build.rs"
@@ -65,7 +65,7 @@ sqlx = { version = "0.7.0", features = [
     "time",
 ] }
 tar = "0.4.38"
-taxy-api = { version = "0.1.10", features = ["warp"] }
+taxy-api = { version = "0.1.11", features = ["warp"] }
 thiserror = "1.0.43"
 time = { version = "0.3.23", features = ["serde"] }
 tokio = { version = "1.29.1", features = [
@@ -104,7 +104,7 @@ reqwest = { version = "0.11.18", default-features = false, features = [
     "json",
     "stream",
 ] }
-tokio-tungstenite = { version = "0.19.0", features = [
+tokio-tungstenite = { version = "0.20.0", features = [
     "rustls-tls-native-roots",
 ] }
 warp = { version = "0.3.5", features = ["tls"] }
