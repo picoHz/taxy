@@ -21,11 +21,9 @@ pub fn app() -> Html {
         <>
         <BrowserRouter>
             <Navbar />
-            <ybc::Columns classes={classes!("is-centered")}>
-                <ybc::Column classes={classes!("is-three-quarters-desktop", "m-5")}>
-                    <Switch<pages::Route> render={pages::switch} />
-                </ybc::Column>
-            </ybc::Columns>
+            <div class="container px-5 py-10 mx-auto">
+                <Switch<pages::Route> render={pages::switch} />
+            </div>
         </BrowserRouter>
         </>
     }
