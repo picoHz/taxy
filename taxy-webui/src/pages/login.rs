@@ -144,44 +144,35 @@ pub fn login() -> Html {
     });
 
     html! {
-        <ybc::Columns classes={classes!("is-centered")}>
-            <ybc::Column classes={classes!("login-form")}>
-                <ybc::Field>
-                    if let Some(err) = &*error {
-                        <article class="message is-danger">
-                            <div class="message-header">
-                                <p>{"Error"}</p>
-                            </div>
-                            <div class="message-body">
-                                {&err.message}
-                            </div>
-                        </article>
-                    }
-                    <form {onsubmit}>
-                        if let Some(totp) = &*totp {
-                            <label class={classes!("label", "mt-5")}>{ "One Time Password" }</label>
-                            <div class={classes!("control")}>
-                                <input class="input" type="number" value={totp.to_string()} autocapitalize="off" oninput={oninput_totp} />
-                            </div>
-                            <div class={classes!("control", "mt-5")}>
-                                <input type="submit" value={"Continue"} disabled={totp.is_empty()} class={classes!("button", "is-primary", "is-fullwidth")} />
-                            </div>
-                        } else {
-                            <label class={classes!("label", "mt-5")}>{ "Username" }</label>
-                            <div class={classes!("control")}>
-                                <input class="input" type="text" autocapitalize="off" oninput={oninput_username} />
-                            </div>
-                            <label class={classes!("label", "mt-5")}>{ "Password" }</label>
-                            <div class={classes!("control")}>
-                                <input class="input" type="password" oninput={oninput_password} />
-                            </div>
-                            <div class={classes!("control", "mt-5")}>
-                                <input type="submit" value={"Login"} disabled={username.is_empty() || password.is_empty()} class={classes!("button", "is-primary", "is-fullwidth")} />
-                            </div>
-                        }
-                    </form>
-                </ybc::Field>
-            </ybc::Column>
-        </ybc::Columns>
+        <>
+        <form class="mx-auto max-w-sm mt-4" {onsubmit}>
+            <div class="mx-auto flex w-full justify-center items-center mb-2">
+                <img class="w-8 h-8" src="/assets/logo.svg" />
+            </div>
+            <div class="mx-auto flex w-full justify-center items-center mb-5">
+                <h1 class="font-semibold text-2xl text-neutral-700">{"Taxy Admin"}</h1>
+            </div>
+
+            if let Some(err) = &*error {
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    <span class="block sm:inline">{&err.message}</span>
+                </div>
+            }
+
+            if let Some(totp) = &*totp {
+                <label class="mr-4 text-neutral-700 font-bold inline-block mb-2" for="name">{"One Time Password"}</label>
+                <input type="number" class="border bg-white py-2 px-4 w-full outline-none focus:ring-2 focus:ring-neutral-400 rounded" oninput={oninput_totp} />
+                <input type="submit" class="w-full mt-4 text-neutral-50 font-bold bg-neutral-800 py-3 rounded-md hover:bg-neutral-600 transition duration-300" value={"Continue"} disabled={totp.is_empty()} />
+            } else {
+                <div class="mb-4">
+                    <label class="mr-4 text-neutral-700 font-bold inline-block mb-2" for="name">{"Username"}</label>
+                    <input type="text" class="border bg-white py-2 px-4 w-full outline-none focus:ring-2 focus:ring-neutral-400 rounded" autocapitalize="off" autofocus={true} oninput={oninput_username} />
+                </div>
+                <label class="mr-4 text-neutral-700 font-bold inline-block mb-2" for="name">{"Password"}</label>
+                <input type="password" class="border bg-white py-2 px-4 w-full outline-none focus:ring-2 focus:ring-neutral-400 rounded" oninput={oninput_password} />
+                <input type="submit" class="w-full mt-4 text-neutral-50 font-bold bg-neutral-800 py-3 rounded-md hover:bg-neutral-600 transition duration-300" value={"Login"} disabled={username.is_empty() || password.is_empty()} />
+            }
+        </form>
+        </>
     }
 }

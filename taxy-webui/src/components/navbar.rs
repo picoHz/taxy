@@ -44,6 +44,10 @@ pub fn navbar() -> Html {
         navigator_cloned.push(&Route::Logout);
     });
 
+    if route == Route::Login {
+        return html! {};
+    }
+
     html! {
         <ybc::Navbar
             classes={classes!("is-primary")}
