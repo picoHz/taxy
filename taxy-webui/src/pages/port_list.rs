@@ -25,7 +25,7 @@ pub fn post_list() -> Html {
                 if let Ok(res) = get_list().await {
                     let mut statuses = HashMap::new();
                     for entry in &res {
-                        if let Ok(status) = get_status(&entry.id).await {
+                        if let Ok(status) = get_status(entry.id).await {
                             statuses.insert(entry.id, status);
                         }
                     }
@@ -94,7 +94,7 @@ pub fn post_list() -> Html {
                     if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
                         let id = id;
                         wasm_bindgen_futures::spawn_local(async move {
-                            let _ = delete_port(&id).await;
+                            let _ = delete_port(id).await;
                         });
                     }
                 });
@@ -108,7 +108,7 @@ pub fn post_list() -> Html {
                     if gloo_dialogs::confirm(&format!("Are you sure to reset {id}?\nThis operation closes all existing connections. ")) {
                         let id = id;
                         wasm_bindgen_futures::spawn_local(async move {
-                            let _ = reset_port(&id).await;
+                            let _ = reset_port(id).await;
                         });
                     }
                 });
@@ -225,7 +225,7 @@ async fn get_list() -> Result<Vec<PortEntry>, gloo_net::Error> {
         .await
 }
 
-async fn get_status(id: &ShortId) -> Result<PortStatus, gloo_net::Error> {
+async fn get_status(id: ShortId) -> Result<PortStatus, gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/ports/{id}/status"))
         .send()
         .await?
@@ -233,14 +233,14 @@ async fn get_status(id: &ShortId) -> Result<PortStatus, gloo_net::Error> {
         .await
 }
 
-async fn delete_port(id: &ShortId) -> Result<(), gloo_net::Error> {
+async fn delete_port(id: ShortId) -> Result<(), gloo_net::Error> {
     Request::delete(&format!("{API_ENDPOINT}/ports/{id}"))
         .send()
         .await?;
     Ok(())
 }
 
-async fn reset_port(id: &ShortId) -> Result<(), gloo_net::Error> {
+async fn reset_port(id: ShortId) -> Result<(), gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/ports/{id}/reset"))
         .send()
         .await?;

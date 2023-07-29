@@ -31,7 +31,7 @@ pub fn proxy_view(props: &Props) -> Html {
     use_effect_with_deps(
         move |_| {
             wasm_bindgen_futures::spawn_local(async move {
-                if let Ok(entry) = get_site(&id).await {
+                if let Ok(entry) = get_site(id).await {
                     proxy_cloned.set(Some(entry));
                 }
             });
@@ -69,7 +69,7 @@ pub fn proxy_view(props: &Props) -> Html {
         if let Ok(entry) = (*entry_cloned).clone() {
             is_loading_cloned.set(true);
             wasm_bindgen_futures::spawn_local(async move {
-                if update_site(&id, &entry).await.is_ok() {
+                if update_site(id, &entry).await.is_ok() {
                     navigator.push(&Route::Proxies);
                 }
                 is_loading_cloned.set(false);
@@ -118,7 +118,7 @@ pub fn proxy_view(props: &Props) -> Html {
     }
 }
 
-async fn get_site(id: &ShortId) -> Result<ProxyEntry, gloo_net::Error> {
+async fn get_site(id: ShortId) -> Result<ProxyEntry, gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/proxies/{id}"))
         .send()
         .await?
@@ -126,7 +126,7 @@ async fn get_site(id: &ShortId) -> Result<ProxyEntry, gloo_net::Error> {
         .await
 }
 
-async fn update_site(id: &ShortId, entry: &Proxy) -> Result<(), gloo_net::Error> {
+async fn update_site(id: ShortId, entry: &Proxy) -> Result<(), gloo_net::Error> {
     Request::put(&format!("{API_ENDPOINT}/proxies/{id}"))
         .json(entry)?
         .send()

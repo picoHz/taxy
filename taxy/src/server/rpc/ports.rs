@@ -28,7 +28,7 @@ impl RpcMethod for GetPort {
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state
             .ports
-            .get(&self.id)
+            .get(self.id)
             .map(|port| port.entry().clone())
             .ok_or(Error::IdNotFound {
                 id: self.id.to_string(),
@@ -47,7 +47,7 @@ impl RpcMethod for GetPortStatus {
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state
             .ports
-            .get(&self.id)
+            .get(self.id)
             .map(|port| *port.status())
             .ok_or(Error::IdNotFound {
                 id: self.id.to_string(),
@@ -64,7 +64,7 @@ impl RpcMethod for DeletePort {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        if state.ports.delete(&self.id) {
+        if state.ports.delete(self.id) {
             state.update_port_statuses().await;
             Ok(())
         } else {
@@ -85,7 +85,7 @@ impl RpcMethod for AddPort {
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         let entry: PortEntry = (state.generate_id(), self.entry).into();
-        if state.ports.get(&entry.id).is_some() {
+        if state.ports.get(entry.id).is_some() {
             Err(Error::IdAlreadyExists { id: entry.id })
         } else {
             if state.update_port_ctx(PortContext::new(entry)?).await {
@@ -105,7 +105,7 @@ impl RpcMethod for UpdatePort {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        if state.ports.get(&self.entry.id).is_some() {
+        if state.ports.get(self.entry.id).is_some() {
             if state.update_port_ctx(PortContext::new(self.entry)?).await {
                 state.update_port_statuses().await;
             }
@@ -127,7 +127,7 @@ impl RpcMethod for ResetPort {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        if state.ports.reset(&self.id) {
+        if state.ports.reset(self.id) {
             Ok(())
         } else {
             Err(Error::IdNotFound {

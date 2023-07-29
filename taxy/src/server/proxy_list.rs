@@ -20,8 +20,8 @@ impl FromIterator<ProxyEntry> for ProxyList {
 }
 
 impl ProxyList {
-    pub fn get(&self, id: &ShortId) -> Option<&ProxyEntry> {
-        self.entries.get(id)
+    pub fn get(&self, id: ShortId) -> Option<&ProxyEntry> {
+        self.entries.get(&id)
     }
 
     pub fn entries(&self) -> impl Iterator<Item = &ProxyEntry> {
@@ -46,11 +46,11 @@ impl ProxyList {
         }
     }
 
-    pub fn delete(&mut self, id: &ShortId) -> Result<(), Error> {
-        if !self.entries.contains_key(id) {
+    pub fn delete(&mut self, id: ShortId) -> Result<(), Error> {
+        if !self.entries.contains_key(&id) {
             Err(Error::IdNotFound { id: id.to_string() })
         } else {
-            self.entries.remove(id);
+            self.entries.remove(&id);
             Ok(())
         }
     }

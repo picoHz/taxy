@@ -78,8 +78,8 @@ impl AcmeEntry {
         AcmeOrder::new(self).await
     }
 
-    pub fn id(&self) -> &ShortId {
-        &self.id
+    pub fn id(&self) -> ShortId {
+        self.id
     }
 
     pub fn info(&self) -> AcmeInfo {

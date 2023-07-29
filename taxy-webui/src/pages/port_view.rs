@@ -32,7 +32,7 @@ pub fn port_view(props: &Props) -> Html {
     use_effect_with_deps(
         move |_| {
             wasm_bindgen_futures::spawn_local(async move {
-                if let Ok(entry) = get_port(&id).await {
+                if let Ok(entry) = get_port(id).await {
                     port_cloned.set(Some(entry));
                 }
             });
@@ -70,7 +70,7 @@ pub fn port_view(props: &Props) -> Html {
         if let Ok(entry) = (*entry_cloned).clone() {
             is_loading_cloned.set(true);
             wasm_bindgen_futures::spawn_local(async move {
-                if update_port(&id, &entry).await.is_ok() {
+                if update_port(id, &entry).await.is_ok() {
                     navigator.push(&Route::Ports);
                 }
                 is_loading_cloned.set(false);
@@ -119,7 +119,7 @@ pub fn port_view(props: &Props) -> Html {
     }
 }
 
-async fn get_port(id: &ShortId) -> Result<PortEntry, gloo_net::Error> {
+async fn get_port(id: ShortId) -> Result<PortEntry, gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/ports/{id}"))
         .send()
         .await?
@@ -127,7 +127,7 @@ async fn get_port(id: &ShortId) -> Result<PortEntry, gloo_net::Error> {
         .await
 }
 
-async fn update_port(id: &ShortId, entry: &Port) -> Result<(), gloo_net::Error> {
+async fn update_port(id: ShortId, entry: &Port) -> Result<(), gloo_net::Error> {
     Request::put(&format!("{API_ENDPOINT}/ports/{id}"))
         .json(entry)?
         .send()

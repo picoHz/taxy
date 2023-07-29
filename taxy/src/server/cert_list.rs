@@ -54,13 +54,13 @@ impl CertList {
         &self.root_certs
     }
 
-    pub fn find_certs_by_acme(&self, acme: &ShortId) -> Vec<&Arc<Cert>> {
+    pub fn find_certs_by_acme(&self, acme: ShortId) -> Vec<&Arc<Cert>> {
         self.certs
             .values()
             .filter(|cert| {
                 cert.metadata
                     .as_ref()
-                    .map_or(false, |meta| meta.acme_id == *acme)
+                    .map_or(false, |meta| meta.acme_id == acme)
             })
             .collect()
     }

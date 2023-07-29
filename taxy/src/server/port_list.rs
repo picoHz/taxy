@@ -19,8 +19,8 @@ impl PortList {
         &mut self.contexts
     }
 
-    pub fn get(&self, id: &ShortId) -> Option<&PortContext> {
-        self.contexts.iter().find(|p| p.entry().id == *id)
+    pub fn get(&self, id: ShortId) -> Option<&PortContext> {
+        self.contexts.iter().find(|p| p.entry().id == id)
     }
 
     pub fn update(&mut self, ctx: PortContext) -> bool {
@@ -41,8 +41,8 @@ impl PortList {
         }
     }
 
-    pub fn delete(&mut self, id: &ShortId) -> bool {
-        if let Some(index) = self.contexts.iter().position(|p| p.entry().id == *id) {
+    pub fn delete(&mut self, id: ShortId) -> bool {
+        if let Some(index) = self.contexts.iter().position(|p| p.entry().id == id) {
             self.contexts.remove(index).reset();
             true
         } else {
@@ -50,8 +50,8 @@ impl PortList {
         }
     }
 
-    pub fn reset(&mut self, id: &ShortId) -> bool {
-        if let Some(index) = self.contexts.iter().position(|p| p.entry().id == *id) {
+    pub fn reset(&mut self, id: ShortId) -> bool {
+        if let Some(index) = self.contexts.iter().position(|p| p.entry().id == id) {
             self.contexts[index].reset();
             true
         } else {

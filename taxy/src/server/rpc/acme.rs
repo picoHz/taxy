@@ -28,7 +28,7 @@ impl RpcMethod for GetAcme {
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state
             .acmes
-            .get(&self.id)
+            .get(self.id)
             .map(|acme| acme.info())
             .ok_or(Error::IdNotFound {
                 id: self.id.to_string(),
@@ -62,9 +62,9 @@ impl RpcMethod for DeleteAcme {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.acmes.delete(&self.id)?;
+        state.acmes.delete(self.id)?;
         state.update_acmes().await;
-        state.storage.delete_acme(&self.id).await;
+        state.storage.delete_acme(self.id).await;
         Ok(())
     }
 }

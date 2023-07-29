@@ -97,7 +97,7 @@ pub fn proxy_list() -> Html {
                     if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
                         let id = id;
                         wasm_bindgen_futures::spawn_local(async move {
-                            let _ = delete_site(&id).await;
+                            let _ = delete_site(id).await;
                         });
                     }
                 });
@@ -221,7 +221,7 @@ async fn get_list() -> Result<Vec<ProxyEntry>, gloo_net::Error> {
         .await
 }
 
-async fn delete_site(id: &ShortId) -> Result<(), gloo_net::Error> {
+async fn delete_site(id: ShortId) -> Result<(), gloo_net::Error> {
     Request::delete(&format!("{API_ENDPOINT}/proxies/{id}"))
         .send()
         .await?;

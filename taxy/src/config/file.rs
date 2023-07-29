@@ -160,7 +160,7 @@ impl FileStorage {
         Ok(())
     }
 
-    async fn delete_acme_impl(&self, path: &Path, id: &ShortId) -> anyhow::Result<()> {
+    async fn delete_acme_impl(&self, path: &Path, id: ShortId) -> anyhow::Result<()> {
         info!(?path, "delete acme");
         let mut doc = match self.load_document(path).await {
             Ok(doc) => doc,
@@ -437,7 +437,7 @@ impl Storage for FileStorage {
         }
     }
 
-    async fn delete_acme(&self, id: &ShortId) {
+    async fn delete_acme(&self, id: ShortId) {
         let path = self.dir.join("acme.toml");
         if let Err(err) = self.delete_acme_impl(&path, id).await {
             error!(?path, "failed to delete: {err}");

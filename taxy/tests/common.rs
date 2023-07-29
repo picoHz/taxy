@@ -102,11 +102,11 @@ impl Storage for TestStorage {
             .lock()
             .await
             .acems
-            .insert(*acme.id(), acme.clone());
+            .insert(acme.id(), acme.clone());
     }
 
-    async fn delete_acme(&self, id: &ShortId) {
-        self.inner.lock().await.acems.remove(id);
+    async fn delete_acme(&self, id: ShortId) {
+        self.inner.lock().await.acems.remove(&id);
     }
 
     async fn delete_cert(&self, id: &str) {

@@ -299,7 +299,7 @@ impl ServerState {
     fn remove_expired_certs(&mut self) {
         let mut removing_items = Vec::new();
         for acme in self.acmes.entries() {
-            let certs = self.certs.find_certs_by_acme(&acme.id);
+            let certs = self.certs.find_certs_by_acme(acme.id);
             let mut expired = certs
                 .iter()
                 .filter(|cert| cert.not_after < ASN1Time::now())
@@ -336,7 +336,7 @@ impl ServerState {
         let entries = entries
             .filter(|entry| {
                 self.certs
-                    .find_certs_by_acme(&entry.id)
+                    .find_certs_by_acme(entry.id)
                     .iter()
                     .map(|cert| {
                         cert.metadata

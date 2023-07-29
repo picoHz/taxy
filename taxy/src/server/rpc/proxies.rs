@@ -26,7 +26,7 @@ impl RpcMethod for GetProxy {
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state
             .proxies
-            .get(&self.id)
+            .get(self.id)
             .cloned()
             .ok_or(Error::IdNotFound {
                 id: self.id.to_string(),
@@ -43,7 +43,7 @@ impl RpcMethod for DeleteProxy {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.proxies.delete(&self.id)?;
+        state.proxies.delete(self.id)?;
         state.update_proxies().await;
         Ok(())
     }

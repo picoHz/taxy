@@ -402,7 +402,7 @@ pub fn cert_list() -> Html {
                     if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
                         let id = id;
                         wasm_bindgen_futures::spawn_local(async move {
-                            let _ = delete_acme(&id).await;
+                            let _ = delete_acme(id).await;
                         });
                     }
                 });
@@ -510,7 +510,7 @@ async fn delete_server_cert(id: &str) -> Result<(), gloo_net::Error> {
     Ok(())
 }
 
-async fn delete_acme(id: &ShortId) -> Result<(), gloo_net::Error> {
+async fn delete_acme(id: ShortId) -> Result<(), gloo_net::Error> {
     Request::delete(&format!("{API_ENDPOINT}/acme/{id}"))
         .send()
         .await?;
