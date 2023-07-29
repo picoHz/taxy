@@ -31,7 +31,7 @@ impl fmt::Display for CertKind {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct CertInfo {
     #[schema(example = "a13e1ecc080e42cfcdd5")]
-    pub id: String,
+    pub id: ShortId,
     pub kind: CertKind,
     #[schema(example = "a13e1ecc080e42cfcdd5b77fec8450c777554aa7269c029b242a7c548d0d73da")]
     pub fingerprint: String,
@@ -54,7 +54,7 @@ pub struct SelfSignedCertRequest {
     #[schema(value_type = [String], example = json!(["localhost"]))]
     pub san: Vec<SubjectName>,
     #[schema(example = "f9cf7e3faa1aca7e6086")]
-    pub ca_cert: Option<String>,
+    pub ca_cert: Option<ShortId>,
 }
 
 #[derive(DefaultFromSerde, Clone, Serialize, Deserialize, IntoParams)]

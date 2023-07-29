@@ -5,6 +5,7 @@ use std::{io::Read, ops::Deref, sync::Arc};
 use taxy_api::{
     cert::{SelfSignedCertRequest, UploadQuery},
     error::Error,
+    id::ShortId,
 };
 use tokio_stream::StreamExt;
 use warp::{filters::BoxedFilter, multipart::FormData, Buf, Filter, Rejection, Reply};
@@ -95,7 +96,7 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
         ("cookie"=[])
     )
 )]
-pub async fn get(state: AppState, id: String) -> Result<impl Reply, Rejection> {
+pub async fn get(state: AppState, id: ShortId) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(&state.call(GetCert { id }).await?.info()))
 }
 
@@ -190,7 +191,7 @@ pub async fn upload(
         ("cookie"=[])
     )
 )]
-pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection> {
+pub async fn delete(state: AppState, id: ShortId) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(&state.call(DeleteCert { id }).await?))
 }
 
@@ -210,8 +211,8 @@ pub async fn delete(state: AppState, id: String) -> Result<impl Reply, Rejection
         ("cookie"=[])
     )
 )]
-pub async fn download(state: AppState, id: String) -> Result<impl Reply, Rejection> {
-    let file = state.call(DownloadCert { id: id.clone() }).await?;
+pub async fn download(state: AppState, id: ShortId) -> Result<impl Reply, Rejection> {
+    let file = state.call(DownloadCert { id }).await?;
     Ok(Response::builder()
         .header("Content-Type", "application/gzip")
         .header(

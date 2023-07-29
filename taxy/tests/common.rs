@@ -52,7 +52,7 @@ struct Inner {
     pub config: AppConfig,
     pub ports: Vec<PortEntry>,
     pub proxies: Vec<ProxyEntry>,
-    pub certs: HashMap<String, Arc<Cert>>,
+    pub certs: HashMap<ShortId, Arc<Cert>>,
     pub acems: HashMap<ShortId, AcmeEntry>,
     pub accounts: HashMap<String, String>,
 }
@@ -94,7 +94,7 @@ impl Storage for TestStorage {
             .lock()
             .await
             .certs
-            .insert(cert.id().to_string(), Arc::new(cert.clone()));
+            .insert(cert.id(), Arc::new(cert.clone()));
     }
 
     async fn save_acme(&self, acme: &AcmeEntry) {
@@ -109,8 +109,8 @@ impl Storage for TestStorage {
         self.inner.lock().await.acems.remove(&id);
     }
 
-    async fn delete_cert(&self, id: &str) {
-        self.inner.lock().await.certs.remove(id);
+    async fn delete_cert(&self, id: ShortId) {
+        self.inner.lock().await.certs.remove(&id);
     }
 
     async fn load_acmes(&self) -> Vec<AcmeEntry> {
@@ -175,7 +175,7 @@ impl TestStorageBuilder {
         self
     }
 
-    pub fn certs(mut self, certs: HashMap<String, Arc<Cert>>) -> Self {
+    pub fn certs(mut self, certs: HashMap<ShortId, Arc<Cert>>) -> Self {
         self.inner.certs = certs;
         self
     }

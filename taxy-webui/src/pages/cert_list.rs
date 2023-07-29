@@ -162,9 +162,8 @@ pub fn cert_list() -> Html {
                 let delete_onclick = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                     if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
-                        let id = id.clone();
                         wasm_bindgen_futures::spawn_local(async move {
-                            let _ = delete_server_cert(&id).await;
+                            let _ = delete_server_cert(id).await;
                         });
                     }
                 });
@@ -274,13 +273,13 @@ pub fn cert_list() -> Html {
                 let delete_onmousedown = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                 });
-                let id = entry.id.clone();
+                let id = entry.id;
                 let delete_onclick = Callback::from(move |e: MouseEvent|  {
                     e.prevent_default();
                     if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
                         let id = id.clone();
                         wasm_bindgen_futures::spawn_local(async move {
-                            let _ = delete_server_cert(&id).await;
+                            let _ = delete_server_cert(id).await;
                         });
                     }
                 });
@@ -503,7 +502,7 @@ async fn get_acme_list() -> Result<Vec<AcmeInfo>, gloo_net::Error> {
         .await
 }
 
-async fn delete_server_cert(id: &str) -> Result<(), gloo_net::Error> {
+async fn delete_server_cert(id: ShortId) -> Result<(), gloo_net::Error> {
     Request::delete(&format!("{API_ENDPOINT}/certs/{id}"))
         .send()
         .await?;

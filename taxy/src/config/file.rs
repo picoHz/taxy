@@ -424,7 +424,7 @@ impl Storage for FileStorage {
         let path = dir
             .join("certs")
             .join(cert.kind.to_string())
-            .join(cert.id());
+            .join(cert.id().to_string());
         if let Err(err) = self.save_cert_impl(&path, cert).await {
             error!(?path, "failed to save: {err}");
         }
@@ -444,7 +444,7 @@ impl Storage for FileStorage {
         }
     }
 
-    async fn delete_cert(&self, id: &str) {
+    async fn delete_cert(&self, id: ShortId) {
         let dir = &self.dir;
 
         if let Ok(walker) =

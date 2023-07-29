@@ -303,7 +303,7 @@ impl ServerState {
             let mut expired = certs
                 .iter()
                 .filter(|cert| cert.not_after < ASN1Time::now())
-                .map(|cert| cert.id.clone())
+                .map(|cert| cert.id)
                 .collect::<Vec<_>>();
             if expired.len() >= certs.len() {
                 expired.pop();
@@ -311,7 +311,7 @@ impl ServerState {
             removing_items.append(&mut expired);
         }
         for id in &removing_items {
-            if let Err(err) = self.certs.delete(id) {
+            if let Err(err) = self.certs.delete(*id) {
                 error!(?err, "failed to delete cert");
             }
         }
@@ -391,7 +391,7 @@ impl ServerState {
                 match req.start_challenge().instrument(span.clone()).await {
                     Ok(cert) => {
                         span.in_scope(|| {
-                            info!(id = cert.id(), "acme request completed");
+                            info!(id = cert.id().to_string(), "acme request completed");
                         });
                         let _ = command
                             .send(ServerCommand::AddCert {

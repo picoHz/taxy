@@ -20,7 +20,7 @@ pub trait Storage: Send + Sync + 'static {
     async fn save_cert(&self, cert: &Cert);
     async fn save_acme(&self, acme: &AcmeEntry);
     async fn delete_acme(&self, id: ShortId);
-    async fn delete_cert(&self, id: &str);
+    async fn delete_cert(&self, id: ShortId);
     async fn load_acmes(&self) -> Vec<AcmeEntry>;
     async fn load_certs(&self) -> Vec<Arc<Cert>>;
     async fn add_account(&self, name: &str, password: &str, totp: bool) -> Result<Account, Error>;

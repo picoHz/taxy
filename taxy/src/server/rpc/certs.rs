@@ -4,7 +4,7 @@ use flate2::{write::GzEncoder, Compression};
 use hyper::body::Bytes;
 use std::{sync::Arc, time::SystemTime};
 use tar::Header;
-use taxy_api::{cert::CertInfo, error::Error};
+use taxy_api::{cert::CertInfo, error::Error, id::ShortId};
 
 pub struct GetCertList;
 
@@ -18,7 +18,7 @@ impl RpcMethod for GetCertList {
 }
 
 pub struct GetCert {
-    pub id: String,
+    pub id: ShortId,
 }
 
 #[async_trait::async_trait]
@@ -26,11 +26,9 @@ impl RpcMethod for GetCert {
     type Output = Arc<Cert>;
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state
-            .certs
-            .get(&self.id)
-            .cloned()
-            .ok_or(Error::IdNotFound { id: self.id })
+        state.certs.get(self.id).cloned().ok_or(Error::IdNotFound {
+            id: self.id.to_string(),
+        })
     }
 }
 
@@ -51,7 +49,7 @@ impl RpcMethod for AddCert {
 }
 
 pub struct DeleteCert {
-    pub id: String,
+    pub id: ShortId,
 }
 
 #[async_trait::async_trait]
@@ -59,15 +57,15 @@ impl RpcMethod for DeleteCert {
     type Output = ();
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        state.certs.delete(&self.id)?;
+        state.certs.delete(self.id)?;
         state.update_certs().await;
-        state.storage.delete_cert(&self.id).await;
+        state.storage.delete_cert(self.id).await;
         Ok(())
     }
 }
 
 pub struct DownloadCert {
-    pub id: String,
+    pub id: ShortId,
 }
 
 #[async_trait::async_trait]
@@ -77,9 +75,11 @@ impl RpcMethod for DownloadCert {
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state
             .certs
-            .get(&self.id)
+            .get(self.id)
             .map(|cert| cert_to_tar_gz(cert).unwrap())
-            .ok_or(Error::IdNotFound { id: self.id })
+            .ok_or(Error::IdNotFound {
+                id: self.id.to_string(),
+            })
     }
 }
 

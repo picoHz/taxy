@@ -11,6 +11,7 @@ use gloo_net::http::Request;
 use std::{collections::HashMap, str::FromStr};
 use taxy_api::{
     cert::{CertInfo, CertKind, SelfSignedCertRequest},
+    id::ShortId,
     subject_name::SubjectName,
 };
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
@@ -42,12 +43,12 @@ pub fn self_sign() -> Html {
         }
     });
 
-    let ca_cert = use_state(String::new);
+    let ca_cert = use_state(ShortId::new);
     let ca_cert_onchange = Callback::from({
         let ca_cert = ca_cert.clone();
         move |event: Event| {
             let target: HtmlSelectElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
-            ca_cert.set(target.value());
+            ca_cert.set(target.value().parse().unwrap_throw());
         }
     });
 
@@ -74,7 +75,7 @@ pub fn self_sign() -> Html {
 
     let validation = use_state(|| false);
 
-    let entry = get_request(&san, &ca_cert);
+    let entry = get_request(&san, *ca_cert);
     let san_err = entry
         .as_ref()
         .err()
@@ -150,10 +151,10 @@ pub fn self_sign() -> Html {
                             <select onchange={ca_cert_onchange}>
                                 { ca_cert_list.iter().map(|cert| {
                                     html! {
-                                        <option selected={*ca_cert == cert.id} value={cert.id.clone()}>{format!("{} ({})", cert.issuer, cert.id)}</option>
+                                        <option selected={*ca_cert == cert.id} value={cert.id.to_string()}>{format!("{} ({})", cert.issuer, cert.id)}</option>
                                     }
                                 }).collect::<Html>() }
-                                <option selected={ca_cert.is_empty()} value={""}>{"Generate"}</option>
+                                <option selected={ca_cert.to_string() == "generate"} value={"generate"}>{"Generate"}</option>
                             </select>
                             </div>
                         </div>
@@ -179,7 +180,10 @@ pub fn self_sign() -> Html {
     }
 }
 
-fn get_request(san: &str, ca_cert: &str) -> Result<SelfSignedCertRequest, HashMap<String, String>> {
+fn get_request(
+    san: &str,
+    ca_cert: ShortId,
+) -> Result<SelfSignedCertRequest, HashMap<String, String>> {
     let mut errors = HashMap::new();
     let mut names = Vec::new();
     for name in san.split(',').filter(|s| !s.is_empty()) {
@@ -195,11 +199,10 @@ fn get_request(san: &str, ca_cert: &str) -> Result<SelfSignedCertRequest, HashMa
             "At least one subject name is required.".into(),
         );
     }
-    let ca_cert = ca_cert.trim();
     if errors.is_empty() {
         Ok(SelfSignedCertRequest {
             san: names,
-            ca_cert: if ca_cert.is_empty() {
+            ca_cert: if ca_cert.to_string() == "generate" {
                 None
             } else {
                 Some(ca_cert.into())

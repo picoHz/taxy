@@ -7,7 +7,7 @@ use tokio_rustls::rustls::{Certificate, RootCertStore};
 
 #[derive(Debug)]
 pub struct CertList {
-    certs: IndexMap<String, Arc<Cert>>,
+    certs: IndexMap<ShortId, Arc<Cert>>,
     system_root_certs: RootCertStore,
     root_certs: RootCertStore,
 }
@@ -16,7 +16,7 @@ impl CertList {
     pub async fn new<I: IntoIterator<Item = Arc<Cert>>>(iter: I) -> Self {
         let mut certs = iter
             .into_iter()
-            .map(|cert| (cert.id().to_string(), cert))
+            .map(|cert| (cert.id(), cert))
             .collect::<IndexMap<_, _>>();
         certs.sort_unstable_by(|_, v1, _, v2| v1.cmp(v2));
 
@@ -65,23 +65,23 @@ impl CertList {
             .collect()
     }
 
-    pub fn get(&self, id: &str) -> Option<&Arc<Cert>> {
-        self.certs.get(id)
+    pub fn get(&self, id: ShortId) -> Option<&Arc<Cert>> {
+        self.certs.get(&id)
     }
 
     pub fn add(&mut self, cert: Arc<Cert>) {
-        self.certs.insert(cert.id().to_string(), cert.clone());
+        self.certs.insert(cert.id(), cert.clone());
         self.certs.sort_unstable_by(|_, v1, _, v2| v1.cmp(v2));
         if cert.kind == CertKind::Root {
             self.update_root_certs();
         }
     }
 
-    pub fn delete(&mut self, id: &str) -> Result<(), Error> {
-        if !self.certs.contains_key(id) {
+    pub fn delete(&mut self, id: ShortId) -> Result<(), Error> {
+        if !self.certs.contains_key(&id) {
             Err(Error::IdNotFound { id: id.to_string() })
         } else {
-            if let Some(cert) = self.certs.remove(id) {
+            if let Some(cert) = self.certs.remove(&id) {
                 if cert.kind == CertKind::Root {
                     self.update_root_certs();
                 }

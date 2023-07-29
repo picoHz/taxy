@@ -6,6 +6,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use taxy_api::cert::CertKind;
 use taxy_api::error::Error;
+use taxy_api::id::ShortId;
 use taxy_api::subject_name::SubjectName;
 use taxy_api::tls::TlsState;
 use tokio_rustls::rustls::server::{ClientHello, ResolvesServerCert};
@@ -75,7 +76,7 @@ pub struct CertResolver {
     certs: Vec<Arc<Cert>>,
     default_names: Vec<SubjectName>,
     sni: bool,
-    cache: DashMap<String, Arc<CertifiedKey>>,
+    cache: DashMap<ShortId, Arc<CertifiedKey>>,
 }
 
 impl CertResolver {
@@ -109,7 +110,7 @@ impl ResolvesServerCert for CertResolver {
             .iter()
             .find(|cert| cert.is_valid() && names.iter().all(|name| cert.has_subject_name(name)))?;
 
-        if let Some(cert) = self.cache.get(cert.id()) {
+        if let Some(cert) = self.cache.get(&cert.id()) {
             Some(cert.clone())
         } else {
             let certified = match cert.certified_key() {
@@ -119,7 +120,7 @@ impl ResolvesServerCert for CertResolver {
                     return None;
                 }
             };
-            self.cache.insert(cert.id().to_string(), certified.clone());
+            self.cache.insert(cert.id(), certified.clone());
             Some(certified)
         }
     }

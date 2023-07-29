@@ -8,6 +8,7 @@ use std::io::{BufRead, BufReader};
 use std::str::FromStr;
 use taxy_api::cert::{CertInfo, CertKind, CertMetadata};
 use taxy_api::error::Error;
+use taxy_api::id::ShortId;
 use taxy_api::subject_name::SubjectName;
 use tokio_rustls::rustls::sign::CertifiedKey;
 use tokio_rustls::rustls::{sign, Certificate, PrivateKey};
@@ -17,11 +18,9 @@ use x509_parser::{parse_x509_certificate, prelude::X509Certificate};
 
 pub mod acme;
 
-const CERT_ID_LENGTH: usize = 20;
-
 #[derive(Clone)]
 pub struct Cert {
-    pub id: String,
+    pub id: ShortId,
     pub kind: CertKind,
     pub key: Option<SecretDocument>,
     pub pem_chain: Vec<u8>,
@@ -89,13 +88,13 @@ impl Ord for Cert {
 }
 
 impl Cert {
-    pub fn id(&self) -> &str {
-        &self.id
+    pub fn id(&self) -> ShortId {
+        self.id
     }
 
     pub fn info(&self) -> CertInfo {
         CertInfo {
-            id: self.id.clone(),
+            id: self.id,
             kind: self.kind,
             fingerprint: self.fingerprint.clone(),
             issuer: self.issuer.clone(),
@@ -167,7 +166,10 @@ impl Cert {
         let der = &chain.first().ok_or(Error::FailedToReadCertificate)?.0;
         let mut hasher = Sha256::new();
         hasher.update(der);
-        let fingerprint = hex::encode(hasher.finalize());
+        let id = hasher.finalize();
+        let mut short_id = [0; 7];
+        short_id.copy_from_slice(&id[..7]);
+        let fingerprint = hex::encode(id);
 
         let parsed_chain = parse_chain(&chain)?;
         let x509 = parsed_chain.first().ok_or(Error::FailedToReadCertificate)?;
@@ -193,7 +195,7 @@ impl Cert {
             .map(|cert| cert.subject().to_string());
 
         Ok(Self {
-            id: fingerprint[..CERT_ID_LENGTH].to_string(),
+            id: short_id.into(),
             kind,
             fingerprint,
             key,
