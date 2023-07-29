@@ -96,5 +96,5 @@ cargo run
 
 # In a separate terminal, start `trunk serve` for the WebUI
 cd webui
-trunk serve --proxy-backend=http://localhost:46492/api/
+trunk serve
 ```

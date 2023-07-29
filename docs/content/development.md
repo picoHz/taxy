@@ -30,7 +30,7 @@ To set up the development environment, follow these steps:
 
    ```bash
    cd webui
-   trunk serve --proxy-backend=http://localhost:46492/api/
+   trunk serve
    ```
 
 # Building for Release

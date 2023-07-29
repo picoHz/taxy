@@ -5,4 +5,10 @@ dist = "../taxy/dist/webui"
 [[hooks]]
 stage = "post_build"
 command = "sh"
-command_arguments = ["-c", "[ \"$TRUNK_PROFILE\" = \"release\" ] && find \"$TRUNK_STAGING_DIR\" -type f -exec gzip -9 {} \\; || true"]
+command_arguments = [
+    "-c",
+    "[ \"$TRUNK_PROFILE\" = \"release\" ] && find \"$TRUNK_STAGING_DIR\" -type f -exec gzip -9 {} \\; || true",
+]
+
+[[proxy]]
+backend = "http://localhost:46492/api/"
