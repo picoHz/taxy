@@ -32,7 +32,6 @@ services:
   taxy:
     image: ghcr.io/picohz/taxy:latest
     container_name: taxy
-    entrypoint: taxy start
     volumes:
       - taxy-config:/root/.config/taxy
     ports:
