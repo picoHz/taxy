@@ -22,7 +22,46 @@ sort_by = "weight"
 
 There are multiple ways to install Taxy.
 
-## Cargo binstall (recommended)
+## Docker Compose
+
+Create a file named `docker-compose.yml` with the following content:
+
+```yaml
+version: "3"
+services:
+  taxy:
+    image: ghcr.io/picohz/taxy:latest
+    container_name: taxy
+    entrypoint: taxy start
+    volumes:
+      - taxy-config:/root/.config/taxy
+    ports:
+      # Add ports here if you want to expose them to the host
+      - 80:80
+      - 443:443
+      - 46492:46492 # Admin panel
+    restart: unless-stopped
+
+volumes:
+  taxy-config:
+```
+
+Run the following command to start Taxy:
+
+```bash
+$ docker-compose up -d
+```
+
+To log in to the admin panel, you'll first need to create a user. Follow the steps below to create an admin user:
+
+```bash
+$ docker-compose exec taxy taxy add-user admin
+password?: ******
+```
+
+Then, you can access the admin panel at [http://localhost:46492/](http://localhost:46492/).
+
+## Cargo binstall
 
 [cargo-binstall](https://github.com/cargo-bins/) automatically downloads and installs pre-built binaries for your platform. If there is no pre-built binary available, it will fall back to `cargo install`.
 
