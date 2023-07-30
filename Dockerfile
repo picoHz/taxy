@@ -38,4 +38,4 @@ WORKDIR /app
 COPY --from=builder /usr/src/app/target/release/taxy /usr/bin
 
 # Set the entrypoint to run the Rust binary
-ENTRYPOINT ["taxy", "start"]
+ENTRYPOINT ["taxy", "start", "--webui", "0.0.0.0:46492"]
