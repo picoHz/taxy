@@ -21,7 +21,7 @@ pub fn app() -> Html {
         <>
         <BrowserRouter>
             <Navbar />
-            <div class="container px-5 py-10 mx-auto">
+            <div class="md:w-4/5 py-8 mx-auto">
                 <Switch<pages::Route> render={pages::switch} />
             </div>
         </BrowserRouter>
