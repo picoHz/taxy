@@ -24,7 +24,7 @@ use taxy_api::error::Error;
 use taxy_api::event::ServerEvent;
 use taxy_api::id::ShortId;
 use taxy_api::site::ProxyEntry;
-use tokio::{io::AsyncBufReadExt, task::JoinHandle};
+use tokio::io::AsyncBufReadExt;
 use tokio::{
     io::BufStream,
     net::TcpStream,
@@ -274,7 +274,7 @@ impl ServerState {
             error!(?err, "failed to cleanup old logs");
         }
 
-        let _ = self.start_http_challenges().await.await;
+        self.start_http_challenges().await;
         for ctx in self.ports.as_mut_slice() {
             let proxies = self
                 .proxies
@@ -331,7 +331,7 @@ impl ServerState {
         Ok(())
     }
 
-    async fn start_http_challenges(&mut self) -> JoinHandle<()> {
+    async fn start_http_challenges(&mut self) {
         let entries = self.acmes.entries();
         let entries = entries
             .filter(|entry| {
@@ -353,7 +353,7 @@ impl ServerState {
             .collect::<Vec<_>>();
 
         if entries.is_empty() {
-            return tokio::task::spawn(async {});
+            return;
         }
 
         let mut requests = Vec::new();
@@ -406,7 +406,7 @@ impl ServerState {
                 }
             }
             let _ = command.send(ServerCommand::StopHttpChallenges).await;
-        })
+        });
     }
 
     pub fn config(&self) -> &AppConfig {
