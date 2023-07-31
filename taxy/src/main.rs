@@ -52,9 +52,10 @@ async fn start(args: StartArgs) -> anyhow::Result<()> {
 
     let access_log_filter =
         filter::filter_fn(|metadata| metadata.target().starts_with("taxy::access_log"));
+    let is_span = filter::filter_fn(|metadata| metadata.is_span());
     tracing_subscriber::registry()
         .with(log.with_filter(access_log_filter.clone().not()))
-        .with(access_log.with_filter(access_log_filter))
+        .with(access_log.with_filter(access_log_filter.or(is_span)))
         .with(db)
         .init();
 
