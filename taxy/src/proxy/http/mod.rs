@@ -263,6 +263,7 @@ async fn start(
             _ => false,
         };
 
+        let action = format!("{} {}", req.method().as_str(), req.uri());
         let pool = pool.clone();
         let shared = shared_cache.load();
 
@@ -295,6 +296,8 @@ async fn start(
             if let Ok(uri) = Uri::from_parts(parts) {
                 *req.uri_mut() = uri;
             }
+
+            info!(target: "taxy::access_log", remote = %remote, %local, action, target = %req.uri());
 
             shared
                 .header_rewriter

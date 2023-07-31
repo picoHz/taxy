@@ -177,11 +177,12 @@ pub async fn start(
         }
     });
 
-    let host = match conn.name.clone() {
-        ServerName::DnsName(name) => format!("{}:{}", name.as_ref(), conn.port),
-        ServerName::IpAddress(addr) => format!("{}:{}", addr, conn.port),
+    let name = match &conn.name {
+        ServerName::DnsName(name) => name.as_ref().to_string(),
+        ServerName::IpAddress(addr) => addr.to_string(),
         _ => unreachable!(),
     };
+    let host = format!("{}:{}", name, conn.port);
 
     let resolved = net::lookup_host(&host).await?.next().unwrap();
     debug!(host, %resolved);
@@ -192,7 +193,7 @@ pub async fn start(
         TcpSocket::new_v6()
     }?;
 
-    info!(target: "taxy::access_log", remote = %remote, %local, %resolved);
+    info!(target: "taxy::access_log", remote = %remote, %local, target = host);
 
     let out = sock.connect(resolved).await?;
     debug!(%resolved, "connected");
