@@ -1,6 +1,6 @@
 use crate::certs::Cert;
 use anyhow::bail;
-use backoff::{backoff::Backoff, ExponentialBackoff};
+use backoff::{backoff::Backoff, ExponentialBackoffBuilder};
 use instant_acme::{
     Account, AccountCredentials, AuthorizationStatus, ChallengeType, ExternalAccountKey,
     Identifier, NewAccount, NewOrder, Order, OrderStatus,
@@ -20,6 +20,8 @@ use taxy_api::{
 use taxy_api::{acme::AcmeInfo, subject_name::SubjectName};
 use taxy_api::{acme::AcmeRequest, error::Error};
 use tracing::{error, info};
+
+const HTTP_CHALLENGE_TIMEOUT: Duration = Duration::from_secs(180);
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct AcmeEntry {
@@ -205,7 +207,9 @@ impl AcmeOrder {
             self.order.set_challenge_ready(url).await?;
         }
 
-        let mut backoff = ExponentialBackoff::default();
+        let mut backoff = ExponentialBackoffBuilder::new()
+            .with_max_elapsed_time(Some(HTTP_CHALLENGE_TIMEOUT))
+            .build();
         loop {
             let state = self.order.refresh().await?;
             match state.status {
