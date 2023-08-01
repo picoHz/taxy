@@ -78,4 +78,10 @@ Taxy includes a built-in WebUI. By default, it is served on localhost:46492. How
 
 # Logging
 
-Taxy logs to the standard output as its default setting. If you want to adjust the log level, you can do so by setting the `TAXY_LOG`, `TAXY_ACCESS_LOG` environment variable or using the `--log`, `--access-log` command-line option.
+Taxy logs to the standard output as its default setting. You can change this behavior by setting the `TAXY_LOG`, `TAXY_ACCESS_LOG` environment variable or using the `--log`, `--access-log` command-line option.
+
+```bash
+$ taxy start --log /var/log/taxy.log --access-log /var/log/taxy-access.log
+```
+
+If you want to adjust the log level, you can do so by setting the `TAXY_LOG_LEVEL`, `TAXY_ACCESS_LOG_LEVEL` environment variable or using the `--log-level`, `--access-log-level` command-line option.
