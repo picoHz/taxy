@@ -1,5 +1,4 @@
 use crate::auth::use_ensure_auth;
-use crate::components::breadcrumb::Breadcrumb;
 use crate::pages::Route;
 use crate::store::PortStore;
 use crate::utils::convert_multiaddr;
@@ -47,172 +46,120 @@ pub fn post_list() -> Html {
     });
 
     let list = ports.entries.clone();
-    let active_index = use_state(|| -1);
     html! {
         <>
-            <ybc::Card>
-            <ybc::CardHeader>
-                <p class="card-header-title">
-                    <Breadcrumb />
-                </p>
-            </ybc::CardHeader>
             if list.is_empty() {
-                <ybc::Hero body_classes="has-text-centered" body={
-                    html! {
-                    <p class="title has-text-grey-lighter">
-                        {"No Items"}
-                    </p>
-                    }
-                } />
-            }
-            <div class="list has-visible-pointer-controls">
-            { list.into_iter().enumerate().map(|(i, entry)| {
-                let navigator = navigator.clone();
-                let active_index = active_index.clone();
-                let status = ports.statuses.get(&entry.id).cloned().unwrap_or_default();
-
-                let id = entry.id;
-                let navigator_cloned = navigator.clone();
-                let log_onclick = Callback::from(move |_|  {
-                    let id = id;
-                    navigator_cloned.push(&Route::PortLogView {id});
-                });
-
-                let id = entry.id;
-                let navigator_cloned = navigator.clone();
-                let config_onclick = Callback::from(move |_|  {
-                    let id = id;
-                    navigator_cloned.push(&Route::PortView {id});
-                });
-
-                let delete_onmousedown = Callback::from(move |e: MouseEvent|  {
-                    e.prevent_default();
-                });
-                let id = entry.id;
-                let delete_onclick = Callback::from(move |e: MouseEvent|  {
-                    e.prevent_default();
-                    if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
-                        let id = id;
-                        wasm_bindgen_futures::spawn_local(async move {
-                            let _ = delete_port(id).await;
-                        });
-                    }
-                });
-
-                let reset_onmousedown = Callback::from(move |e: MouseEvent|  {
-                    e.prevent_default();
-                });
-                let id = entry.id;
-                let reset_onclick = Callback::from(move |e: MouseEvent|  {
-                    e.prevent_default();
-                    if gloo_dialogs::confirm(&format!("Are you sure to reset {id}?\nThis operation closes all existing connections. ")) {
-                        let id = id;
-                        wasm_bindgen_futures::spawn_local(async move {
-                            let _ = reset_port(id).await;
-                        });
-                    }
-                });
-
-                let active_index_cloned = active_index.clone();
-                let dropdown_onclick = Callback::from(move |_|  {
-                    active_index_cloned.set(if *active_index_cloned == i as i32 {
-                        -1
-                    } else {
-                        i as i32
-                    });
-                });
-                let active_index_cloned = active_index.clone();
-                let dropdown_onfocusout = Callback::from(move |_|  {
-                    active_index_cloned.set(-1);
-                });
-                let is_active = *active_index == i as i32;
-                let title = if entry.port.name.is_empty() {
-                    entry.id.to_string()
-                } else {
-                    entry.port.name.clone()
-                };
-                let (status_text, tag) = match status.state.socket {
-                    SocketState::Listening => ("Listening", "is-success"),
-                    SocketState::AddressAlreadyInUse => ("Address Already In Use", "is-danger"),
-                    SocketState::PermissionDenied => ("Permission Denied", "is-danger"),
-                    SocketState::AddressNotAvailable => ("Address Not Available", "is-danger"),
-                    SocketState::Error => ("Error", "is-danger"),
-                    SocketState::Unknown => ("Unknown", "is-light"),
-                };
-                let (protocol, addr) = convert_multiaddr(&entry.port.listen);
-                html! {
-                    <div class="list-item">
-                        <div class="list-item-content">
-                            <div class="list-item-title">{title}</div>
-                            <div class="list-item-description field is-grouped mt-1">
-                                <span class={classes!("tag", "is-success", "mr-2", tag)}>{status_text}</span>
-                                <span class="tags has-addons">
-                                    <span class="tag is-dark">{protocol}</span>
-                                    <span class="tag is-info">{addr}</span>
-                                </span>
-                            </div>
-                        </div>
-
-                        <div class="list-item-controls">
-                            <div class="buttons is-right">
-                                <button type="button" data-tooltip="Logs" class="button" onclick={log_onclick}>
-                                    <span class="icon is-small">
-                                        <ion-icon name="receipt"></ion-icon>
-                                    </span>
-                                </button>
-
-                                <button type="button" class="button" data-tooltip="Configs" onclick={config_onclick}>
-                                    <span class="icon is-small">
-                                        <ion-icon name="settings"></ion-icon>
-                                    </span>
-                                </button>
-
-                                <div class={classes!("dropdown", "is-right", is_active.then_some("is-active"))}>
-                                    <div class="dropdown-trigger" onfocusout={dropdown_onfocusout}>
-                                        <button type="button" class="button" onclick={dropdown_onclick}>
-                                            <span class="icon is-small">
-                                                <ion-icon name="ellipsis-horizontal"></ion-icon>
-                                            </span>
-                                        </button>
-                                    </div>
-                                    <div class="dropdown-menu" id="dropdown-menu" role="menu">
-                                        <div class="dropdown-content">
-                                            <a class="dropdown-item" onmousedown={reset_onmousedown} onclick={reset_onclick}>
-                                                <span class="icon-text">
-                                                    <span class="icon">
-                                                        <ion-icon name="refresh"></ion-icon>
-                                                    </span>
-                                                    <span>{"Reset"}</span>
-                                                </span>
-                                            </a>
-                                            <a class="dropdown-item has-text-danger	" onmousedown={delete_onmousedown} onclick={delete_onclick}>
-                                                <span class="icon-text">
-                                                    <span class="icon">
-                                                        <ion-icon name="trash"></ion-icon>
-                                                    </span>
-                                                    <span>{"Delete"}</span>
-                                                </span>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-            }).collect::<Html>() }
+                <p class="mb-8 mt-8 text-xl font-bold text-gray-500 px-16 text-center">{"List is empty. Click 'Add' to configure a new port."}</p>
+                <div class="flex flex-row space-y-4 justify-center sm:space-y-0 sm:space-x-4">
+                    <button onclick={new_port_onclick} class="inline-flex items-center text-gray-500 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5" type="button">
+                        {"Add"}
+                    </button>
+                </div>
+            } else {
+            <div class="flex items-center justify-end pb-4 px-4 md:px-0">
+                <div>
+                    <button onclick={new_port_onclick} class="inline-flex items-center text-gray-500 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5" type="button">
+                        {"Add"}
+                    </button>
+                </div>
             </div>
-            <ybc::CardFooter>
-                <a class="card-footer-item" onclick={new_port_onclick}>
-                    <span class="icon-text">
-                    <span class="icon">
-                        <ion-icon name="add"></ion-icon>
-                    </span>
-                    <span>{"New Port"}</span>
-                    </span>
-                </a>
-            </ybc::CardFooter>
-            </ybc::Card>
+            <div class="relative overflow-x-auto">
+                <table class="w-full text-sm text-left text-neutral-600 rounded-md">
+                    <thead class="text-xs text-neutral-800 uppercase">
+                        <tr>
+                            <th scope="col" class="px-4 py-3">
+                                {"Name"}
+                            </th>
+                            <th scope="col" class="px-4 py-3">
+                                {"Protocol"}
+                            </th>
+                            <th scope="col" class="px-4 py-3">
+                                {"Address"}
+                            </th>
+                            <th scope="col" class="px-4 py-3">
+                                {"Status"}
+                            </th>
+                            <th scope="col" class="px-4 py-3">
+                                <span class="sr-only">{"Edit"}</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        { list.into_iter().map(|entry| {
+                            let title = if entry.port.name.is_empty() {
+                                entry.id.to_string()
+                            } else {
+                                entry.port.name.clone()
+                            };
+                            let (protocol, addr) = convert_multiaddr(&entry.port.listen);
+                            let status = ports.statuses.get(&entry.id).cloned().unwrap_or_default();
+                            let (status_text, tag) = match status.state.socket {
+                                SocketState::Listening => ("Listening", "bg-green-500"),
+                                SocketState::AddressAlreadyInUse => ("Address In Use", "bg-red-500"),
+                                SocketState::PermissionDenied => ("Permission Denied", "bg-red-500"),
+                                SocketState::AddressNotAvailable => ("Address Unavailable", "bg-red-500"),
+                                SocketState::Error => ("Error", "bg-red-500"),
+                                SocketState::Unknown => ("Unknown", "bg-neutral-500"),
+                            };
+
+                            let id = entry.id;
+                            let navigator_cloned = navigator.clone();
+                            let config_onclick = Callback::from(move |_|  {
+                                navigator_cloned.push(&Route::PortView {id});
+                            });
+
+                            let navigator_cloned = navigator.clone();
+                            let log_onclick = Callback::from(move |_|  {
+                                navigator_cloned.push(&Route::PortLogView {id});
+                            });
+
+                            let reset_onclick = Callback::from(move |e: MouseEvent|  {
+                                e.prevent_default();
+                                if gloo_dialogs::confirm(&format!("Are you sure to reset {id}?\nThis operation closes all existing connections. ")) {
+                                    wasm_bindgen_futures::spawn_local(async move {
+                                        let _ = reset_port(id).await;
+                                    });
+                                }
+                            });
+
+                            let delete_onclick = Callback::from(move |e: MouseEvent|  {
+                                e.prevent_default();
+                                if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
+                                    wasm_bindgen_futures::spawn_local(async move {
+                                        let _ = delete_port(id).await;
+                                    });
+                                }
+                            });
+
+                            html! {
+                                <tr class="border-b">
+                                    <th scope="row" class="px-4 py-4 font-medium text-neutral-900 whitespace-nowrap">
+                                        {title}
+                                    </th>
+                                    <td class="px-4 py-4">
+                                        {protocol}
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        {addr}
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        <div class="flex items-center">
+                                            <div class={classes!("h-2.5", "w-2.5", "rounded-full", "bg-green-500", "mr-2", tag)}></div> {status_text}
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
+                                        <a class="font-medium text-blue-600 hover:underline mr-5" onclick={config_onclick}>{"Edit"}</a>
+                                        <a class="font-medium text-blue-600 hover:underline mr-5" onclick={log_onclick}>{"Log"}</a>
+                                        <a class="font-medium text-orange-600 hover:underline mr-5" onclick={reset_onclick}>{"Reset"}</a>
+                                        <a class="font-medium text-red-600 hover:underline" onclick={delete_onclick}>{"Delete"}</a>
+                                    </td>
+                                </tr>
+                            }
+                        }).collect::<Html>() }
+                    </tbody>
+                </table>
+            </div>
+            }
         </>
     }
 }
