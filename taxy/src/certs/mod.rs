@@ -5,6 +5,7 @@ use rcgen::{
 use sha2::{Digest, Sha256};
 use std::fmt;
 use std::io::{BufRead, BufReader};
+use std::net::IpAddr;
 use std::str::FromStr;
 use taxy_api::cert::{CertInfo, CertKind, CertMetadata};
 use taxy_api::error::Error;
@@ -180,6 +181,18 @@ impl Cert {
             .flat_map(|name| &name.value.general_names)
             .filter_map(|name| match name {
                 GeneralName::DNSName(name) => SubjectName::from_str(name).ok(),
+                GeneralName::IPAddress(ip) => match ip.len() {
+                    4 => {
+                        let addr = [ip[0], ip[1], ip[2], ip[3]];
+                        Some(SubjectName::IPAddress(IpAddr::V4(addr.into())))
+                    }
+                    16 => {
+                        let mut addr = [0; 16];
+                        addr.copy_from_slice(ip);
+                        Some(SubjectName::IPAddress(IpAddr::V6(addr.into())))
+                    }
+                    _ => None,
+                },
                 _ => None,
             })
             .collect();
