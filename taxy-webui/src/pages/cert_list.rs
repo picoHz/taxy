@@ -1,5 +1,4 @@
 use crate::auth::use_ensure_auth;
-use crate::components::breadcrumb::Breadcrumb;
 use crate::pages::Route;
 use crate::store::{AcmeStore, CertStore};
 use crate::API_ENDPOINT;
@@ -107,14 +106,10 @@ pub fn cert_list() -> Html {
     let active_index = use_state(|| -1);
     html! {
         <>
-            <ybc::Card>
-            <ybc::CardHeader>
-                <p class="card-header-title">
-                    <Breadcrumb />
-                </p>
-            </ybc::CardHeader>
-            <div class="tabs is-centered mb-0">
-                <ul>
+        <div class="flex flex-col sm:flex-row px-4 md:px-0">
+            <div class="text-sm font-medium text-center text-gray-500">
+                <ul class="flex flex-wrap -mb-px">
+
                     { TABS.into_iter().map(|item| {
                         let navigator = navigator.clone();
                         let active_index = active_index.clone();
@@ -125,363 +120,232 @@ pub fn cert_list() -> Html {
                             active_index.set(-1);
                             let _ = navigator.push_with_query(&Route::Certs, &CertsQuery { tab: item });
                         });
+                        let class = if is_active {
+                            vec!["text-blue-600", "border-blue-600", "active"]
+                        } else {
+                            vec!["border-transparent"]
+                        };
                         html! {
-                            <li class={classes!(is_active.then_some("is-active"))}>
-                                <a {onclick}>{item}</a>
+                            <li class="mr-2">
+                                <a {onclick} class={classes!("inline-block", "px-4", "py-2", "border-b-2", "rounded-t-lg", "hover:text-gray-600", "hover:border-gray-300", class)}>{item}</a>
                             </li>
                         }
                     }).collect::<Html>() }
 
                 </ul>
             </div>
-            if *tab == CertsTab::Server {
-                if cert_list.is_empty() {
-                    <ybc::Hero body_classes="has-text-centered" body={
-                        html! {
-                        <p class="title has-text-grey-lighter">
-                            {"No Items"}
-                        </p>
-                        }
-                    } />
+            <div class="inline-flex rounded-md my-4 sm:my-0 sm:ml-auto" role="group">
+                if *tab == CertsTab::Server {
+                    <button type="button" onclick={self_sign_onclick} class="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-lg hover:bg-gray-100 focus:z-10 focus:ring-4 focus:ring-gray-200">
+                        {"Self-sign"}
+                    </button>
+                    <button type="button" onclick={upload_onclick} class="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-l-0 border-gray-300 rounded-r-lg hover:bg-gray-100 focus:z-10 focus:ring-4 focus:ring-gray-200">
+                        {"Upload"}
+                    </button>
+                } else if *tab == CertsTab::Root {
+                    <button type="button" onclick={upload_onclick} class="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:z-10 focus:ring-4 focus:ring-gray-200">
+                        {"Upload"}
+                    </button>
+                } else {
+                    <button type="button" onclick={new_acme_onclick} class="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:z-10 focus:ring-4 focus:ring-gray-200">
+                        {"Add"}
+                    </button>
                 }
-            <div class="list has-visible-pointer-controls">
-            { cert_list.into_iter().enumerate().map(|(i, entry)| {
-                let subject_names = entry
-                    .san
-                    .iter()
-                    .map(|name| name.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                let issuer = entry.issuer.to_string();
-                let title = format!("{} ({})", subject_names, issuer);
-
-                let delete_onmousedown = Callback::from(move |e: MouseEvent|  {
-                    e.prevent_default();
-                });
-                let id = entry.id.clone();
-                let delete_onclick = Callback::from(move |e: MouseEvent|  {
-                    e.prevent_default();
-                    if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
-                        wasm_bindgen_futures::spawn_local(async move {
-                            let _ = delete_server_cert(id).await;
-                        });
-                    }
-                });
-
-                let download_onmousedown = Callback::from(move |e: MouseEvent|  {
-                    e.prevent_default();
-                });
-                let id = entry.id.clone();
-                let download_onclick = Callback::from(move |e: MouseEvent|  {
-                    e.prevent_default();
-                    if gloo_dialogs::confirm(&format!("Are you sure to download {id}.tar.gz?\nThis file contains the unencrypted private key.")) {
-                        location::assign(&format!("{API_ENDPOINT}/certs/{id}/download"));
-                    }
-                });
-
-                let active_index_cloned = active_index.clone();
-                let dropdown_onclick = Callback::from(move |_|  {
-                    active_index_cloned.set(if *active_index_cloned == i as i32 {
-                        -1
-                    } else {
-                        i as i32
-                    });
-                });
-                let active_index_cloned = active_index.clone();
-                let dropdown_onfocusout = Callback::from(move |_|  {
-                    active_index_cloned.set(-1);
-                });
-                let is_active = *active_index == i as i32;
-
-                html! {
-                    <div class="list-item">
-                        <div class="list-item-content">
-                            <div class="list-item-title">{title}</div>
-                            <div class="list-item-description">{&entry.id}</div>
-                        </div>
-
-                        <div class="list-item-controls">
-                            <div class="buttons is-right">
-
-                                <div class={classes!("dropdown", "is-right", is_active.then_some("is-active"))}>
-                                    <div class="dropdown-trigger" onfocusout={dropdown_onfocusout}>
-                                        <button type="button" class="button" onclick={dropdown_onclick}>
-                                            <span class="icon is-small">
-                                                <ion-icon name="ellipsis-horizontal"></ion-icon>
-                                            </span>
-                                        </button>
-                                    </div>
-                                    <div class="dropdown-menu" id="dropdown-menu" role="menu">
-                                        <div class="dropdown-content">
-                                            <a class="dropdown-item has-text-danger" onmousedown={delete_onmousedown} onclick={delete_onclick}>
-                                                <span class="icon-text">
-                                                    <span class="icon">
-                                                        <ion-icon name="trash"></ion-icon>
-                                                    </span>
-                                                    <span>{"Delete"}</span>
-                                                </span>
-                                            </a>
-                                            <a class="dropdown-item" onmousedown={download_onmousedown} onclick={download_onclick}>
-                                                <span class="icon-text">
-                                                    <span class="icon">
-                                                        <ion-icon name="cloud-download"></ion-icon>
-                                                    </span>
-                                                    <span>{"Download"}</span>
-                                                </span>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-            }).collect::<Html>() }
             </div>
-            <ybc::CardFooter>
-                <a class="card-footer-item" onclick={self_sign_onclick}>
-                    <span class="icon-text">
-                    <span class="icon">
-                        <ion-icon name="create"></ion-icon>
-                    </span>
-                    <span>{"Self-sign"}</span>
-                    </span>
-                </a>
-                <a class="card-footer-item" onclick={upload_onclick}>
-                    <span class="icon-text">
-                    <span class="icon">
-                        <ion-icon name="cloud-upload"></ion-icon>
-                    </span>
-                    <span>{"Upload"}</span>
-                    </span>
-                </a>
-            </ybc::CardFooter>
-        } else if *tab == CertsTab::Root {
-                if cert_list.is_empty() {
-                    <ybc::Hero body_classes="has-text-centered" body={
-                        html! {
-                        <p class="title has-text-grey-lighter">
-                            {"No Items"}
-                        </p>
-                        }
-                    } />
-                }
-            <div class="list has-visible-pointer-controls">
-            { cert_list.into_iter().enumerate().map(|(i, entry)| {
-                let title = entry.issuer.to_string();
+        </div>
 
-                let delete_onmousedown = Callback::from(move |e: MouseEvent|  {
-                    e.prevent_default();
-                });
-                let id = entry.id;
-                let delete_onclick = Callback::from(move |e: MouseEvent|  {
-                    e.prevent_default();
-                    if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
-                        let id = id.clone();
-                        wasm_bindgen_futures::spawn_local(async move {
-                            let _ = delete_server_cert(id).await;
-                        });
-                    }
-                });
-
-                let download_onmousedown = Callback::from(move |e: MouseEvent|  {
-                    e.prevent_default();
-                });
-                let id = entry.id.clone();
-                let no_key = !entry.has_private_key;
-                let download_onclick = Callback::from(move |e: MouseEvent|  {
-                    e.prevent_default();
-                    if no_key || gloo_dialogs::confirm(&format!("Are you sure to download {id}.tar.gz?\nThis file contains the unencrypted private key.")) {
-                        location::assign(&format!("{API_ENDPOINT}/certs/{id}/download"));
-                    }
-                });
-
-                let active_index_cloned = active_index.clone();
-                let dropdown_onclick = Callback::from(move |_|  {
-                    active_index_cloned.set(if *active_index_cloned == i as i32 {
-                        -1
-                    } else {
-                        i as i32
-                    });
-                });
-                let active_index_cloned = active_index.clone();
-                let dropdown_onfocusout = Callback::from(move |_|  {
-                    active_index_cloned.set(-1);
-                });
-                let is_active = *active_index == i as i32;
-
-                html! {
-                    <div class="list-item">
-                        <div class="list-item-content">
-                            <div class="list-item-title">
-                            {title}
-                            </div>
-                            <div class="list-item-description">
-                                {&entry.id}
-                                if entry.has_private_key {
-                                    <span class="icon-text ml-2">
-                                    <span class="icon">
-                                        <ion-icon name="key"></ion-icon>
-                                    </span>
-                                    <span>{"Private Key"}</span>
-                                    </span>
-                                }
-                            </div>
-                        </div>
-
-                        <div class="list-item-controls">
-                            <div class="buttons is-right">
-
-                                <div class={classes!("dropdown", "is-right", is_active.then_some("is-active"))}>
-                                    <div class="dropdown-trigger" onfocusout={dropdown_onfocusout}>
-                                        <button type="button" class="button" onclick={dropdown_onclick}>
-                                            <span class="icon is-small">
-                                                <ion-icon name="ellipsis-horizontal"></ion-icon>
-                                            </span>
-                                        </button>
-                                    </div>
-                                    <div class="dropdown-menu" id="dropdown-menu" role="menu">
-                                        <div class="dropdown-content">
-                                            <a class="dropdown-item has-text-danger" onmousedown={delete_onmousedown} onclick={delete_onclick}>
-                                                <span class="icon-text">
-                                                    <span class="icon">
-                                                        <ion-icon name="trash"></ion-icon>
-                                                    </span>
-                                                    <span>{"Delete"}</span>
-                                                </span>
-                                            </a>
-                                            <a class="dropdown-item" onmousedown={download_onmousedown} onclick={download_onclick}>
-                                                <span class="icon-text">
-                                                    <span class="icon">
-                                                        <ion-icon name="cloud-download"></ion-icon>
-                                                    </span>
-                                                    <span>{"Download"}</span>
-                                                </span>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-            }).collect::<Html>() }
-            </div>
-            <ybc::CardFooter>
-                <a class="card-footer-item" onclick={upload_onclick}>
-                    <span class="icon-text">
-                    <span class="icon">
-                        <ion-icon name="cloud-upload"></ion-icon>
-                    </span>
-                    <span>{"Upload"}</span>
-                    </span>
-                </a>
-            </ybc::CardFooter>
-            } else {
-                if acme_list.is_empty() {
-                    <ybc::Hero body_classes="has-text-centered" body={
-                        html! {
-                        <p class="title has-text-grey-lighter">
-                            {"No Items"}
-                        </p>
-                        }
-                    } />
-                }
-            <div class="list has-visible-pointer-controls">
-            { acme_list.into_iter().enumerate().map(|(i, entry)| {
-                let subject_names = entry.identifiers.join(", ");
-                let provider = entry.provider.to_string();
-
-                let delete_onmousedown = Callback::from(move |e: MouseEvent|  {
-                    e.prevent_default();
-                });
-                let id = entry.id;
-                let delete_onclick = Callback::from(move |e: MouseEvent|  {
-                    e.prevent_default();
-                    if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
-                        let id = id;
-                        wasm_bindgen_futures::spawn_local(async move {
-                            let _ = delete_acme(id).await;
-                        });
-                    }
-                });
-
-                let id = entry.id;
-                let navigator_cloned = navigator.clone();
-                let log_onclick = Callback::from(move |_|  {
-                    let id = id.to_string();
-                    navigator_cloned.push(&Route::CertLogView {id});
-                });
-
-                let active_index_cloned = active_index.clone();
-                let dropdown_onclick = Callback::from(move |_|  {
-                    active_index_cloned.set(if *active_index_cloned == i as i32 {
-                        -1
-                    } else {
-                        i as i32
-                    });
-                });
-                let active_index_cloned = active_index.clone();
-                let dropdown_onfocusout = Callback::from(move |_|  {
-                    active_index_cloned.set(-1);
-                });
-                let is_active = *active_index == i as i32;
-
-                html! {
-                    <div class="list-item">
-                        <div class="list-item-content">
-                            <div class="list-item-title">{subject_names}</div>
-                            <div class="list-item-description">{provider}</div>
-                        </div>
-
-                        <div class="list-item-controls">
-                            <div class="buttons is-right">
-
-                                <button type="button" class="button" data-tooltip="Logs" onclick={log_onclick}>
-                                    <span class="icon is-small">
-                                        <ion-icon name="receipt"></ion-icon>
-                                    </span>
-                                </button>
-
-                                <div class={classes!("dropdown", "is-right", is_active.then_some("is-active"))}>
-                                    <div class="dropdown-trigger" onfocusout={dropdown_onfocusout}>
-                                        <button type="button" class="button" onclick={dropdown_onclick}>
-                                            <span class="icon is-small">
-                                                <ion-icon name="ellipsis-horizontal"></ion-icon>
-                                            </span>
-                                        </button>
-                                    </div>
-                                    <div class="dropdown-menu" id="dropdown-menu" role="menu">
-                                        <div class="dropdown-content">
-                                            <a class="dropdown-item has-text-danger" onmousedown={delete_onmousedown} onclick={delete_onclick}>
-                                                <span class="icon-text">
-                                                    <span class="icon">
-                                                        <ion-icon name="trash"></ion-icon>
-                                                    </span>
-                                                    <span>{"Delete"}</span>
-                                                </span>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-            }).collect::<Html>() }
-            </div>
-            <ybc::CardFooter>
-                <a class="card-footer-item" onclick={new_acme_onclick}>
-                    <span class="icon-text">
-                    <span class="icon">
-                        <ion-icon name="add"></ion-icon>
-                    </span>
-                    <span>{"New request"}</span>
-                    </span>
-                </a>
-            </ybc::CardFooter>
+            if ((*tab == CertsTab::Server || *tab == CertsTab::Root) && cert_list.is_empty()) || (*tab == CertsTab::Acme && acme_list.is_empty()) {
+                <p class="mb-8 mt-8 text-xl font-bold text-gray-500 px-16 text-center">{"List is empty."}</p>
             }
-            </ybc::Card>
+
+            if *tab == CertsTab::Server && !cert_list.is_empty() {
+                <div class="relative overflow-x-auto">
+                    <table class="w-full text-sm text-left text-neutral-600 rounded-md">
+                        <thead class="text-xs text-neutral-800 uppercase">
+                            <tr>
+                                <th scope="col" class="px-4 py-3">
+                                    {"Subject Names"}
+                                </th>
+                                <th scope="col" class="px-4 py-3">
+                                    {"Issuer"}
+                                </th>
+                                <th scope="col" class="px-4 py-3">
+                                    {"Digest"}
+                                </th>
+                                <th scope="col" class="px-4 py-3">
+                                    <span class="sr-only">{"Edit"}</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        { cert_list.into_iter().map(|entry| {
+                            let subject_names = entry
+                            .san
+                            .iter()
+                            .map(|name| name.to_string())
+                            .collect::<Vec<_>>()
+                            .join(", ");
+
+                        let id = entry.id;
+                        let delete_onclick = Callback::from(move |e: MouseEvent|  {
+                            e.prevent_default();
+                            if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
+                                wasm_bindgen_futures::spawn_local(async move {
+                                    let _ = delete_server_cert(id).await;
+                                });
+                            }
+                        });
+
+                        let download_onclick = Callback::from(move |e: MouseEvent|  {
+                            e.prevent_default();
+                            if gloo_dialogs::confirm(&format!("Are you sure to download {id}.tar.gz?\nThis file contains the unencrypted private key.")) {
+                                location::assign(&format!("{API_ENDPOINT}/certs/{id}/download"));
+                            }
+                        });
+
+                            html! {
+                                <tr class="border-b">
+                                    <th scope="row" class="px-4 py-4 font-medium text-neutral-900 whitespace-nowrap">
+                                        {subject_names}
+                                    </th>
+                                    <td class="px-4 py-4">
+                                        {entry.issuer.clone()}
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        {entry.id.to_string()}
+                                    </td>
+                                    <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
+                                        <a class="font-medium text-blue-600 hover:underline mr-5" onclick={download_onclick}>{"Download"}</a>
+                                        <a class="font-medium text-red-600 hover:underline" onclick={delete_onclick}>{"Delete"}</a>
+                                    </td>
+                                </tr>
+                            }
+                        }).collect::<Html>() }
+                        </tbody>
+                    </table>
+                </div>
+        } else if *tab == CertsTab::Root && !cert_list.is_empty() {
+            <div class="relative overflow-x-auto">
+                <table class="w-full text-sm text-left text-neutral-600 rounded-md">
+                    <thead class="text-xs text-neutral-800 uppercase">
+                        <tr>
+                            <th scope="col" class="px-4 py-3">
+                                {"Issuer"}
+                            </th>
+                            <th scope="col" class="px-4 py-3">
+                                {"Digest"}
+                            </th>
+                            <th scope="col" class="px-4 py-3">
+                                {"Private Key"}
+                            </th>
+                            <th scope="col" class="px-4 py-3">
+                                <span class="sr-only">{"Edit"}</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    { cert_list.into_iter().map(|entry| {
+                    let id = entry.id;
+                    let delete_onclick = Callback::from(move |e: MouseEvent|  {
+                        e.prevent_default();
+                        if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
+                            wasm_bindgen_futures::spawn_local(async move {
+                                let _ = delete_server_cert(id).await;
+                            });
+                        }
+                    });
+
+                    let no_key = !entry.has_private_key;
+                    let download_onclick = Callback::from(move |e: MouseEvent|  {
+                        e.prevent_default();
+                        if no_key || gloo_dialogs::confirm(&format!("Are you sure to download {id}.tar.gz?\nThis file contains the unencrypted private key.")) {
+                            location::assign(&format!("{API_ENDPOINT}/certs/{id}/download"));
+                        }
+                    });
+
+                        html! {
+                            <tr class="border-b">
+                                <td class="px-4 py-4">
+                                    {entry.issuer.clone()}
+                                </td>
+                                <td class="px-4 py-4">
+                                    {entry.id.to_string()}
+                                </td>
+                                <td class="px-4 py-4">
+                                    if no_key {
+                                        {"No"}
+                                    } else {
+                                        {"Yes"}
+                                    }
+                                </td>
+                                <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
+                                    <a class="font-medium text-blue-600 hover:underline mr-5" onclick={download_onclick}>{"Download"}</a>
+                                    <a class="font-medium text-red-600 hover:underline" onclick={delete_onclick}>{"Delete"}</a>
+                                </td>
+                            </tr>
+                        }
+                    }).collect::<Html>() }
+                    </tbody>
+                </table>
+            </div>
+            } else if *tab == CertsTab::Acme && !acme_list.is_empty() {
+                <div class="relative overflow-x-auto">
+                <table class="w-full text-sm text-left text-neutral-600 rounded-md">
+                    <thead class="text-xs text-neutral-800 uppercase">
+                        <tr>
+                            <th scope="col" class="px-4 py-3">
+                                {"Subject Names"}
+                            </th>
+                            <th scope="col" class="px-4 py-3">
+                                {"Provider"}
+                            </th>
+                            <th scope="col" class="px-4 py-3">
+                                <span class="sr-only">{"Edit"}</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    { acme_list.into_iter().map(|entry| {
+                        let subject_names = entry.identifiers.join(", ");
+                        let provider = entry.provider.to_string();
+
+                        let id = entry.id;
+                        let delete_onclick = Callback::from(move |e: MouseEvent|  {
+                            e.prevent_default();
+                            if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
+                                wasm_bindgen_futures::spawn_local(async move {
+                                    let _ = delete_acme(id).await;
+                                });
+                            }
+                        });
+
+                        let id = entry.id;
+                        let navigator_cloned = navigator.clone();
+                        let log_onclick = Callback::from(move |_|  {
+                            let id = id.to_string();
+                            navigator_cloned.push(&Route::CertLogView {id});
+                        });
+
+
+                        html! {
+                            <tr class="border-b">
+                                <td class="px-4 py-4">
+                                    {subject_names}
+                                </td>
+                                <td class="px-4 py-4">
+                                    {provider}
+                                </td>
+                                <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
+                                    <a class="font-medium text-blue-600 hover:underline mr-5" onclick={log_onclick}>{"Log"}</a>
+                                    <a class="font-medium text-red-600 hover:underline" onclick={delete_onclick}>{"Delete"}</a>
+                                </td>
+                            </tr>
+                        }
+                    }).collect::<Html>() }
+                    </tbody>
+                </table>
+            </div>
+            }
         </>
     }
 }
