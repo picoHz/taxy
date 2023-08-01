@@ -31,23 +31,20 @@ async fn start(args: StartArgs) -> anyhow::Result<()> {
     let log_dir = get_log_dir(args.log_dir)?;
     fs::create_dir_all(&log_dir)?;
 
-    let log = args.log.as_ref().map(|path| log_dir.join(path));
-    if let Some(path) = log.as_ref().and_then(|path| path.parent()) {
-        fs::create_dir_all(path)?;
-    }
-
-    let access_log = args.access_log.as_ref().map(|path| log_dir.join(path));
-    if let Some(path) = access_log.as_ref().and_then(|path| path.parent()) {
-        fs::create_dir_all(path)?;
-    }
-
-    let (log, _guard) = taxy::log::create_layer(log, "taxy.log", args.log_level, args.log_format);
+    let (log, _guard) = taxy::log::create_layer(
+        &log_dir,
+        args.log,
+        "taxy.log",
+        args.log_level,
+        args.log_format,
+    )?;
     let (access_log, _guard) = taxy::log::create_layer(
-        access_log,
+        &log_dir,
+        args.access_log,
         "access.log",
         args.access_log_level,
         args.log_format,
-    );
+    )?;
     let db = DatabaseLayer::new(&log_dir.join("log.db"), args.log_level).await?;
 
     let access_log_filter =

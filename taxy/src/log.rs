@@ -1,6 +1,7 @@
 use clap::ValueEnum;
 use dashmap::DashMap;
 use sqlx::{sqlite::SqliteConnectOptions, ConnectOptions, SqlitePool};
+use std::fs;
 use std::time::Duration;
 use std::{
     collections::HashMap,
@@ -29,29 +30,40 @@ pub enum LogFormat {
 }
 
 pub fn create_layer<S>(
+    log_dir: &Path,
     file: Option<PathBuf>,
     default_file: &str,
     log_level: LevelFilter,
     format: LogFormat,
-) -> (
+) -> anyhow::Result<(
     Box<dyn Layer<S> + Send + Sync + 'static>,
     Option<WorkerGuard>,
-)
+)>
 where
     S: Subscriber + for<'lookup> LookupSpan<'lookup>,
 {
     if let Some(level) = log_level.into_level() {
         if let Some(file) = file {
+            let file = file.to_string_lossy();
+            let file = shellexpand::tilde(&file);
+            let file = Path::new(file.as_ref());
             let (dir, prefix) = match (
                 file.parent(),
                 file.file_name().and_then(|name| name.to_str()),
             ) {
                 (Some(dir), Some(prefix)) => (dir, prefix),
-                _ => (file.as_path(), default_file),
+                _ => (file, default_file),
             };
+            let current_dir = std::env::current_dir()?;
+            let dir = match dir.to_str() {
+                Some("") => log_dir,
+                Some(".") => &current_dir,
+                _ => log_dir,
+            };
+            fs::create_dir_all(dir)?;
             let file_appender = tracing_appender::rolling::hourly(dir, prefix);
             let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
-            (
+            Ok((
                 if format == LogFormat::Json {
                     fmt::layer()
                         .json()
@@ -64,9 +76,9 @@ where
                         .boxed()
                 },
                 Some(guard),
-            )
+            ))
         } else {
-            (
+            Ok((
                 if format == LogFormat::Json {
                     fmt::layer()
                         .with_writer(std::io::stdout.with_max_level(level))
@@ -78,10 +90,10 @@ where
                         .boxed()
                 },
                 None,
-            )
+            ))
         }
     } else {
-        (layer::Identity::new().boxed(), None)
+        Ok((layer::Identity::new().boxed(), None))
     }
 }
 
