@@ -1,5 +1,4 @@
 use crate::auth::use_ensure_auth;
-use crate::components::breadcrumb::Breadcrumb;
 use crate::pages::Route;
 use crate::store::{PortStore, ProxyStore};
 use crate::utils::convert_multiaddr;
@@ -47,7 +46,6 @@ pub fn proxy_list() -> Html {
 
     let navigator = use_navigator().unwrap();
     let list = proxies.entries.clone();
-    let active_index = use_state(|| -1);
 
     let navigator_cloned = navigator.clone();
     let new_proxy_onclick = Callback::from(move |_| {
@@ -56,151 +54,93 @@ pub fn proxy_list() -> Html {
 
     html! {
         <>
-            <ybc::Card>
-            <ybc::CardHeader>
-                <p class="card-header-title">
-                    <Breadcrumb />
-                </p>
-            </ybc::CardHeader>
             if list.is_empty() {
-                <ybc::Hero body_classes="has-text-centered" body={
-                    html! {
-                    <p class="title has-text-grey-lighter">
-                        {"No Items"}
-                    </p>
-                    }
-                } />
-            }
-            <div class="list has-visible-pointer-controls">
-            { list.into_iter().enumerate().map(|(i, entry)| {
-                let navigator = navigator.clone();
-
-                let id = entry.id;
-                let navigator_cloned = navigator.clone();
-                let log_onclick = Callback::from(move |_|  {
-                    let id = id;
-                    navigator_cloned.push(&Route::ProxyLogView {id});
-                });
-
-                let id = entry.id;
-                let config_onclick = Callback::from(move |_|  {
-                    let id = id;
-                    navigator.push(&Route::ProxyView {id});
-                });
-
-                let delete_onmousedown = Callback::from(move |e: MouseEvent|  {
-                    e.prevent_default();
-                });
-                let id = entry.id;
-                let delete_onclick = Callback::from(move |e: MouseEvent|  {
-                    e.prevent_default();
-                    if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
-                        let id = id;
-                        wasm_bindgen_futures::spawn_local(async move {
-                            let _ = delete_site(id).await;
-                        });
-                    }
-                });
-
-                let active_index_cloned = active_index.clone();
-                let dropdown_onclick = Callback::from(move |_|  {
-                    active_index_cloned.set(if *active_index_cloned == i as i32 {
-                        -1
-                    } else {
-                        i as i32
-                    });
-                });
-                let active_index_cloned = active_index.clone();
-                let dropdown_onfocusout = Callback::from(move |_|  {
-                    active_index_cloned.set(-1);
-                });
-                let is_active = *active_index == i as i32;
-
-                let ports = if entry.proxy.ports.is_empty() {
-                    html!{ <span class="tag is-light">{"No Ports"}</span> }
-                } else {
-                    entry.proxy.ports.iter().filter_map(|port| {
-                        ports.entries.iter().find(|p| p.id == *port)
-                    }).map(|entry| {
-                        let (protocol, addr) = convert_multiaddr(&entry.port.listen);
-                        html! {
-                            <div class="control">
-                                <span class="tags has-addons">
-                                    <span class="tag is-dark">{protocol}</span>
-                                    <span class="tag is-info">{addr}</span>
-                                </span>
-                            </div>
-                        }
-                    }).collect::<Html>()
-                };
-
-                let title = if entry.proxy.name.is_empty() {
-                    entry.id.to_string()
-                } else {
-                    entry.proxy.name.clone()
-                };
-                html! {
-                    <div class="list-item">
-                        <div class="list-item-content">
-                            <div class="list-item-title">{title}</div>
-                            <div class="list-item-description field is-grouped mt-1">
-                                {ports}
-                            </div>
-                        </div>
-
-                        <div class="list-item-controls">
-                            <div class="buttons is-right">
-
-                            <button type="button" class="button" data-tooltip="Logs" onclick={log_onclick}>
-                                <span class="icon is-small">
-                                    <ion-icon name="receipt"></ion-icon>
-                                </span>
-                            </button>
-
-                            <button type="button" class="button" data-tooltip="Configs" onclick={config_onclick}>
-                                <span class="icon is-small">
-                                    <ion-icon name="settings"></ion-icon>
-                                </span>
-                            </button>
-
-                                <div class={classes!("dropdown", "is-right", is_active.then_some("is-active"))}>
-                                    <div class="dropdown-trigger" onfocusout={dropdown_onfocusout}>
-                                        <button type="button" class="button" onclick={dropdown_onclick}>
-                                            <span class="icon is-small">
-                                                <ion-icon name="ellipsis-horizontal"></ion-icon>
-                                            </span>
-                                        </button>
-                                    </div>
-                                    <div class="dropdown-menu" id="dropdown-menu" role="menu">
-                                        <div class="dropdown-content">
-                                            <a class="dropdown-item has-text-danger" onmousedown={delete_onmousedown} onclick={delete_onclick}>
-                                                <span class="icon-text">
-                                                    <span class="icon">
-                                                        <ion-icon name="trash"></ion-icon>
-                                                    </span>
-                                                    <span>{"Delete"}</span>
-                                                </span>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                <p class="mb-8 mt-8 text-xl font-bold text-gray-500 px-16 text-center">{"List is empty. Click 'Add' to configure a new port."}</p>
+                <div class="flex flex-row space-y-4 justify-center sm:space-y-0 sm:space-x-4">
+                    <button onclick={new_proxy_onclick} class="inline-flex items-center text-gray-500 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5" type="button">
+                        {"Add"}
+                    </button>
+                </div>
+            } else {
+                <div class="flex items-center justify-end px-4 md:px-0">
+                    <div>
+                        <button onclick={new_proxy_onclick} class="inline-flex items-center text-gray-500 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5" type="button">
+                            {"Add"}
+                        </button>
                     </div>
-                }
-            }).collect::<Html>() }
-            </div>
-            <ybc::CardFooter>
-                <a class="card-footer-item" onclick={new_proxy_onclick}>
-                    <span class="icon-text">
-                    <span class="icon">
-                        <ion-icon name="add"></ion-icon>
-                    </span>
-                    <span>{"New Proxy"}</span>
-                    </span>
-                </a>
-            </ybc::CardFooter>
-            </ybc::Card>
+                </div>
+                <div class="relative overflow-x-auto">
+                    <table class="w-full text-sm text-left text-neutral-600 rounded-md">
+                        <thead class="text-xs text-neutral-800 uppercase">
+                            <tr>
+                                <th scope="col" class="px-4 py-3">
+                                    {"Name"}
+                                </th>
+                                <th scope="col" class="px-4 py-3">
+                                    {"Ports"}
+                                </th>
+                                <th scope="col" class="px-4 py-3">
+                                    <span class="sr-only">{"Edit"}</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        { list.into_iter().map(|entry| {
+                            let navigator = navigator.clone();
+
+                            let id = entry.id;
+                            let navigator_cloned = navigator.clone();
+                            let log_onclick = Callback::from(move |_|  {
+                                navigator_cloned.push(&Route::ProxyLogView {id});
+                            });
+
+                            let config_onclick = Callback::from(move |_|  {
+                                navigator.push(&Route::ProxyView {id});
+                            });
+
+                            let delete_onclick = Callback::from(move |e: MouseEvent|  {
+                                e.prevent_default();
+                                if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
+                                    wasm_bindgen_futures::spawn_local(async move {
+                                        let _ = delete_site(id).await;
+                                    });
+                                }
+                            });
+
+                            let ports = entry.proxy.ports.iter().filter_map(|port| {
+                                ports.entries.iter().find(|p| p.id == *port)
+                            }).map(|entry| {
+                                let (protocol, addr) = convert_multiaddr(&entry.port.listen);
+                                format!("{}/{}", protocol, addr)
+                            }).collect::<Vec<_>>();
+                            let ports = ports.join(", ");
+
+                            let title = if entry.proxy.name.is_empty() {
+                                entry.id.to_string()
+                            } else {
+                                entry.proxy.name.clone()
+                            };
+
+                            html! {
+                                <tr class="border-b">
+                                    <th scope="row" class="px-4 py-4 font-medium text-neutral-900 whitespace-nowrap">
+                                        {title}
+                                    </th>
+                                    <td class="px-4 py-4">
+                                        {ports}
+                                    </td>
+                                    <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
+                                        <a class="font-medium text-blue-600 hover:underline mr-5" onclick={config_onclick}>{"Edit"}</a>
+                                        <a class="font-medium text-blue-600 hover:underline mr-5" onclick={log_onclick}>{"Log"}</a>
+                                        <a class="font-medium text-red-600 hover:underline" onclick={delete_onclick}>{"Delete"}</a>
+                                    </td>
+                                </tr>
+                            }
+                        }).collect::<Html>() }
+                        </tbody>
+                    </table>
+                </div>
+            }
         </>
     }
 }

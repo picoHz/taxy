@@ -56,7 +56,7 @@ pub fn post_list() -> Html {
                     </button>
                 </div>
             } else {
-            <div class="flex items-center justify-end pb-4 px-4 md:px-0">
+            <div class="flex items-center justify-end px-4 md:px-0">
                 <div>
                     <button onclick={new_port_onclick} class="inline-flex items-center text-gray-500 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5" type="button">
                         {"Add"}
