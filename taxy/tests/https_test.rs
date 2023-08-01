@@ -60,8 +60,8 @@ async fn https_proxy() -> anyhow::Result<()> {
         }])
         .certs(
             [
-                (root.id.clone(), root.clone()),
-                (cert.id.clone(), cert.clone()),
+                (root.id, root.clone()),
+                (cert.id, cert.clone()),
             ]
             .into_iter()
             .collect(),
@@ -156,7 +156,7 @@ async fn https_proxy_invalid_cert() -> anyhow::Result<()> {
                 ..Default::default()
             },
         }])
-        .certs([(cert.id.clone(), cert.clone())].into_iter().collect())
+        .certs([(cert.id, cert.clone())].into_iter().collect())
         .build();
 
     let ca = reqwest::Certificate::from_pem(&root.pem_chain)?;
@@ -232,7 +232,7 @@ async fn https_proxy_automatic_upgrade() -> anyhow::Result<()> {
                 ..Default::default()
             },
         }])
-        .certs([(cert.id.clone(), cert.clone())].into_iter().collect())
+        .certs([(cert.id, cert.clone())].into_iter().collect())
         .build();
 
     let ca = reqwest::Certificate::from_pem(&root.pem_chain)?;

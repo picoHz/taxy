@@ -73,8 +73,8 @@ async fn wss_proxy() -> anyhow::Result<()> {
         }])
         .certs(
             [
-                (root.id.clone(), root.clone()),
-                (cert.id.clone(), cert.clone()),
+                (root.id, root.clone()),
+                (cert.id, cert.clone()),
             ]
             .into_iter()
             .collect(),
