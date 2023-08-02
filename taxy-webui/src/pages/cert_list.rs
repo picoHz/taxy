@@ -106,7 +106,7 @@ pub fn cert_list() -> Html {
     let active_index = use_state(|| -1);
     html! {
         <>
-        <div class="flex flex-col sm:flex-row px-4 md:px-0">
+        <div class="flex flex-col mb-4 sm:flex-row px-4 md:px-0">
             <div class="text-sm font-medium text-center text-gray-500">
                 <ul class="flex flex-wrap -mb-px">
 
@@ -134,7 +134,7 @@ pub fn cert_list() -> Html {
 
                 </ul>
             </div>
-            <div class="inline-flex rounded-md my-4 sm:my-0 sm:ml-auto" role="group">
+            <div class="inline-flex rounded-md mt-4 sm:mt-0 sm:ml-auto" role="group">
                 if *tab == CertsTab::Server {
                     <button type="button" onclick={self_sign_onclick} class="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-lg hover:bg-gray-100 focus:z-10 focus:ring-4 focus:ring-gray-200">
                         {"Self-sign"}
@@ -154,14 +154,13 @@ pub fn cert_list() -> Html {
             </div>
         </div>
 
-            if ((*tab == CertsTab::Server || *tab == CertsTab::Root) && cert_list.is_empty()) || (*tab == CertsTab::Acme && acme_list.is_empty()) {
-                <p class="mb-8 mt-8 text-xl font-bold text-gray-500 px-16 text-center">{"List is empty."}</p>
-            }
-
-            if *tab == CertsTab::Server && !cert_list.is_empty() {
-                <div class="relative overflow-x-auto">
+            if *tab == CertsTab::Server {
+                <div class="relative overflow-x-auto bg-white shadow-sm border border-gray-300 md:rounded-md">
+                if cert_list.is_empty() {
+                    <p class="mb-8 mt-8 text-xl font-bold text-gray-500 px-16 text-center">{"List is empty."}</p>
+                } else {
                     <table class="w-full text-sm text-left text-neutral-600 rounded-md">
-                        <thead class="text-xs text-neutral-800 uppercase">
+                        <thead class="text-xs text-neutral-800 uppercase border-b border-gray-300">
                             <tr>
                                 <th scope="col" class="px-4 py-3">
                                     {"Subject Names"}
@@ -223,11 +222,15 @@ pub fn cert_list() -> Html {
                         }).collect::<Html>() }
                         </tbody>
                     </table>
+                }
                 </div>
-        } else if *tab == CertsTab::Root && !cert_list.is_empty() {
-            <div class="relative overflow-x-auto">
+        } else if *tab == CertsTab::Root {
+            <div class="relative overflow-x-auto bg-white shadow-sm border border-gray-300 md:rounded-md">
+                if cert_list.is_empty() {
+                    <p class="mb-8 mt-8 text-xl font-bold text-gray-500 px-16 text-center">{"List is empty."}</p>
+                } else {
                 <table class="w-full text-sm text-left text-neutral-600 rounded-md">
-                    <thead class="text-xs text-neutral-800 uppercase">
+                    <thead class="text-xs text-neutral-800 uppercase border-b border-gray-300">
                         <tr>
                             <th scope="col" class="px-4 py-3">
                                 {"Issuer"}
@@ -287,11 +290,15 @@ pub fn cert_list() -> Html {
                     }).collect::<Html>() }
                     </tbody>
                 </table>
+                }
             </div>
-            } else if *tab == CertsTab::Acme && !acme_list.is_empty() {
-                <div class="relative overflow-x-auto">
+            } else if *tab == CertsTab::Acme {
+                <div class="relative overflow-x-auto bg-white shadow-sm border border-gray-300 md:rounded-md">
+                if acme_list.is_empty() {
+                    <p class="mb-8 mt-8 text-xl font-bold text-gray-500 px-16 text-center">{"List is empty."}</p>
+                } else {
                 <table class="w-full text-sm text-left text-neutral-600 rounded-md">
-                    <thead class="text-xs text-neutral-800 uppercase">
+                    <thead class="text-xs text-neutral-800 uppercase border-b border-gray-300">
                         <tr>
                             <th scope="col" class="px-4 py-3">
                                 {"Subject Names"}
@@ -344,6 +351,7 @@ pub fn cert_list() -> Html {
                     }).collect::<Html>() }
                     </tbody>
                 </table>
+                }
             </div>
             }
         </>

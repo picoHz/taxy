@@ -54,93 +54,88 @@ pub fn proxy_list() -> Html {
 
     html! {
         <>
-            if list.is_empty() {
-                <p class="mb-8 mt-8 text-xl font-bold text-gray-500 px-16 text-center">{"List is empty. Click 'Add' to configure a new port."}</p>
-                <div class="flex flex-row space-y-4 justify-center sm:space-y-0 sm:space-x-4">
+            <div class="flex items-center justify-end mb-4 px-4 md:px-0">
+                <div>
                     <button onclick={new_proxy_onclick} class="inline-flex items-center text-gray-500 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5" type="button">
                         {"Add"}
                     </button>
                 </div>
-            } else {
-                <div class="flex items-center justify-end px-4 md:px-0">
-                    <div>
-                        <button onclick={new_proxy_onclick} class="inline-flex items-center text-gray-500 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5" type="button">
-                            {"Add"}
-                        </button>
-                    </div>
-                </div>
-                <div class="relative overflow-x-auto">
-                    <table class="w-full text-sm text-left text-neutral-600 rounded-md">
-                        <thead class="text-xs text-neutral-800 uppercase">
-                            <tr>
-                                <th scope="col" class="px-4 py-3">
-                                    {"Name"}
-                                </th>
-                                <th scope="col" class="px-4 py-3">
-                                    {"Ports"}
-                                </th>
-                                <th scope="col" class="px-4 py-3">
-                                    <span class="sr-only">{"Edit"}</span>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        { list.into_iter().map(|entry| {
-                            let navigator = navigator.clone();
+            </div>
+            <div class="relative overflow-x-auto bg-white shadow-sm border border-gray-300 md:rounded-md">
+                if list.is_empty() {
+                    <p class="mb-8 mt-8 text-xl font-bold text-gray-500 px-16 text-center">{"List is empty. Click 'Add' to configure a new port."}</p>
+                } else {
+                <table class="w-full text-sm text-left text-neutral-600 rounded-md">
+                    <thead class="text-xs text-neutral-800 uppercase border-b border-gray-300">
+                        <tr>
+                            <th scope="col" class="px-4 py-3">
+                                {"Name"}
+                            </th>
+                            <th scope="col" class="px-4 py-3">
+                                {"Ports"}
+                            </th>
+                            <th scope="col" class="px-4 py-3">
+                                <span class="sr-only">{"Edit"}</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    { list.into_iter().map(|entry| {
+                        let navigator = navigator.clone();
 
-                            let id = entry.id;
-                            let navigator_cloned = navigator.clone();
-                            let log_onclick = Callback::from(move |_|  {
-                                navigator_cloned.push(&Route::ProxyLogView {id});
-                            });
+                        let id = entry.id;
+                        let navigator_cloned = navigator.clone();
+                        let log_onclick = Callback::from(move |_|  {
+                            navigator_cloned.push(&Route::ProxyLogView {id});
+                        });
 
-                            let config_onclick = Callback::from(move |_|  {
-                                navigator.push(&Route::ProxyView {id});
-                            });
+                        let config_onclick = Callback::from(move |_|  {
+                            navigator.push(&Route::ProxyView {id});
+                        });
 
-                            let delete_onclick = Callback::from(move |e: MouseEvent|  {
-                                e.prevent_default();
-                                if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
-                                    wasm_bindgen_futures::spawn_local(async move {
-                                        let _ = delete_site(id).await;
-                                    });
-                                }
-                            });
-
-                            let ports = entry.proxy.ports.iter().filter_map(|port| {
-                                ports.entries.iter().find(|p| p.id == *port)
-                            }).map(|entry| {
-                                let (protocol, addr) = convert_multiaddr(&entry.port.listen);
-                                format!("{}/{}", protocol, addr)
-                            }).collect::<Vec<_>>();
-                            let ports = ports.join(", ");
-
-                            let title = if entry.proxy.name.is_empty() {
-                                entry.id.to_string()
-                            } else {
-                                entry.proxy.name.clone()
-                            };
-
-                            html! {
-                                <tr class="border-b">
-                                    <th scope="row" class="px-4 py-4 font-medium text-neutral-900 whitespace-nowrap">
-                                        {title}
-                                    </th>
-                                    <td class="px-4 py-4">
-                                        {ports}
-                                    </td>
-                                    <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
-                                        <a class="font-medium text-blue-600 hover:underline mr-5" onclick={config_onclick}>{"Edit"}</a>
-                                        <a class="font-medium text-blue-600 hover:underline mr-5" onclick={log_onclick}>{"Log"}</a>
-                                        <a class="font-medium text-red-600 hover:underline" onclick={delete_onclick}>{"Delete"}</a>
-                                    </td>
-                                </tr>
+                        let delete_onclick = Callback::from(move |e: MouseEvent|  {
+                            e.prevent_default();
+                            if gloo_dialogs::confirm(&format!("Are you sure to delete {id}?")) {
+                                wasm_bindgen_futures::spawn_local(async move {
+                                    let _ = delete_site(id).await;
+                                });
                             }
-                        }).collect::<Html>() }
-                        </tbody>
-                    </table>
-                </div>
+                        });
+
+                        let ports = entry.proxy.ports.iter().filter_map(|port| {
+                            ports.entries.iter().find(|p| p.id == *port)
+                        }).map(|entry| {
+                            let (protocol, addr) = convert_multiaddr(&entry.port.listen);
+                            format!("{}/{}", protocol, addr)
+                        }).collect::<Vec<_>>();
+                        let ports = ports.join(", ");
+
+                        let title = if entry.proxy.name.is_empty() {
+                            entry.id.to_string()
+                        } else {
+                            entry.proxy.name.clone()
+                        };
+
+                        html! {
+                            <tr class="border-b">
+                                <th scope="row" class="px-4 py-4 font-medium text-neutral-900 whitespace-nowrap">
+                                    {title}
+                                </th>
+                                <td class="px-4 py-4">
+                                    {ports}
+                                </td>
+                                <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
+                                    <a class="font-medium text-blue-600 hover:underline mr-5" onclick={config_onclick}>{"Edit"}</a>
+                                    <a class="font-medium text-blue-600 hover:underline mr-5" onclick={log_onclick}>{"Log"}</a>
+                                    <a class="font-medium text-red-600 hover:underline" onclick={delete_onclick}>{"Delete"}</a>
+                                </td>
+                            </tr>
+                        }
+                    }).collect::<Html>() }
+                    </tbody>
+                </table>
             }
+            </div>
         </>
     }
 }

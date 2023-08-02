@@ -48,24 +48,19 @@ pub fn post_list() -> Html {
     let list = ports.entries.clone();
     html! {
         <>
-            if list.is_empty() {
-                <p class="mb-8 mt-8 text-xl font-bold text-gray-500 px-16 text-center">{"List is empty. Click 'Add' to configure a new port."}</p>
-                <div class="flex flex-row space-y-4 justify-center sm:space-y-0 sm:space-x-4">
-                    <button onclick={new_port_onclick} class="inline-flex items-center text-gray-500 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5" type="button">
-                        {"Add"}
-                    </button>
-                </div>
-            } else {
-            <div class="flex items-center justify-end px-4 md:px-0">
+            <div class="flex items-center justify-end mb-4 px-4 md:px-0">
                 <div>
                     <button onclick={new_port_onclick} class="inline-flex items-center text-gray-500 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5" type="button">
                         {"Add"}
                     </button>
                 </div>
             </div>
-            <div class="relative overflow-x-auto">
+            <div class="relative overflow-x-auto bg-white shadow-sm border border-gray-300 md:rounded-md">
+                if list.is_empty() {
+                    <p class="mb-8 mt-8 text-xl font-bold text-gray-500 px-16 text-center">{"List is empty. Click 'Add' to configure a new port."}</p>
+                } else {
                 <table class="w-full text-sm text-left text-neutral-600 rounded-md">
-                    <thead class="text-xs text-neutral-800 uppercase">
+                    <thead class="text-xs text-neutral-800 uppercase border-b border-gray-300">
                         <tr>
                             <th scope="col" class="px-4 py-3">
                                 {"Name"}
@@ -158,8 +153,8 @@ pub fn post_list() -> Html {
                         }).collect::<Html>() }
                     </tbody>
                 </table>
+                }
             </div>
-            }
         </>
     }
 }
