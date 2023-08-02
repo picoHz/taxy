@@ -127,7 +127,7 @@ pub fn cert_list() -> Html {
                         };
                         html! {
                             <li class="mr-2">
-                                <a {onclick} class={classes!("inline-block", "px-4", "py-2", "border-b-2", "rounded-t-lg", "hover:text-neutral-600", "hover:border-neutral-300", class)}>{item}</a>
+                                <a {onclick} class={classes!("inline-block", "cursor-pointer", "px-4", "py-2", "border-b-2", "rounded-t-lg", "hover:text-neutral-600", "hover:border-neutral-300", class)}>{item}</a>
                             </li>
                         }
                     }).collect::<Html>() }
@@ -137,7 +137,7 @@ pub fn cert_list() -> Html {
         </div>
 
             if *tab == CertsTab::Server {
-                <div class="relative overflow-x-auto bg-white shadow-sm border border-neutral-300 md:rounded-md">
+                <div class="relative overflow-x-auto bg-neutral-50 shadow-sm border border-neutral-300 md:rounded-md">
                 if cert_list.is_empty() {
                     <p class="mb-8 mt-8 text-xl font-bold text-neutral-500 px-16 text-center">{"List is empty."}</p>
                 } else {
@@ -196,8 +196,8 @@ pub fn cert_list() -> Html {
                                         {entry.id.to_string()}
                                     </td>
                                     <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
-                                        <a class="font-medium text-blue-600 hover:underline mr-5" onclick={download_onclick}>{"Download"}</a>
-                                        <a class="font-medium text-red-600 hover:underline" onclick={delete_onclick}>{"Delete"}</a>
+                                        <a class="cursor-pointer font-medium text-blue-600 hover:underline mr-5" onclick={download_onclick}>{"Download"}</a>
+                                        <a class="cursor-pointer font-medium text-red-600 hover:underline" onclick={delete_onclick}>{"Delete"}</a>
                                     </td>
                                 </tr>
                             }
@@ -207,7 +207,7 @@ pub fn cert_list() -> Html {
                 }
                 </div>
         } else if *tab == CertsTab::Root {
-            <div class="relative overflow-x-auto bg-white shadow-sm border border-neutral-300 md:rounded-md">
+            <div class="relative overflow-x-auto bg-neutral-50 shadow-sm border border-neutral-300 md:rounded-md">
                 if cert_list.is_empty() {
                     <p class="mb-8 mt-8 text-xl font-bold text-neutral-500 px-16 text-center">{"List is empty."}</p>
                 } else {
@@ -264,8 +264,8 @@ pub fn cert_list() -> Html {
                                     }
                                 </td>
                                 <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
-                                    <a class="font-medium text-blue-600 hover:underline mr-5" onclick={download_onclick}>{"Download"}</a>
-                                    <a class="font-medium text-red-600 hover:underline" onclick={delete_onclick}>{"Delete"}</a>
+                                    <a class="cursor-pointer font-medium text-blue-600 hover:underline mr-5" onclick={download_onclick}>{"Download"}</a>
+                                    <a class="cursor-pointer font-medium text-red-600 hover:underline" onclick={delete_onclick}>{"Delete"}</a>
                                 </td>
                             </tr>
                         }
@@ -275,7 +275,7 @@ pub fn cert_list() -> Html {
                 }
             </div>
             } else if *tab == CertsTab::Acme {
-                <div class="relative overflow-x-auto bg-white shadow-sm border border-neutral-300 md:rounded-md">
+                <div class="relative overflow-x-auto bg-neutral-50 shadow-sm border border-neutral-300 md:rounded-md">
                 if acme_list.is_empty() {
                     <p class="mb-8 mt-8 text-xl font-bold text-neutral-500 px-16 text-center">{"List is empty."}</p>
                 } else {
@@ -325,8 +325,8 @@ pub fn cert_list() -> Html {
                                     {provider}
                                 </td>
                                 <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
-                                    <a class="font-medium text-blue-600 hover:underline mr-5" onclick={log_onclick}>{"Log"}</a>
-                                    <a class="font-medium text-red-600 hover:underline" onclick={delete_onclick}>{"Delete"}</a>
+                                    <a class="cursor-pointer font-medium text-blue-600 hover:underline mr-5" onclick={log_onclick}>{"Log"}</a>
+                                    <a class="cursor-pointer font-medium text-red-600 hover:underline" onclick={delete_onclick}>{"Delete"}</a>
                                 </td>
                             </tr>
                         }
@@ -338,21 +338,21 @@ pub fn cert_list() -> Html {
             }
             <div class="flex justify-end rounded-md mt-4 sm:ml-auto px-4 md:px-0" role="group">
                 if *tab == CertsTab::Server {
-                    <button onclick={self_sign_onclick} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 bg-white border border-neutral-300 rounded-l-lg hover:bg-neutral-100 focus:z-10 focus:ring-4 focus:ring-neutral-200">
+                    <button onclick={self_sign_onclick} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 bg-neutral-50 border border-neutral-300 rounded-l-lg hover:bg-neutral-100 focus:z-10 focus:ring-4 focus:ring-neutral-200">
                         <img src="/assets/icons/create.svg" class="w-4 h-4 mr-1 text-neutral-500" />
                         {"Self-sign"}
                     </button>
-                    <button onclick={upload_onclick} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 bg-white border border-l-0 border-neutral-300 rounded-r-lg hover:bg-neutral-100 focus:z-10 focus:ring-4 focus:ring-neutral-200">
+                    <button onclick={upload_onclick} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 bg-neutral-50 border border-l-0 border-neutral-300 rounded-r-lg hover:bg-neutral-100 focus:z-10 focus:ring-4 focus:ring-neutral-200">
                         <img src="/assets/icons/cloud-upload.svg" class="w-4 h-4 mr-1" />
                         {"Upload"}
                     </button>
                 } else if *tab == CertsTab::Root {
-                    <button onclick={upload_onclick} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-100 focus:z-10 focus:ring-4 focus:ring-neutral-200">
+                    <button onclick={upload_onclick} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 bg-neutral-50 border border-neutral-300 rounded-lg hover:bg-neutral-100 focus:z-10 focus:ring-4 focus:ring-neutral-200">
                         <img src="/assets/icons/cloud-upload.svg" class="w-4 h-4 mr-1" />
                         {"Upload"}
                     </button>
                 } else {
-                    <button onclick={new_acme_onclick} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-100 focus:z-10 focus:ring-4 focus:ring-neutral-200">
+                    <button onclick={new_acme_onclick} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 bg-neutral-50 border border-neutral-300 rounded-lg hover:bg-neutral-100 focus:z-10 focus:ring-4 focus:ring-neutral-200">
                         <img src="/assets/icons/add.svg" class="w-4 h-4 mr-1" />
                         {"Add"}
                     </button>

@@ -90,18 +90,18 @@ pub fn upload() -> Html {
 
     html! {
         <>
-            <form {onsubmit} class="bg-white shadow-sm p-5 border border-neutral-300 md:rounded-md">
+            <form {onsubmit} class="bg-neutral-50 shadow-sm p-5 border border-neutral-300 md:rounded-md">
                 <label class="block mb-2 text-sm font-medium text-neutral-900">{"Certificate Chain"}</label>
                 <input onchange={chain_onchange} class="block w-full text-sm text-neutral-900 border border-neutral-300 rounded-lg cursor-pointer bg-neutral-50 focus:outline-none file:bg-transparent file:border-0 file:bg-neutral-100 file:mr-4 file:py-3 file:px-4" type="file" />
 
-                <label class="block mb-2 text-sm font-medium text-neutral-900">{"Private Key"}</label>
+                <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Private Key"}</label>
                 <input onchange={key_onchange} class="block w-full text-sm text-neutral-900 border border-neutral-300 rounded-lg cursor-pointer bg-neutral-50 focus:outline-none file:bg-transparent file:border-0 file:bg-neutral-100 file:mr-4 file:py-3 file:px-4" type="file" />
 
-                <div class="flex items-center justify-end">
-                    <button type="button" onclick={cancel_onclick} class="mr-2 inline-flex items-center text-neutral-500 bg-white focus:outline-none hover:bg-neutral-100 focus:ring-4 focus:ring-neutral-200 font-medium rounded-lg text-sm px-4 py-2" type="button">
+                <div class="flex mt-4 items-center justify-end">
+                    <button type="button" onclick={cancel_onclick} class="mr-2 inline-flex items-center text-neutral-500 bg-neutral-50 focus:outline-none hover:bg-neutral-100 focus:ring-4 focus:ring-neutral-200 font-medium rounded-lg text-sm px-4 py-2" type="button">
                         {"Cancel"}
                     </button>
-                    <button type="submit" disabled={!uploadable} class="inline-flex items-center text-neutral-500 bg-white border border-neutral-300 focus:outline-none hover:bg-neutral-100 focus:ring-4 focus:ring-neutral-200 font-medium rounded-lg text-sm px-4 py-2" type="button">
+                    <button type="submit" disabled={!uploadable} class="inline-flex items-center text-neutral-500 bg-neutral-50 border border-neutral-300 focus:outline-none hover:bg-neutral-100 focus:ring-4 focus:ring-neutral-200 font-medium rounded-lg text-sm px-4 py-2" type="button">
                         {"Upload"}
                     </button>
                 </div>

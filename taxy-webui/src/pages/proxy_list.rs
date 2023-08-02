@@ -54,7 +54,7 @@ pub fn proxy_list() -> Html {
 
     html! {
         <>
-            <div class="relative overflow-x-auto bg-white shadow-sm border border-neutral-300 md:rounded-md">
+            <div class="relative overflow-x-auto bg-neutral-50 shadow-sm border border-neutral-300 md:rounded-md">
                 if list.is_empty() {
                     <p class="mb-8 mt-8 text-xl font-bold text-neutral-500 px-16 text-center">{"List is empty. Click 'Add' to configure a new port."}</p>
                 } else {
@@ -118,9 +118,9 @@ pub fn proxy_list() -> Html {
                                     {ports}
                                 </td>
                                 <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
-                                    <a class="font-medium text-blue-600 hover:underline mr-5" onclick={config_onclick}>{"Edit"}</a>
-                                    <a class="font-medium text-blue-600 hover:underline mr-5" onclick={log_onclick}>{"Log"}</a>
-                                    <a class="font-medium text-red-600 hover:underline" onclick={delete_onclick}>{"Delete"}</a>
+                                    <a class="cursor-pointer font-medium text-blue-600 hover:underline mr-5" onclick={config_onclick}>{"Edit"}</a>
+                                    <a class="cursor-pointer font-medium text-blue-600 hover:underline mr-5" onclick={log_onclick}>{"Log"}</a>
+                                    <a class="cursor-pointer font-medium text-red-600 hover:underline" onclick={delete_onclick}>{"Delete"}</a>
                                 </td>
                             </tr>
                         }
@@ -131,7 +131,7 @@ pub fn proxy_list() -> Html {
             </div>
             <div class="flex items-center justify-end my-4 px-4 md:px-0">
                 <div>
-                    <button onclick={new_proxy_onclick} class="inline-flex items-center text-neutral-500 bg-white border border-neutral-300 focus:outline-none hover:bg-neutral-100 focus:ring-4 focus:ring-neutral-200 font-medium rounded-lg text-sm px-4 py-2" type="button">
+                    <button onclick={new_proxy_onclick} class="inline-flex items-center text-neutral-500 bg-neutral-50 border border-neutral-300 focus:outline-none hover:bg-neutral-100 focus:ring-4 focus:ring-neutral-200 font-medium rounded-lg text-sm px-4 py-2" type="button">
                         <img src="/assets/icons/add.svg" class="w-4 h-4 mr-1" />
                         {"Add"}
                     </button>
