@@ -77,7 +77,7 @@ pub fn proxy_view(props: &Props) -> Html {
     html! {
         <>
             if let Some(proxy_entry) = &*site {
-                <form {onsubmit} class="bg-white shadow-sm p-5 border border-neutral-300 md:rounded-md">
+                <form {onsubmit} class="bg-white shadow-sm p-5 border border-neutral-300 lg:rounded-md">
                     <ProxyConfig proxy={proxy_entry.proxy.clone()} {onchanged} />
 
                     <div class="flex mt-4 items-center justify-end">

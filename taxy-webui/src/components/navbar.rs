@@ -51,9 +51,9 @@ pub fn navbar() -> Html {
 
     html! {
         <>
-        <div class="md:w-4/5 md:mt-4 md:rounded-md mx-auto text-neutral-100 bg-neutral-800 shadow-lg font-medium flex items-stretch">
+        <div class="lg:w-4/5 lg:mt-6 lg:rounded-md mx-auto text-neutral-100 bg-neutral-800 shadow-lg font-medium flex items-stretch">
             <div class="flex justify-start">
-                <span class="md:rounded-l-md inline-block cursor-pointer bg-yellow-300 text-md" onclick={logo_onclick}>
+                <span class="lg:rounded-l-md inline-block cursor-pointer bg-yellow-300 text-md" onclick={logo_onclick}>
                     <span class="flex h-full justify-center items-center px-3">
                         <img src="/assets/logo.svg" class="object-center w-7 h-7" />
                     </span>
@@ -81,7 +81,7 @@ pub fn navbar() -> Html {
                 }
             </div>
             <div class="flex justify-end ml-auto">
-                <span class="md:rounded-r-md px-4 py-3 inline-block cursor-pointer hover:bg-neutral-600 text-md flex items-center" onclick={logout_onclick}>
+                <span class="lg:rounded-r-md px-4 py-3 inline-block cursor-pointer hover:bg-neutral-600 text-md flex items-center" onclick={logout_onclick}>
                     <img src="/assets/icons/log-out.svg" class="w-5 h-5" />
                     <span class="ml-2 hidden md:inline">{"Logout"}</span>
                 </span>

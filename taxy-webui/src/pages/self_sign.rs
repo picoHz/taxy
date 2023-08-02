@@ -105,7 +105,7 @@ pub fn self_sign() -> Html {
 
     html! {
         <>
-            <form {onsubmit} class="bg-white shadow-sm p-5 border border-neutral-300 md:rounded-md">
+            <form {onsubmit} class="bg-white shadow-sm p-5 border border-neutral-300 lg:rounded-md">
                 <label class="block mb-2 text-sm font-medium text-neutral-900">{"Subject Alternative Names"}</label>
                 <input type="text" value={san.to_string()} onchange={san_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="example.com" />
                 <p class="mt-2 text-sm text-neutral-500">{"You can use commas to list multiple names, e.g, example.com, *.test.examle.com."}</p>

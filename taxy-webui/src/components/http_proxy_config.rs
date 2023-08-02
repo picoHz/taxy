@@ -115,7 +115,7 @@ pub fn http_proxy_config(props: &Props) -> Html {
                         <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Target"}</label>
                         <input type="url" placeholder="https://example.com/backend" value={servers.join("\n").to_string()} onchange={servers_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
 
-                        <div class="flex justify-end rounded-md mt-4 sm:ml-auto px-4 md:px-0" role="group">
+                        <div class="flex justify-end rounded-md mt-4 sm:ml-auto px-4 lg:px-0" role="group">
                             <button type="button" onclick={add_onclick} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 bg-white border border-neutral-300 rounded-l-lg hover:bg-neutral-100 focus:z-10 focus:ring-4 focus:ring-neutral-200">
                                 <img src="/assets/icons/add.svg" class="w-4 h-4" />
                             </button>

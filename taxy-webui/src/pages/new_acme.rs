@@ -107,7 +107,7 @@ pub fn new_acme() -> Html {
 
     html! {
         <>
-            <form {onsubmit} class="bg-white shadow-sm p-5 border border-neutral-300 md:rounded-md">
+            <form {onsubmit} class="bg-white shadow-sm p-5 border border-neutral-300 lg:rounded-md">
                 <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Provider"}</label>
                 <select onchange={provider_onchange} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
                     { PROVIDERS.iter().enumerate().map(|(i, item)| {

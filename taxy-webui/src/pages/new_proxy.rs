@@ -49,7 +49,7 @@ pub fn new_proxy() -> Html {
 
     html! {
         <>
-            <form {onsubmit} class="bg-white shadow-sm p-5 border border-neutral-300 md:rounded-md">
+            <form {onsubmit} class="bg-white shadow-sm p-5 border border-neutral-300 lg:rounded-md">
                 <ProxyConfig {onchanged} />
 
                 <div class="flex mt-4 items-center justify-end">

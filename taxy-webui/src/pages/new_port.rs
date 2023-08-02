@@ -48,7 +48,7 @@ pub fn new_port() -> Html {
 
     html! {
         <>
-            <form {onsubmit} class="bg-white shadow-sm p-5 border border-neutral-300 md:rounded-md">
+            <form {onsubmit} class="bg-white shadow-sm p-5 border border-neutral-300 lg:rounded-md">
                 <PortConfig {onchanged} />
 
                 <div class="flex mt-4 items-center justify-end">

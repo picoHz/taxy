@@ -106,7 +106,7 @@ pub fn cert_list() -> Html {
     let active_index = use_state(|| -1);
     html! {
         <>
-        <div class="flex flex-col mb-4 sm:flex-row px-4 md:px-0">
+        <div class="flex flex-col mb-4 sm:flex-row px-4 lg:px-0">
             <div class="text-sm font-medium text-center text-neutral-500">
                 <ul class="flex flex-wrap -mb-px">
 
@@ -137,7 +137,7 @@ pub fn cert_list() -> Html {
         </div>
 
             if *tab == CertsTab::Server {
-                <div class="relative overflow-x-auto bg-white shadow-sm border border-neutral-300 md:rounded-md">
+                <div class="relative overflow-x-auto bg-white shadow-sm border border-neutral-300 lg:rounded-md">
                 if cert_list.is_empty() {
                     <p class="mb-8 mt-8 text-xl font-bold text-neutral-500 px-16 text-center">{"List is empty."}</p>
                 } else {
@@ -207,7 +207,7 @@ pub fn cert_list() -> Html {
                 }
                 </div>
         } else if *tab == CertsTab::Root {
-            <div class="relative overflow-x-auto bg-white shadow-sm border border-neutral-300 md:rounded-md">
+            <div class="relative overflow-x-auto bg-white shadow-sm border border-neutral-300 lg:rounded-md">
                 if cert_list.is_empty() {
                     <p class="mb-8 mt-8 text-xl font-bold text-neutral-500 px-16 text-center">{"List is empty."}</p>
                 } else {
@@ -275,7 +275,7 @@ pub fn cert_list() -> Html {
                 }
             </div>
             } else if *tab == CertsTab::Acme {
-                <div class="relative overflow-x-auto bg-white shadow-sm border border-neutral-300 md:rounded-md">
+                <div class="relative overflow-x-auto bg-white shadow-sm border border-neutral-300 lg:rounded-md">
                 if acme_list.is_empty() {
                     <p class="mb-8 mt-8 text-xl font-bold text-neutral-500 px-16 text-center">{"List is empty."}</p>
                 } else {
@@ -336,7 +336,7 @@ pub fn cert_list() -> Html {
                 }
             </div>
             }
-            <div class="flex justify-end rounded-md mt-4 sm:ml-auto px-4 md:px-0" role="group">
+            <div class="flex justify-end rounded-md mt-4 sm:ml-auto px-4 lg:px-0" role="group">
                 if *tab == CertsTab::Server {
                     <button onclick={self_sign_onclick} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 bg-white border border-neutral-300 rounded-l-lg hover:bg-neutral-100 focus:z-10 focus:ring-4 focus:ring-neutral-200">
                         <img src="/assets/icons/create.svg" class="w-4 h-4 mr-1 text-neutral-500" />

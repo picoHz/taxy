@@ -78,7 +78,7 @@ pub fn port_view(props: &Props) -> Html {
     html! {
         <>
             if let Some(port_entry) = &*port {
-                <form {onsubmit} class="bg-white shadow-sm p-5 border border-neutral-300 md:rounded-md">
+                <form {onsubmit} class="bg-white shadow-sm p-5 border border-neutral-300 lg:rounded-md">
                     <PortConfig port={port_entry.port.clone()} {onchanged} />
 
                     <div class="flex mt-4 items-center justify-end">
