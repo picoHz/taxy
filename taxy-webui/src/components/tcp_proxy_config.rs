@@ -37,17 +37,9 @@ pub fn tls_proxy_config(props: &Props) -> Html {
         props.onchanged.emit(entry);
     }
 
-    let err = Default::default();
-    let errors = prev_entry.as_ref().err().unwrap_or(&err);
-
     html! {
         <>
-            <div class="field is-horizontal m-5">
-            <div class="field-label is-normal">
-            <label class="label">{"Upstream Server"}</label>
-            </div>
-
-            <div class="is-flex-grow-5" style="flex-basis: 0">
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Upstream Server"}</label>
 
             { upstream_servers.iter().enumerate().map(|(i, (host, port))| {
                 let upstream_servers_cloned = upstream_servers.clone();
@@ -66,29 +58,16 @@ pub fn tls_proxy_config(props: &Props) -> Html {
                     upstream_servers_cloned.set(servers);
                 });
 
-                let not_first = i > 0;
-                let err = errors.get(&format!("upstream_servers_{}", i)).map(|s| s.as_str());
-
                 html! {
-                    <div class={classes!(not_first.then_some("mt-3"))}>
-                        <div class={classes!("field-body")}>
-                        <div class="field has-addons">
-                            <div class="control is-expanded">
-                                <input class={classes!("input", err.map(|_| "is-danger"))} type="text" autocapitalize="off" placeholder="Host" onchange={host_onchange} value={host.clone()} />
-                            </div>
-                            <div class="control">
-                                <input class={classes!("input", err.map(|_| "is-danger"))} type="number" placeholder="Port" max="65535" min="1" onchange={port_onchange} value={port.to_string()} />
-                            </div>
-                        </div>
+                    <div class="mt-2 bg-white shadow-sm p-5 border border-neutral-300 rounded-md">
+                        <label class="block mb-2 text-sm font-medium text-neutral-900">{"Host"}</label>
+                        <input type="text" autocapitalize="off" placeholder="example.com" onchange={host_onchange} value={host.clone()} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
+
+                        <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Port"}</label>
+                        <input type="number" placeholder="8080" onchange={port_onchange} value={port.to_string()} max="65535" min="1" class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
                     </div>
-                    if let Some(err) = err {
-                        <p class="help is-danger">{err}</p>
-                    }
-                </div>
                 }
             }).collect::<Html>() }
-            </div>
-        </div>
         </>
     }
 }

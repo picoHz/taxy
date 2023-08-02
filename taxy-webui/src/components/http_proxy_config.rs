@@ -64,126 +64,69 @@ pub fn http_proxy_config(props: &Props) -> Html {
         props.onchanged.emit(entry);
     }
 
-    let err = Default::default();
-    let errors = prev_entry.as_ref().err().unwrap_or(&err);
-    let vhosts_err = errors.get("vhosts").map(|e| e.as_str());
-
     html! {
         <>
-            <div class="field is-horizontal m-5">
-                <div class="field-label is-normal">
-                <label class="label">{"Virtual Hosts"}</label>
-                </div>
-                <div class="field-body">
-                    <div class="field">
-                        <p class="control is-expanded">
-                        <input class="input" type="text" placeholder="Host Names" autocapitalize="off" value={vhosts.to_string()} onchange={vhosts_onchange} />
-                        </p>
-                        if let Some(err) = vhosts_err {
-                            <p class="help is-danger">{err}</p>
-                        } else {
-                            <p class="help">
-                            {"You can use commas to list multiple names, e.g, example.com, *.test.examle.com."}
-                            </p>
-                        }
-                    </div>
-                </div>
-            </div>
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Virtual Hosts"}</label>
+            <input type="text" autocapitalize="off" value={vhosts.to_string()} onchange={vhosts_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="example.com" />
+            <p class="mt-2 text-sm text-neutral-500">{"You can use commas to list multiple names, e.g, example.com, *.test.examle.com."}</p>
 
-            <div class="field is-horizontal m-5">
-                <div class="field-label is-normal">
-                <label class="label">{"Routes"}</label>
-                </div>
+            <label class="block mt-4 text-sm font-medium text-neutral-900">{"Routes"}</label>
 
-                <div class="is-flex-grow-5" style="flex-basis: 0">
+            { routes.iter().enumerate().map(|(i, (path, servers))| {
+                let routes_len = routes.len();
 
-                { routes.iter().enumerate().map(|(i, (path, servers))| {
-                    let routes_len = routes.len();
+                let routes_cloned = routes.clone();
+                let add_onclick = Callback::from(move |_| {
+                    let mut routes = (*routes_cloned).clone();
+                    routes.insert(i + 1, ("/".into(), Vec::new()));
+                    routes_cloned.set(routes);
+                });
 
-                    let routes_cloned = routes.clone();
-                    let add_onclick = Callback::from(move |_| {
+                let routes_cloned = routes.clone();
+                let remove_onclick = Callback::from(move |_| {
+                    if routes_len > 1 {
                         let mut routes = (*routes_cloned).clone();
-                        routes.insert(i + 1, ("/".into(), Vec::new()));
+                        routes.remove(i);
                         routes_cloned.set(routes);
-                    });
-
-                    let routes_cloned = routes.clone();
-                    let remove_onclick = Callback::from(move |_| {
-                        if routes_len > 1 {
-                            let mut routes = (*routes_cloned).clone();
-                            routes.remove(i);
-                            routes_cloned.set(routes);
-                        }
-                    });
-
-                    let routes_cloned = routes.clone();
-                    let path_onchange = Callback::from(move |event: Event| {
-                        let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
-                        let mut routes = (*routes_cloned).clone();
-                        routes[i].0 = target.value();
-                        routes_cloned.set(routes);
-                    });
-
-                    let routes_cloned = routes.clone();
-                    let servers_onchange = Callback::from(move |event: Event| {
-                        let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
-                        let mut routes = (*routes_cloned).clone();
-                        routes[i].1 = target.value().split('\n').map(|s| s.to_string()).collect();
-                        routes_cloned.set(routes);
-                    });
-
-                    let not_first = i > 0;
-                    let err = errors.get(&format!("routes_{}", i)).map(|s| s.as_str());
-
-                    html! {
-                        <div class={classes!(not_first.then_some("mt-3"))}>
-                            <div class={classes!("field-body")}>
-                            <div class="field has-addons">
-                                <p class="control">
-                                    <a class="button is-static">
-                                        {"Path"}
-                                    </a>
-                                </p>
-                                <div class="control is-expanded">
-                                    <input class={classes!("input", err.map(|_| "is-danger"))} type="text" autocapitalize="off" placeholder="/" onchange={path_onchange} value={path.clone()} />
-                                </div>
-                                <div class="control">
-                                    <button type="button" class={classes!("button", err.map(|_| "is-danger"))} onclick={add_onclick}>
-                                        <span class="icon">
-                                            <ion-icon name="add"></ion-icon>
-                                        </span>
-                                    </button>
-                                </div>
-                                <div class="control">
-                                    <button type="button" class={classes!("button", err.map(|_| "is-danger"))} onclick={remove_onclick} disabled={routes_len <= 1}>
-                                        <span class="icon">
-                                            <ion-icon name="remove"></ion-icon>
-                                        </span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mt-2">
-                            <div class="field has-addons">
-                                <p class="control">
-                                    <a class="button is-static">
-                                        {"Target"}
-                                    </a>
-                                </p>
-                                <p class="control is-expanded">
-                                <input class={classes!("input", err.map(|_| "is-danger"))} type="url" placeholder="https://example.com/backend" value={servers.join("\n").to_string()} onchange={servers_onchange} />
-                                </p>
-                            </div>
-                        </div>
-                        if let Some(err) = err {
-                            <p class="help is-danger">{err}</p>
-                        }
-                    </div>
                     }
-                }).collect::<Html>() }
+                });
 
-                </div>
-            </div>
+                let routes_cloned = routes.clone();
+                let path_onchange = Callback::from(move |event: Event| {
+                    let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
+                    let mut routes = (*routes_cloned).clone();
+                    routes[i].0 = target.value();
+                    routes_cloned.set(routes);
+                });
+
+                let routes_cloned = routes.clone();
+                let servers_onchange = Callback::from(move |event: Event| {
+                    let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
+                    let mut routes = (*routes_cloned).clone();
+                    routes[i].1 = target.value().split('\n').map(|s| s.to_string()).collect();
+                    routes_cloned.set(routes);
+                });
+
+                html! {
+                    <div class="mt-2 bg-white shadow-sm p-5 border border-neutral-300 rounded-md">
+                        <label class="block mb-2 text-sm font-medium text-neutral-900">{"Path"}</label>
+                        <input type="text" autocapitalize="off" placeholder="/" onchange={path_onchange} value={path.clone()} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
+
+                        <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Target"}</label>
+                        <input type="url" placeholder="https://example.com/backend" value={servers.join("\n").to_string()} onchange={servers_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
+
+                        <div class="flex justify-end rounded-md mt-4 sm:ml-auto px-4 md:px-0" role="group">
+                            <button type="button" onclick={add_onclick} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 bg-white border border-neutral-300 rounded-l-lg hover:bg-neutral-100 focus:z-10 focus:ring-4 focus:ring-neutral-200">
+                                <img src="/assets/icons/add.svg" class="w-4 h-4" />
+                            </button>
+                            <button type="button" onclick={remove_onclick} disabled={routes_len <= 1} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 bg-white border border-l-0 border-neutral-300 rounded-r-lg hover:bg-neutral-100 focus:z-10 focus:ring-4 focus:ring-neutral-200">
+                                <img src="/assets/icons/remove.svg" class="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                }
+            }).collect::<Html>() }
+
         </>
     }
 }

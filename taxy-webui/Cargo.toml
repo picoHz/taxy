@@ -18,7 +18,7 @@ gloo-utils = "0.1.7"
 serde_derive = "1.0.171"
 serde = "1.0.171"
 yewdux = "0.9.3"
-web-sys = { version = "0.3.64", features = ["HtmlOptionElement"] }
+web-sys = "0.3.64"
 futures = "0.3.28"
 gloo-dialogs = "0.1.1"
 gloo-timers = "0.2.6"

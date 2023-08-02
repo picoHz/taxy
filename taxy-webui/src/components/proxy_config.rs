@@ -10,7 +10,7 @@ use taxy_api::id::ShortId;
 use taxy_api::site::{HttpProxy, ProxyKind, TcpProxy};
 use taxy_api::{port::PortEntry, site::Proxy};
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
-use web_sys::{HtmlInputElement, HtmlOptionElement, HtmlSelectElement};
+use web_sys::{HtmlInputElement, HtmlSelectElement};
 use yew::prelude::*;
 use yewdux::prelude::*;
 
@@ -84,19 +84,6 @@ pub fn proxy_config(props: &Props) -> Html {
     });
 
     let bound_ports = use_state(|| props.proxy.ports.clone());
-    let bound_ports_onchange = Callback::from({
-        let bound_ports = bound_ports.clone();
-        move |event: Event| {
-            let target: HtmlSelectElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
-            let mut ports = Vec::new();
-            let opts = target.selected_options();
-            for i in 0..opts.length() {
-                let opt: HtmlOptionElement = opts.item(i).unwrap_throw().dyn_into().unwrap_throw();
-                ports.push(opt.value().parse::<ShortId>().unwrap_throw());
-            }
-            bound_ports.set(ports);
-        }
-    });
 
     let http_proxy = use_state::<Result<ProxyKind, HashMap<String, String>>, _>(|| {
         Ok(ProxyKind::Http(Default::default()))
@@ -116,6 +103,20 @@ pub fn proxy_config(props: &Props) -> Html {
             tcp_proxy_cloned.set(updated.map(ProxyKind::Tcp));
         });
 
+    let compatible_ports = ports
+        .entries
+        .clone()
+        .into_iter()
+        .filter(|entry| {
+            entry
+                .port
+                .listen
+                .iter()
+                .any(|item| matches!(item, Protocol::Http | Protocol::Https))
+                ^ (*protocol == ProxyProtocol::Tcp)
+        })
+        .collect::<Vec<_>>();
+
     let prev_entry =
         use_state::<Result<Proxy, HashMap<String, String>>, _>(|| Err(Default::default()));
     let entry = get_site(
@@ -126,21 +127,13 @@ pub fn proxy_config(props: &Props) -> Html {
         } else {
             &tcp_proxy
         },
+        &compatible_ports,
     );
 
     if entry != *prev_entry {
         prev_entry.set(entry.clone());
         props.onchanged.emit(entry);
     }
-
-    let compatible_ports = ports.entries.iter().filter(|entry| {
-        entry
-            .port
-            .listen
-            .iter()
-            .any(|item| matches!(item, Protocol::Http | Protocol::Https))
-            ^ (*protocol == ProxyProtocol::Tcp)
-    });
 
     let http_proxy = if let ProxyKind::Http(http_proxy) = &props.proxy.kind {
         http_proxy.clone()
@@ -156,60 +149,45 @@ pub fn proxy_config(props: &Props) -> Html {
 
     html! {
         <>
-            <div class="field is-horizontal m-5">
-                <div class="field-label is-normal">
-                <label class="label">{"Name"}</label>
-                </div>
-                <div class="field-body">
-                    <div class="field">
-                        <p class="control is-expanded">
-                        <input class="input" type="text" value={name.to_string()} onchange={name_onchange} />
-                        </p>
-                    </div>
-                </div>
-            </div>
+            <label class="block mb-2 text-sm font-medium text-neutral-900">{"Name"}</label>
+            <input type="text" value={name.to_string()} onchange={name_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="My Website" />
 
-            <div class="field is-horizontal m-5">
-                <div class="field-label is-normal">
-                    <label class="label">{"Protocol"}</label>
-                </div>
-                <div class="field-body">
-                    <div class="field is-narrow">
-                    <div class="control">
-                        <div class="select is-fullwidth">
-                        <select onchange={protocol_onchange}>
-                            { PROTOCOLS.iter().enumerate().map(|(i, item)| {
-                                html! {
-                                    <option selected={&*protocol == item} value={i.to_string()}>{item.to_string()}</option>
-                                }
-                            }).collect::<Html>() }
-                        </select>
-                        </div>
-                    </div>
-                    </div>
-                </div>
-            </div>
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Protocol"}</label>
+            <select onchange={protocol_onchange} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                { PROTOCOLS.iter().enumerate().map(|(i, item)| {
+                    html! {
+                        <option selected={&*protocol == item} value={i.to_string()}>{item.to_string()}</option>
+                    }
+                }).collect::<Html>() }
+            </select>
 
-            <div class="field is-horizontal m-5">
-                <div class="field-label is-normal">
-                <label class="label">{"Ports"}</label>
-                </div>
-                <div class="field-body">
-                    <div class="field">
-                        <div class="select is-multiple is-fullwidth">
-                            <select class="is-expanded" multiple={true} size="3" onchange={bound_ports_onchange}>
-                                { compatible_ports.map(|entry| {
-                                    html! {
-                                        <option selected={bound_ports.contains(&entry.id)} value={entry.id.to_string()}>
-                                            {format_multiaddr(&entry.port.listen)}
-                                        </option>
-                                    }
-                                }).collect::<Html>() }
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Ports"}</label>
+            <ul class="h-32 pb-3 overflow-y-auto text-sm text-gray-700 bg-gray-50 border border-gray-300 rounded-lg">
+                { compatible_ports.into_iter().map(|entry| {
+                    let bound_ports_cloned = bound_ports.clone();
+                    let onchange = Callback::from(move |event: Event| {
+                        let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
+                        let mut ports = (*bound_ports_cloned).clone();
+                        if target.checked() {
+                            if !ports.contains(&entry.id) {
+                                ports.push(entry.id);
+                            }
+                        } else {
+                            ports.retain(|&id| id != entry.id);
+                        }
+                        bound_ports_cloned.set(ports);
+                    });
+                    let bound_ports_cloned = bound_ports.clone();
+                    html! {
+                        <li>
+                            <div class="flex items-center pl-2 rounded hover:bg-gray-100">
+                                <input {onchange} id={entry.id.to_string()} type="checkbox" checked={bound_ports_cloned.contains(&entry.id)} class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2" />
+                                <label for={entry.id.to_string()} class="w-full py-2 ml-2 text-sm font-medium text-gray-900 rounded">{format_multiaddr(&entry.port.listen)}</label>
+                            </div>
+                        </li>
+                    }
+                }).collect::<Html>() }
+            </ul>
 
             if *protocol == ProxyProtocol::Http {
                 <HttpProxyConfig onchanged={http_proxy_onchanged} proxy={http_proxy} />
@@ -224,9 +202,11 @@ fn get_site(
     name: &str,
     ports: &[ShortId],
     kind: &Result<ProxyKind, HashMap<String, String>>,
+    compatible_ports: &[PortEntry],
 ) -> Result<Proxy, HashMap<String, String>> {
     let mut errors = HashMap::new();
     let mut ports = ports.to_vec();
+    ports.retain(|&id| compatible_ports.iter().any(|entry| entry.id == id));
     ports.sort();
     ports.dedup();
 

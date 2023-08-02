@@ -9,7 +9,7 @@ mod login;
 mod logout;
 mod new_acme;
 mod new_port;
-mod new_site;
+mod new_proxy;
 mod port_list;
 mod port_view;
 mod proxy_list;
@@ -90,7 +90,7 @@ pub fn switch(routes: Route) -> Html {
         Route::Proxies => html! { <proxy_list::ProxyList /> },
         Route::ProxyLogView { id } => html! { <log_view::LogView id={id.to_string()} /> },
         Route::ProxyView { id } => html! { <proxy_view::ProxyView {id} /> },
-        Route::NewProxy => html! { <new_site::NewProxy /> },
+        Route::NewProxy => html! { <new_proxy::NewProxy /> },
         Route::Certs => html! { <cert_list::CertList /> },
         Route::SelfSign => html! { <self_sign::SelfSign /> },
         Route::NewAcme => html! { <new_acme::NewAcme /> },
