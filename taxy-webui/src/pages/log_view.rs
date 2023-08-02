@@ -1,10 +1,11 @@
-use crate::{auth::use_ensure_auth, components::breadcrumb::Breadcrumb, API_ENDPOINT};
+use crate::{auth::use_ensure_auth, API_ENDPOINT};
 use gloo_net::http::Request;
 use gloo_timers::callback::Timeout;
-use taxy_api::log::SystemLogRow;
+use taxy_api::log::{LogLevel, SystemLogRow};
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 use web_sys::Element;
 use yew::prelude::*;
+use yew_router::prelude::use_navigator;
 
 #[derive(Properties, PartialEq)]
 pub struct Props {
@@ -28,44 +29,47 @@ pub fn log_view(props: &Props) -> Html {
         (),
     );
 
+    let navigator = use_navigator().unwrap();
+    let back_onclick = Callback::from(move |_| {
+        navigator.back();
+    });
+
     html! {
         <>
-            <ybc::Card>
-            <ybc::CardHeader>
-                <p class="card-header-title">
-                    <Breadcrumb />
-                </p>
-            </ybc::CardHeader>
-            if log.is_empty() {
-                <ybc::Hero body_classes="has-text-centered" body={
-                    html! {
-                    <p class="title has-text-grey-lighter">
-                        {"No Logs"}
-                    </p>
-                    }
-                } />
-            }
-            <ul ref={ul_ref.clone()} class="log-viewer">
+            <div class="flex items-center justify-start px-4 md:px-0 mb-4">
+                <div>
+                    <button onclick={back_onclick} class="inline-flex items-center text-gray-500 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5" type="button">
+                         <img src="/assets/icons/arrow-back.svg" class="w-5 h-5 mr-2" />
+                        {"Back"}
+                    </button>
+                </div>
+            </div>
+            <ul ref={ul_ref.clone()} class="overflow-scroll max-h-96 bg-white shadow-sm border border-gray-300 md:rounded-md">
             { log.iter().map(|entry| {
                 let timestamp = entry.timestamp.format(&Rfc3339).unwrap();
                 let fields = entry.fields.iter().map(|(k, v)| {
                     format!("{}={}", k, v)
                 }).collect::<Vec<String>>().join(" ");
+                let log_class = match entry.level {
+                    LogLevel::Error => "text-red-600",
+                    LogLevel::Warn => "text-yellow-600",
+                    LogLevel::Info => "text-green-600",
+                    LogLevel::Debug => "text-blue-600",
+                    LogLevel::Trace => "text-gray-600",
+                };
                 html! {
-                    <li class="log">
-                        <span class="timestamp">{timestamp}</span>
-                        <span class={classes!("loglevel", entry.level.to_string())}>{
+                    <li class="font-mono text-sm px-4 py-1 border-b">
+                        <span class="mr-2">{timestamp}</span>
+                        <span class={classes!("font-bold", "mr-2", log_class)}>{
                             format!("{: <5}", entry.level.to_string().to_ascii_uppercase())
                         }</span>
-                        <span class="logmessage">{entry.message.clone()}</span>
+                        <span class="mr-2">{entry.message.clone()}</span>
                         <span class="fields">{fields}</span>
                     </li>
                 }
                 }).collect::<Html>()
             }
             </ul>
-
-            </ybc::Card>
         </>
     }
 }
