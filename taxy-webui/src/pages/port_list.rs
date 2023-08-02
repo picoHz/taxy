@@ -48,19 +48,12 @@ pub fn post_list() -> Html {
     let list = ports.entries.clone();
     html! {
         <>
-            <div class="flex items-center justify-end mb-4 px-4 md:px-0">
-                <div>
-                    <button onclick={new_port_onclick} class="inline-flex items-center text-gray-500 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5" type="button">
-                        {"Add"}
-                    </button>
-                </div>
-            </div>
-            <div class="relative overflow-x-auto bg-white shadow-sm border border-gray-300 md:rounded-md">
+            <div class="relative overflow-x-auto bg-white shadow-sm border border-neutral-300 md:rounded-md">
                 if list.is_empty() {
-                    <p class="mb-8 mt-8 text-xl font-bold text-gray-500 px-16 text-center">{"List is empty. Click 'Add' to configure a new port."}</p>
+                    <p class="mb-8 mt-8 text-xl font-bold text-neutral-500 px-16 text-center">{"List is empty. Click 'Add' to configure a new port."}</p>
                 } else {
                 <table class="w-full text-sm text-left text-neutral-600 rounded-md">
-                    <thead class="text-xs text-neutral-800 uppercase border-b border-gray-300">
+                    <thead class="text-xs text-neutral-800 uppercase border-b border-neutral-300">
                         <tr>
                             <th scope="col" class="px-4 py-3">
                                 {"Name"}
@@ -154,6 +147,14 @@ pub fn post_list() -> Html {
                     </tbody>
                 </table>
                 }
+            </div>
+            <div class="flex items-center justify-end my-4 px-4 md:px-0">
+                <div>
+                    <button onclick={new_port_onclick} class="inline-flex items-center text-neutral-500 bg-white border border-neutral-300 focus:outline-none hover:bg-neutral-100 focus:ring-4 focus:ring-neutral-200 font-medium rounded-lg text-sm px-4 py-2" type="button">
+                        <img src="/assets/icons/add.svg" class="w-4 h-4 mr-1" />
+                        {"Add"}
+                    </button>
+                </div>
             </div>
         </>
     }

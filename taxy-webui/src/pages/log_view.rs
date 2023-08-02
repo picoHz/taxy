@@ -38,13 +38,13 @@ pub fn log_view(props: &Props) -> Html {
         <>
             <div class="flex items-center justify-start px-4 md:px-0 mb-4">
                 <div>
-                    <button onclick={back_onclick} class="inline-flex items-center text-gray-500 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5" type="button">
-                         <img src="/assets/icons/arrow-back.svg" class="w-5 h-5 mr-2" />
+                    <button onclick={back_onclick} class="inline-flex items-center text-neutral-500 bg-white border border-neutral-300 focus:outline-none hover:bg-neutral-100 focus:ring-4 focus:ring-neutral-200 font-medium rounded-lg text-sm px-4 py-2" type="button">
+                        <img src="/assets/icons/arrow-back.svg" class="w-4 h-4 mr-1" />
                         {"Back"}
                     </button>
                 </div>
             </div>
-            <ul ref={ul_ref.clone()} class="overflow-scroll max-h-96 bg-white shadow-sm border border-gray-300 md:rounded-md">
+            <ul ref={ul_ref.clone()} class="overflow-scroll max-h-96 bg-white shadow-sm border border-neutral-300 md:rounded-md">
             { log.iter().map(|entry| {
                 let timestamp = entry.timestamp.format(&Rfc3339).unwrap();
                 let fields = entry.fields.iter().map(|(k, v)| {
@@ -55,7 +55,7 @@ pub fn log_view(props: &Props) -> Html {
                     LogLevel::Warn => "text-yellow-600",
                     LogLevel::Info => "text-green-600",
                     LogLevel::Debug => "text-blue-600",
-                    LogLevel::Trace => "text-gray-600",
+                    LogLevel::Trace => "text-neutral-600",
                 };
                 html! {
                     <li class="font-mono text-sm px-4 py-1 border-b">

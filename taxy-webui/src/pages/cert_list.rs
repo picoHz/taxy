@@ -107,7 +107,7 @@ pub fn cert_list() -> Html {
     html! {
         <>
         <div class="flex flex-col mb-4 sm:flex-row px-4 md:px-0">
-            <div class="text-sm font-medium text-center text-gray-500">
+            <div class="text-sm font-medium text-center text-neutral-500">
                 <ul class="flex flex-wrap -mb-px">
 
                     { TABS.into_iter().map(|item| {
@@ -127,40 +127,22 @@ pub fn cert_list() -> Html {
                         };
                         html! {
                             <li class="mr-2">
-                                <a {onclick} class={classes!("inline-block", "px-4", "py-2", "border-b-2", "rounded-t-lg", "hover:text-gray-600", "hover:border-gray-300", class)}>{item}</a>
+                                <a {onclick} class={classes!("inline-block", "px-4", "py-2", "border-b-2", "rounded-t-lg", "hover:text-neutral-600", "hover:border-neutral-300", class)}>{item}</a>
                             </li>
                         }
                     }).collect::<Html>() }
 
                 </ul>
             </div>
-            <div class="inline-flex rounded-md mt-4 sm:mt-0 sm:ml-auto" role="group">
-                if *tab == CertsTab::Server {
-                    <button type="button" onclick={self_sign_onclick} class="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-lg hover:bg-gray-100 focus:z-10 focus:ring-4 focus:ring-gray-200">
-                        {"Self-sign"}
-                    </button>
-                    <button type="button" onclick={upload_onclick} class="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-l-0 border-gray-300 rounded-r-lg hover:bg-gray-100 focus:z-10 focus:ring-4 focus:ring-gray-200">
-                        {"Upload"}
-                    </button>
-                } else if *tab == CertsTab::Root {
-                    <button type="button" onclick={upload_onclick} class="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:z-10 focus:ring-4 focus:ring-gray-200">
-                        {"Upload"}
-                    </button>
-                } else {
-                    <button type="button" onclick={new_acme_onclick} class="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:z-10 focus:ring-4 focus:ring-gray-200">
-                        {"Add"}
-                    </button>
-                }
-            </div>
         </div>
 
             if *tab == CertsTab::Server {
-                <div class="relative overflow-x-auto bg-white shadow-sm border border-gray-300 md:rounded-md">
+                <div class="relative overflow-x-auto bg-white shadow-sm border border-neutral-300 md:rounded-md">
                 if cert_list.is_empty() {
-                    <p class="mb-8 mt-8 text-xl font-bold text-gray-500 px-16 text-center">{"List is empty."}</p>
+                    <p class="mb-8 mt-8 text-xl font-bold text-neutral-500 px-16 text-center">{"List is empty."}</p>
                 } else {
                     <table class="w-full text-sm text-left text-neutral-600 rounded-md">
-                        <thead class="text-xs text-neutral-800 uppercase border-b border-gray-300">
+                        <thead class="text-xs text-neutral-800 uppercase border-b border-neutral-300">
                             <tr>
                                 <th scope="col" class="px-4 py-3">
                                     {"Subject Names"}
@@ -225,12 +207,12 @@ pub fn cert_list() -> Html {
                 }
                 </div>
         } else if *tab == CertsTab::Root {
-            <div class="relative overflow-x-auto bg-white shadow-sm border border-gray-300 md:rounded-md">
+            <div class="relative overflow-x-auto bg-white shadow-sm border border-neutral-300 md:rounded-md">
                 if cert_list.is_empty() {
-                    <p class="mb-8 mt-8 text-xl font-bold text-gray-500 px-16 text-center">{"List is empty."}</p>
+                    <p class="mb-8 mt-8 text-xl font-bold text-neutral-500 px-16 text-center">{"List is empty."}</p>
                 } else {
                 <table class="w-full text-sm text-left text-neutral-600 rounded-md">
-                    <thead class="text-xs text-neutral-800 uppercase border-b border-gray-300">
+                    <thead class="text-xs text-neutral-800 uppercase border-b border-neutral-300">
                         <tr>
                             <th scope="col" class="px-4 py-3">
                                 {"Issuer"}
@@ -293,12 +275,12 @@ pub fn cert_list() -> Html {
                 }
             </div>
             } else if *tab == CertsTab::Acme {
-                <div class="relative overflow-x-auto bg-white shadow-sm border border-gray-300 md:rounded-md">
+                <div class="relative overflow-x-auto bg-white shadow-sm border border-neutral-300 md:rounded-md">
                 if acme_list.is_empty() {
-                    <p class="mb-8 mt-8 text-xl font-bold text-gray-500 px-16 text-center">{"List is empty."}</p>
+                    <p class="mb-8 mt-8 text-xl font-bold text-neutral-500 px-16 text-center">{"List is empty."}</p>
                 } else {
                 <table class="w-full text-sm text-left text-neutral-600 rounded-md">
-                    <thead class="text-xs text-neutral-800 uppercase border-b border-gray-300">
+                    <thead class="text-xs text-neutral-800 uppercase border-b border-neutral-300">
                         <tr>
                             <th scope="col" class="px-4 py-3">
                                 {"Subject Names"}
@@ -354,6 +336,28 @@ pub fn cert_list() -> Html {
                 }
             </div>
             }
+            <div class="flex justify-end rounded-md mt-4 sm:ml-auto" role="group">
+                if *tab == CertsTab::Server {
+                    <button onclick={self_sign_onclick} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 bg-white border border-neutral-300 rounded-l-lg hover:bg-neutral-100 focus:z-10 focus:ring-4 focus:ring-neutral-200">
+                        <img src="/assets/icons/create.svg" class="w-4 h-4 mr-1 text-neutral-500" />
+                        {"Self-sign"}
+                    </button>
+                    <button onclick={upload_onclick} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 bg-white border border-l-0 border-neutral-300 rounded-r-lg hover:bg-neutral-100 focus:z-10 focus:ring-4 focus:ring-neutral-200">
+                        <img src="/assets/icons/cloud-upload.svg" class="w-4 h-4 mr-1" />
+                        {"Upload"}
+                    </button>
+                } else if *tab == CertsTab::Root {
+                    <button onclick={upload_onclick} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-100 focus:z-10 focus:ring-4 focus:ring-neutral-200">
+                        <img src="/assets/icons/cloud-upload.svg" class="w-4 h-4 mr-1" />
+                        {"Upload"}
+                    </button>
+                } else {
+                    <button onclick={new_acme_onclick} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-100 focus:z-10 focus:ring-4 focus:ring-neutral-200">
+                        <img src="/assets/icons/add.svg" class="w-4 h-4 mr-1" />
+                        {"Add"}
+                    </button>
+                }
+            </div>
         </>
     }
 }
