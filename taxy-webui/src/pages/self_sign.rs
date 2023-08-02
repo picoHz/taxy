@@ -1,6 +1,5 @@
 use crate::{
     auth::use_ensure_auth,
-    components::breadcrumb::Breadcrumb,
     pages::{
         cert_list::{CertsQuery, CertsTab},
         Route,
@@ -76,12 +75,6 @@ pub fn self_sign() -> Html {
     let validation = use_state(|| false);
 
     let entry = get_request(&san, *ca_cert);
-    let san_err = entry
-        .as_ref()
-        .err()
-        .filter(|_| *validation)
-        .and_then(|errors| errors.get("san").map(|s| s.to_string()));
-
     let is_loading = use_state(|| false);
 
     let entry_cloned = entry;
@@ -112,70 +105,30 @@ pub fn self_sign() -> Html {
 
     html! {
         <>
-            <ybc::Card classes="pb-5">
-            <ybc::CardHeader>
-                <p class="card-header-title">
-                    <Breadcrumb />
-                </p>
-            </ybc::CardHeader>
+            <form {onsubmit} class="bg-white shadow-sm p-5 border border-neutral-300 md:rounded-md">
+                <label class="block mb-2 text-sm font-medium text-neutral-900">{"Subject Alternative Names"}</label>
+                <input type="text" value={san.to_string()} onchange={san_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="example.com" />
+                <p class="mt-2 text-sm text-neutral-500">{"You can use commas to list multiple names, e.g, example.com, *.test.examle.com."}</p>
 
-            <form {onsubmit}>
-                <div class="field is-horizontal m-5">
-                    <div class="field-label is-normal">
-                    <label class="label">{"Subject Alternative Names"}</label>
-                    </div>
-                    <div class="field-body">
-                        <div class="field">
-                            <p class="control is-expanded">
-                            <input class={classes!("input", san_err.as_ref().map(|_| "is-danger"))} type="text" autocapitalize="off" placeholder="Server Names" value={san.to_string()} onchange={san_onchange} />
-                            </p>
-                            if let Some(err) = san_err {
-                                <p class="help is-danger">{err}</p>
-                            } else {
-                                <p class="help">
-                                {"You can use commas to list multiple names, e.g, example.com, *.test.examle.com."}
-                                </p>
-                            }
-                        </div>
-                    </div>
-                </div>
+                <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"CA Certificate"}</label>
+                <select onchange={ca_cert_onchange} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                    { ca_cert_list.iter().map(|cert| {
+                        html! {
+                            <option selected={*ca_cert == cert.id} value={cert.id.to_string()}>{format!("{} ({})", cert.issuer, cert.id)}</option>
+                        }
+                    }).collect::<Html>() }
+                    <option selected={ca_cert.to_string() == "generate"} value={"generate"}>{"Generate"}</option>
+                </select>
 
-                <div class="field is-horizontal m-5">
-                    <div class="field-label is-normal">
-                        <label class="label">{"CA Certificate"}</label>
-                    </div>
-                    <div class="field-body">
-                        <div class="field is-narrow">
-                        <div class="control">
-                            <div class="select is-fullwidth">
-                            <select onchange={ca_cert_onchange}>
-                                { ca_cert_list.iter().map(|cert| {
-                                    html! {
-                                        <option selected={*ca_cert == cert.id} value={cert.id.to_string()}>{format!("{} ({})", cert.issuer, cert.id)}</option>
-                                    }
-                                }).collect::<Html>() }
-                                <option selected={ca_cert.to_string() == "generate"} value={"generate"}>{"Generate"}</option>
-                            </select>
-                            </div>
-                        </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="field is-grouped is-grouped-right mx-5">
-                    <p class="control">
-                        <button type="button" class="button is-light" onclick={cancel_onclick}>
+                <div class="flex mt-4 items-center justify-end">
+                    <button type="button" onclick={cancel_onclick} class="mr-2 inline-flex items-center text-neutral-500 bg-neutral-50 focus:outline-none hover:bg-neutral-100 focus:ring-4 focus:ring-neutral-200 font-medium rounded-lg text-sm px-4 py-2" type="button">
                         {"Cancel"}
-                        </button>
-                    </p>
-                    <p class="control">
-                        <button type="submit" class={classes!("button", "is-primary", is_loading.then_some("is-loading"))}>
+                    </button>
+                    <button type="submit" class="inline-flex items-center text-neutral-500 bg-neutral-50 border border-neutral-300 focus:outline-none hover:bg-neutral-100 focus:ring-4 focus:ring-neutral-200 font-medium rounded-lg text-sm px-4 py-2" type="button">
                         {"Sign"}
-                        </button>
-                    </p>
+                    </button>
                 </div>
             </form>
-            </ybc::Card>
         </>
     }
 }
