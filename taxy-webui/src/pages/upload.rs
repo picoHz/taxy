@@ -1,6 +1,5 @@
 use crate::{
     auth::use_ensure_auth,
-    components::breadcrumb::Breadcrumb,
     pages::{
         cert_list::{CertsQuery, CertsTab},
         Route,
@@ -91,80 +90,22 @@ pub fn upload() -> Html {
 
     html! {
         <>
-            <ybc::Card classes="pb-5">
-            <ybc::CardHeader>
-                <p class="card-header-title">
-                    <Breadcrumb />
-                </p>
-            </ybc::CardHeader>
+            <form {onsubmit} class="bg-white shadow-sm p-5 border border-neutral-300 md:rounded-md">
+                <label class="block mb-2 text-sm font-medium text-neutral-900">{"Certificate Chain"}</label>
+                <input onchange={chain_onchange} class="block w-full text-sm text-neutral-900 border border-neutral-300 rounded-lg cursor-pointer bg-neutral-50 focus:outline-none file:bg-transparent file:border-0 file:bg-neutral-100 file:mr-4 file:py-3 file:px-4" type="file" />
 
-            <form {onsubmit}>
-                <div class="field is-horizontal m-5">
-                    <div class="field-label is-normal">
-                    <label class="label">{"Certificate Chain"}</label>
-                    </div>
-                    <div class="field-body">
-                        <div class={classes!("file", chain.as_ref().map(|_| "has-name"))}>
-                        <label class="file-label">
-                        <input class="file-input" type="file" name="chain" onchange={chain_onchange} />
-                        <span class="file-cta">
-                            <span class="file-icon">
-                                <ion-icon name="folder-open"></ion-icon>
-                            </span>
-                            <span class="file-label">
-                            {"Choose a PEM file…"}
-                            </span>
-                        </span>
-                        if let Some(file) = chain.as_ref() {
-                            <span class="file-name">
-                                {file.name()}
-                            </span>
-                        }
-                        </label>
-                    </div>
-                    </div>
-                </div>
+                <label class="block mb-2 text-sm font-medium text-neutral-900">{"Private Key"}</label>
+                <input onchange={key_onchange} class="block w-full text-sm text-neutral-900 border border-neutral-300 rounded-lg cursor-pointer bg-neutral-50 focus:outline-none file:bg-transparent file:border-0 file:bg-neutral-100 file:mr-4 file:py-3 file:px-4" type="file" />
 
-                <div class="field is-horizontal m-5">
-                    <div class="field-label is-normal">
-                    <label class="label">{"Private Key"}</label>
-                    </div>
-                    <div class="field-body">
-                        <div class={classes!("file", key.as_ref().map(|_| "has-name"))}>
-                        <label class="file-label">
-                        <input class="file-input" type="file" name="key" onchange={key_onchange} />
-                        <span class="file-cta">
-                            <span class="file-icon">
-                                <ion-icon name="folder-open"></ion-icon>
-                            </span>
-                            <span class="file-label">
-                            {"Choose a PEM file…"}
-                            </span>
-                        </span>
-                        if let Some(file) = key.as_ref() {
-                            <span class="file-name">
-                                {file.name()}
-                            </span>
-                        }
-                        </label>
-                    </div>
-                    </div>
-                </div>
-
-                <div class="field is-grouped is-grouped-right mx-5">
-                    <p class="control">
-                        <button type="button" class="button is-light" onclick={cancel_onclick}>
+                <div class="flex items-center justify-end">
+                    <button type="button" onclick={cancel_onclick} class="mr-2 inline-flex items-center text-neutral-500 bg-white focus:outline-none hover:bg-neutral-100 focus:ring-4 focus:ring-neutral-200 font-medium rounded-lg text-sm px-4 py-2" type="button">
                         {"Cancel"}
-                        </button>
-                    </p>
-                    <p class="control">
-                        <button type="submit" class={classes!("button", "is-primary", is_loading.then_some("is-loading"))} disabled={!uploadable}>
+                    </button>
+                    <button type="submit" disabled={!uploadable} class="inline-flex items-center text-neutral-500 bg-white border border-neutral-300 focus:outline-none hover:bg-neutral-100 focus:ring-4 focus:ring-neutral-200 font-medium rounded-lg text-sm px-4 py-2" type="button">
                         {"Upload"}
-                        </button>
-                    </p>
+                    </button>
                 </div>
             </form>
-            </ybc::Card>
         </>
     }
 }
