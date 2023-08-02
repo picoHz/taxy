@@ -127,7 +127,7 @@ pub fn cert_list() -> Html {
                         };
                         html! {
                             <li class="mr-2">
-                                <a {onclick} class={classes!("inline-block", "cursor-pointer", "px-4", "py-2", "border-b-2", "rounded-t-lg", "hover:text-neutral-600", "hover:border-neutral-300", class)}>{item}</a>
+                                <a {onclick} class={classes!("inline-block", "cursor-pointer", "px-4", "py-2", "border-b-2", "rounded-t-lg", "hover:border-neutral-300", class)}>{item}</a>
                             </li>
                         }
                     }).collect::<Html>() }
