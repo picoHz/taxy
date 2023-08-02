@@ -5,7 +5,6 @@ use yew::prelude::*;
 use yew_router::prelude::*;
 
 mod cert_list;
-mod home;
 mod log_view;
 mod login;
 mod logout;
@@ -23,7 +22,7 @@ mod upload;
 #[serde(rename_all = "snake_case")]
 pub enum Route {
     #[at("/")]
-    Dashboard,
+    Home,
     #[at("/login")]
     Login,
     #[at("/logout")]
@@ -62,7 +61,7 @@ pub enum Route {
 impl Route {
     pub fn root(&self) -> Option<Route> {
         match self {
-            Route::Dashboard => Some(Route::Dashboard),
+            Route::Home => Some(Route::Home),
             Route::Ports | Route::NewPort | Route::PortView { .. } | Route::PortLogView { .. } => {
                 Some(Route::Ports)
             }
@@ -81,9 +80,9 @@ impl Route {
 
     pub fn breadcrumb(&self) -> Vec<BreadcrumbItem> {
         match self {
-            Route::Dashboard => vec![BreadcrumbItem {
+            Route::Home => vec![BreadcrumbItem {
                 name: "Dashboard".into(),
-                route: Route::Dashboard,
+                route: Route::Home,
             }],
             Route::Login => vec![BreadcrumbItem {
                 name: "Login".into(),
@@ -225,7 +224,7 @@ pub struct BreadcrumbItem {
 
 pub fn switch(routes: Route) -> Html {
     match routes {
-        Route::Dashboard => html! { <home::Dashboard /> },
+        Route::Home => html! { <Redirect<Route> to={Route::Ports}/> },
         Route::Login => html! { <login::Login /> },
         Route::Logout => html! { <logout::Logout /> },
         Route::Ports => html! { <port_list::PortList /> },
@@ -241,6 +240,6 @@ pub fn switch(routes: Route) -> Html {
         Route::NewAcme => html! { <new_acme::NewAcme /> },
         Route::CertLogView { id } => html! { <log_view::LogView {id} /> },
         Route::Upload => html! { <upload::Upload /> },
-        Route::NotFound => html! { <Redirect<Route> to={Route::Dashboard}/> },
+        Route::NotFound => html! { <Redirect<Route> to={Route::Home}/> },
     }
 }

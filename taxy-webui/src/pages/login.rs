@@ -132,7 +132,7 @@ pub fn login() -> Html {
                     if let Some(redirect) = query.redirect {
                         navigator.replace(&redirect);
                     } else {
-                        navigator.push(&Route::Dashboard);
+                        navigator.push(&Route::Home);
                     }
                 }
                 ApiResult::Ok(LoginResponse::TotpRequired) => totp.set(Some(String::new())),

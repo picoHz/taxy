@@ -42,7 +42,7 @@ pub fn navbar() -> Html {
     let navigator_cloned = navigator.clone();
     let logo_onclick = Callback::from(move |e: MouseEvent| {
         e.prevent_default();
-        navigator_cloned.push(&Route::Dashboard);
+        navigator_cloned.push(&Route::Home);
     });
 
     if route == Route::Login {
