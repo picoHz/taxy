@@ -1,8 +1,5 @@
 use crate::{
-    auth::use_ensure_auth,
-    components::{breadcrumb::Breadcrumb, proxy_config::ProxyConfig},
-    pages::Route,
-    API_ENDPOINT,
+    auth::use_ensure_auth, components::proxy_config::ProxyConfig, pages::Route, API_ENDPOINT,
 };
 use gloo_net::http::Request;
 use std::collections::HashMap;
@@ -52,13 +49,6 @@ pub fn new_site() -> Html {
 
     html! {
         <>
-            <ybc::Card classes="pb-5">
-            <ybc::CardHeader>
-                <p class="card-header-title">
-                    <Breadcrumb />
-                </p>
-            </ybc::CardHeader>
-
             <form {onsubmit}>
                 <ProxyConfig {onchanged} />
 
@@ -75,7 +65,6 @@ pub fn new_site() -> Html {
                     </p>
                 </div>
             </form>
-            </ybc::Card>
         </>
     }
 }

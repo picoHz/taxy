@@ -1,9 +1,7 @@
 use crate::components::custom_acme::CustomAcme;
 use crate::components::letsencrypt::LetsEncrypt;
 use crate::pages::cert_list::{CertsQuery, CertsTab};
-use crate::{
-    auth::use_ensure_auth, components::breadcrumb::Breadcrumb, pages::Route, API_ENDPOINT,
-};
+use crate::{auth::use_ensure_auth, pages::Route, API_ENDPOINT};
 use gloo_net::http::Request;
 use std::collections::HashMap;
 use taxy_api::acme::AcmeRequest;
@@ -109,13 +107,6 @@ pub fn new_acme() -> Html {
 
     html! {
         <>
-            <ybc::Card classes="pb-5">
-            <ybc::CardHeader>
-                <p class="card-header-title">
-                    <Breadcrumb />
-                </p>
-            </ybc::CardHeader>
-
             <form {onsubmit}>
                 <div class="field is-horizontal m-5">
                     <div class="field-label is-normal">
@@ -153,7 +144,6 @@ pub fn new_acme() -> Html {
                     </p>
                 </div>
             </form>
-            </ybc::Card>
         </>
     }
 }

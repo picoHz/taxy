@@ -1,10 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    auth::use_ensure_auth,
-    components::{breadcrumb::Breadcrumb, port_config::PortConfig},
-    pages::Route,
-    store::PortStore,
+    auth::use_ensure_auth, components::port_config::PortConfig, pages::Route, store::PortStore,
     API_ENDPOINT,
 };
 use gloo_net::http::Request;
@@ -80,13 +77,6 @@ pub fn port_view(props: &Props) -> Html {
 
     html! {
         <>
-            <ybc::Card>
-            <ybc::CardHeader>
-                <p class="card-header-title">
-                    <Breadcrumb />
-                </p>
-            </ybc::CardHeader>
-
             if let Some(port_entry) = &*port {
                 <form {onsubmit}>
                     <PortConfig port={port_entry.port.clone()} {onchanged} />
@@ -113,8 +103,6 @@ pub fn port_view(props: &Props) -> Html {
                     }
                 } />
             }
-
-            </ybc::Card>
         </>
     }
 }

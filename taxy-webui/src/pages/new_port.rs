@@ -1,8 +1,5 @@
 use crate::{
-    auth::use_ensure_auth,
-    components::{breadcrumb::Breadcrumb, port_config::PortConfig},
-    pages::Route,
-    API_ENDPOINT,
+    auth::use_ensure_auth, components::port_config::PortConfig, pages::Route, API_ENDPOINT,
 };
 use gloo_net::http::Request;
 use std::collections::HashMap;
@@ -51,13 +48,6 @@ pub fn new_port() -> Html {
 
     html! {
         <>
-            <ybc::Card classes="pb-5">
-            <ybc::CardHeader>
-                <p class="card-header-title">
-                    <Breadcrumb />
-                </p>
-            </ybc::CardHeader>
-
             <form {onsubmit}>
                 <PortConfig {onchanged} />
 
@@ -74,7 +64,6 @@ pub fn new_port() -> Html {
                     </p>
                 </div>
             </form>
-            </ybc::Card>
         </>
     }
 }

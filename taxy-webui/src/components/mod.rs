@@ -1,4 +1,3 @@
-pub mod breadcrumb;
 pub mod custom_acme;
 pub mod http_proxy_config;
 pub mod letsencrypt;

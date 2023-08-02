@@ -1,8 +1,5 @@
 use crate::{
-    auth::use_ensure_auth,
-    components::{breadcrumb::Breadcrumb, proxy_config::ProxyConfig},
-    pages::Route,
-    store::ProxyStore,
+    auth::use_ensure_auth, components::proxy_config::ProxyConfig, pages::Route, store::ProxyStore,
     API_ENDPOINT,
 };
 use gloo_net::http::Request;
@@ -79,13 +76,6 @@ pub fn proxy_view(props: &Props) -> Html {
 
     html! {
         <>
-            <ybc::Card>
-            <ybc::CardHeader>
-                <p class="card-header-title">
-                    <Breadcrumb />
-                </p>
-            </ybc::CardHeader>
-
             if let Some(proxy_entry) = &*site {
                 <form {onsubmit}>
                     <ProxyConfig proxy={proxy_entry.proxy.clone()} {onchanged} />
@@ -112,8 +102,6 @@ pub fn proxy_view(props: &Props) -> Html {
                     }
                 } />
             }
-
-            </ybc::Card>
         </>
     }
 }
