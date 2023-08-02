@@ -78,30 +78,18 @@ pub fn port_view(props: &Props) -> Html {
     html! {
         <>
             if let Some(port_entry) = &*port {
-                <form {onsubmit}>
+                <form {onsubmit} class="bg-white shadow-sm p-5 border border-neutral-300 md:rounded-md">
                     <PortConfig port={port_entry.port.clone()} {onchanged} />
 
-                    <div class="field is-grouped is-grouped-right mx-5 pb-5">
-                        <p class="control">
-                            <button type="button" class="button is-light" onclick={cancel_onclick}>
+                    <div class="flex mt-4 items-center justify-end">
+                        <button type="button" onclick={cancel_onclick} class="mr-2 inline-flex items-center text-neutral-500 bg-neutral-50 focus:outline-none hover:bg-neutral-100 focus:ring-4 focus:ring-neutral-200 font-medium rounded-lg text-sm px-4 py-2">
                             {"Cancel"}
-                            </button>
-                        </p>
-                        <p class="control">
-                            <button type="submit" class={classes!("button", "is-primary", is_loading.then_some("is-loading"))} disabled={entry.is_err()}>
+                        </button>
+                        <button type="submit" disabled={entry.is_err()} class="inline-flex items-center text-neutral-500 bg-neutral-50 border border-neutral-300 focus:outline-none hover:bg-neutral-100 focus:ring-4 focus:ring-neutral-200 font-medium rounded-lg text-sm px-4 py-2">
                             {"Update"}
-                            </button>
-                        </p>
+                        </button>
                     </div>
                 </form>
-            } else {
-                <ybc::Hero body_classes="has-text-centered" body={
-                    html! {
-                    <p class="title has-text-grey-lighter">
-                        {"Not Found"}
-                    </p>
-                    }
-                } />
             }
         </>
     }

@@ -125,66 +125,29 @@ pub fn port_config(props: &Props) -> Html {
 
     html! {
         <>
-            <div class="field is-horizontal m-5">
-                <div class="field-label is-normal">
-                <label class="label">{"Name"}</label>
-                </div>
-                <div class="field-body">
-                    <div class="field">
-                        <p class="control is-expanded">
-                        <input class="input" type="text" value={name.to_string()} onchange={name_onchange} />
-                        </p>
-                    </div>
-                </div>
-            </div>
+            <label class="block mb-2 text-sm font-medium text-neutral-900">{"Name"}</label>
+            <input type="text" value={name.to_string()} onchange={name_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="My Website" />
 
-            <div class="field is-horizontal m-5">
-                <div class="field-label is-normal">
-                <label class="label">{"Listener"}</label>
-                </div>
-                <div class="field-body">
-                    <div class="field is-narrow">
-                    <div class="control">
-                        <div class="select is-fullwidth">
-                        <select onchange={interface_onchange}>
-                            { interfaces.iter().map(|value| {
-                                html! {
-                                    <option selected={&*interface == value} value={value.clone()}>{value}</option>
-                                }
-                            }).collect::<Html>() }
-                        </select>
-                        </div>
-                    </div>
-                    </div>
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Interface"}</label>
+            <select onchange={interface_onchange} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                { interfaces.iter().map(|value| {
+                    html! {
+                        <option selected={&*interface == value} value={value.clone()}>{value}</option>
+                    }
+                }).collect::<Html>() }
+            </select>
 
-                    <div class="field">
-                        <p class="control is-expanded">
-                        <input class="input" type="number" placeholder="Port" onchange={port_onchange} value={port.to_string()} max="65535" min="1" />
-                        </p>
-                    </div>
-                </div>
-            </div>
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Port"}</label>
+            <input type="number" placeholder="8080" onchange={port_onchange} value={port.to_string()} max="65535" min="1" class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
 
-            <div class="field is-horizontal m-5">
-                <div class="field-label is-normal">
-                    <label class="label">{"Protocol"}</label>
-                </div>
-                <div class="field-body">
-                    <div class="field is-narrow">
-                    <div class="control">
-                        <div class="select is-fullwidth">
-                        <select onchange={protocol_onchange}>
-                            { PROTOCOLS.iter().map(|(value, label)| {
-                                html! {
-                                    <option selected={&*protocol == value} value={*value}>{label}</option>
-                                }
-                            }).collect::<Html>() }
-                        </select>
-                        </div>
-                    </div>
-                    </div>
-                </div>
-            </div>
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Protocol"}</label>
+            <select onchange={protocol_onchange} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                { PROTOCOLS.iter().map(|(value, label)| {
+                    html! {
+                        <option selected={&*protocol == value} value={*value}>{label}</option>
+                    }
+                }).collect::<Html>() }
+            </select>
         </>
     }
 }
