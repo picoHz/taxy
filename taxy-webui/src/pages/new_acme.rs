@@ -107,41 +107,25 @@ pub fn new_acme() -> Html {
 
     html! {
         <>
-            <form {onsubmit}>
-                <div class="field is-horizontal m-5">
-                    <div class="field-label is-normal">
-                        <label class="label">{"Proivder"}</label>
-                    </div>
-                    <div class="field-body">
-                        <div class="field is-narrow">
-                        <div class="control">
-                            <div class="select is-fullwidth">
-                            <select onchange={provider_onchange}>
-                                { PROVIDERS.iter().enumerate().map(|(i, item)| {
-                                    html! {
-                                        <option selected={&*provider == item} value={i.to_string()}>{item.to_string()}</option>
-                                    }
-                                }).collect::<Html>() }
-                            </select>
-                            </div>
-                        </div>
-                        </div>
-                    </div>
-                </div>
+            <form {onsubmit} class="bg-white shadow-sm p-5 border border-neutral-300 md:rounded-md">
+                <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Provider"}</label>
+                <select onchange={provider_onchange} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                    { PROVIDERS.iter().enumerate().map(|(i, item)| {
+                        html! {
+                            <option selected={&*provider == item} value={i.to_string()}>{item.to_string()}</option>
+                        }
+                    }).collect::<Html>() }
+                </select>
 
                 { provider.html(onchanged) }
 
-                <div class="field is-grouped is-grouped-right mx-5">
-                    <p class="control">
-                        <button type="button" class="button is-light" onclick={cancel_onclick}>
+                <div class="flex mt-4 items-center justify-end">
+                    <button type="button" onclick={cancel_onclick} class="mr-2 inline-flex items-center text-neutral-500 bg-neutral-50 focus:outline-none hover:bg-neutral-100 focus:ring-4 focus:ring-neutral-200 font-medium rounded-lg text-sm px-4 py-2">
                         {"Cancel"}
-                        </button>
-                    </p>
-                    <p class="control">
-                        <button type="submit" class={classes!("button", "is-primary", is_loading.then_some("is-loading"))} disabled={entry.is_err()}>
+                    </button>
+                    <button disabled={entry.is_err()} type="submit" class="inline-flex items-center text-neutral-500 bg-neutral-50 border border-neutral-300 focus:outline-none hover:bg-neutral-100 focus:ring-4 focus:ring-neutral-200 font-medium rounded-lg text-sm px-4 py-2">
                         {"Request"}
-                        </button>
-                    </p>
+                    </button>
                 </div>
             </form>
         </>

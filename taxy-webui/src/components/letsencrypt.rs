@@ -43,48 +43,16 @@ pub fn letsencrypt(props: &Props) -> Html {
 
     html! {
         <>
-            <div class="field is-horizontal m-5">
-            <div class="field-label is-normal">
-            <label class="label">{"Email Address"}</label>
-            </div>
-            <div class="field-body">
-                <div class="field">
-                    <p class="control is-expanded">
-                    <input class="input" type="email" placeholder="admin@example.com" onchange={email_onchange} />
-                    </p>
-                </div>
-            </div>
-            </div>
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Email Address"}</label>
+            <input type="email" placeholder="admin@example.com" onchange={email_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
 
-            <div class="field is-horizontal m-5">
-                <div class="field-label is-normal">
-                    <label class="label">{"Challenge"}</label>
-                </div>
-                <div class="field-body">
-                    <div class="field is-narrow">
-                    <div class="control">
-                        <div class="select is-fullwidth">
-                        <select>
-                            <option selected={true}>{"HTTP"}</option>
-                        </select>
-                        </div>
-                    </div>
-                    </div>
-                </div>
-            </div>
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Challenge"}</label>
+            <select class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                <option selected={true}>{"HTTP"}</option>
+            </select>
 
-            <div class="field is-horizontal m-5">
-            <div class="field-label is-normal">
-            <label class="label">{"Domain Name"}</label>
-            </div>
-            <div class="field-body">
-                <div class="field">
-                    <p class="control is-expanded">
-                    <input class="input" autocapitalize="off" type="input" placeholder="example.com" onchange={domain_name_onchange} />
-                    </p>
-                </div>
-            </div>
-            </div>
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Domain Name"}</label>
+            <input type="taxt" autocapitalize="off" placeholder="example.com" onchange={domain_name_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
         </>
     }
 }

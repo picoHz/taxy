@@ -97,110 +97,31 @@ pub fn custom_acme(props: &Props) -> Html {
 
     html! {
         <>
-            <div class="field is-horizontal m-5">
-            <div class="field-label is-normal">
-            <label class="label">{"Name"}</label>
-            </div>
-            <div class="field-body">
-                <div class="field">
-                    <p class="control is-expanded">
-                    <input class="input" type="text" placeholder="ACME Provider" onchange={name_onchange} />
-                    </p>
-                </div>
-            </div>
-            </div>
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Name"}</label>
+            <input type="text" placeholder="ACME Provider" onchange={name_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
 
-            <div class="field is-horizontal m-5">
-            <div class="field-label is-normal">
-            <label class="label">{"Server URL"}</label>
-            </div>
-            <div class="field-body">
-                <div class="field">
-                    <p class="control is-expanded">
-                    <input class="input" type="url" placeholder="https://example.com/" onchange={server_url_onchange} />
-                    </p>
-                </div>
-            </div>
-            </div>
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Server URL"}</label>
+            <input type="url" placeholder="https://example.com/" onchange={server_url_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
 
-            <div class="field is-horizontal m-5">
-                <div class="field-label is-normal">
-                    <label class="label">{"EAB (Optional)"}</label>
-                </div>
-                <div class="field-body">
-                    <div class="field">
-                    <p class="control is-expanded">
-                        <input class="input" type="text" placeholder="Key ID" onchange={eab_kid_onchange} />
-                    </p>
-                    </div>
-                    <div class="field">
-                    <p class="control is-expanded">
-                        <input class="input" type="text" placeholder="HMAC Key" onchange={eab_hmac_key_onchange} />
-                    </p>
-                    </div>
-                </div>
-            </div>
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"EAB Key ID (Optional)"}</label>
+            <input type="text" onchange={eab_kid_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
 
-            <div class="field is-horizontal m-5">
-            <div class="field-label is-normal">
-            <label class="label">{"Email Address"}</label>
-            </div>
-            <div class="field-body">
-                <div class="field">
-                    <p class="control is-expanded">
-                    <input class="input" type="email" placeholder="admin@example.com" onchange={email_onchange} />
-                    </p>
-                </div>
-            </div>
-            </div>
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"EAB HMAC Key (Optional)"}</label>
+            <input type="text" onchange={eab_hmac_key_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
 
-            <div class="field is-horizontal m-5">
-                <div class="field-label is-normal">
-                    <label class="label">{"Challenge"}</label>
-                </div>
-                <div class="field-body">
-                    <div class="field is-narrow">
-                    <div class="control">
-                        <div class="select is-fullwidth">
-                        <select>
-                            <option selected={true}>{"HTTP"}</option>
-                        </select>
-                        </div>
-                    </div>
-                    </div>
-                </div>
-            </div>
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Email Address"}</label>
+            <input type="email" placeholder="admin@example.com" onchange={email_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
 
-            <div class="field is-horizontal m-5">
-            <div class="field-label is-normal">
-            <label class="label">{"Domain Name"}</label>
-            </div>
-            <div class="field-body">
-                <div class="field">
-                    <p class="control is-expanded">
-                    <input class="input" autocapitalize="off" type="input" placeholder="example.com" onchange={domain_name_onchange} />
-                    </p>
-                </div>
-            </div>
-            </div>
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Challenge"}</label>
+            <select class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                <option selected={true}>{"HTTP"}</option>
+            </select>
 
-            <div class="field is-horizontal m-5">
-            <div class="field-label is-normal">
-                <label class="label">{"Renewal"}</label>
-            </div>
-            <div class="field-body">
-                <div class="field has-addons">
-                    <p class="control">
-                        <input class="input" type="number" onchange={renewal_onchange} value={renewal.to_string()} min="1" />
-                    </p>
-                    <p class="control">
-                        <a class="button is-static">
-                        {"days"}
-                        </a>
-                    </p>
-                </div>
-            </div>
-            </div>
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Domain Name"}</label>
+            <input type="taxt" autocapitalize="off" placeholder="example.com" onchange={domain_name_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
+
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Renewal Interval (days)"}</label>
+            <input type="number" value={renewal.to_string()} min="1" onchange={renewal_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
         </>
     }
 }
