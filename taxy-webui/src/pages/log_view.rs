@@ -44,7 +44,7 @@ pub fn log_view(props: &Props) -> Html {
                     </button>
                 </div>
             </div>
-            <ul ref={ul_ref.clone()} class="overflow-scroll max-h-96 bg-neutral-50 shadow-sm border border-neutral-300 md:rounded-md">
+            <ul ref={ul_ref.clone()} class="overflow-scroll max-h-96 bg-white shadow-sm border border-neutral-300 md:rounded-md">
             { log.iter().map(|entry| {
                 let timestamp = entry.timestamp.format(&Rfc3339).unwrap();
                 let fields = entry.fields.iter().map(|(k, v)| {

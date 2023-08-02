@@ -90,7 +90,7 @@ pub fn upload() -> Html {
 
     html! {
         <>
-            <form {onsubmit} class="bg-neutral-50 shadow-sm p-5 border border-neutral-300 md:rounded-md">
+            <form {onsubmit} class="bg-white shadow-sm p-5 border border-neutral-300 md:rounded-md">
                 <label class="block mb-2 text-sm font-medium text-neutral-900">{"Certificate Chain"}</label>
                 <input onchange={chain_onchange} class="block w-full text-sm text-neutral-900 border border-neutral-300 rounded-lg cursor-pointer bg-neutral-50 focus:outline-none file:bg-transparent file:border-0 file:bg-neutral-100 file:mr-4 file:py-3 file:px-4" type="file" />
 
