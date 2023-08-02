@@ -336,7 +336,7 @@ pub fn cert_list() -> Html {
                 }
             </div>
             }
-            <div class="flex justify-end rounded-md mt-4 sm:ml-auto" role="group">
+            <div class="flex justify-end rounded-md mt-4 sm:ml-auto px-4 md:px-0" role="group">
                 if *tab == CertsTab::Server {
                     <button onclick={self_sign_onclick} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 bg-white border border-neutral-300 rounded-l-lg hover:bg-neutral-100 focus:z-10 focus:ring-4 focus:ring-neutral-200">
                         <img src="/assets/icons/create.svg" class="w-4 h-4 mr-1 text-neutral-500" />
