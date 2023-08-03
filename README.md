@@ -3,7 +3,7 @@
 
 # Taxy
 
-A reverse proxy server with a user-friendly WebUI.
+A reverse proxy server with built-in WebUI, supporting TCP/HTTP/TLS/WebSocket, written in Rust.
 
 [![Crates.io](https://img.shields.io/crates/v/taxy.svg)](https://crates.io/crates/taxy)
 [![GitHub license](https://img.shields.io/github/license/picoHz/taxy.svg)](https://github.com/picoHz/taxy/blob/main/LICENSE)
