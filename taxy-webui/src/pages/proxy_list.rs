@@ -56,7 +56,7 @@ pub fn proxy_list() -> Html {
         <>
             <div class="relative overflow-x-auto bg-white shadow-sm border border-neutral-300 lg:rounded-md">
                 if list.is_empty() {
-                    <p class="mb-8 mt-8 text-xl font-bold text-neutral-500 px-16 text-center">{"List is empty. Click 'Add' to configure a new port."}</p>
+                    <p class="mb-8 mt-8 text-xl font-bold text-neutral-500 px-16 text-center">{"List is empty. Click 'Add' to configure a new proxy."}</p>
                 } else {
                 <table class="w-full text-sm text-left text-neutral-600 rounded-md">
                     <thead class="text-xs text-neutral-800 uppercase border-b border-neutral-300">
