@@ -89,6 +89,8 @@ pub fn proxy_view(props: &Props) -> Html {
                         </button>
                     </div>
                 </form>
+            } else {
+                <Redirect<Route> to={Route::Proxies}/>
             }
         </>
     }

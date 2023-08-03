@@ -90,6 +90,8 @@ pub fn port_view(props: &Props) -> Html {
                         </button>
                     </div>
                 </form>
+            } else {
+                <Redirect<Route> to={Route::Ports}/>
             }
         </>
     }
