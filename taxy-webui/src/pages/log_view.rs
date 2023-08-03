@@ -69,6 +69,9 @@ pub fn log_view(props: &Props) -> Html {
                 }
                 }).collect::<Html>()
             }
+            if log.is_empty() {
+                <li class="mb-8 mt-8 text-xl font-bold text-neutral-500 px-16 text-center">{"No logs."}</li>
+            }
             </ul>
         </>
     }
