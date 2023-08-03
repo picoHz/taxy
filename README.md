@@ -52,7 +52,7 @@ services:
       # Add ports here if you want to expose them to the host
       - 80:80
       - 443:443
-      - 46492:46492 # Admin panel
+      - 127.0.0.1:46492:46492 # Admin panel
     restart: unless-stopped
 
 volumes:
