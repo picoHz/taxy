@@ -3206,6 +3206,7 @@ dependencies = [
  "dashmap",
  "directories",
  "flate2",
+ "fnv",
  "futures",
  "globwalk",
  "hex",

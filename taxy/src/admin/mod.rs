@@ -80,6 +80,7 @@ pub async fn start_admin(
 
     let static_file = warp::get()
         .and(warp::path::full())
+        .and(warp::header::optional::<String>("If-None-Match"))
         .and_then(static_file::get);
 
     let event_stream = EventStream {

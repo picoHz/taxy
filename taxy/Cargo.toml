@@ -30,6 +30,7 @@ clap = { version = "4.3.11", features = ["derive", "env"] }
 dashmap = "5.5.0"
 directories = "5.0.1"
 flate2 = "1.0.26"
+fnv = "1.0.7"
 futures = "0.3.28"
 globwalk = "0.8.1"
 hex = "0.4.3"
