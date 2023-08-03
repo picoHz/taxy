@@ -38,7 +38,7 @@ pub fn log_view(props: &Props) -> Html {
         <>
             <div class="flex items-center justify-start px-4 lg:px-0 mb-4">
                 <div>
-                    <button onclick={back_onclick} class="inline-flex items-center text-neutral-500 bg-neutral-50 border border-neutral-300 focus:outline-none hover:bg-neutral-100 focus:ring-4 focus:ring-neutral-200 font-medium rounded-lg text-sm px-4 py-2" type="button">
+                    <button onclick={back_onclick} class="inline-flex items-center text-neutral-500 bg-white border border-neutral-300 focus:outline-none hover:bg-neutral-100 focus:ring-4 focus:ring-neutral-200 font-medium rounded-lg text-sm px-4 py-2" type="button">
                         <img src="/assets/icons/arrow-back.svg" class="w-4 h-4 mr-1" />
                         {"Back"}
                     </button>

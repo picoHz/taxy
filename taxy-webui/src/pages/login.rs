@@ -145,7 +145,7 @@ pub fn login() -> Html {
 
     html! {
         <>
-        <form class="mx-auto max-w-sm mt-4" {onsubmit}>
+        <form class="mx-auto max-w-sm mt-4 px-4" {onsubmit}>
             <div class="mx-auto flex w-full justify-center items-center mb-2">
                 <img class="w-8 h-8" src="/assets/logo.svg" />
             </div>

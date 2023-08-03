@@ -106,10 +106,9 @@ pub fn cert_list() -> Html {
     let active_index = use_state(|| -1);
     html! {
         <>
-        <div class="flex flex-col mb-4 sm:flex-row px-4 lg:px-0">
+        <div class="flex flex-col mb-4 px-4 lg:px-0">
             <div class="text-sm font-medium text-center text-neutral-500">
-                <ul class="flex flex-wrap -mb-px">
-
+                <ul class="flex justify-center sm:justify-start flex-wrap -mb-px">
                     { TABS.into_iter().map(|item| {
                         let navigator = navigator.clone();
                         let active_index = active_index.clone();
