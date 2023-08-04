@@ -12,6 +12,9 @@ changelog:
     - title: New Features
       labels:
         - enhancement
+    - title: WebUI Updates
+      labels:
+        - webui
     - title: Other Changes
       labels:
         - "*"
