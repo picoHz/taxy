@@ -12,6 +12,10 @@ A reverse proxy server with built-in WebUI, supporting TCP/HTTP/TLS/WebSocket, w
 
 </div>
 
+## 🚧 Notice
+
+Taxy is currently in early development. Please be aware that breaking changes may occur frequently, particularly when upgrading between minor versions (e.g., from 0.3.x to 0.4.x).
+
 ## Overview
 
 - Built with Rust for optimal performance and safety, powered by tokio and hyper
@@ -137,6 +141,13 @@ cd webui
 trunk serve
 ```
 
-# Credit
+## Similar projects
+
+HTTP reverse proxies written in Rust:
+
+- [Sōzu](https://github.com/sozu-proxy/sozu)
+- [rpxy](https://github.com/junkurihara/rust-rpxy)
+
+## Credit
 
 The social preview image uses the photo by [cal gao](https://unsplash.com/@ginnta?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText) on [Unsplash](https://unsplash.com/photos/MASpFp0X2VU?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText).
