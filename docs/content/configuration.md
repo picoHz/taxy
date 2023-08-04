@@ -10,10 +10,10 @@ Before configuring a proxy, you need to bind a port to listen on. You can do thi
 
 Taxy supports four types of ports:
 
-- TCP
-- TCP over TLS
 - HTTP
 - HTTPS (HTTP over TLS)
+- TCP
+- TCP over TLS
 
 ## Resetting a Port
 
@@ -23,8 +23,8 @@ Changing the port configuration does not affect existing connections. Old connec
 
 Taxy supports four types of proxies:
 
-- TCP / TCP over TLS
 - HTTP / HTTPS
+- TCP / TCP over TLS
 
 Multiple ports can be bound to a proxy. However, it's not possible to bind TCP / TCP over TLS ports to an HTTP / HTTPS proxy and vice versa.
 

@@ -29,10 +29,10 @@ fn create_default_port() -> Port {
 }
 
 const PROTOCOLS: &[(&str, &str)] = &[
-    ("tcp", "TCP"),
-    ("tls", "TCP over TLS"),
     ("http", "HTTP"),
     ("https", "HTTPS"),
+    ("tcp", "TCP"),
+    ("tls", "TCP over TLS"),
 ];
 
 #[function_component(PortConfig)]
