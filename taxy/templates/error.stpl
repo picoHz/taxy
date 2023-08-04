@@ -46,6 +46,8 @@
             <div class="error-text">SSL Handshake Failed</div>
         <% } else if code == 526 { %>
             <div class="error-text">Invalid SSL Certificate</div>
+        <% } else if code == 421 { %>
+            <div class="error-text">Misdirected Request</div>
         <% } else { %>
             <div class="error-text">Bad Gateway</div>
         <% } %>
