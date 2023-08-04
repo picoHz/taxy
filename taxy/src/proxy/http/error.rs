@@ -5,8 +5,8 @@ use tokio_rustls::rustls;
 
 #[derive(Debug, Clone, Error)]
 pub enum ProxyError {
-    #[error("invalid hostname")]
-    InvalidHostName,
+    #[error("domain fronting detected")]
+    DomainFrontingDetected,
 
     #[error("dns lookup failed")]
     DnsLookupFailed,
@@ -18,7 +18,8 @@ pub enum ProxyError {
 impl ProxyError {
     fn code(&self) -> StatusCode {
         match self {
-            Self::InvalidHostName | Self::NoRouteFound => StatusCode::BAD_GATEWAY,
+            Self::DomainFrontingDetected => StatusCode::MISDIRECTED_REQUEST,
+            Self::NoRouteFound => StatusCode::BAD_GATEWAY,
             Self::DnsLookupFailed => StatusCode::from_u16(523).unwrap(),
         }
     }

@@ -268,7 +268,7 @@ async fn start(
         let shared = shared_cache.load();
 
         let req = if domain_fronting {
-            Err(ProxyError::InvalidHostName)
+            Err(ProxyError::DomainFrontingDetected)
         } else if let Some((route, res, _)) = shared.router.get_route(&req) {
             let mut parts = Parts::default();
 
