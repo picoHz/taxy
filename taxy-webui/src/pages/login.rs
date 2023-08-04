@@ -79,7 +79,7 @@ pub fn login() -> Html {
 
     let totp_cloned = totp.clone();
     let oninput_totp = Callback::from({
-        let totp = totp_cloned.clone();
+        let totp = totp_cloned;
         move |input_event: InputEvent| {
             let target: HtmlInputElement = input_event
                 .target()

@@ -63,7 +63,7 @@ pub fn self_sign() -> Html {
                         .filter(|cert| cert.has_private_key && cert.kind == CertKind::Root)
                         .collect::<Vec<_>>();
                     if let Some(cert) = list.first() {
-                        ca_cert_cloned.set(cert.id.clone());
+                        ca_cert_cloned.set(cert.id);
                     }
                     ca_cert_list_cloned.set(list);
                 }
@@ -78,7 +78,7 @@ pub fn self_sign() -> Html {
     let is_loading = use_state(|| false);
 
     let entry_cloned = entry;
-    let is_loading_cloned = is_loading.clone();
+    let is_loading_cloned = is_loading;
     let onsubmit = Callback::from(move |event: SubmitEvent| {
         event.prevent_default();
         validation.set(true);
@@ -158,7 +158,7 @@ fn get_request(
             ca_cert: if ca_cert.to_string() == "generate" {
                 None
             } else {
-                Some(ca_cert.into())
+                Some(ca_cert)
             },
         })
     } else {

@@ -221,7 +221,6 @@ fn get_port(
         opts: PortOptions {
             tls_termination: Some(TlsTermination::default())
                 .filter(|_| protocol == "tls" || protocol == "https"),
-            ..Default::default()
         },
     };
 

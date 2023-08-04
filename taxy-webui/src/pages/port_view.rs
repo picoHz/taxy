@@ -55,7 +55,7 @@ pub fn port_view(props: &Props) -> Html {
 
     let id = props.id;
     let entry_cloned = entry.clone();
-    let is_loading_cloned = is_loading.clone();
+    let is_loading_cloned = is_loading;
     let onsubmit = Callback::from(move |event: SubmitEvent| {
         event.prevent_default();
         if *is_loading_cloned {

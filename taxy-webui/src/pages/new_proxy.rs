@@ -28,7 +28,7 @@ pub fn new_proxy() -> Html {
     let is_loading = use_state(|| false);
 
     let entry_cloned = entry.clone();
-    let is_loading_cloned = is_loading.clone();
+    let is_loading_cloned = is_loading;
     let onsubmit = Callback::from(move |event: SubmitEvent| {
         event.prevent_default();
         if *is_loading_cloned {
