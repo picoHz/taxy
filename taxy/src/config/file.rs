@@ -1,10 +1,11 @@
-use super::storage::Storage;
+use super::{build_info, storage::Storage};
 use crate::certs::{
     acme::{AcmeAccount, AcmeEntry},
     Cert,
 };
 use argon2::{password_hash::SaltString, Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use indexmap::map::IndexMap;
+use serde_derive::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     path::{Path, PathBuf},
@@ -27,6 +28,22 @@ use toml_edit::Document;
 use totp_rs::{Secret, TOTP};
 use tracing::{error, info, warn};
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(bound(
+    serialize = "T: serde::Serialize",
+    deserialize = "T: serde::de::DeserializeOwned"
+))]
+struct Versioned<T> {
+    #[serde(default = "default_version")]
+    pub version: String,
+    #[serde(flatten, default)]
+    pub data: T,
+}
+
+fn default_version() -> String {
+    build_info::PKG_VERSION.to_owned()
+}
+
 pub struct FileStorage {
     dir: PathBuf,
 }
@@ -41,7 +58,9 @@ impl FileStorage {
     async fn save_app_config_impl(&self, path: &Path, config: &AppConfig) -> anyhow::Result<()> {
         fs::create_dir_all(path.parent().unwrap()).await?;
         info!(?path, "save config");
-        fs::write(path, toml::to_string(config)?).await?;
+        let mut doc = toml_edit::ser::to_document(&config)?;
+        doc["version"] = toml_edit::value(build_info::PKG_VERSION);
+        fs::write(path, doc.to_string()).await?;
         Ok(())
     }
 
@@ -77,6 +96,7 @@ impl FileStorage {
             doc.remove(&key);
         }
 
+        doc["version"] = toml_edit::value(build_info::PKG_VERSION);
         fs::write(path, doc.to_string()).await?;
         Ok(())
     }
@@ -90,15 +110,15 @@ impl FileStorage {
     async fn load_ports_impl(&self, path: &Path) -> anyhow::Result<Vec<PortEntry>> {
         info!(?path, "load config");
         let content = fs::read_to_string(path).await?;
-        let table: IndexMap<ShortId, Port> = toml::from_str(&content)?;
-        Ok(table.into_iter().map(|entry| entry.into()).collect())
+        let table: Versioned<IndexMap<ShortId, Port>> = toml::from_str(&content)?;
+        Ok(table.data.into_iter().map(|entry| entry.into()).collect())
     }
 
     async fn load_proxies_impl(&self, path: &Path) -> anyhow::Result<Vec<ProxyEntry>> {
         info!(?path, "load proxies");
         let content = fs::read_to_string(path).await?;
-        let table: IndexMap<ShortId, Proxy> = toml::from_str(&content)?;
-        Ok(table.into_iter().map(|entry| entry.into()).collect())
+        let table: Versioned<IndexMap<ShortId, Proxy>> = toml::from_str(&content)?;
+        Ok(table.data.into_iter().map(|entry| entry.into()).collect())
     }
 
     async fn save_proxies_impl(&self, path: &Path, proxies: &[ProxyEntry]) -> anyhow::Result<()> {
@@ -127,6 +147,7 @@ impl FileStorage {
             doc.remove(&key);
         }
 
+        doc["version"] = toml_edit::value(build_info::PKG_VERSION);
         fs::write(path, doc.to_string()).await?;
         Ok(())
     }
@@ -156,6 +177,7 @@ impl FileStorage {
         let id = id.to_string();
         doc[&id].clone_from(toml_edit::ser::to_document(&entry)?.as_item());
 
+        doc["version"] = toml_edit::value(build_info::PKG_VERSION);
         fs::write(path, doc.to_string()).await?;
         Ok(())
     }
@@ -171,6 +193,7 @@ impl FileStorage {
         };
 
         doc.remove(&id.to_string());
+        doc["version"] = toml_edit::value(build_info::PKG_VERSION);
         fs::write(path, doc.to_string()).await?;
         Ok(())
     }
@@ -233,8 +256,8 @@ impl FileStorage {
     pub async fn load_acmes_impl(&self, path: &Path) -> anyhow::Result<Vec<AcmeEntry>> {
         info!(?path, "load acmes");
         let content = fs::read_to_string(path).await?;
-        let table: IndexMap<ShortId, AcmeAccount> = toml::from_str(&content)?;
-        Ok(table.into_iter().map(|entry| entry.into()).collect())
+        let table: Versioned<IndexMap<ShortId, AcmeAccount>> = toml::from_str(&content)?;
+        Ok(table.data.into_iter().map(|entry| entry.into()).collect())
     }
 
     async fn add_account_impl(
@@ -269,6 +292,7 @@ impl FileStorage {
         };
         doc[name].clone_from(toml_edit::ser::to_document(&account)?.as_item());
 
+        doc["version"] = toml_edit::value(build_info::PKG_VERSION);
         fs::write(&path, doc.to_string()).await?;
         Ok(account)
     }
@@ -277,7 +301,8 @@ impl FileStorage {
         let path = self.dir.join("accounts.toml");
         info!(?path, "load accounts");
         let content = fs::read_to_string(&path).await?;
-        Ok(toml::from_str(&content)?)
+        let accounts: Versioned<HashMap<String, Account>> = toml::from_str(&content)?;
+        Ok(accounts.data)
     }
 
     async fn verify_password(&self, name: &str, password: &str) -> Result<LoginResponse, Error> {
