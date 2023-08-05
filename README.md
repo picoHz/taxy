@@ -141,6 +141,12 @@ cd webui
 trunk serve
 ```
 
+### Gitpod
+
+You can instantly start developing Taxy in your browser using Gitpod.
+
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/picoHz/taxy)
+
 ## Similar projects
 
 HTTP reverse proxies written in Rust:

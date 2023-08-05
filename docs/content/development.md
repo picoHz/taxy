@@ -56,3 +56,9 @@ To build the project for a release, execute the following steps:
    ```bash
    target/release/taxy start
    ```
+
+# Gitpod
+
+You can instantly start developing Taxy in your browser using Gitpod.
+
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/picoHz/taxy)
