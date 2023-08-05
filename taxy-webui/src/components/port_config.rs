@@ -23,7 +23,7 @@ pub struct Props {
 fn create_default_port() -> Port {
     Port {
         name: String::new(),
-        listen: "/ip4/0.0.0.0/tcp/8080".parse().unwrap(),
+        listen: "/ip4/0.0.0.0/tcp/8080/http".parse().unwrap(),
         opts: Default::default(),
     }
 }
