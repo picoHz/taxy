@@ -4,9 +4,16 @@
 
 # Learn more from ready-to-use templates: https://www.gitpod.io/docs/introduction/getting-started/quickstart
 
+image:
+    file: .gitpod.Dockerfile
+
 tasks:
-  - init: cargo build
+  - init: |
+      cd taxy
+      cargo build
     command: cargo watch -x run
+  - init: cd taxy-webui
+    command: trunk serve
 
 vscode:
   extensions:
