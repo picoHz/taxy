@@ -1,13 +1,13 @@
 {
 	"image": "mcr.microsoft.com/devcontainers/universal:2",
 	"features": {
-		"ghcr.io/devcontainers/features/rust:1": {}
-	},
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"rust-lang.rust-analyzer"
-			]
+		"ghcr.io/devcontainers/features/rust:1": {
+			"version": "latest",
+			"profile": "default"
+		},
+		"ghcr.io/lee-orr/rusty-dev-containers/wasm32-unknown-unknown:0": {},
+		"ghcr.io/lee-orr/rusty-dev-containers/cargo-binstall:0": {
+			"packages": "trunk"
 		}
 	}
 }
