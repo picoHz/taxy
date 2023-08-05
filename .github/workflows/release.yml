@@ -39,7 +39,7 @@ jobs:
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create ${{ github.ref_name }} --generate-notes
+        run: gh release create ${{ github.ref_name }} --generate-notes --draft
         continue-on-error: true
       - name: Upload archive
         env:
@@ -78,7 +78,7 @@ jobs:
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create ${{ github.ref_name }} --generate-notes
+        run: gh release create ${{ github.ref_name }} --generate-notes --draft
         continue-on-error: true
       - name: Upload archive
         env:
@@ -114,7 +114,7 @@ jobs:
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create ${{ github.ref_name }} --generate-notes
+        run: gh release create ${{ github.ref_name }} --generate-notes --draft
         continue-on-error: true
       - name: Upload archive
         env:
@@ -155,7 +155,7 @@ jobs:
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create ${{ github.ref_name }} --generate-notes
+        run: gh release create ${{ github.ref_name }} --generate-notes --draft
         continue-on-error: true
       - name: Upload archive
         env:
@@ -197,7 +197,7 @@ jobs:
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create ${{ github.ref_name }} --generate-notes
+        run: gh release create ${{ github.ref_name }} --generate-notes --draft
         continue-on-error: true
       - name: Upload archive
         env:
