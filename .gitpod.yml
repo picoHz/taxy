@@ -11,9 +11,10 @@ tasks:
   - init: |
       cd taxy
       cargo build
-    command: cargo watch -x run
+    command: cargo r start
   - init: cd taxy-webui
     command: trunk serve
+    openMode: split-right
 
 vscode:
   extensions:
