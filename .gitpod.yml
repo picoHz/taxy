@@ -8,11 +8,11 @@ image:
     file: .gitpod.Dockerfile
 
 tasks:
-  - init: |
-      cd taxy
-      cargo build
+  - before: cd taxy
+    init: cargo r add-user admin -p admin
     command: cargo r start
-  - init: cd taxy-webui
+  - before: cd taxy-webui
+    init: trunk build
     command: trunk serve
     openMode: split-right
 
