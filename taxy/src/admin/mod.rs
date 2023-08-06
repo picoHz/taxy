@@ -195,7 +195,7 @@ impl Stream for StreamWrapper {
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         match self.inner.try_poll_next_unpin(cx) {
             Poll::Ready(Some(Ok(event))) => {
-                Poll::Ready(Some(Ok(Event::default().json_data(&event).unwrap())))
+                Poll::Ready(Some(Ok(Event::default().json_data(event).unwrap())))
             }
             Poll::Ready(Some(Err(err))) => Poll::Ready(Some(Err(err))),
             Poll::Ready(None) => Poll::Ready(None),

@@ -191,30 +191,30 @@ mod test {
     fn test_multiaddr() {
         let addr = Multiaddr::from_str("/dns/example.com/tcp/8080").unwrap();
         assert_eq!(addr.to_string(), "/dns/example.com/tcp/8080");
-        assert_eq!(addr.is_http(), false);
-        assert_eq!(addr.is_tls(), false);
+        assert!(!addr.is_http());
+        assert!(!addr.is_tls());
 
         let addr = Multiaddr::from_str("/ip4/127.0.0.1/tcp/8080").unwrap();
         assert_eq!(addr.to_string(), "/ip4/127.0.0.1/tcp/8080");
-        assert_eq!(addr.is_http(), false);
-        assert_eq!(addr.is_tls(), false);
+        assert!(!addr.is_http());
+        assert!(!addr.is_tls());
 
         let addr = Multiaddr::from_str("/ip4/127.0.0.1/tcp/8080/tls").unwrap();
         assert_eq!(addr.to_string(), "/ip4/127.0.0.1/tcp/8080/tls");
-        assert_eq!(addr.is_http(), false);
-        assert_eq!(addr.is_tls(), true);
+        assert!(!addr.is_http());
+        assert!(addr.is_tls());
 
         let addr = Multiaddr::from_str("/ip4/127.0.0.1/tcp/8080/http").unwrap();
         assert_eq!(addr.to_string(), "/ip4/127.0.0.1/tcp/8080/http");
-        assert_eq!(addr.is_http(), true);
-        assert_eq!(addr.is_tls(), false);
+        assert!(addr.is_http());
+        assert!(!addr.is_tls());
 
         let addr = Multiaddr::from_str("/ip6/::/tcp/8080/https/example.com/index.html").unwrap();
         assert_eq!(
             addr.to_string(),
             "/ip6/::/tcp/8080/https/example.com/index.html"
         );
-        assert_eq!(addr.is_http(), true);
-        assert_eq!(addr.is_tls(), true);
+        assert!(addr.is_http());
+        assert!(addr.is_tls());
     }
 }
