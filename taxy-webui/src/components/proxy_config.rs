@@ -1,10 +1,8 @@
 use crate::components::http_proxy_config::HttpProxyConfig;
 use crate::components::tcp_proxy_config::TcpProxyConfig;
 use crate::store::PortStore;
-use crate::utils::format_multiaddr;
 use crate::API_ENDPOINT;
 use gloo_net::http::Request;
-use multiaddr::Protocol;
 use std::collections::HashMap;
 use taxy_api::id::ShortId;
 use taxy_api::site::{HttpProxy, ProxyKind, TcpProxy};
@@ -107,14 +105,7 @@ pub fn proxy_config(props: &Props) -> Html {
         .entries
         .clone()
         .into_iter()
-        .filter(|entry| {
-            entry
-                .port
-                .listen
-                .iter()
-                .any(|item| matches!(item, Protocol::Http | Protocol::Https))
-                ^ (*protocol == ProxyProtocol::Tcp)
-        })
+        .filter(|entry| entry.port.listen.is_http() ^ (*protocol == ProxyProtocol::Tcp))
         .collect::<Vec<_>>();
 
     let prev_entry =
@@ -182,7 +173,7 @@ pub fn proxy_config(props: &Props) -> Html {
                         <li>
                             <div class="flex items-center pl-2 rounded hover:bg-gray-100">
                                 <input {onchange} id={entry.id.to_string()} type="checkbox" checked={bound_ports_cloned.contains(&entry.id)} class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2" />
-                                <label for={entry.id.to_string()} class="w-full py-2 ml-2 text-sm font-medium text-gray-900 rounded">{format_multiaddr(&entry.port.listen)}</label>
+                                <label for={entry.id.to_string()} class="w-full py-2 ml-2 text-sm font-medium text-gray-900 rounded">{entry.port.listen.to_string()}</label>
                             </div>
                         </li>
                     }

@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 
 use futures::Future;
-use multiaddr::Multiaddr;
 use net2::TcpBuilder;
 use std::{
     collections::HashMap,
@@ -19,6 +18,7 @@ use taxy_api::{
     auth::{Account, LoginMethod, LoginRequest, LoginResponse},
     error::Error,
     id::ShortId,
+    multiaddr::Multiaddr,
     port::PortEntry,
     site::ProxyEntry,
     subject_name::SubjectName,

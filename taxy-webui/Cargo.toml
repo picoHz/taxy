@@ -21,7 +21,6 @@ web-sys = { version = "0.3.64", features = ["HtmlSelectElement"] }
 futures = "0.3.28"
 gloo-dialogs = "0.1.1"
 gloo-timers = "0.2.6"
-multiaddr = "0.18.0"
 url = "2.4.0"
 base64 = "0.21.2"
 time = { version = "0.3.23", features = ["formatting"] }

@@ -1,8 +1,8 @@
 use self::{http::HttpPortContext, tcp::TcpPortContext};
 use crate::server::cert_list::CertList;
-use multiaddr::{Multiaddr, Protocol};
 use once_cell::sync::OnceCell;
 use taxy_api::error::Error;
+use taxy_api::multiaddr::Multiaddr;
 use taxy_api::port::{PortStatus, SocketState};
 use taxy_api::{
     port::{Port, PortEntry},
@@ -26,11 +26,10 @@ pub struct PortContext {
 
 impl PortContext {
     pub fn new(entry: PortEntry) -> Result<Self, Error> {
-        let kind = match entry.port.listen.into_iter().last() {
-            Some(Protocol::Http) | Some(Protocol::Https) => {
-                PortContextKind::Http(HttpPortContext::new(&entry)?)
-            }
-            _ => PortContextKind::Tcp(TcpPortContext::new(&entry)?),
+        let kind = if entry.port.listen.is_http() {
+            PortContextKind::Http(HttpPortContext::new(&entry)?)
+        } else {
+            PortContextKind::Tcp(TcpPortContext::new(&entry)?)
         };
         Ok(Self { entry, kind })
     }
@@ -41,7 +40,7 @@ impl PortContext {
                 id: "reserved".parse().unwrap(),
                 port: Port {
                     name: String::new(),
-                    listen: Multiaddr::empty(),
+                    listen: Multiaddr::default(),
                     opts: Default::default(),
                 },
             },

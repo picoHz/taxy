@@ -1,6 +1,5 @@
 use crate::API_ENDPOINT;
 use gloo_net::http::Request;
-use multiaddr::{Multiaddr, Protocol};
 use std::{
     collections::HashMap,
     net::{Ipv4Addr, Ipv6Addr},
@@ -38,13 +37,10 @@ const PROTOCOLS: &[(&str, &str)] = &[
 #[function_component(PortConfig)]
 pub fn port_config(props: &Props) -> Html {
     let stack = &props.port.listen;
-    let tls = stack
-        .iter()
-        .any(|p| matches!(p, Protocol::Tls) || matches!(p, Protocol::Https));
-    let http = stack
-        .iter()
-        .any(|p| matches!(p, Protocol::Http) || matches!(p, Protocol::Https));
-    let (interface, port) = extract_host_port(&props.port.listen);
+    let tls = stack.is_tls();
+    let http = stack.is_http();
+    let interface = stack.host().unwrap();
+    let port = stack.port().unwrap();
 
     let interfaces = use_state(|| vec![interface.clone()]);
     let interfaces_cloned = interfaces.clone();
@@ -152,28 +148,6 @@ pub fn port_config(props: &Props) -> Html {
     }
 }
 
-fn extract_host_port(addr: &Multiaddr) -> (String, u16) {
-    let host = addr
-        .iter()
-        .find_map(|p| match p {
-            Protocol::Dns(host) | Protocol::Dns4(host) | Protocol::Dns6(host) => {
-                Some(host.to_string())
-            }
-            Protocol::Ip4(host) => Some(host.to_string()),
-            Protocol::Ip6(host) => Some(host.to_string()),
-            _ => None,
-        })
-        .unwrap_or_else(|| "127.0.0.1".into());
-    let port = addr
-        .iter()
-        .find_map(|p| match p {
-            Protocol::Tcp(port) => Some(port),
-            _ => None,
-        })
-        .unwrap_or(8080);
-    (host, port)
-}
-
 fn get_port(
     name: &str,
     protocol: &str,
@@ -181,34 +155,31 @@ fn get_port(
     port: u16,
 ) -> Result<Port, HashMap<String, String>> {
     let mut errors = HashMap::new();
-    let mut addr = Multiaddr::empty();
+    let mut addr = String::new();
 
     let interface = interface.trim();
     if interface.is_empty() {
         errors.insert("interface".into(), "Interface is required".into());
     } else if let Ok(ip) = interface.parse::<Ipv4Addr>() {
-        addr.push(Protocol::Ip4(ip));
+        addr.push_str(&format!("/ip4/{ip}"));
     } else if let Ok(ip) = interface.parse::<Ipv6Addr>() {
-        addr.push(Protocol::Ip6(ip));
+        addr.push_str(&format!("/ip6/{ip}"));
     } else {
-        addr.push(Protocol::Dns(interface.into()));
+        addr.push_str(&format!("/dns/{interface}"));
     }
 
     match protocol {
         "tcp" => {
-            addr.push(Protocol::Tcp(port));
+            addr.push_str(&format!("/tcp/{port}"));
         }
         "tls" => {
-            addr.push(Protocol::Tcp(port));
-            addr.push(Protocol::Tls);
+            addr.push_str(&format!("/tcp/{port}/tls"));
         }
         "http" => {
-            addr.push(Protocol::Tcp(port));
-            addr.push(Protocol::Http);
+            addr.push_str(&format!("/tcp/{port}/http"));
         }
         "https" => {
-            addr.push(Protocol::Tcp(port));
-            addr.push(Protocol::Https);
+            addr.push_str(&format!("/tcp/{port}/https"));
         }
         _ => {
             errors.insert("protocol".into(), "Invalid protocol".into());
@@ -217,7 +188,7 @@ fn get_port(
 
     let opts = Port {
         name: name.trim().to_string(),
-        listen: addr,
+        listen: addr.parse().unwrap(),
         opts: PortOptions {
             tls_termination: Some(TlsTermination::default())
                 .filter(|_| protocol == "tls" || protocol == "https"),

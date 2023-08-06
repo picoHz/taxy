@@ -1,12 +1,7 @@
 use super::{tls::TlsTermination, PortContextEvent, PortStatus, SocketState};
 use crate::server::cert_list::CertList;
-use multiaddr::{Multiaddr, Protocol};
-use std::{
-    net::{IpAddr, SocketAddr},
-    sync::Arc,
-    time::SystemTime,
-};
-use taxy_api::{error::Error, site::ProxyKind};
+use std::{net::SocketAddr, sync::Arc, time::SystemTime};
+use taxy_api::{error::Error, multiaddr::Multiaddr, site::ProxyKind};
 use taxy_api::{port::PortEntry, site::ProxyEntry};
 use tokio::{
     io::AsyncWriteExt,
@@ -43,10 +38,10 @@ impl TcpPortContext {
 
         info!("initializing tcp proxy");
 
-        let listen = multiaddr_to_tcp(&entry.port.listen)?;
+        let listen = entry.port.listen.socket_addr()?;
         let tls_termination = if let Some(tls) = &entry.port.opts.tls_termination {
             Some(TlsTermination::new(tls, vec![])?)
-        } else if entry.port.listen.iter().any(|p| p == Protocol::Tls) {
+        } else if entry.port.listen.is_tls() {
             return Err(Error::TlsTerminationConfigMissing);
         } else {
             None
@@ -222,35 +217,16 @@ pub async fn start(
     Ok(())
 }
 
-fn multiaddr_to_tcp(addr: &Multiaddr) -> Result<SocketAddr, Error> {
-    let stack = addr.iter().collect::<Vec<_>>();
-    match &stack[..] {
-        [Protocol::Ip4(addr), Protocol::Tcp(port), ..] if *port > 0 => {
-            Ok(SocketAddr::new(std::net::IpAddr::V4(*addr), *port))
-        }
-        [Protocol::Ip6(addr), Protocol::Tcp(port), ..] if *port > 0 => {
-            Ok(SocketAddr::new(std::net::IpAddr::V6(*addr), *port))
-        }
-        _ => Err(Error::InvalidListeningAddress { addr: addr.clone() }),
-    }
-}
-
 fn multiaddr_to_host(addr: &Multiaddr) -> Result<Connection, Error> {
-    let stack = addr.iter().collect::<Vec<_>>();
-    let tls = stack.last() == Some(&Protocol::Tls);
-    match stack[..] {
-        [Protocol::Ip4(addr), Protocol::Tcp(port), ..] if port > 0 => Ok(Connection {
-            name: ServerName::IpAddress(IpAddr::V4(addr)),
+    let tls = addr.is_tls();
+    match (addr.ip_addr(), addr.host(), addr.port()) {
+        (Ok(addr), _, Ok(port)) => Ok(Connection {
+            name: ServerName::IpAddress(addr),
             port,
             tls,
         }),
-        [Protocol::Ip6(addr), Protocol::Tcp(port), ..] if port > 0 => Ok(Connection {
-            name: ServerName::IpAddress(IpAddr::V6(addr)),
-            port,
-            tls,
-        }),
-        [Protocol::Dns(ref name), Protocol::Tcp(port), ..] if port > 0 => Ok(Connection {
-            name: ServerName::try_from(name.as_ref())
+        (_, Ok(host), Ok(port)) => Ok(Connection {
+            name: ServerName::try_from(host.as_ref())
                 .map_err(|_| Error::InvalidServerAddress { addr: addr.clone() })?,
             port,
             tls,

@@ -1,10 +1,9 @@
-use multiaddr::Multiaddr;
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 use url::Url;
 use utoipa::ToSchema;
 
-use crate::id::ShortId;
+use crate::{id::ShortId, multiaddr::Multiaddr};
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct ErrorMessage {
@@ -33,6 +32,9 @@ pub enum Error {
 
     #[error("invalid server url: {url}")]
     InvalidServerUrl { url: Url },
+
+    #[error("invalid multiaddr: {addr}")]
+    InvalidMultiaddr { addr: String },
 
     #[error("missing TLS termination config")]
     TlsTerminationConfigMissing,

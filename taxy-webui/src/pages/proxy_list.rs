@@ -1,7 +1,6 @@
 use crate::auth::use_ensure_auth;
 use crate::pages::Route;
 use crate::store::{PortStore, ProxyStore};
-use crate::utils::convert_multiaddr;
 use crate::API_ENDPOINT;
 use gloo_net::http::Request;
 use taxy_api::id::ShortId;
@@ -98,8 +97,7 @@ pub fn proxy_list() -> Html {
                         let ports = entry.proxy.ports.iter().filter_map(|port| {
                             ports.entries.iter().find(|p| p.id == *port)
                         }).map(|entry| {
-                            let (protocol, addr) = convert_multiaddr(&entry.port.listen);
-                            format!("{}/{}", protocol, addr)
+                            format!("{}/{}", entry.port.listen.protocol_name(), entry.port.listen.socket_addr().unwrap())
                         }).collect::<Vec<_>>();
                         let ports = ports.join(", ");
 

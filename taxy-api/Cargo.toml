@@ -18,7 +18,6 @@ homepage = "https://taxy.dev/"
 base64 = "0.21.2"
 hex = "0.4.3"
 humantime-serde = "1.1.1"
-multiaddr = "0.18.0"
 serde = { version = "1.0.171", features = ["rc"] }
 serde_default = "0.1.0"
 serde_derive = "1.0.171"

@@ -1,8 +1,8 @@
 use crate::{
     id::ShortId,
+    multiaddr::Multiaddr,
     tls::{TlsState, TlsTermination},
 };
-use multiaddr::Multiaddr;
 use serde_derive::{Deserialize, Serialize};
 use std::{
     net::IpAddr,

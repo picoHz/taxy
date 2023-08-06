@@ -1,7 +1,6 @@
 use crate::auth::use_ensure_auth;
 use crate::pages::Route;
 use crate::store::PortStore;
-use crate::utils::convert_multiaddr;
 use crate::API_ENDPOINT;
 use gloo_net::http::Request;
 use std::collections::HashMap;
@@ -79,7 +78,8 @@ pub fn post_list() -> Html {
                             } else {
                                 entry.port.name.clone()
                             };
-                            let (protocol, addr) = convert_multiaddr(&entry.port.listen);
+                            let protocol = entry.port.listen.protocol_name();
+                            let addr = entry.port.listen.socket_addr().unwrap().to_string();
                             let status = ports.statuses.get(&entry.id).cloned().unwrap_or_default();
                             let (status_text, tag) = match status.state.socket {
                                 SocketState::Listening => ("Listening", "bg-green-500"),

@@ -17,7 +17,6 @@ use hyper::{
     service::service_fn,
     Response, StatusCode, Uri,
 };
-use multiaddr::{Multiaddr, Protocol};
 use std::{net::SocketAddr, sync::Arc, time::SystemTime};
 use taxy_api::error::Error;
 use taxy_api::port::{PortStatus, SocketState};
@@ -66,17 +65,12 @@ impl HttpPortContext {
         let _enter = enter.enter();
 
         info!("initializing http proxy");
-        let listen = multiaddr_to_tcp(&entry.port.listen)?;
+        let listen = entry.port.listen.socket_addr()?;
 
         let tls_termination = if let Some(tls) = &entry.port.opts.tls_termination {
             let alpn = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
             Some(TlsTermination::new(tls, alpn)?)
-        } else if entry
-            .port
-            .listen
-            .iter()
-            .any(|p| matches!(p, Protocol::Tls) || matches!(p, Protocol::Https))
-        {
+        } else if entry.port.listen.is_tls() {
             return Err(Error::TlsTerminationConfigMissing);
         } else {
             None
@@ -331,19 +325,6 @@ async fn start(
     );
 
     Ok(())
-}
-
-fn multiaddr_to_tcp(addr: &Multiaddr) -> Result<SocketAddr, Error> {
-    let stack = addr.iter().collect::<Vec<_>>();
-    match &stack[..] {
-        [Protocol::Ip4(addr), Protocol::Tcp(port), ..] if *port > 0 => {
-            Ok(SocketAddr::new(std::net::IpAddr::V4(*addr), *port))
-        }
-        [Protocol::Ip6(addr), Protocol::Tcp(port), ..] if *port > 0 => {
-            Ok(SocketAddr::new(std::net::IpAddr::V6(*addr), *port))
-        }
-        _ => Err(Error::InvalidListeningAddress { addr: addr.clone() }),
-    }
 }
 
 #[derive(Debug)]

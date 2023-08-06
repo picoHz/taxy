@@ -6,6 +6,7 @@ pub mod error;
 pub mod event;
 pub mod id;
 pub mod log;
+pub mod multiaddr;
 pub mod port;
 pub mod site;
 pub mod subject_name;

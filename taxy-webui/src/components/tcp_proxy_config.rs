@@ -1,4 +1,3 @@
-use multiaddr::{Multiaddr, Protocol};
 use std::collections::HashMap;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use taxy_api::port::UpstreamServer;
@@ -21,7 +20,12 @@ pub fn tls_proxy_config(props: &Props) -> Html {
             .proxy
             .upstream_servers
             .iter()
-            .map(|server| extract_host_port(&server.addr))
+            .map(|server| {
+                (
+                    server.addr.host().unwrap_or_default(),
+                    server.addr.port().unwrap_or(0),
+                )
+            })
             .collect::<Vec<_>>()
     });
     if upstream_servers.is_empty() {
@@ -80,8 +84,14 @@ fn get_proxy(servers: &[(String, u16)]) -> Result<TcpProxy, HashMap<String, Stri
         if host.is_empty() {
             errors.insert(format!("upstream_servers_{i}"), "Host is required".into());
         } else {
-            let addr: Multiaddr = "/dns/example.com/tcp/8080".parse().unwrap();
-            let addr = set_host_port(&addr, host, *port);
+            let addr = if let Ok(addr) = host.parse::<Ipv4Addr>() {
+                format!("/ip4/{addr}/tcp/{port}")
+            } else if let Ok(addr) = host.parse::<Ipv6Addr>() {
+                format!("/ip6/{addr}/tcp/{port}")
+            } else {
+                format!("/dns/{host}/tcp/{port}")
+            };
+            let addr = addr.parse().unwrap();
             upstream_servers.push(UpstreamServer { addr });
         }
     }
@@ -91,48 +101,4 @@ fn get_proxy(servers: &[(String, u16)]) -> Result<TcpProxy, HashMap<String, Stri
     } else {
         Err(errors)
     }
-}
-
-fn extract_host_port(addr: &Multiaddr) -> (String, u16) {
-    let host = addr
-        .iter()
-        .find_map(|p| match p {
-            Protocol::Dns(host) | Protocol::Dns4(host) | Protocol::Dns6(host) => {
-                Some(host.to_string())
-            }
-            Protocol::Ip4(host) => Some(host.to_string()),
-            Protocol::Ip6(host) => Some(host.to_string()),
-            _ => None,
-        })
-        .unwrap_or_else(|| "127.0.0.1".into());
-    let port = addr
-        .iter()
-        .find_map(|p| match p {
-            Protocol::Tcp(port) => Some(port),
-            _ => None,
-        })
-        .unwrap_or(8080);
-    (host, port)
-}
-
-fn set_host_port(addr: &Multiaddr, host: &str, port: u16) -> Multiaddr {
-    addr.iter()
-        .map(|p| match p {
-            Protocol::Dns(_)
-            | Protocol::Dns4(_)
-            | Protocol::Dns6(_)
-            | Protocol::Ip4(_)
-            | Protocol::Ip6(_) => {
-                if let Ok(addr) = host.parse::<Ipv4Addr>() {
-                    Protocol::Ip4(addr)
-                } else if let Ok(addr) = host.parse::<Ipv6Addr>() {
-                    Protocol::Ip6(addr)
-                } else {
-                    Protocol::Dns(host.into())
-                }
-            }
-            Protocol::Tcp(_) => Protocol::Tcp(port),
-            _ => p,
-        })
-        .collect()
 }

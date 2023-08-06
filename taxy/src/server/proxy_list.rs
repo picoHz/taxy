@@ -1,6 +1,5 @@
 use indexmap::map::Entry;
 use indexmap::IndexMap;
-use multiaddr::Protocol;
 use taxy_api::error::Error;
 use taxy_api::id::ShortId;
 use taxy_api::port::PortEntry;
@@ -68,10 +67,7 @@ impl ProxyList {
                         .iter()
                         .find(|p| p.id == *port)
                         .map(|port| {
-                            port.port
-                                .listen
-                                .iter()
-                                .any(|item| matches!(item, Protocol::Http | Protocol::Https))
+                            port.port.listen.is_http()
                                 ^ (matches!(entry.proxy.kind, ProxyKind::Tcp(_)))
                         })
                         .unwrap_or_default()
