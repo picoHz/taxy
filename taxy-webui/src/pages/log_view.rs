@@ -91,7 +91,7 @@ fn poll_log(
             setter.set(history.clone());
 
             if let Some(elem) = ul_ref.cast::<Element>() {
-                if elem.scroll_top() == elem.scroll_height() {
+                if elem.scroll_top() == elem.scroll_height() - elem.client_height() {
                     Timeout::new(0, move || {
                         elem.set_scroll_top(elem.scroll_height());
                     })
