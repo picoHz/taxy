@@ -38,7 +38,7 @@ humantime-serde = "1.1.1"
 hyper = { version = "0.14.27", features = ["full"] }
 include_dir = "0.7.3"
 indexmap = { version = "2.0.0", features = ["serde"] }
-instant-acme = "0.3.2"
+instant-acme = "0.4.0"
 log = "0.4.19"
 mime_guess = "2.0.4"
 network-interface = "1.0.1"
