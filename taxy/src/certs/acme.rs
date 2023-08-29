@@ -10,6 +10,7 @@ use serde_derive::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fmt,
+    sync::Arc,
     time::{Duration, SystemTime},
 };
 use taxy_api::{
@@ -28,11 +29,7 @@ pub struct AcmeEntry {
     pub id: ShortId,
     #[serde(flatten)]
     pub acme: Acme,
-    #[serde(
-        serialize_with = "serialize_account",
-        deserialize_with = "deserialize_account"
-    )]
-    pub account: Account,
+    pub account: Arc<AccountCredentials>,
 }
 
 impl fmt::Debug for AcmeEntry {
@@ -61,7 +58,7 @@ impl AcmeEntry {
         )
         .await;
 
-        let account = match account {
+        let (_, account) = match account {
             Ok(account) => account,
             Err(e) => {
                 error!("failed to create account: {}", e);
@@ -72,7 +69,7 @@ impl AcmeEntry {
         Ok(Self {
             id,
             acme: req.acme,
-            account,
+            account: Arc::new(account),
         })
     }
 
@@ -103,11 +100,7 @@ impl AcmeEntry {
 pub struct AcmeAccount {
     #[serde(flatten)]
     pub acme: Acme,
-    #[serde(
-        serialize_with = "serialize_account",
-        deserialize_with = "deserialize_account"
-    )]
-    pub account: Account,
+    pub account: Arc<AccountCredentials>,
 }
 
 impl From<AcmeEntry> for (ShortId, AcmeAccount) {
@@ -155,8 +148,10 @@ impl AcmeOrder {
                 _ => None,
             })
             .collect::<Vec<_>>();
-        let mut order = entry
-            .account
+        let account: AccountCredentials =
+            serde_json::from_str(&serde_json::to_string(&entry.account)?)?;
+        let account = Account::from_credentials(account).await?;
+        let mut order = account
             .new_order(&NewOrder {
                 identifiers: &identifiers,
             })
@@ -264,21 +259,4 @@ impl AcmeOrder {
 
         Ok(cert?)
     }
-}
-
-fn serialize_account<S>(account: &Account, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: serde::Serializer,
-{
-    use serde::ser::Serialize;
-    account.credentials().serialize(serializer)
-}
-
-fn deserialize_account<'de, D>(deserializer: D) -> Result<Account, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    use serde::de::Deserialize;
-    let creds = AccountCredentials::deserialize(deserializer)?;
-    Account::from_credentials(creds).map_err(serde::de::Error::custom)
 }
