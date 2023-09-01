@@ -1,5 +1,5 @@
+use crate::components::acme_provider::AcmeProvider;
 use crate::components::custom_acme::CustomAcme;
-use crate::components::letsencrypt::LetsEncrypt;
 use crate::pages::cert_list::{CertsQuery, CertsTab};
 use crate::{auth::use_ensure_auth, pages::Route, API_ENDPOINT};
 use gloo_net::http::Request;
@@ -13,15 +13,23 @@ use yew_router::prelude::*;
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Provider {
     LetsEncrypt,
-    LetsEncryptStaging,
+    GoogleTrustServices,
+    ZeroSSL,
     Custom,
 }
 
 impl Provider {
     fn html(&self, onchanged: Callback<Result<AcmeRequest, HashMap<String, String>>>) -> Html {
         match self {
-            Provider::LetsEncrypt => html! { <LetsEncrypt staging={false} {onchanged} /> },
-            Provider::LetsEncryptStaging => html! { <LetsEncrypt staging={true} {onchanged} /> },
+            Provider::LetsEncrypt => {
+                html! { <AcmeProvider name={self.to_string()} url={"https://acme-v02.api.letsencrypt.org/directory"} {onchanged} /> }
+            }
+            Provider::GoogleTrustServices => {
+                html! { <AcmeProvider name={self.to_string()} eab={true} url={"https://dv.acme-v02.api.pki.goog/directory"} {onchanged} /> }
+            }
+            Provider::ZeroSSL => {
+                html! { <AcmeProvider name={self.to_string()} eab={true} url={"https://acme.zerossl.com/v2/DV90"} {onchanged} /> }
+            }
             Provider::Custom => html! { <CustomAcme {onchanged} /> },
         }
     }
@@ -31,7 +39,8 @@ impl ToString for Provider {
     fn to_string(&self) -> String {
         match self {
             Provider::LetsEncrypt => "Let's Encrypt".to_string(),
-            Provider::LetsEncryptStaging => "Let's Encrypt (Staging)".to_string(),
+            Provider::GoogleTrustServices => "Google Trust Services".to_string(),
+            Provider::ZeroSSL => "ZeroSSL".to_string(),
             Provider::Custom => "Custom".to_string(),
         }
     }
@@ -39,7 +48,8 @@ impl ToString for Provider {
 
 const PROVIDERS: &[Provider] = &[
     Provider::LetsEncrypt,
-    Provider::LetsEncryptStaging,
+    Provider::GoogleTrustServices,
+    Provider::ZeroSSL,
     Provider::Custom,
 ];
 
