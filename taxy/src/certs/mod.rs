@@ -63,19 +63,9 @@ impl PartialOrd for Cert {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(
             other
-                .metadata
-                .as_ref()
-                .map(|meta| meta.is_trusted)
-                .unwrap_or_default()
-                .partial_cmp(
-                    &self
-                        .metadata
-                        .as_ref()
-                        .map(|meta| meta.is_trusted)
-                        .unwrap_or_default(),
-                )
+                .not_before
+                .partial_cmp(&self.not_before)
                 .unwrap()
-                .then_with(|| other.not_before.partial_cmp(&self.not_before).unwrap())
                 .then_with(|| self.not_after.partial_cmp(&other.not_after).unwrap())
                 .then_with(|| self.fingerprint.cmp(&other.fingerprint)),
         )

@@ -14,8 +14,6 @@ pub struct Acme {
     #[schema(example = "60")]
     #[serde(default = "default_renewal_days")]
     pub renewal_days: u64,
-    #[serde(default)]
-    pub is_trusted: bool,
 }
 
 fn default_renewal_days() -> u64 {
