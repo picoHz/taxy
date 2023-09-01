@@ -132,7 +132,6 @@ pub struct AcmeOrder {
     pub http_challenges: HashMap<String, String>,
     pub challenges: Vec<(String, String)>,
     pub order: Order,
-    pub is_trusted: bool,
 }
 
 impl AcmeOrder {
@@ -193,7 +192,6 @@ impl AcmeOrder {
             http_challenges,
             challenges,
             order,
-            is_trusted: entry.acme.is_trusted,
         })
     }
 
@@ -246,7 +244,6 @@ impl AcmeOrder {
         let metadata = CertMetadata {
             acme_id: self.id,
             created_at: SystemTime::now(),
-            is_trusted: self.is_trusted,
         };
         let metadata = serde_qs::to_string(&metadata).unwrap_or_default();
         let cert_chain_pem = format!("# {}\r\n\r\n{}", metadata, cert_chain_pem);

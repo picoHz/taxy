@@ -99,7 +99,6 @@ fn get_request(
             identifiers: vec![domain_name],
             challenge_type: "http-01".to_string(),
             renewal_days: 60,
-            is_trusted: !staging,
         },
     })
 }

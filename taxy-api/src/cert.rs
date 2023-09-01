@@ -77,8 +77,6 @@ pub struct CertMetadata {
     )]
     #[schema(value_type = u64)]
     pub created_at: SystemTime,
-    #[serde(default)]
-    pub is_trusted: bool,
 }
 
 fn serialize_created_at<S>(time: &SystemTime, serializer: S) -> Result<S::Ok, S::Error>
