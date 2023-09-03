@@ -1,7 +1,7 @@
 [package]
 name = "taxy-api"
 description = "Type definitions and API for taxy"
-version = "0.1.12"
+version = "0.1.13"
 edition = "2021"
 authors = ["picoHz <picoHz@outlook.com>"]
 keywords = ["tcp", "http", "tls", "proxy", "reverse-proxy"]
