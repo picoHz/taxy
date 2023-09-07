@@ -295,7 +295,7 @@ pub fn cert_list() -> Html {
                     <tbody>
                     { acme_list.into_iter().map(|entry| {
                         let subject_names = entry.identifiers.join(", ");
-                        let provider = entry.provider.to_string();
+                        let provider = entry.config.provider.to_string();
 
                         let id = entry.id;
                         let delete_onclick = Callback::from(move |e: MouseEvent|  {

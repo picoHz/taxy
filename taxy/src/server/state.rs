@@ -348,7 +348,7 @@ impl ServerState {
                     .unwrap_or(SystemTime::UNIX_EPOCH)
                     .elapsed()
                     .unwrap_or_default()
-                    > Duration::from_secs(60 * 60 * 24 * entry.acme.renewal_days)
+                    > Duration::from_secs(60 * 60 * 24 * entry.acme.config.renewal_days)
             })
             .collect::<Vec<_>>();
 
@@ -361,7 +361,7 @@ impl ServerState {
             let span = span!(Level::INFO, "acme", resource_id = entry.id.to_string());
             span.in_scope(|| {
                 info!(
-                    provider = entry.acme.provider,
+                    provider = entry.acme.config.provider,
                     identifiers = ?entry.acme.identifiers,
                     "starting acme request"
                 );
