@@ -35,7 +35,7 @@ pub struct AcmeEntry {
 impl fmt::Debug for AcmeEntry {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("AcmeEntry")
-            .field("provider", &self.acme.provider)
+            .field("config", &self.acme.config)
             .field("identifiers", &self.acme.identifiers)
             .finish()
     }
@@ -84,7 +84,7 @@ impl AcmeEntry {
     pub fn info(&self) -> AcmeInfo {
         AcmeInfo {
             id: self.id,
-            provider: self.acme.provider.to_string(),
+            config: self.acme.config.clone(),
             identifiers: self
                 .acme
                 .identifiers

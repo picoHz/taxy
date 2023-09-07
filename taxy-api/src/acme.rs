@@ -5,12 +5,19 @@ use utoipa::ToSchema;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, ToSchema)]
 pub struct Acme {
-    #[schema(example = "Let's Encrypt")]
-    pub provider: String,
+    #[schema(inline)]
+    #[serde(flatten)]
+    pub config: AcmeConfig,
     #[schema(value_type = [String], example = json!(["example.com"]))]
     pub identifiers: Vec<SubjectName>,
     #[schema(value_type = String, example = "http-01")]
     pub challenge_type: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct AcmeConfig {
+    #[schema(example = "Let's Encrypt")]
+    pub provider: String,
     #[schema(example = "60")]
     #[serde(default = "default_renewal_days")]
     pub renewal_days: u64,
@@ -23,8 +30,9 @@ fn default_renewal_days() -> u64 {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct AcmeInfo {
     pub id: ShortId,
-    #[schema(example = "Let's Encrypt")]
-    pub provider: String,
+    #[schema(inline)]
+    #[serde(flatten)]
+    pub config: AcmeConfig,
     #[schema(example = json!(["example.com"]))]
     pub identifiers: Vec<String>,
     #[schema(value_type = String, example = "http-01")]

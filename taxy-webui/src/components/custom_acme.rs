@@ -1,7 +1,7 @@
 use base64::{engine::general_purpose, Engine};
 use std::collections::HashMap;
 use taxy_api::{
-    acme::{Acme, AcmeRequest, ExternalAccountBinding},
+    acme::{Acme, AcmeConfig, AcmeRequest, ExternalAccountBinding},
     subject_name::SubjectName,
 };
 use url::Url;
@@ -190,10 +190,12 @@ fn get_request(
         contacts: vec![format!("mailto:{}", email)],
         eab,
         acme: Acme {
-            provider: name.trim().to_string(),
+            config: AcmeConfig {
+                provider: name.trim().to_string(),
+                renewal_days: renewal,
+            },
             identifiers: vec![domain_name],
             challenge_type: "http-01".to_string(),
-            renewal_days: renewal,
         },
     })
 }
