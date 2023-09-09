@@ -288,6 +288,9 @@ pub fn cert_list() -> Html {
                                 {"Provider"}
                             </th>
                             <th scope="col" class="px-4 py-3">
+                                {"Active"}
+                            </th>
+                            <th scope="col" class="px-4 py-3">
                                 <span class="sr-only">{"Edit"}</span>
                             </th>
                         </tr>
@@ -314,6 +317,12 @@ pub fn cert_list() -> Html {
                             navigator_cloned.push(&Route::CertLogView {id});
                         });
 
+                        let active = entry.config.active;
+                        let onchange = Callback::from(move |_: Event| {
+                            wasm_bindgen_futures::spawn_local(async move {
+                                let _ = toggle_acme(id).await;
+                            });
+                        });
 
                         html! {
                             <tr class="border-b">
@@ -322,6 +331,12 @@ pub fn cert_list() -> Html {
                                 </td>
                                 <td class="px-4 py-4">
                                     {provider}
+                                </td>
+                                <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
+                                    <label class="relative inline-flex items-center cursor-pointer mt-1">
+                                        <input {onchange} type="checkbox" checked={active} class="sr-only peer" />
+                                        <div class="w-9 h-4 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
                                 </td>
                                 <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
                                     <a class="cursor-pointer font-medium text-blue-600 hover:underline mr-5" onclick={log_onclick}>{"Log"}</a>
@@ -386,6 +401,20 @@ async fn delete_server_cert(id: ShortId) -> Result<(), gloo_net::Error> {
 
 async fn delete_acme(id: ShortId) -> Result<(), gloo_net::Error> {
     Request::delete(&format!("{API_ENDPOINT}/acme/{id}"))
+        .send()
+        .await?;
+    Ok(())
+}
+
+async fn toggle_acme(id: ShortId) -> Result<(), gloo_net::Error> {
+    let mut acme: AcmeInfo = Request::get(&format!("{API_ENDPOINT}/acme/{id}"))
+        .send()
+        .await?
+        .json()
+        .await?;
+    acme.config.active = !acme.config.active;
+    Request::put(&format!("{API_ENDPOINT}/acme/{id}"))
+        .json(&acme.config)?
         .send()
         .await?;
     Ok(())
