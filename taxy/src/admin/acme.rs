@@ -1,6 +1,9 @@
 use super::{with_state, AppState};
 use crate::server::rpc::acme::*;
-use taxy_api::{acme::AcmeRequest, id::ShortId};
+use taxy_api::{
+    acme::{AcmeConfig, AcmeRequest},
+    id::ShortId,
+};
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
@@ -22,6 +25,14 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
             .and_then(add),
     );
 
+    let api_put = warp::put().and(
+        with_state(app_state.clone())
+            .and(warp::body::json())
+            .and(warp::path::param())
+            .and(warp::path::end())
+            .and_then(put),
+    );
+
     let api_delete = warp::delete().and(
         with_state(app_state)
             .and(warp::path::param())
@@ -30,7 +41,7 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
     );
 
     warp::path("acme")
-        .and(api_delete.or(api_get).or(api_add).or(api_list))
+        .and(api_delete.or(api_get).or(api_add).or(api_put).or(api_list))
         .boxed()
 }
 
@@ -86,6 +97,34 @@ pub async fn get(state: AppState, id: ShortId) -> Result<impl Reply, Rejection> 
 )]
 pub async fn add(state: AppState, request: AcmeRequest) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(&state.call(AddAcme { request }).await?))
+}
+
+/// Update an ACME configuration.
+#[utoipa::path(
+    put,
+    path = "/api/acme/{id}",
+    params(
+        ("id" = String, Path, description = "ACME ID")
+    ),
+    request_body = AcmeConfig,
+    responses(
+        (status = 200),
+        (status = 404),
+        (status = 400, body = Error),
+        (status = 401),
+    ),
+    security(
+        ("cookie"=[])
+    )
+)]
+pub async fn put(
+    state: AppState,
+    config: AcmeConfig,
+    id: ShortId,
+) -> Result<impl Reply, Rejection> {
+    Ok(warp::reply::json(
+        &state.call(UpdateAcme { id, config }).await?,
+    ))
 }
 
 /// Delete an ACME configuration.

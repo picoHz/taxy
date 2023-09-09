@@ -1,6 +1,6 @@
 use crate::certs::acme::AcmeEntry;
 use indexmap::IndexMap;
-use taxy_api::{error::Error, id::ShortId};
+use taxy_api::{acme::AcmeConfig, error::Error, id::ShortId};
 
 #[derive(Debug, Default)]
 pub struct AcmeList {
@@ -30,6 +30,15 @@ impl AcmeList {
         } else {
             self.entries.insert(entry.id, entry);
             Ok(())
+        }
+    }
+
+    pub fn update(&mut self, id: ShortId, config: AcmeConfig) -> Result<AcmeEntry, Error> {
+        if let Some(entry) = self.entries.get_mut(&id) {
+            entry.acme.config = config;
+            Ok(entry.clone())
+        } else {
+            Err(Error::IdNotFound { id: id.to_string() })
         }
     }
 
