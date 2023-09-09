@@ -1,5 +1,6 @@
 use crate::{id::ShortId, subject_name::SubjectName};
 use base64::{engine::general_purpose, Engine as _};
+use serde_default::DefaultFromSerde;
 use serde_derive::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -14,13 +15,24 @@ pub struct Acme {
     pub challenge_type: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, DefaultFromSerde, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct AcmeConfig {
+    #[serde(default = "default_active", skip_serializing_if = "is_true")]
+    pub active: bool,
+    #[serde(default)]
     #[schema(example = "Let's Encrypt")]
     pub provider: String,
     #[schema(example = "60")]
     #[serde(default = "default_renewal_days")]
     pub renewal_days: u64,
+}
+
+fn default_active() -> bool {
+    true
+}
+
+fn is_true(b: &bool) -> bool {
+    *b
 }
 
 fn default_renewal_days() -> u64 {
