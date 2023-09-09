@@ -1,7 +1,7 @@
 use super::RpcMethod;
 use crate::{certs::acme::AcmeEntry, server::state::ServerState};
 use taxy_api::{
-    acme::{AcmeInfo, AcmeRequest},
+    acme::{AcmeConfig, AcmeInfo, AcmeRequest},
     error::Error,
     id::ShortId,
 };
@@ -47,6 +47,23 @@ impl RpcMethod for AddAcme {
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         let entry = AcmeEntry::new(state.generate_id(), self.request).await?;
         state.acmes.add(entry.clone())?;
+        state.storage.save_acme(&entry).await;
+        state.update_acmes().await;
+        Ok(())
+    }
+}
+
+pub struct UpdateAcme {
+    pub id: ShortId,
+    pub config: AcmeConfig,
+}
+
+#[async_trait::async_trait]
+impl RpcMethod for UpdateAcme {
+    type Output = ();
+
+    async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
+        let entry = state.acmes.update(self.id, self.config)?;
         state.storage.save_acme(&entry).await;
         state.update_acmes().await;
         Ok(())

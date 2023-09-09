@@ -1,6 +1,5 @@
 use super::{acme, app_info, auth, certs, config, log, ports, proxies};
-use taxy_api::acme::AcmeInfo;
-use taxy_api::acme::{AcmeRequest, ExternalAccountBinding};
+use taxy_api::acme::{AcmeConfig, AcmeInfo, AcmeRequest, ExternalAccountBinding};
 use taxy_api::app::{AdminConfig, AppConfig, AppInfo, LogConfig};
 use taxy_api::auth::{LoginMethod, LoginRequest, LoginResponse};
 use taxy_api::cert::{CertInfo, CertKind, CertMetadata, CertPostBody, SelfSignedCertRequest};
@@ -66,6 +65,7 @@ use warp::{Rejection, Reply};
         CertInfo,
         CertMetadata,
         AcmeInfo,
+        AcmeConfig,
         SelfSignedCertRequest,
         AcmeRequest,
         ExternalAccountBinding,
