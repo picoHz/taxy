@@ -335,20 +335,22 @@ impl ServerState {
         let entries = self.acmes.entries();
         let entries = entries
             .filter(|entry| {
-                self.certs
-                    .find_certs_by_acme(entry.id)
-                    .iter()
-                    .map(|cert| {
-                        cert.metadata
-                            .as_ref()
-                            .map(|meta| meta.created_at)
-                            .unwrap_or(SystemTime::UNIX_EPOCH)
-                    })
-                    .max()
-                    .unwrap_or(SystemTime::UNIX_EPOCH)
-                    .elapsed()
-                    .unwrap_or_default()
-                    > Duration::from_secs(60 * 60 * 24 * entry.acme.config.renewal_days)
+                entry.acme.config.active
+                    && self
+                        .certs
+                        .find_certs_by_acme(entry.id)
+                        .iter()
+                        .map(|cert| {
+                            cert.metadata
+                                .as_ref()
+                                .map(|meta| meta.created_at)
+                                .unwrap_or(SystemTime::UNIX_EPOCH)
+                        })
+                        .max()
+                        .unwrap_or(SystemTime::UNIX_EPOCH)
+                        .elapsed()
+                        .unwrap_or_default()
+                        > Duration::from_secs(60 * 60 * 24 * entry.acme.config.renewal_days)
             })
             .collect::<Vec<_>>();
 

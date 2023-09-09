@@ -150,6 +150,7 @@ fn get_request(
         eab,
         acme: Acme {
             config: AcmeConfig {
+                active: true,
                 provider: name.to_string(),
                 renewal_days: 60,
             },
