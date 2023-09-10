@@ -2,6 +2,7 @@ use super::acme_list::AcmeList;
 use super::cert_list::CertList;
 use super::proxy_list::ProxyList;
 use super::{listener::TcpListenerPool, port_list::PortList, rpc::RpcCallback};
+use crate::certs::acme::AcmeOrder;
 use crate::config::storage::Storage;
 use crate::log::DatabaseLayer;
 use crate::{
@@ -109,10 +110,12 @@ impl ServerState {
             ServerCommand::SetBroadcastEvents { enabled } => {
                 self.broadcast_events = enabled;
             }
-            ServerCommand::StopHttpChallenges => {
-                self.pool.set_http_challenge_addr(None);
-                self.http_challenges.clear();
-                self.pool.update(self.ports.as_mut_slice()).await;
+            ServerCommand::SetHttpChallenges { orders } => {
+                if orders.is_empty() {
+                    self.stop_http_challenges().await;
+                } else {
+                    self.continue_http_challenges(orders).await;
+                }
             }
             ServerCommand::CallMethod { id, mut arg } => {
                 let result = arg.call(self).await;
@@ -332,7 +335,7 @@ impl ServerState {
     }
 
     async fn start_http_challenges(&mut self) {
-        let entries = self.acmes.entries();
+        let entries = self.acmes.entries().cloned();
         let entries = entries
             .filter(|entry| {
                 entry.acme.config.active
@@ -358,25 +361,40 @@ impl ServerState {
             return;
         }
 
-        let mut requests = Vec::new();
-        for entry in entries {
-            let span = span!(Level::INFO, "acme", resource_id = entry.id.to_string());
-            span.in_scope(|| {
-                info!(
-                    provider = entry.acme.config.provider,
-                    identifiers = ?entry.acme.identifiers,
-                    "starting acme request"
-                );
-            });
-            match entry.request().instrument(span.clone()).await {
-                Ok(request) => requests.push(request),
-                Err(err) => {
-                    let _enter = span.enter();
-                    error!("failed to request challenge: {}", err)
+        let command = self.command_sender.clone();
+        tokio::task::spawn(async move {
+            let mut orders = Vec::new();
+            for entry in entries {
+                let span = span!(Level::INFO, "acme", resource_id = entry.id.to_string());
+                span.in_scope(|| {
+                    info!(
+                        provider = entry.acme.config.provider,
+                        identifiers = ?entry.acme.identifiers,
+                        "starting acme request"
+                    );
+                });
+                match entry.request().instrument(span.clone()).await {
+                    Ok(request) => orders.push(request),
+                    Err(err) => {
+                        let _enter = span.enter();
+                        error!("failed to request challenge: {}", err)
+                    }
                 }
             }
-        }
-        let challenges = requests
+            let _ = command
+                .send(ServerCommand::SetHttpChallenges { orders })
+                .await;
+        });
+    }
+
+    async fn stop_http_challenges(&mut self) {
+        self.http_challenges.clear();
+        self.pool.set_http_challenge_addr(None);
+        self.pool.update(self.ports.as_mut_slice()).await;
+    }
+
+    async fn continue_http_challenges(&mut self, orders: Vec<AcmeOrder>) {
+        let challenges = orders
             .iter()
             .flat_map(|req| req.http_challenges.clone())
             .collect();
@@ -388,9 +406,9 @@ impl ServerState {
 
         let command = self.command_sender.clone();
         tokio::task::spawn(async move {
-            for mut req in requests {
-                let span = span!(Level::INFO, "acme", resource_id = req.id.to_string());
-                match req.start_challenge().instrument(span.clone()).await {
+            for mut order in orders {
+                let span = span!(Level::INFO, "acme", resource_id = order.id.to_string());
+                match order.start_challenge().instrument(span.clone()).await {
                     Ok(cert) => {
                         span.in_scope(|| {
                             info!(id = cert.id().to_string(), "acme request completed");
@@ -407,7 +425,9 @@ impl ServerState {
                     }
                 }
             }
-            let _ = command.send(ServerCommand::StopHttpChallenges).await;
+            let _ = command
+                .send(ServerCommand::SetHttpChallenges { orders: vec![] })
+                .await;
         });
     }
 
