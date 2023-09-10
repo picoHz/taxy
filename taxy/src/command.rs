@@ -1,4 +1,7 @@
-use crate::{certs::Cert, server::rpc::ErasedRpcMethod};
+use crate::{
+    certs::{acme::AcmeOrder, Cert},
+    server::rpc::ErasedRpcMethod,
+};
 use std::sync::Arc;
 
 pub enum ServerCommand {
@@ -8,7 +11,9 @@ pub enum ServerCommand {
     SetBroadcastEvents {
         enabled: bool,
     },
-    StopHttpChallenges,
+    SetHttpChallenges {
+        orders: Vec<AcmeOrder>,
+    },
     CallMethod {
         id: usize,
         arg: Box<dyn ErasedRpcMethod>,
@@ -23,7 +28,10 @@ impl std::fmt::Debug for ServerCommand {
                 .debug_struct("SetBroadcastEvents")
                 .field("enabled", enabled)
                 .finish(),
-            Self::StopHttpChallenges => f.debug_struct("StopHttpChallenges").finish(),
+            Self::SetHttpChallenges { orders } => f
+                .debug_struct("SetHttpChallenges")
+                .field("orders", &orders.len())
+                .finish(),
             Self::CallMethod { id, .. } => f.debug_struct("CallMethod").field("id", id).finish(),
         }
     }
