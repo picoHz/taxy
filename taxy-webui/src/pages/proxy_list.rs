@@ -67,6 +67,9 @@ pub fn proxy_list() -> Html {
                                 {"Ports"}
                             </th>
                             <th scope="col" class="px-4 py-3">
+                                {"Active"}
+                            </th>
+                            <th scope="col" class="px-4 py-3">
                                 <span class="sr-only">{"Edit"}</span>
                             </th>
                         </tr>
@@ -94,6 +97,13 @@ pub fn proxy_list() -> Html {
                             }
                         });
 
+                        let active = entry.proxy.active;
+                        let onchange = Callback::from(move |_: Event| {
+                            wasm_bindgen_futures::spawn_local(async move {
+                                let _ = toggle_proxy(id).await;
+                            });
+                        });
+
                         let ports = entry.proxy.ports.iter().filter_map(|port| {
                             ports.entries.iter().find(|p| p.id == *port)
                         }).map(|entry| {
@@ -114,6 +124,12 @@ pub fn proxy_list() -> Html {
                                 </th>
                                 <td class="px-4 py-4">
                                     {ports}
+                                </td>
+                                <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
+                                    <label class="relative inline-flex items-center cursor-pointer mt-1">
+                                        <input {onchange} type="checkbox" checked={active} class="sr-only peer" />
+                                        <div class="w-9 h-4 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
                                 </td>
                                 <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
                                     <a class="cursor-pointer font-medium text-blue-600 hover:underline mr-5" onclick={config_onclick}>{"Edit"}</a>
@@ -157,6 +173,20 @@ async fn get_list() -> Result<Vec<ProxyEntry>, gloo_net::Error> {
 
 async fn delete_site(id: ShortId) -> Result<(), gloo_net::Error> {
     Request::delete(&format!("{API_ENDPOINT}/proxies/{id}"))
+        .send()
+        .await?;
+    Ok(())
+}
+
+async fn toggle_proxy(id: ShortId) -> Result<(), gloo_net::Error> {
+    let mut entry: ProxyEntry = Request::get(&format!("{API_ENDPOINT}/proxies/{id}"))
+        .send()
+        .await?
+        .json()
+        .await?;
+    entry.proxy.active = !entry.proxy.active;
+    Request::put(&format!("{API_ENDPOINT}/proxies/{id}"))
+        .json(&entry)?
         .send()
         .await?;
     Ok(())

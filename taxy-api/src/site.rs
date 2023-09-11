@@ -7,6 +7,8 @@ use utoipa::ToSchema;
 
 #[derive(Debug, DefaultFromSerde, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct Proxy {
+    #[serde(default = "default_active", skip_serializing_if = "is_true")]
+    pub active: bool,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub name: String,
     #[serde(default)]
@@ -15,6 +17,14 @@ pub struct Proxy {
     #[serde(flatten, default = "default_kind")]
     #[schema(inline)]
     pub kind: ProxyKind,
+}
+
+fn default_active() -> bool {
+    true
+}
+
+fn is_true(b: &bool) -> bool {
+    *b
 }
 
 fn default_kind() -> ProxyKind {
