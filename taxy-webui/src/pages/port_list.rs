@@ -67,6 +67,9 @@ pub fn post_list() -> Html {
                                 {"Status"}
                             </th>
                             <th scope="col" class="px-4 py-3">
+                                {"Active"}
+                            </th>
+                            <th scope="col" class="px-4 py-3">
                                 <span class="sr-only">{"Edit"}</span>
                             </th>
                         </tr>
@@ -83,6 +86,7 @@ pub fn post_list() -> Html {
                             let status = ports.statuses.get(&entry.id).cloned().unwrap_or_default();
                             let (status_text, tag) = match status.state.socket {
                                 SocketState::Listening => ("Listening", "bg-green-500"),
+                                SocketState::Inactive => ("Inactive", "bg-neutral-500"),
                                 SocketState::AddressAlreadyInUse => ("Address In Use", "bg-red-500"),
                                 SocketState::PermissionDenied => ("Permission Denied", "bg-red-500"),
                                 SocketState::AddressNotAvailable => ("Address Unavailable", "bg-red-500"),
@@ -119,6 +123,13 @@ pub fn post_list() -> Html {
                                 }
                             });
 
+                            let active = entry.port.active;
+                            let onchange = Callback::from(move |_: Event| {
+                                wasm_bindgen_futures::spawn_local(async move {
+                                    let _ = toggle_port(id).await;
+                                });
+                            });
+
                             html! {
                                 <tr class="border-b">
                                     <th scope="row" class="px-4 py-4 font-medium text-neutral-900 whitespace-nowrap">
@@ -134,6 +145,12 @@ pub fn post_list() -> Html {
                                         <div class="flex items-center">
                                             <div class={classes!("h-2.5", "w-2.5", "rounded-full", "bg-green-500", "mr-2", tag)}></div> {status_text}
                                         </div>
+                                    </td>
+                                    <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
+                                        <label class="relative inline-flex items-center cursor-pointer mt-1">
+                                            <input {onchange} type="checkbox" checked={active} class="sr-only peer" />
+                                            <div class="w-9 h-4 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </label>
                                     </td>
                                     <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
                                         <a class="cursor-pointer font-medium text-blue-600 hover:underline mr-5" onclick={config_onclick}>{"Edit"}</a>
@@ -185,6 +202,19 @@ async fn delete_port(id: ShortId) -> Result<(), gloo_net::Error> {
 
 async fn reset_port(id: ShortId) -> Result<(), gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/ports/{id}/reset"))
+        .send()
+        .await?;
+    Ok(())
+}
+async fn toggle_port(id: ShortId) -> Result<(), gloo_net::Error> {
+    let mut entry: PortEntry = Request::get(&format!("{API_ENDPOINT}/ports/{id}"))
+        .send()
+        .await?
+        .json()
+        .await?;
+    entry.port.active = !entry.port.active;
+    Request::put(&format!("{API_ENDPOINT}/ports/{id}"))
+        .json(&entry)?
         .send()
         .await?;
     Ok(())

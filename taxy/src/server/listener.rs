@@ -84,7 +84,9 @@ impl TcpListenerPool {
                     }
                 }
             };
-            let (listener, state) = if let Some(listener) = listeners.remove(&bind) {
+            let (listener, state) = if !ctx.entry.port.active {
+                (None, SocketState::Inactive)
+            } else if let Some(listener) = listeners.remove(&bind) {
                 (Some(listener), SocketState::Listening)
             } else {
                 span.in_scope(|| {

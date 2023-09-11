@@ -14,6 +14,7 @@ use utoipa::ToSchema;
 #[serde(rename_all = "snake_case")]
 pub enum SocketState {
     Listening,
+    Inactive,
     AddressAlreadyInUse,
     PermissionDenied,
     AddressNotAvailable,
@@ -94,12 +95,22 @@ impl From<(ShortId, Port)> for PortEntry {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct Port {
+    #[serde(default = "default_active", skip_serializing_if = "is_true")]
+    pub active: bool,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub name: String,
     #[schema(value_type = String, example = "/ip4/127.0.0.1/tcp/8080")]
     pub listen: Multiaddr,
     #[serde(flatten, default)]
     pub opts: PortOptions,
+}
+
+fn default_active() -> bool {
+    true
+}
+
+fn is_true(b: &bool) -> bool {
+    *b
 }
 
 impl From<PortEntry> for (ShortId, Port) {

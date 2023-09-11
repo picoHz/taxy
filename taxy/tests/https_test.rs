@@ -33,6 +33,7 @@ async fn https_proxy() -> anyhow::Result<()> {
         .ports(vec![PortEntry {
             id: "test".parse().unwrap(),
             port: Port {
+                active: true,
                 name: String::new(),
                 listen: proxy_port.multiaddr_https(),
                 opts: PortOptions {
@@ -128,6 +129,7 @@ async fn https_proxy_invalid_cert() -> anyhow::Result<()> {
         .ports(vec![PortEntry {
             id: "test".parse().unwrap(),
             port: Port {
+                active: true,
                 name: String::new(),
                 listen: proxy_port.multiaddr_https(),
                 opts: PortOptions {
@@ -204,6 +206,7 @@ async fn https_proxy_automatic_upgrade() -> anyhow::Result<()> {
         .ports(vec![PortEntry {
             id: "test".parse().unwrap(),
             port: Port {
+                active: true,
                 name: String::new(),
                 listen: proxy_port.multiaddr_https(),
                 opts: PortOptions {
@@ -295,6 +298,7 @@ async fn https_proxy_domain_fronting() -> anyhow::Result<()> {
         .ports(vec![PortEntry {
             id: "test".parse().unwrap(),
             port: Port {
+                active: true,
                 name: String::new(),
                 listen: proxy_port.multiaddr_https(),
                 opts: PortOptions {

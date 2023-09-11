@@ -22,6 +22,7 @@ async fn tcp_proxy() -> anyhow::Result<()> {
         .ports(vec![PortEntry {
             id: "test".parse().unwrap(),
             port: Port {
+                active: true,
                 name: String::new(),
                 listen: proxy_port.multiaddr_tcp(),
                 opts: Default::default(),
