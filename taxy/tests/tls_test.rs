@@ -31,6 +31,7 @@ async fn tls_proxy() -> anyhow::Result<()> {
         .ports(vec![PortEntry {
             id: "test".parse().unwrap(),
             port: Port {
+                active: true,
                 name: String::new(),
                 listen: proxy_port.multiaddr_tls(),
                 opts: PortOptions {
@@ -58,12 +59,9 @@ async fn tls_proxy() -> anyhow::Result<()> {
             },
         }])
         .certs(
-            [
-                (root.id, root.clone()),
-                (cert.id, cert.clone()),
-            ]
-            .into_iter()
-            .collect(),
+            [(root.id, root.clone()), (cert.id, cert.clone())]
+                .into_iter()
+                .collect(),
         )
         .build();
 

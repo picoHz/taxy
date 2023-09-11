@@ -39,6 +39,7 @@ impl PortContext {
             entry: PortEntry {
                 id: "reserved".parse().unwrap(),
                 port: Port {
+                    active: true,
                     name: String::new(),
                     listen: Multiaddr::default(),
                     opts: Default::default(),

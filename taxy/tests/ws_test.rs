@@ -35,6 +35,7 @@ async fn ws_proxy() -> anyhow::Result<()> {
         .ports(vec![PortEntry {
             id: "test".parse().unwrap(),
             port: Port {
+                active: true,
                 name: String::new(),
                 listen: proxy_port.multiaddr_http(),
                 opts: Default::default(),
