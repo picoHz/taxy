@@ -198,7 +198,9 @@ impl ServerState {
         for ctx in self.ports.as_mut_slice() {
             let proxies = entries
                 .iter()
-                .filter(|entry: &&ProxyEntry| entry.proxy.ports.contains(&ctx.entry.id))
+                .filter(|entry: &&ProxyEntry| {
+                    entry.proxy.active && entry.proxy.ports.contains(&ctx.entry.id)
+                })
                 .cloned()
                 .collect();
             let span = span!(Level::INFO, "port", resource_id = ctx.entry.id.to_string());

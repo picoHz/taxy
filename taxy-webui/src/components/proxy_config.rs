@@ -55,6 +55,13 @@ pub fn proxy_config(props: &Props) -> Html {
         (),
     );
 
+    let active = use_state(|| props.proxy.active);
+    let active_cloned = active.clone();
+    let active_onchange = Callback::from(move |event: Event| {
+        let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
+        active_cloned.set(target.checked());
+    });
+
     let name = use_state(|| props.proxy.name.clone());
     let name_onchange = Callback::from({
         let name = name.clone();
@@ -111,6 +118,7 @@ pub fn proxy_config(props: &Props) -> Html {
     let prev_entry =
         use_state::<Result<Proxy, HashMap<String, String>>, _>(|| Err(Default::default()));
     let entry = get_site(
+        *active,
         &name,
         &bound_ports,
         if *protocol == ProxyProtocol::Http {
@@ -140,6 +148,12 @@ pub fn proxy_config(props: &Props) -> Html {
 
     html! {
         <>
+            <label class="relative inline-flex items-center cursor-pointer mb-6">
+                <input onchange={active_onchange} type="checkbox" checked={*active} class="sr-only peer" />
+                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                <span class="ml-3 text-sm font-medium text-gray-900">{"Active"}</span>
+            </label>
+
             <label class="block mb-2 text-sm font-medium text-neutral-900">{"Name"}</label>
             <input type="text" value={name.to_string()} onchange={name_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="My Website" />
 
@@ -190,6 +204,7 @@ pub fn proxy_config(props: &Props) -> Html {
 }
 
 fn get_site(
+    active: bool,
     name: &str,
     ports: &[ShortId],
     kind: &Result<ProxyKind, HashMap<String, String>>,
@@ -211,6 +226,7 @@ fn get_site(
 
     if errors.is_empty() {
         Ok(Proxy {
+            active,
             name: name.trim().to_string(),
             ports,
             kind: kind.clone(),
