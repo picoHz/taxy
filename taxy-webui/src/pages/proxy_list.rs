@@ -5,7 +5,7 @@ use crate::API_ENDPOINT;
 use gloo_net::http::Request;
 use taxy_api::id::ShortId;
 use taxy_api::port::PortEntry;
-use taxy_api::site::ProxyEntry;
+use taxy_api::proxy::ProxyEntry;
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;

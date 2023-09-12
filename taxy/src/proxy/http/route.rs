@@ -3,7 +3,7 @@ use hyper::Request;
 use taxy_api::{
     error::Error,
     id::ShortId,
-    site::{ProxyEntry, ProxyKind, Route, Server},
+    proxy::{ProxyEntry, ProxyKind, Route, Server},
 };
 use tokio_rustls::rustls::ServerName;
 use url::Url;

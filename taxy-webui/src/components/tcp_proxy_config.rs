@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use taxy_api::port::UpstreamServer;
-use taxy_api::site::TcpProxy;
+use taxy_api::proxy::TcpProxy;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;

@@ -1,7 +1,7 @@
 use futures::{FutureExt, SinkExt, StreamExt};
 use taxy_api::{
     port::{Port, PortEntry},
-    site::{HttpProxy, Proxy, ProxyEntry, ProxyKind, Route},
+    proxy::{HttpProxy, Proxy, ProxyEntry, ProxyKind, Route},
 };
 use tokio::net::TcpListener;
 use tokio_stream::wrappers::TcpListenerStream;
@@ -49,7 +49,7 @@ async fn ws_proxy() -> anyhow::Result<()> {
                     vhosts: vec![proxy_port.subject_name()],
                     routes: vec![Route {
                         path: "/".into(),
-                        servers: vec![taxy_api::site::Server {
+                        servers: vec![taxy_api::proxy::Server {
                             url: listen_port.http_url("/"),
                         }],
                     }],

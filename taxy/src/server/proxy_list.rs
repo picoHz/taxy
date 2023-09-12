@@ -3,7 +3,7 @@ use indexmap::IndexMap;
 use taxy_api::error::Error;
 use taxy_api::id::ShortId;
 use taxy_api::port::PortEntry;
-use taxy_api::site::{Proxy, ProxyEntry, ProxyKind};
+use taxy_api::proxy::{Proxy, ProxyEntry, ProxyKind};
 
 #[derive(Debug, Default)]
 pub struct ProxyList {

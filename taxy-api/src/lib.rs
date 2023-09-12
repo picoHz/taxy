@@ -8,6 +8,6 @@ pub mod id;
 pub mod log;
 pub mod multiaddr;
 pub mod port;
-pub mod site;
+pub mod proxy;
 pub mod subject_name;
 pub mod tls;

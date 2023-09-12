@@ -4,7 +4,7 @@ use std::sync::Arc;
 use taxy::certs::Cert;
 use taxy_api::{
     port::{Port, PortEntry, PortOptions},
-    site::{HttpProxy, Proxy, ProxyEntry, ProxyKind, Route},
+    proxy::{HttpProxy, Proxy, ProxyEntry, ProxyKind, Route},
     tls::TlsTermination,
 };
 use warp::Filter;
@@ -51,7 +51,7 @@ async fn https_proxy() -> anyhow::Result<()> {
                     vhosts: vec![],
                     routes: vec![Route {
                         path: "/".into(),
-                        servers: vec![taxy_api::site::Server {
+                        servers: vec![taxy_api::proxy::Server {
                             url: listen_port.https_url("/"),
                         }],
                     }],
@@ -147,7 +147,7 @@ async fn https_proxy_invalid_cert() -> anyhow::Result<()> {
                     vhosts: vec![],
                     routes: vec![Route {
                         path: "/".into(),
-                        servers: vec![taxy_api::site::Server {
+                        servers: vec![taxy_api::proxy::Server {
                             url: listen_port.https_url("/"),
                         }],
                     }],
@@ -224,7 +224,7 @@ async fn https_proxy_automatic_upgrade() -> anyhow::Result<()> {
                     vhosts: vec![],
                     routes: vec![Route {
                         path: "/".into(),
-                        servers: vec![taxy_api::site::Server {
+                        servers: vec![taxy_api::proxy::Server {
                             url: listen_port.https_url("/"),
                         }],
                     }],
@@ -316,7 +316,7 @@ async fn https_proxy_domain_fronting() -> anyhow::Result<()> {
                     vhosts: vec![],
                     routes: vec![Route {
                         path: "/".into(),
-                        servers: vec![taxy_api::site::Server {
+                        servers: vec![taxy_api::proxy::Server {
                             url: listen_port.https_url("/"),
                         }],
                     }],

@@ -1,8 +1,8 @@
 use super::{tls::TlsTermination, PortContextEvent, PortStatus, SocketState};
 use crate::server::cert_list::CertList;
 use std::{net::SocketAddr, sync::Arc, time::SystemTime};
-use taxy_api::{error::Error, multiaddr::Multiaddr, site::ProxyKind};
-use taxy_api::{port::PortEntry, site::ProxyEntry};
+use taxy_api::{error::Error, multiaddr::Multiaddr, proxy::ProxyKind};
+use taxy_api::{port::PortEntry, proxy::ProxyEntry};
 use tokio::{
     io::AsyncWriteExt,
     net::{self, TcpSocket, TcpStream},

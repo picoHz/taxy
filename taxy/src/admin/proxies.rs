@@ -1,6 +1,6 @@
 use super::{with_state, AppState};
 use crate::server::rpc::proxies::*;
-use taxy_api::{id::ShortId, site::Proxy};
+use taxy_api::{id::ShortId, proxy::Proxy};
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {

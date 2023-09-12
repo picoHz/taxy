@@ -24,7 +24,7 @@ use taxy_api::app::{AppConfig, AppInfo};
 use taxy_api::error::Error;
 use taxy_api::event::ServerEvent;
 use taxy_api::id::ShortId;
-use taxy_api::site::ProxyEntry;
+use taxy_api::proxy::ProxyEntry;
 use tokio::io::AsyncBufReadExt;
 use tokio::{
     io::BufStream,

@@ -20,7 +20,7 @@ use hyper::{
 use std::{net::SocketAddr, sync::Arc, time::SystemTime};
 use taxy_api::error::Error;
 use taxy_api::port::{PortStatus, SocketState};
-use taxy_api::{port::PortEntry, site::ProxyEntry};
+use taxy_api::{port::PortEntry, proxy::ProxyEntry};
 use tokio::{
     io::{AsyncRead, AsyncWrite, BufStream},
     sync::Notify,

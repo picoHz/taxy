@@ -6,7 +6,7 @@ use gloo_net::http::Request;
 use std::collections::HashMap;
 use taxy_api::{
     id::ShortId,
-    site::{Proxy, ProxyEntry},
+    proxy::{Proxy, ProxyEntry},
 };
 use yew::prelude::*;
 use yew_router::prelude::*;

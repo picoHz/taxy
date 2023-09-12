@@ -1,6 +1,6 @@
 use taxy_api::{
     port::{Port, PortEntry, UpstreamServer},
-    site::{Proxy, ProxyEntry, ProxyKind, TcpProxy},
+    proxy::{Proxy, ProxyEntry, ProxyKind, TcpProxy},
 };
 use tokio::net::TcpListener;
 use tokio_stream::wrappers::TcpListenerStream;

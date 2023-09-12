@@ -2,7 +2,7 @@ use reqwest::Body;
 use serde_json::json;
 use taxy_api::{
     port::{Port, PortEntry},
-    site::{HttpProxy, Proxy, ProxyEntry, ProxyKind, Route},
+    proxy::{HttpProxy, Proxy, ProxyEntry, ProxyKind, Route},
 };
 
 mod common;
@@ -69,7 +69,7 @@ async fn http_proxy() -> anyhow::Result<()> {
                     vhosts: vec![proxy_port.subject_name()],
                     routes: vec![Route {
                         path: "/".into(),
-                        servers: vec![taxy_api::site::Server {
+                        servers: vec![taxy_api::proxy::Server {
                             url: server.url().parse().unwrap(),
                         }],
                     }],
@@ -151,7 +151,7 @@ async fn http_proxy_dns_error() -> anyhow::Result<()> {
                     vhosts: vec![proxy_port.subject_name()],
                     routes: vec![Route {
                         path: "/".into(),
-                        servers: vec![taxy_api::site::Server {
+                        servers: vec![taxy_api::proxy::Server {
                             url: "https://example.nodomain/".parse().unwrap(),
                         }],
                     }],

@@ -20,7 +20,7 @@ use taxy_api::{
     id::ShortId,
     multiaddr::Multiaddr,
     port::PortEntry,
-    site::ProxyEntry,
+    proxy::ProxyEntry,
     subject_name::SubjectName,
 };
 use tokio::sync::Mutex;

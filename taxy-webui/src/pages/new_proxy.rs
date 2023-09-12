@@ -3,7 +3,7 @@ use crate::{
 };
 use gloo_net::http::Request;
 use std::collections::HashMap;
-use taxy_api::site::Proxy;
+use taxy_api::proxy::Proxy;
 use yew::prelude::*;
 use yew_router::prelude::*;
 

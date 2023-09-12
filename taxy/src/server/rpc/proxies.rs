@@ -2,7 +2,7 @@ use super::RpcMethod;
 use crate::server::state::ServerState;
 use taxy_api::error::Error;
 use taxy_api::id::ShortId;
-use taxy_api::site::{Proxy, ProxyEntry};
+use taxy_api::proxy::{Proxy, ProxyEntry};
 
 pub struct GetProxyList;
 

@@ -2,7 +2,7 @@ use std::sync::Arc;
 use taxy::certs::Cert;
 use taxy_api::{
     port::{Port, PortEntry, PortOptions, UpstreamServer},
-    site::{Proxy, ProxyEntry, ProxyKind, TcpProxy},
+    proxy::{Proxy, ProxyEntry, ProxyKind, TcpProxy},
     tls::TlsTermination,
 };
 use warp::Filter;

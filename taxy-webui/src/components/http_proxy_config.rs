@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::str::FromStr;
-use taxy_api::site::{HttpProxy, Route, Server};
+use taxy_api::proxy::{HttpProxy, Route, Server};
 use taxy_api::subject_name::SubjectName;
 use url::Url;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};

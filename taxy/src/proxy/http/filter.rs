@@ -1,6 +1,6 @@
 use hyper::{Request, Uri};
 use std::str::FromStr;
-use taxy_api::site::Route;
+use taxy_api::proxy::Route;
 use taxy_api::subject_name::SubjectName;
 
 #[derive(Debug, Default)]

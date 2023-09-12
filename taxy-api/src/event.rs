@@ -3,7 +3,7 @@ use crate::app::AppConfig;
 use crate::cert::CertInfo;
 use crate::id::ShortId;
 use crate::port::PortStatus;
-use crate::{port::PortEntry, site::ProxyEntry};
+use crate::{port::PortEntry, proxy::ProxyEntry};
 use serde_derive::{Deserialize, Serialize};
 use utoipa::ToSchema;
 

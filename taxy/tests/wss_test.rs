@@ -4,7 +4,7 @@ use std::sync::Arc;
 use taxy::certs::Cert;
 use taxy_api::{
     port::{Port, PortEntry, PortOptions},
-    site::{HttpProxy, Proxy, ProxyEntry, ProxyKind, Route},
+    proxy::{HttpProxy, Proxy, ProxyEntry, ProxyKind, Route},
     tls::TlsTermination,
 };
 use tokio_rustls::rustls::{client::ClientConfig, RootCertStore};
@@ -64,7 +64,7 @@ async fn wss_proxy() -> anyhow::Result<()> {
                     vhosts: vec![],
                     routes: vec![Route {
                         path: "/".into(),
-                        servers: vec![taxy_api::site::Server {
+                        servers: vec![taxy_api::proxy::Server {
                             url: listen_port.https_url("/"),
                         }],
                     }],

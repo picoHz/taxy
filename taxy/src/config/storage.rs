@@ -6,7 +6,7 @@ use taxy_api::{
     error::Error,
     id::ShortId,
     port::PortEntry,
-    site::ProxyEntry,
+    proxy::ProxyEntry,
 };
 
 #[async_trait::async_trait]

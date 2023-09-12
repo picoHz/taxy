@@ -20,7 +20,7 @@ use taxy_api::{
 use taxy_api::{
     error::Error,
     port::{Port, PortEntry},
-    site::{Proxy, ProxyEntry},
+    proxy::{Proxy, ProxyEntry},
 };
 use tokio::fs;
 use tokio::io::AsyncReadExt;

@@ -5,7 +5,7 @@ use taxy_api::{
     cert::CertInfo,
     id::ShortId,
     port::{PortEntry, PortStatus},
-    site::ProxyEntry,
+    proxy::ProxyEntry,
 };
 use yewdux::prelude::*;
 

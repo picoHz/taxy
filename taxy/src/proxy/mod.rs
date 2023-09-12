@@ -6,7 +6,7 @@ use taxy_api::multiaddr::Multiaddr;
 use taxy_api::port::{PortStatus, SocketState};
 use taxy_api::{
     port::{Port, PortEntry},
-    site::ProxyEntry,
+    proxy::ProxyEntry,
 };
 
 pub mod http;
