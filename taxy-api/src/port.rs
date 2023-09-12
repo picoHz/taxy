@@ -32,6 +32,7 @@ pub struct PortStatus {
     )]
     #[schema(value_type = Option<u64>)]
     pub started_at: Option<SystemTime>,
+    pub ephemeral_id: Option<ShortId>,
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]

@@ -17,6 +17,7 @@ use hyper::{
     service::service_fn,
     Response, StatusCode, Uri,
 };
+use rand::Rng;
 use std::{net::SocketAddr, sync::Arc, time::SystemTime};
 use taxy_api::error::Error;
 use taxy_api::port::{PortStatus, SocketState};
@@ -96,12 +97,18 @@ impl HttpPortContext {
     }
 
     pub async fn setup(&mut self, certs: &CertList, proxies: Vec<ProxyEntry>) -> Result<(), Error> {
+        let mut bytes = [0u8; 7];
+        rand::thread_rng().fill(&mut bytes);
+        let port_id = bytes.into();
+        self.status.ephemeral_id = Some(port_id);
+
         self.shared.store(Arc::new(SharedContext {
             router: Router::new(proxies),
             header_rewriter: HeaderRewriter::builder()
                 .trust_upstream_headers(false)
                 .use_std_forwarded(true)
                 .set_via(HeaderValue::from_static("taxy"))
+                .set_port_id(port_id)
                 .build(),
         }));
 

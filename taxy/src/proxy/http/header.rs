@@ -5,12 +5,14 @@ use hyper::{
     HeaderMap,
 };
 use std::{iter, net::IpAddr};
+use taxy_api::id::ShortId;
 
 #[derive(Default, Debug)]
 pub struct HeaderRewriter {
     trust_upstream_headers: bool,
     use_std_forwarded: bool,
     set_via: Option<HeaderValue>,
+    port_id: Option<HeaderValue>,
 }
 
 impl HeaderRewriter {
@@ -111,6 +113,9 @@ impl HeaderRewriter {
         if let Some(via) = &self.set_via {
             headers.insert(VIA, via.clone());
         }
+        if let Some(id) = &self.port_id {
+            headers.insert("taxy-port-epid", id.clone());
+        }
     }
 }
 
@@ -132,6 +137,11 @@ impl Builder {
 
     pub fn set_via(mut self, via: HeaderValue) -> Self {
         self.inner.set_via = Some(via);
+        self
+    }
+
+    pub fn set_port_id(mut self, id: ShortId) -> Self {
+        self.inner.port_id = Some(HeaderValue::from_str(&id.to_string()).unwrap());
         self
     }
 
