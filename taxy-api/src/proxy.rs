@@ -52,6 +52,20 @@ pub struct HttpProxy {
     pub routes: Vec<Route>,
 }
 
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ProxyState {
+    Active,
+    Inactive,
+    #[default]
+    Unknown,
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct ProxyStatus {
+    pub state: ProxyState,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct ProxyEntry {
     pub id: ShortId,

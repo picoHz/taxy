@@ -214,6 +214,14 @@ impl ServerState {
                 });
             }
         }
+        if self.broadcast_events {
+            for ctx in self.proxies.contexts() {
+                let _ = self.br_sender.send(ServerEvent::ProxyStatusUpdated {
+                    id: ctx.entry.id,
+                    status: ctx.status,
+                });
+            }
+        }
     }
 
     pub async fn update_certs(&mut self) {

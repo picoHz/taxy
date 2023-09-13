@@ -3,27 +3,54 @@ use indexmap::IndexMap;
 use taxy_api::error::Error;
 use taxy_api::id::ShortId;
 use taxy_api::port::PortEntry;
-use taxy_api::proxy::{Proxy, ProxyEntry, ProxyKind};
+use taxy_api::proxy::{Proxy, ProxyEntry, ProxyKind, ProxyState, ProxyStatus};
+
+#[derive(Debug)]
+pub struct ProxyContext {
+    pub entry: ProxyEntry,
+    pub status: ProxyStatus,
+}
+
+impl ProxyContext {
+    fn new(entry: ProxyEntry) -> Self {
+        let state = if entry.proxy.active && !entry.proxy.ports.is_empty() {
+            ProxyState::Active
+        } else {
+            ProxyState::Inactive
+        };
+        Self {
+            entry,
+            status: ProxyStatus { state },
+        }
+    }
+}
 
 #[derive(Debug, Default)]
 pub struct ProxyList {
-    entries: IndexMap<ShortId, ProxyEntry>,
+    entries: IndexMap<ShortId, ProxyContext>,
 }
 
 impl FromIterator<ProxyEntry> for ProxyList {
     fn from_iter<I: IntoIterator<Item = ProxyEntry>>(iter: I) -> Self {
         Self {
-            entries: iter.into_iter().map(|site| (site.id, site)).collect(),
+            entries: iter
+                .into_iter()
+                .map(|proxy| (proxy.id, ProxyContext::new(proxy)))
+                .collect(),
         }
     }
 }
 
 impl ProxyList {
-    pub fn get(&self, id: ShortId) -> Option<&ProxyEntry> {
+    pub fn get(&self, id: ShortId) -> Option<&ProxyContext> {
         self.entries.get(&id)
     }
 
     pub fn entries(&self) -> impl Iterator<Item = &ProxyEntry> {
+        self.entries.values().map(|ctx| &ctx.entry)
+    }
+
+    pub fn contexts(&self) -> impl Iterator<Item = &ProxyContext> {
         self.entries.values()
     }
 
@@ -31,15 +58,15 @@ impl ProxyList {
         self.remove_deplicate_ports(&entry.proxy);
         match self.entries.entry(entry.id) {
             Entry::Occupied(mut e) => {
-                if e.get().proxy != entry.proxy {
-                    e.insert(entry);
+                if e.get().entry.proxy != entry.proxy {
+                    e.insert(ProxyContext::new(entry));
                     true
                 } else {
                     false
                 }
             }
             Entry::Vacant(inner) => {
-                inner.insert(entry);
+                inner.insert(ProxyContext::new(entry));
                 true
             }
         }
@@ -56,9 +83,10 @@ impl ProxyList {
 
     pub fn remove_incompatible_ports(&mut self, ports: &[PortEntry]) -> bool {
         let mut changed = false;
-        for entry in self.entries.values_mut() {
-            let len = entry.proxy.ports.len();
-            entry.proxy.ports = entry
+        for ctx in self.entries.values_mut() {
+            let len = ctx.entry.proxy.ports.len();
+            ctx.entry.proxy.ports = ctx
+                .entry
                 .proxy
                 .ports
                 .drain(..)
@@ -68,20 +96,21 @@ impl ProxyList {
                         .find(|p| p.id == *port)
                         .map(|port| {
                             port.port.listen.is_http()
-                                ^ (matches!(entry.proxy.kind, ProxyKind::Tcp(_)))
+                                ^ (matches!(ctx.entry.proxy.kind, ProxyKind::Tcp(_)))
                         })
                         .unwrap_or_default()
                 })
                 .collect();
-            changed |= len != entry.proxy.ports.len();
+            changed |= len != ctx.entry.proxy.ports.len();
         }
         changed
     }
 
     fn remove_deplicate_ports(&mut self, proxy: &Proxy) {
         if let ProxyKind::Tcp(_) = &proxy.kind {
-            for entry in self.entries.values_mut() {
-                entry.proxy.ports = entry
+            for ctx in self.entries.values_mut() {
+                ctx.entry.proxy.ports = ctx
+                    .entry
                     .proxy
                     .ports
                     .drain(..)

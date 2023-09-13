@@ -5,7 +5,7 @@ use taxy_api::{
     cert::CertInfo,
     id::ShortId,
     port::{PortEntry, PortStatus},
-    proxy::ProxyEntry,
+    proxy::{ProxyEntry, ProxyStatus},
 };
 use yewdux::prelude::*;
 
@@ -24,6 +24,7 @@ pub struct PortStore {
 #[derive(Default, Clone, PartialEq, Store)]
 pub struct ProxyStore {
     pub entries: Vec<ProxyEntry>,
+    pub statuses: HashMap<ShortId, ProxyStatus>,
 }
 
 #[derive(Default, Clone, PartialEq, Store)]
