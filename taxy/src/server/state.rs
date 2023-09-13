@@ -224,7 +224,9 @@ impl ServerState {
             let proxies = self
                 .proxies
                 .entries()
-                .filter(|entry: &&ProxyEntry| entry.proxy.ports.contains(&ctx.entry.id))
+                .filter(|entry: &&ProxyEntry| {
+                    entry.proxy.active && entry.proxy.ports.contains(&ctx.entry.id)
+                })
                 .cloned()
                 .collect();
             let _ = ctx.setup(&self.certs, proxies).await;
@@ -242,7 +244,9 @@ impl ServerState {
         let proxies = self
             .proxies
             .entries()
-            .filter(|entry: &&ProxyEntry| entry.proxy.ports.contains(&ctx.entry.id))
+            .filter(|entry: &&ProxyEntry| {
+                entry.proxy.active && entry.proxy.ports.contains(&ctx.entry.id)
+            })
             .cloned()
             .collect();
         let span = span!(Level::INFO, "port", resource_id = ctx.entry.id.to_string());
@@ -284,7 +288,9 @@ impl ServerState {
             let proxies = self
                 .proxies
                 .entries()
-                .filter(|entry: &&ProxyEntry| entry.proxy.ports.contains(&ctx.entry.id))
+                .filter(|entry: &&ProxyEntry| {
+                    entry.proxy.active && entry.proxy.ports.contains(&ctx.entry.id)
+                })
                 .cloned()
                 .collect();
             let span = span!(Level::INFO, "port", resource_id = ctx.entry.id.to_string());
