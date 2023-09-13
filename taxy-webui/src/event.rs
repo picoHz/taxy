@@ -51,10 +51,23 @@ pub fn use_event_subscriber() {
                                 acme.set(AcmeStore { entries });
                             }
                             ServerEvent::ProxiesUpdated { entries } => {
-                                proxies.set(ProxyStore { entries });
+                                proxies.reduce(|state| {
+                                    ProxyStore {
+                                        entries,
+                                        ..(*state).clone()
+                                    }
+                                    .into()
+                                });
                             }
                             ServerEvent::PortStatusUpdated { id, status } => {
                                 ports.reduce(|state| {
+                                    let mut cloned = (*state).clone();
+                                    cloned.statuses.insert(id, status);
+                                    cloned.into()
+                                });
+                            }
+                            ServerEvent::ProxyStatusUpdated { id, status } => {
+                                proxies.reduce(|state| {
                                     let mut cloned = (*state).clone();
                                     cloned.statuses.insert(id, status);
                                     cloned.into()

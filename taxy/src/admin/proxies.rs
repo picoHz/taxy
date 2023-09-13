@@ -15,6 +15,14 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
             .and_then(get),
     );
 
+    let api_status = warp::get().and(
+        with_state(app_state.clone())
+            .and(warp::path::param())
+            .and(warp::path("status"))
+            .and(warp::path::end())
+            .and_then(status),
+    );
+
     let api_delete = warp::delete().and(
         with_state(app_state.clone())
             .and(warp::path::param())
@@ -38,7 +46,14 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
     );
 
     warp::path("proxies")
-        .and(api_delete.or(api_get).or(api_put).or(api_list).or(api_post))
+        .and(
+            api_delete
+                .or(api_get)
+                .or(api_status)
+                .or(api_put)
+                .or(api_list)
+                .or(api_post),
+        )
         .boxed()
 }
 
@@ -78,6 +93,26 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
 )]
 pub async fn get(state: AppState, id: ShortId) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(&state.call(GetProxy { id }).await?))
+}
+
+/// Get a proxy status
+#[utoipa::path(
+    get,
+    path = "/api/proxies/{id}/status",
+    params(
+        ("id" = String, Path, description = "Proxy configuration id")
+    ),
+    responses(
+        (status = 200, body = ProxyStatus),
+        (status = 404),
+        (status = 401),
+    ),
+    security(
+        ("cookie"=[])
+    )
+)]
+pub async fn status(state: AppState, id: ShortId) -> Result<impl Reply, Rejection> {
+    Ok(warp::reply::json(&state.call(GetProxyStatus { id }).await?))
 }
 
 /// Delete a site configuration.

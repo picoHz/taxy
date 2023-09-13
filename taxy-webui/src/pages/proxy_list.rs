@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::auth::use_ensure_auth;
 use crate::pages::Route;
 use crate::store::{PortStore, ProxyStore};
@@ -5,7 +7,7 @@ use crate::API_ENDPOINT;
 use gloo_net::http::Request;
 use taxy_api::id::ShortId;
 use taxy_api::port::PortEntry;
-use taxy_api::proxy::ProxyEntry;
+use taxy_api::proxy::{ProxyEntry, ProxyState, ProxyStatus};
 use yew::prelude::*;
 use yew_router::prelude::*;
 use yewdux::prelude::*;
@@ -21,7 +23,16 @@ pub fn proxy_list() -> Html {
         move |_| {
             wasm_bindgen_futures::spawn_local(async move {
                 if let Ok(res) = get_list().await {
-                    proxies_dispatcher.set(ProxyStore { entries: res });
+                    let mut statuses = HashMap::new();
+                    for entry in &res {
+                        if let Ok(status) = get_status(entry.id).await {
+                            statuses.insert(entry.id, status);
+                        }
+                    }
+                    proxies_dispatcher.set(ProxyStore {
+                        entries: res,
+                        statuses,
+                    });
                 }
             });
         },
@@ -65,6 +76,9 @@ pub fn proxy_list() -> Html {
                             </th>
                             <th scope="col" class="px-4 py-3">
                                 {"Ports"}
+                            </th>
+                            <th scope="col" class="px-4 py-3 w-48">
+                                {"Status"}
                             </th>
                             <th scope="col" class="px-4 py-3" align="center">
                                 {"Active"}
@@ -117,6 +131,13 @@ pub fn proxy_list() -> Html {
                             entry.proxy.name.clone()
                         };
 
+                        let status = proxies.statuses.get(&entry.id).cloned().unwrap_or_default();
+                        let (status_text, tag) = match status.state {
+                            ProxyState::Active => ("Active", "bg-green-500"),
+                            ProxyState::Inactive => ("Inactive", "bg-neutral-500"),
+                            ProxyState::Unknown => ("Unknown", "bg-neutral-500"),
+                        };
+
                         html! {
                             <tr class="border-b">
                                 <th scope="row" class="px-4 py-4 font-medium text-neutral-900 whitespace-nowrap">
@@ -124,6 +145,11 @@ pub fn proxy_list() -> Html {
                                 </th>
                                 <td class="px-4 py-4">
                                     {ports}
+                                </td>
+                                <td class="px-4 py-4">
+                                    <div class="flex items-center">
+                                        <div class={classes!("h-2.5", "w-2.5", "rounded-full", "bg-green-500", "mr-2", tag)}></div> {status_text}
+                                    </div>
                                 </td>
                                 <td class="px-4 py-4 w-0 whitespace-nowrap" align="center">
                                     <label class="relative inline-flex items-center cursor-pointer mt-1">
@@ -165,6 +191,14 @@ async fn get_ports() -> Result<Vec<PortEntry>, gloo_net::Error> {
 
 async fn get_list() -> Result<Vec<ProxyEntry>, gloo_net::Error> {
     Request::get(&format!("{API_ENDPOINT}/proxies"))
+        .send()
+        .await?
+        .json()
+        .await
+}
+
+async fn get_status(id: ShortId) -> Result<ProxyStatus, gloo_net::Error> {
+    Request::get(&format!("{API_ENDPOINT}/proxies/{id}/status"))
         .send()
         .await?
         .json()
