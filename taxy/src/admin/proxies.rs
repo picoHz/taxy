@@ -57,7 +57,7 @@ pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
         .boxed()
 }
 
-/// Get the list of site configurations.
+/// Get the list of proxy configurations.
 #[utoipa::path(
     get,
     path = "/api/proxies",
@@ -75,12 +75,12 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::json(&state.call(GetProxyList).await?))
 }
 
-/// Get a site configuration.
+/// Get a proxy configuration.
 #[utoipa::path(
     get,
     path = "/api/proxies/{id}",
     params(
-        ("id" = String, Path, description = "Port configuration id")
+        ("id" = String, Path, description = "Proxy ID")
     ),
     responses(
         (status = 200, body = ProxyEntry),
@@ -95,12 +95,12 @@ pub async fn get(state: AppState, id: ShortId) -> Result<impl Reply, Rejection> 
     Ok(warp::reply::json(&state.call(GetProxy { id }).await?))
 }
 
-/// Get a proxy status
+/// Get a proxy status.
 #[utoipa::path(
     get,
     path = "/api/proxies/{id}/status",
     params(
-        ("id" = String, Path, description = "Proxy configuration id")
+        ("id" = String, Path, description = "Proxy ID")
     ),
     responses(
         (status = 200, body = ProxyStatus),
@@ -115,12 +115,12 @@ pub async fn status(state: AppState, id: ShortId) -> Result<impl Reply, Rejectio
     Ok(warp::reply::json(&state.call(GetProxyStatus { id }).await?))
 }
 
-/// Delete a site configuration.
+/// Delete a proxy configuration.
 #[utoipa::path(
     delete,
     path = "/api/proxies/{id}",
     params(
-        ("id" = String, Path, description = "Proxy configuration id")
+        ("id" = String, Path, description = "Proxy ID")
     ),
     responses(
         (status = 200),
@@ -135,7 +135,7 @@ pub async fn delete(state: AppState, id: ShortId) -> Result<impl Reply, Rejectio
     Ok(warp::reply::json(&state.call(DeleteProxy { id }).await?))
 }
 
-/// Create a new site configuration.
+/// Create a new proxy configuration.
 #[utoipa::path(
     post,
     path = "/api/proxies",
@@ -153,12 +153,12 @@ pub async fn post(state: AppState, entry: Proxy) -> Result<impl Reply, Rejection
     Ok(warp::reply::json(&state.call(AddProxy { entry }).await?))
 }
 
-/// Update a site configuration.
+/// Update a proxy configuration.
 #[utoipa::path(
     put,
     path = "/api/proxies/{id}",
     params(
-        ("id" = String, Path, description = "Proxy configuration name")
+        ("id" = String, Path, description = "Proxy ID")
     ),
     request_body = ProxyEntry,
     responses(
