@@ -91,7 +91,7 @@ pub async fn list(state: AppState) -> Result<impl Reply, Rejection> {
 /// Get a port configuration.
 #[utoipa::path(
     get,
-    path = "/api/ports/{id}/status",
+    path = "/api/ports/{id}",
     params(
         ("id" = String, Path, description = "Port configuration id")
     ),
