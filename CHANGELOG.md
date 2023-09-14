@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.3.17 - 2023-09-14
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.17 -->
+### What's Changed
+
+#### Bug Fixes
+
+- ServerState: filter out inactive proxies properly by @picoHz in https://github.com/picoHz/taxy/pull/16
+
+#### New Features
+
+- ACME: add feature to activate or inactivate periodic ACME requests by @picoHz in https://github.com/picoHz/taxy/pull/12
+- add feature to activate or inactivate proxies by @picoHz in https://github.com/picoHz/taxy/pull/13
+- add feature to activate or inactivate ports by @picoHz in https://github.com/picoHz/taxy/pull/14
+- Proxy: add status notification by @picoHz in https://github.com/picoHz/taxy/pull/17
+
+#### WebUI Updates
+
+- webui: fix table layout by @picoHz in https://github.com/picoHz/taxy/pull/15
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.16...v0.3.17
+
 ## v0.3.16 - 2023-09-03
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.16 -->
