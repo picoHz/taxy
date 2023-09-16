@@ -222,6 +222,7 @@ impl ServerState {
 
     pub async fn update_port_ctx(&mut self, ctx: PortContext) {
         if self.ports.update(ctx) {
+            self.update_ports().await;
             self.reload_proxies().await;
         }
     }
