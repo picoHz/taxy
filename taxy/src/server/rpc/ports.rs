@@ -65,7 +65,8 @@ impl RpcMethod for DeletePort {
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         if state.ports.delete(self.id) {
-            state.update_port_statuses().await;
+            state.update_ports().await;
+            state.reload_proxies().await;
             Ok(())
         } else {
             Err(Error::IdNotFound {
@@ -88,9 +89,7 @@ impl RpcMethod for AddPort {
         if state.ports.get(entry.id).is_some() {
             Err(Error::IdAlreadyExists { id: entry.id })
         } else {
-            if state.update_port_ctx(PortContext::new(entry)?).await {
-                state.update_port_statuses().await;
-            }
+            state.update_port_ctx(PortContext::new(entry)?).await;
             Ok(())
         }
     }
@@ -106,9 +105,7 @@ impl RpcMethod for UpdatePort {
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         if state.ports.get(self.entry.id).is_some() {
-            if state.update_port_ctx(PortContext::new(self.entry)?).await {
-                state.update_port_statuses().await;
-            }
+            state.update_port_ctx(PortContext::new(self.entry)?).await;
             Ok(())
         } else {
             Err(Error::IdNotFound {

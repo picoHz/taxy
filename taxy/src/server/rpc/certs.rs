@@ -43,6 +43,7 @@ impl RpcMethod for AddCert {
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state.certs.add(self.cert.clone());
         state.update_certs().await;
+        state.reload_proxies().await;
         state.storage.save_cert(&self.cert).await;
         Ok(())
     }
@@ -59,6 +60,7 @@ impl RpcMethod for DeleteCert {
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state.certs.delete(self.id)?;
         state.update_certs().await;
+        state.reload_proxies().await;
         state.storage.delete_cert(self.id).await;
         Ok(())
     }

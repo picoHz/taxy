@@ -64,6 +64,7 @@ impl RpcMethod for DeleteProxy {
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         state.proxies.delete(self.id)?;
         state.update_proxies().await;
+        state.reload_proxies().await;
         Ok(())
     }
 }
@@ -79,6 +80,7 @@ impl RpcMethod for AddProxy {
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         if state.proxies.set((state.generate_id(), self.entry).into()) {
             state.update_proxies().await;
+            state.reload_proxies().await;
         }
         Ok(())
     }
@@ -95,6 +97,7 @@ impl RpcMethod for UpdateProxy {
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
         if state.proxies.set(self.entry) {
             state.update_proxies().await;
+            state.reload_proxies().await;
         }
         Ok(())
     }
