@@ -64,14 +64,25 @@ impl ServerState {
 
         let certs = storage.load_certs().await;
         let acmes = storage.load_acmes().await;
-        let ports = storage.load_ports().await;
         let proxies = storage.load_proxies().await;
+
+        let mut ports = PortList::default();
+        for entry in storage.load_ports().await {
+            match PortContext::new(entry) {
+                Ok(ctx) => {
+                    ports.update(ctx);
+                }
+                Err(err) => {
+                    error!(?err, "failed to create proxy state");
+                }
+            };
+        }
 
         let mut this = Self {
             proxies: proxies.into_iter().collect(),
             certs: CertList::new(certs).await,
             acmes: acmes.into_iter().collect(),
-            ports: PortList::default(),
+            ports,
             storage: Box::new(storage),
             config,
             pool: TcpListenerPool::new(),
@@ -82,21 +93,11 @@ impl ServerState {
             broadcast_events: false,
         };
 
-        for entry in ports {
-            match PortContext::new(entry) {
-                Ok(ctx) => {
-                    this.update_port_ctx(ctx).await;
-                }
-                Err(err) => {
-                    error!(?err, "failed to create proxy state");
-                }
-            };
-        }
-
-        this.update_port_statuses().await;
+        this.update_ports().await;
         this.update_certs().await;
         this.update_proxies().await;
         this.update_acmes().await;
+        this.reload_proxies().await;
         this
     }
 
@@ -105,6 +106,7 @@ impl ServerState {
             ServerCommand::AddCert { cert } => {
                 self.certs.add(cert.clone());
                 self.update_certs().await;
+                self.reload_proxies().await;
                 self.storage.save_cert(&cert).await;
             }
             ServerCommand::SetBroadcastEvents { enabled } => {
@@ -169,7 +171,7 @@ impl ServerState {
         }
     }
 
-    pub async fn update_port_statuses(&mut self) {
+    pub async fn update_ports(&mut self) {
         let entries = self.ports.entries().cloned().collect::<Vec<_>>();
         self.pool.update(self.ports.as_mut_slice()).await;
         self.storage.save_ports(&entries).await;
@@ -195,25 +197,6 @@ impl ServerState {
         let _ = self.br_sender.send(ServerEvent::ProxiesUpdated {
             entries: entries.clone(),
         });
-        for ctx in self.ports.as_mut_slice() {
-            let proxies = entries
-                .iter()
-                .filter(|entry: &&ProxyEntry| {
-                    entry.proxy.active && entry.proxy.ports.contains(&ctx.entry.id)
-                })
-                .cloned()
-                .collect();
-            let span = span!(Level::INFO, "port", resource_id = ctx.entry.id.to_string());
-            if let Err(err) = ctx
-                .setup(&self.certs, proxies)
-                .instrument(span.clone())
-                .await
-            {
-                span.in_scope(|| {
-                    error!(?err, "failed to setup port");
-                });
-            }
-        }
         if self.broadcast_events {
             for ctx in self.proxies.contexts() {
                 let _ = self.br_sender.send(ServerEvent::ProxyStatusUpdated {
@@ -228,17 +211,6 @@ impl ServerState {
         let _ = self.br_sender.send(ServerEvent::CertsUpdated {
             entries: self.certs.iter().map(|item| item.info()).collect(),
         });
-        for ctx in self.ports.as_mut_slice() {
-            let proxies = self
-                .proxies
-                .entries()
-                .filter(|entry: &&ProxyEntry| {
-                    entry.proxy.active && entry.proxy.ports.contains(&ctx.entry.id)
-                })
-                .cloned()
-                .collect();
-            let _ = ctx.setup(&self.certs, proxies).await;
-        }
     }
 
     pub async fn update_acmes(&mut self) {
@@ -248,26 +220,11 @@ impl ServerState {
         self.start_http_challenges().await;
     }
 
-    pub async fn update_port_ctx(&mut self, mut ctx: PortContext) -> bool {
-        let proxies = self
-            .proxies
-            .entries()
-            .filter(|entry: &&ProxyEntry| {
-                entry.proxy.active && entry.proxy.ports.contains(&ctx.entry.id)
-            })
-            .cloned()
-            .collect();
-        let span = span!(Level::INFO, "port", resource_id = ctx.entry.id.to_string());
-        if let Err(err) = ctx
-            .setup(&self.certs, proxies)
-            .instrument(span.clone())
-            .await
-        {
-            span.in_scope(|| {
-                error!(?err, "failed to setup port");
-            });
+    pub async fn update_port(&mut self, ctx: PortContext) {
+        if self.ports.update(ctx) {
+            self.update_ports().await;
+            self.reload_proxies().await;
         }
-        self.ports.update(ctx)
     }
 
     async fn handle_http_challenge(&mut self, stream: &mut BufStream<TcpStream>) -> Option<String> {
@@ -286,12 +243,7 @@ impl ServerState {
         None
     }
 
-    pub async fn run_background_tasks(&mut self, app_info: &AppInfo) {
-        if let Err(err) = self.cleanup_old_logs(app_info).await {
-            error!(?err, "failed to cleanup old logs");
-        }
-
-        self.start_http_challenges().await;
+    pub async fn reload_proxies(&mut self) {
         for ctx in self.ports.as_mut_slice() {
             let proxies = self
                 .proxies
@@ -308,10 +260,19 @@ impl ServerState {
                 .await
             {
                 span.in_scope(|| {
-                    error!(?err, "failed to refresh port");
+                    error!(?err, "failed to setup port");
                 });
             }
         }
+    }
+
+    pub async fn run_background_tasks(&mut self, app_info: &AppInfo) {
+        if let Err(err) = self.cleanup_old_logs(app_info).await {
+            error!(?err, "failed to cleanup old logs");
+        }
+
+        self.start_http_challenges().await;
+        self.reload_proxies().await;
         self.remove_expired_certs();
     }
 
