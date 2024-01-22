@@ -137,7 +137,7 @@ cd taxy
 cargo run
 
 # In a separate terminal, start `trunk serve` for the WebUI
-cd webui
+cd taxy-webui
 trunk serve
 ```
 

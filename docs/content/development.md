@@ -29,7 +29,7 @@ To set up the development environment, follow these steps:
 3. In a separate terminal, start `trunk serve` for the WebUI:
 
    ```bash
-   cd webui
+   cd taxy-webui
    trunk serve
    ```
 
