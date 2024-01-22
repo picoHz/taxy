@@ -68,7 +68,7 @@ async fn start(args: StartArgs) -> anyhow::Result<()> {
 
     let webui_enabled = !args.no_webui;
     tokio::select! {
-        r = taxy::admin::start_admin(app_info, args.webui, channels.command, channels.callback, channels.event), if webui_enabled => {
+        r = taxy::admin::start_admin(app_info, args.webui, args.insecure_webui, channels.command, channels.callback, channels.event), if webui_enabled => {
             if let Err(err) = r {
                 error!("admin error: {}", err);
             }
