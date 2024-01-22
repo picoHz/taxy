@@ -124,6 +124,12 @@ $ taxy start
 
 Once the server is running, you can access the admin panel at [http://localhost:46492/](http://localhost:46492/).
 
+WebUI uses [`Secure`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#secure) cookie attribute to store the session token. This means that the WebUI will only work over HTTPS, unless it is served on localhost (although certain browsers, like Safari, may deny this even on localhost). If you want to use the WebUI over HTTP, you can use the `--insecure-webui` command-line option.
+
+```bash
+$ taxy start --insecure-webui
+```
+
 ## Development
 
 To contribute or develop Taxy, follow these steps:

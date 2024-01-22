@@ -64,6 +64,9 @@ pub struct StartArgs {
     #[clap(long, short, env = "TAXY_NO_WEBUI", conflicts_with = "webui")]
     pub no_webui: bool,
 
+    #[clap(long, env = "TAXY_INSECURE_WEBUI", conflicts_with = "no_webui")]
+    pub insecure_webui: bool,
+
     #[clap(long, short, value_name = "DIR", env = "TAXY_CONFIG_DIR")]
     pub config_dir: Option<PathBuf>,
 

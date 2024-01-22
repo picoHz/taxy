@@ -74,11 +74,13 @@ pub async fn login(
                 LoginResponse::Success => SessionKind::Admin,
                 _ => SessionKind::Login,
             };
+            let insecure = state.data.lock().await.insecure;
+            let secure_cookie = if insecure { "" } else { "Secure" };
             Ok(warp::reply::with_header(
                 warp::reply::json(&res),
                 "Set-Cookie",
                 &format!(
-                    "token={}; HttpOnly; SameSite=Strict; Secure",
+                    "token={}; HttpOnly; SameSite=Strict; {secure_cookie}",
                     state
                         .data
                         .lock()
