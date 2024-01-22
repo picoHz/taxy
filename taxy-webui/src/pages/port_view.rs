@@ -62,7 +62,6 @@ pub fn port_view(props: &Props) -> Html {
             return;
         }
         let navigator = navigator.clone();
-        let id = id;
         let is_loading_cloned = is_loading_cloned.clone();
         if let Ok(entry) = (*entry_cloned).clone() {
             is_loading_cloned.set(true);
