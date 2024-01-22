@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.3.18 - 2024-01-22
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.18 -->
+### What's Changed
+
+#### Bug Fixes
+
+* Fix secure flag in cookie attribute by @picoHz in https://github.com/picoHz/taxy/pull/26
+
+#### New Features
+
+* Add --insecure-webui option to taxy start command by @picoHz in https://github.com/picoHz/taxy/pull/27
+
+#### Other Changes
+
+* upgrade toml and toml_edit by @picoHz in https://github.com/picoHz/taxy/pull/18
+* Update dependencies in Cargo.toml files by @picoHz in https://github.com/picoHz/taxy/pull/23
+* Upgrade tokio-rustls to v0.25.0 by @picoHz in https://github.com/picoHz/taxy/pull/24
+* Fix clippy warnings by @picoHz in https://github.com/picoHz/taxy/pull/25
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.17...v0.3.18
+
 ## v0.3.17 - 2023-09-14
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.17 -->
