@@ -121,9 +121,8 @@ async fn start_upgrading_connection(
     if conn.scheme == Scheme::HTTPS {
         debug!(%resolved, "client: tls handshake");
         let tls = TlsConnector::from(tls_client_config);
-        let tls_stream = tls
-            .connect(conn.authority.host().try_into().unwrap(), stream)
-            .await?;
+        let host = conn.authority.host().to_string();
+        let tls_stream = tls.connect(host.try_into().unwrap(), stream).await?;
         stream = Box::new(tls_stream);
     }
 

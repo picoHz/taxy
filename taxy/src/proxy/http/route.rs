@@ -5,7 +5,7 @@ use taxy_api::{
     id::ShortId,
     proxy::{ProxyEntry, ProxyKind, Route, Server},
 };
-use tokio_rustls::rustls::ServerName;
+use tokio_rustls::rustls::pki_types::ServerName;
 use url::Url;
 use warp::host::Authority;
 
@@ -76,7 +76,7 @@ impl TryFrom<Route> for ParsedRoute {
 pub struct ParsedServer {
     pub url: Url,
     pub authority: Authority,
-    pub server_name: ServerName,
+    pub server_name: ServerName<'static>,
 }
 
 impl TryFrom<Server> for ParsedServer {
@@ -98,9 +98,11 @@ impl TryFrom<Server> for ParsedServer {
         .map_err(|_| Error::InvalidServerUrl {
             url: server.url.clone(),
         })?;
-        let server_name = ServerName::try_from(hostname).map_err(|_| Error::InvalidServerUrl {
-            url: server.url.clone(),
-        })?;
+        let server_name = ServerName::try_from(hostname)
+            .map_err(|_| Error::InvalidServerUrl {
+                url: server.url.clone(),
+            })?
+            .to_owned();
         Ok(Self {
             url: server.url,
             authority,

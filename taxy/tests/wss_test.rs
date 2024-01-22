@@ -81,11 +81,10 @@ async fn wss_proxy() -> anyhow::Result<()> {
 
     let mut root_certs = RootCertStore::empty();
     for cert in root.certified_key().unwrap().cert {
-        root_certs.add(&cert).unwrap();
+        root_certs.add(cert).unwrap();
     }
 
     let client = ClientConfig::builder()
-        .with_safe_defaults()
         .with_root_certificates(root_certs)
         .with_no_client_auth();
 

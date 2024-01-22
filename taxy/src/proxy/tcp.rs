@@ -11,8 +11,9 @@ use tokio::{
     io::{AsyncRead, AsyncWrite, BufStream},
     sync::Notify,
 };
+use tokio_rustls::rustls::pki_types::{IpAddr, ServerName};
 use tokio_rustls::{
-    rustls::{client::ServerName, ClientConfig, RootCertStore},
+    rustls::{ClientConfig, RootCertStore},
     TlsAcceptor, TlsConnector,
 };
 use tracing::{debug, error, info, span, Instrument, Level, Span};
@@ -55,7 +56,6 @@ impl TcpPortContext {
             tls_termination,
             tls_client_config: Arc::new(
                 ClientConfig::builder()
-                    .with_safe_defaults()
                     .with_root_certificates(RootCertStore::empty())
                     .with_no_client_auth(),
             ),
@@ -65,7 +65,6 @@ impl TcpPortContext {
 
     pub async fn setup(&mut self, certs: &CertList, proxies: Vec<ProxyEntry>) -> Result<(), Error> {
         let config = ClientConfig::builder()
-            .with_safe_defaults()
             .with_root_certificates(certs.root_certs().clone())
             .with_no_client_auth();
         self.tls_client_config = Arc::new(config);
@@ -174,7 +173,10 @@ pub async fn start(
 
     let name = match &conn.name {
         ServerName::DnsName(name) => name.as_ref().to_string(),
-        ServerName::IpAddress(addr) => addr.to_string(),
+        ServerName::IpAddress(addr) => match addr {
+            IpAddr::V4(addr) => std::net::Ipv4Addr::from(*addr).to_string(),
+            IpAddr::V6(addr) => std::net::Ipv6Addr::from(*addr).to_string(),
+        },
         _ => unreachable!(),
     };
     let host = format!("{}:{}", name, conn.port);
@@ -221,13 +223,14 @@ fn multiaddr_to_host(addr: &Multiaddr) -> Result<Connection, Error> {
     let tls = addr.is_tls();
     match (addr.ip_addr(), addr.host(), addr.port()) {
         (Ok(addr), _, Ok(port)) => Ok(Connection {
-            name: ServerName::IpAddress(addr),
+            name: ServerName::IpAddress(addr.into()),
             port,
             tls,
         }),
         (_, Ok(host), Ok(port)) => Ok(Connection {
-            name: ServerName::try_from(host.as_ref())
-                .map_err(|_| Error::InvalidServerAddress { addr: addr.clone() })?,
+            name: ServerName::try_from(host.as_str())
+                .map_err(|_| Error::InvalidServerAddress { addr: addr.clone() })?
+                .to_owned(),
             port,
             tls,
         }),
@@ -241,7 +244,7 @@ impl<S> IoStream for S where S: AsyncRead + AsyncWrite + Unpin + Send {}
 
 #[derive(Debug, Clone)]
 pub struct Connection {
-    pub name: ServerName,
+    pub name: ServerName<'static>,
     pub port: u16,
     pub tls: bool,
 }

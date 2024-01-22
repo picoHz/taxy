@@ -30,7 +30,7 @@ use tokio::{
     net::TcpStream,
 };
 use tokio_rustls::{
-    rustls::{client::ServerName, ClientConfig, RootCertStore},
+    rustls::{pki_types::ServerName, ClientConfig, RootCertStore},
     TlsAcceptor,
 };
 use tracing::{debug, error, info, span, Instrument, Level, Span};
@@ -83,7 +83,6 @@ impl HttpPortContext {
             tls_termination,
             tls_client_config: Arc::new(
                 ClientConfig::builder()
-                    .with_safe_defaults()
                     .with_root_certificates(RootCertStore::empty())
                     .with_no_client_auth(),
             ),
@@ -106,7 +105,6 @@ impl HttpPortContext {
         }));
 
         let config = ClientConfig::builder()
-            .with_safe_defaults()
             .with_root_certificates(certs.root_certs().clone())
             .with_no_client_auth();
         self.tls_client_config = Arc::new(config);
@@ -339,7 +337,7 @@ impl<S> IoStream for S where S: AsyncRead + AsyncWrite + Unpin + Send {}
 
 #[derive(Debug, Clone)]
 pub struct Connection {
-    pub name: ServerName,
+    pub name: ServerName<'static>,
     pub port: u16,
     pub tls: bool,
 }
