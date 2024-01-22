@@ -6,7 +6,8 @@ use std::task::{Context, Poll};
 
 use hyper::{client::connect::HttpConnector, service::Service, Uri};
 use tokio::io::{AsyncRead, AsyncWrite};
-use tokio_rustls::rustls::{ClientConfig, ServerName};
+use tokio_rustls::rustls::pki_types::ServerName;
+use tokio_rustls::rustls::ClientConfig;
 use tokio_rustls::TlsConnector;
 
 use super::stream::MaybeHttpsStream;
@@ -108,7 +109,7 @@ where
             let tcp = connecting.await.map_err(Into::into)?;
             let maybe = if is_https {
                 let tls = tls
-                    .connect(ServerName::try_from(host.as_str()).unwrap(), tcp)
+                    .connect(ServerName::try_from(host.as_str()).unwrap().to_owned(), tcp)
                     .await?;
                 MaybeHttpsStream::Https(tls)
             } else {

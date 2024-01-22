@@ -3,7 +3,7 @@ use indexmap::IndexMap;
 use log::warn;
 use std::sync::Arc;
 use taxy_api::{cert::CertKind, error::Error, id::ShortId};
-use tokio_rustls::rustls::{Certificate, RootCertStore};
+use tokio_rustls::rustls::RootCertStore;
 
 #[derive(Debug)]
 pub struct CertList {
@@ -25,8 +25,8 @@ impl CertList {
         {
             match certs {
                 Ok(certs) => {
-                    for certs in certs {
-                        if let Err(err) = system_root_certs.add(&Certificate(certs.0)) {
+                    for cert in certs {
+                        if let Err(err) = system_root_certs.add(cert) {
                             warn!("failed to add native certs: {err}");
                         }
                     }
@@ -96,7 +96,7 @@ impl CertList {
             if cert.kind == CertKind::Root {
                 if let Ok(certs) = cert.certificates() {
                     for cert in certs {
-                        if let Err(err) = root_certs.add(&cert) {
+                        if let Err(err) = root_certs.add(cert) {
                             warn!("failed to add root cert: {}", err);
                         }
                     }

@@ -11,8 +11,9 @@ use taxy_api::cert::{CertInfo, CertKind, CertMetadata};
 use taxy_api::error::Error;
 use taxy_api::id::ShortId;
 use taxy_api::subject_name::SubjectName;
+use tokio_rustls::rustls::crypto::ring::sign;
+use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use tokio_rustls::rustls::sign::CertifiedKey;
-use tokio_rustls::rustls::{sign, Certificate, PrivateKey};
 use tracing::error;
 use x509_parser::{extensions::GeneralName, time::ASN1Time};
 use x509_parser::{parse_x509_certificate, prelude::X509Certificate};
@@ -150,11 +151,14 @@ impl Cert {
         .ok();
 
         let mut chain = pem_chain.as_slice();
-        let chain =
-            rustls_pemfile::certs(&mut chain).map_err(|_| Error::FailedToReadCertificate)?;
-        let chain = chain.into_iter().map(Certificate).collect::<Vec<_>>();
+        let certs = rustls_pemfile::certs(&mut chain)
+            .map(|cert| cert.map_err(|_| Error::FailedToReadCertificate))
+            .collect::<Result<Vec<_>, _>>()?;
 
-        let der = &chain.first().ok_or(Error::FailedToReadCertificate)?.0;
+        let der = certs
+            .first()
+            .ok_or(Error::FailedToReadCertificate)?
+            .as_ref();
         let mut hasher = Sha256::new();
         hasher.update(der);
         let id = hasher.finalize();
@@ -162,7 +166,7 @@ impl Cert {
         short_id.copy_from_slice(&id[..7]);
         let fingerprint = hex::encode(id);
 
-        let parsed_chain = parse_chain(&chain)?;
+        let parsed_chain = parse_chain(&certs)?;
         let x509 = parsed_chain.first().ok_or(Error::FailedToReadCertificate)?;
         let san = x509
             .subject_alternative_name()
@@ -309,11 +313,14 @@ impl Cert {
         }
     }
 
-    pub fn certificates(&self) -> Result<Vec<Certificate>, Error> {
+    pub fn certificates(&self) -> Result<Vec<CertificateDer<'static>>, Error> {
         let mut chain = self.pem_chain.as_slice();
-        let chain =
-            rustls_pemfile::certs(&mut chain).map_err(|_| Error::FailedToReadCertificate)?;
-        Ok(chain.into_iter().map(Certificate).collect())
+        rustls_pemfile::certs(&mut chain)
+            .map(|cert| {
+                cert.map(|cert| cert.to_owned())
+                    .map_err(|_| Error::FailedToReadCertificate)
+            })
+            .collect()
     }
 
     fn certified_impl(&self) -> anyhow::Result<CertifiedKey> {
@@ -321,21 +328,22 @@ impl Cert {
         let key = key
             .decode_msg::<PrivateKeyInfo>()
             .map_err(|err| anyhow::anyhow!("{err}"))?;
-        let signing_key = sign::any_supported_type(&PrivateKey(key.private_key.to_vec()))
+        let signing_key = sign::any_supported_type(&PrivateKeyDer::Sec1(key.private_key.into()))
             .map_err(|err| anyhow::anyhow!("{err}"))?;
         let chain = self.certificates()?;
         Ok(CertifiedKey::new(chain, signing_key))
     }
 }
 
-fn parse_chain(chain: &[Certificate]) -> Result<Vec<X509Certificate>, Error> {
-    let mut certs = Vec::new();
-    for data in chain {
-        let (_, cert) =
-            parse_x509_certificate(&data.0).map_err(|_| Error::FailedToReadCertificate)?;
-        certs.push(cert);
-    }
-    Ok(certs)
+fn parse_chain<'a>(chain: &'a [CertificateDer]) -> Result<Vec<X509Certificate<'a>>, Error> {
+    chain
+        .into_iter()
+        .map(|data| {
+            parse_x509_certificate(data.as_ref())
+                .map(|(_, cert)| cert)
+                .map_err(|_| Error::FailedToReadCertificate)
+        })
+        .collect()
 }
 
 #[cfg(test)]

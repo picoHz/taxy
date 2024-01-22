@@ -50,8 +50,8 @@ pkcs8 = { version = "0.10.2", features = ["pem"] }
 rand = "0.8.5"
 rcgen = { version = "0.12.0", features = ["pem", "x509-parser"] }
 rpassword = "7.2.0"
-rustls-native-certs = "0.6.3"
-rustls-pemfile = "1.0.3"
+rustls-native-certs = "0.7.0"
+rustls-pemfile = "2.0.0"
 sailfish = "0.8.0"
 serde = { version = "1.0.171", features = ["rc"] }
 serde_default = "0.1.0"
@@ -76,8 +76,9 @@ tokio = { version = "1.29.1", features = [
     "signal",
     "io-util",
 ] }
-tokio-rustls = { version = "0.24.1", default-features = false, features = [
+tokio-rustls = { version = "0.25.0", default-features = false, features = [
     "tls12",
+    "ring",
 ] }
 tokio-stream = { version = "0.1.14", features = ["sync", "net"] }
 toml = "0.8.8"
@@ -106,7 +107,7 @@ reqwest = { version = "0.11.18", default-features = false, features = [
     "json",
     "stream",
 ] }
-tokio-tungstenite = { version = "0.20.0", features = [
+tokio-tungstenite = { version = "0.21.0", features = [
     "rustls-tls-native-roots",
 ] }
 warp = { version = "0.3.5", features = ["tls"] }

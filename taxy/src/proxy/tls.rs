@@ -58,7 +58,6 @@ impl TlsTermination {
         ));
 
         let mut server_config = ServerConfig::builder()
-            .with_safe_defaults()
             .with_no_client_auth()
             .with_cert_resolver(resolver);
         server_config
@@ -72,6 +71,7 @@ impl TlsTermination {
     }
 }
 
+#[derive(Debug)]
 pub struct CertResolver {
     certs: Vec<Arc<Cert>>,
     default_names: Vec<SubjectName>,
