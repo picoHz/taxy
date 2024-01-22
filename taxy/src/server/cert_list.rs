@@ -18,7 +18,7 @@ impl CertList {
             .into_iter()
             .map(|cert| (cert.id(), cert))
             .collect::<IndexMap<_, _>>();
-        certs.sort_unstable_by(|_, v1, _, v2| v1.cmp(v2));
+        certs.sort_unstable_by(|_, v1, _, v2| v1.partial_cmp(v2).unwrap());
 
         let mut system_root_certs = RootCertStore::empty();
         if let Ok(certs) = tokio::task::spawn_blocking(rustls_native_certs::load_native_certs).await
@@ -71,7 +71,8 @@ impl CertList {
 
     pub fn add(&mut self, cert: Arc<Cert>) {
         self.certs.insert(cert.id(), cert.clone());
-        self.certs.sort_unstable_by(|_, v1, _, v2| v1.cmp(v2));
+        self.certs
+            .sort_unstable_by(|_, v1, _, v2| v1.partial_cmp(v2).unwrap());
         if cert.kind == CertKind::Root {
             self.update_root_certs();
         }

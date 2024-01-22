@@ -73,12 +73,6 @@ impl PartialOrd for Cert {
     }
 }
 
-impl Ord for Cert {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.partial_cmp(other).unwrap()
-    }
-}
-
 impl Cert {
     pub fn id(&self) -> ShortId {
         self.id
@@ -337,7 +331,7 @@ impl Cert {
 
 fn parse_chain<'a>(chain: &'a [CertificateDer]) -> Result<Vec<X509Certificate<'a>>, Error> {
     chain
-        .into_iter()
+        .iter()
         .map(|data| {
             parse_x509_certificate(data.as_ref())
                 .map(|(_, cert)| cert)
