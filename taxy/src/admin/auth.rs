@@ -78,7 +78,7 @@ pub async fn login(
                 warp::reply::json(&res),
                 "Set-Cookie",
                 &format!(
-                    "token={}; HttpOnly; SameProxy=Strict; Secure",
+                    "token={}; HttpOnly; SameSite=Strict; Secure",
                     state
                         .data
                         .lock()
