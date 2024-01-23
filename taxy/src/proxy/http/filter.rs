@@ -31,14 +31,14 @@ impl RequestFilter {
         if !host_matched && !self.vhosts.is_empty() {
             return None;
         }
-        let path = req.uri().path().split('/').filter(|seg| !seg.is_empty());
+        let path = req.uri().path().split('/');
         let count = path
             .clone()
             .zip(self.path.iter())
             .take_while(|(a, b)| a == b)
             .count();
         if count == self.path.len() {
-            let new_path = format!("/{}", path.skip(count).collect::<Vec<_>>().join("/"));
+            let new_path = path.skip(count).collect::<Vec<_>>().join("/");
             FilterResult::new(&new_path).ok()
         } else {
             None
