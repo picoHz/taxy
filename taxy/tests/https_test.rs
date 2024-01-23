@@ -48,7 +48,7 @@ async fn https_proxy() -> anyhow::Result<()> {
             proxy: Proxy {
                 ports: vec!["test".parse().unwrap()],
                 kind: ProxyKind::Http(HttpProxy {
-                    vhosts: vec![],
+                    vhosts: vec![proxy_port.subject_name()],
                     routes: vec![Route {
                         path: "/".into(),
                         servers: vec![taxy_api::proxy::Server {
@@ -144,7 +144,7 @@ async fn https_proxy_invalid_cert() -> anyhow::Result<()> {
             proxy: Proxy {
                 ports: vec!["test".parse().unwrap()],
                 kind: ProxyKind::Http(HttpProxy {
-                    vhosts: vec![],
+                    vhosts: vec![proxy_port.subject_name()],
                     routes: vec![Route {
                         path: "/".into(),
                         servers: vec![taxy_api::proxy::Server {
@@ -221,7 +221,7 @@ async fn https_proxy_automatic_upgrade() -> anyhow::Result<()> {
             proxy: Proxy {
                 ports: vec!["test".parse().unwrap()],
                 kind: ProxyKind::Http(HttpProxy {
-                    vhosts: vec![],
+                    vhosts: vec![proxy_port.subject_name()],
                     routes: vec![Route {
                         path: "/".into(),
                         servers: vec![taxy_api::proxy::Server {
@@ -313,7 +313,7 @@ async fn https_proxy_domain_fronting() -> anyhow::Result<()> {
             proxy: Proxy {
                 ports: vec!["test".parse().unwrap()],
                 kind: ProxyKind::Http(HttpProxy {
-                    vhosts: vec![],
+                    vhosts: vec![proxy_port.subject_name()],
                     routes: vec![Route {
                         path: "/".into(),
                         servers: vec![taxy_api::proxy::Server {

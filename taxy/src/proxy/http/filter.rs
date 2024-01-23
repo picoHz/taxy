@@ -23,7 +23,11 @@ impl RequestFilter {
     }
 
     pub fn test<T>(&self, req: &Request<T>) -> Option<FilterResult> {
-        let host = req.headers().get("host").and_then(|v| v.to_str().ok());
+        let host = req
+            .uri()
+            .authority()
+            .map(|auth| auth.as_str())
+            .or_else(|| req.headers().get("host").and_then(|v| v.to_str().ok()));
         let host_matched = match host {
             Some(host) => self.vhosts.iter().any(|vhost| vhost.test(host)),
             None => false,
