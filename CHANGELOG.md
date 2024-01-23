@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.3.19 - 2024-01-23
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.19 -->
+### What's Changed
+
+#### Bug Fixes
+
+* Fix trailing slash preservation in URI by @picoHz in https://github.com/picoHz/taxy/pull/28
+* Fix vhost resolution issue in HTTP/2 by @picoHz in https://github.com/picoHz/taxy/pull/29
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.18...v0.3.19
+
 ## v0.3.18 - 2024-01-22
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.18 -->
