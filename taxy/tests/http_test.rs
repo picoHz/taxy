@@ -77,7 +77,7 @@ async fn http_proxy() -> anyhow::Result<()> {
             proxy: Proxy {
                 ports: vec!["test".parse().unwrap()],
                 kind: ProxyKind::Http(HttpProxy {
-                    vhosts: vec![proxy_port.subject_name()],
+                    vhosts: vec!["localhost".parse().unwrap()],
                     routes: vec![Route {
                         path: "/".into(),
                         servers: vec![taxy_api::proxy::Server {
@@ -171,7 +171,7 @@ async fn http_proxy_dns_error() -> anyhow::Result<()> {
             proxy: Proxy {
                 ports: vec!["test".parse().unwrap()],
                 kind: ProxyKind::Http(HttpProxy {
-                    vhosts: vec![proxy_port.subject_name()],
+                    vhosts: vec!["localhost".parse().unwrap()],
                     routes: vec![Route {
                         path: "/".into(),
                         servers: vec![taxy_api::proxy::Server {

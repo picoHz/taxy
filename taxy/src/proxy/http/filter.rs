@@ -1,7 +1,9 @@
+use hyper::header::HOST;
 use hyper::{Request, Uri};
 use std::str::FromStr;
 use taxy_api::proxy::Route;
 use taxy_api::subject_name::SubjectName;
+use warp::filters::host::Authority;
 
 #[derive(Debug, Default)]
 pub struct RequestFilter {
@@ -23,11 +25,17 @@ impl RequestFilter {
     }
 
     pub fn test<T>(&self, req: &Request<T>) -> Option<FilterResult> {
-        let host = req
-            .uri()
-            .authority()
-            .map(|auth| auth.as_str())
-            .or_else(|| req.headers().get("host").and_then(|v| v.to_str().ok()));
+        let auth = req.uri().authority();
+        let header_auth = if auth.is_none() {
+            req.headers()
+                .get(HOST)
+                .and_then(|v| v.to_str().ok())
+                .and_then(|s| Authority::from_str(s).ok())
+        } else {
+            None
+        };
+        let host = auth.or(header_auth.as_ref()).map(|a| a.host());
+
         let host_matched = match host {
             Some(host) => self.vhosts.iter().any(|vhost| vhost.test(host)),
             None => false,

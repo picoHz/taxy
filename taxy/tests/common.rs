@@ -219,10 +219,6 @@ impl TestPort {
         self.addr
     }
 
-    pub fn subject_name(&self) -> SubjectName {
-        format!("localhost:{}", self.addr.port()).parse().unwrap()
-    }
-
     pub fn multiaddr_http(&self) -> Multiaddr {
         let protocol = if self.addr.is_ipv4() { "ip4" } else { "ip6" };
         let addr = self.addr.ip();
