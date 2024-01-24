@@ -3,28 +3,48 @@
 <head>
     <title>Gateway Error</title>
     <style>
-        html, body {
+        :root {
+            --background-color: #f6f6f6;
+            --text-color: #303030;
+            --link-color: #808080;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background-color: #121212;
+                --text-color: #e0e0e0;
+                --link-color: #bbbbbb;
+            }
+        }
+
+        html {
+            background-color: var(--background-color);
+            height: 100%;
+        }
+        
+        body {
             height: 100%;
             margin: 0;
             display: flex;
             align-items: center;
             justify-content: center;
             font-family: Arial, sans-serif;
-            background-color: #f6f6f6;
         }
 
         .error-container {
             text-align: center;
         }
 
+        .error-code, .error-text {
+            color: var(--text-color);
+        }
+
         .error-code {
             font-size: 48px;
-            color: #303030;
         }
 
         .error-text {
             font-size: 24px;
-            color: #303030;
         }
 
         .powered-by {
@@ -33,7 +53,7 @@
 
         .powered-by a {
             font-size: 14px;
-            color: #808080;
+            color: var(--link-color);
         }
     </style>
 </head>
