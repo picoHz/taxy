@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.3.21 - 2024-01-24
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.21 -->
+### What's Changed
+
+#### Bug Fixes
+
+* Fix self-sign not working without existing CA certs by @picoHz in https://github.com/picoHz/taxy/pull/32
+
+#### WebUI Updates
+
+* Update port/proxy name labels by @picoHz in https://github.com/picoHz/taxy/pull/33
+* Add loading indicator to list components by @picoHz in https://github.com/picoHz/taxy/pull/34
+* Add certificate expiry date to certificate list by @picoHz in https://github.com/picoHz/taxy/pull/35
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.20...v0.3.21
+
 ## v0.3.20 - 2024-01-24
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.20 -->
