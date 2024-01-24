@@ -42,7 +42,7 @@ pub fn self_sign() -> Html {
         }
     });
 
-    let ca_cert = use_state(ShortId::new);
+    let ca_cert = use_state(|| ShortId::from_str("generate").unwrap_throw());
     let ca_cert_onchange = Callback::from({
         let ca_cert = ca_cert.clone();
         move |event: Event| {
@@ -117,7 +117,7 @@ pub fn self_sign() -> Html {
                             <option selected={*ca_cert == cert.id} value={cert.id.to_string()}>{format!("{} ({})", cert.issuer, cert.id)}</option>
                         }
                     }).collect::<Html>() }
-                    <option selected={ca_cert.to_string() == "generate"} value={"generate"}>{"Generate"}</option>
+                    <option selected={ca_cert.to_string() == "generate"} value={"generate"}>{"Generate New CA Certificate"}</option>
                 </select>
 
                 <div class="flex mt-4 items-center justify-end">
