@@ -154,7 +154,7 @@ pub fn proxy_config(props: &Props) -> Html {
                 <span class="ml-3 text-sm font-medium text-gray-900">{"Active"}</span>
             </label>
 
-            <label class="block mb-2 text-sm font-medium text-neutral-900">{"Name"}</label>
+            <label class="block mb-2 text-sm font-medium text-neutral-900">{"Friendly Name (Optional)"}</label>
             <input type="text" value={name.to_string()} onchange={name_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="My Website" />
 
             <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Protocol"}</label>
