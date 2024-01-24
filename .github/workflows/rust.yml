@@ -28,10 +28,7 @@ jobs:
             target
           key: ${{ runner.os }}-stable-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Install cargo-nextest
-        uses: baptiste0928/cargo-install@v1
-        with:
-          crate: cargo-nextest
-          args: --locked
+        uses: taiki-e/install-action@nextest
       - name: Build
         run: cargo build --all-features
       - name: Run tests
