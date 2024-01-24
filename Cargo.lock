@@ -3154,7 +3154,7 @@ dependencies = [
 
 [[package]]
 name = "taxy"
-version = "0.3.20"
+version = "0.3.21"
 dependencies = [
  "anyhow",
  "arc-swap",
