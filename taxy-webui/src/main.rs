@@ -8,6 +8,7 @@ use yew_router::prelude::*;
 mod auth;
 mod components;
 mod event;
+mod format;
 mod pages;
 mod store;
 

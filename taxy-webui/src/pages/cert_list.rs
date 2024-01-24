@@ -1,4 +1,5 @@
 use crate::auth::use_ensure_auth;
+use crate::format::format_expiry;
 use crate::pages::Route;
 use crate::store::{AcmeStore, CertStore};
 use crate::API_ENDPOINT;
@@ -165,6 +166,9 @@ pub fn cert_list() -> Html {
                                     {"Digest"}
                                 </th>
                                 <th scope="col" class="px-4 py-3">
+                                    {"Expires on"}
+                                </th>
+                                <th scope="col" class="px-4 py-3">
                                     <span class="sr-only">{"Edit"}</span>
                                 </th>
                             </tr>
@@ -206,6 +210,9 @@ pub fn cert_list() -> Html {
                                     <td class="px-4 py-4">
                                         {entry.id.to_string()}
                                     </td>
+                                    <td class="px-4 py-4">
+                                        {format_expiry(entry.not_after)}
+                                    </td>
                                     <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
                                         <a class="cursor-pointer font-medium text-blue-600 hover:underline mr-5" onclick={download_onclick}>{"Download"}</a>
                                         <a class="cursor-pointer font-medium text-red-600 hover:underline" onclick={delete_onclick}>{"Delete"}</a>
@@ -238,6 +245,9 @@ pub fn cert_list() -> Html {
                             </th>
                             <th scope="col" class="px-4 py-3">
                                 {"Private Key"}
+                            </th>
+                            <th scope="col" class="px-4 py-3">
+                                {"Expires on"}
                             </th>
                             <th scope="col" class="px-4 py-3" align="right">
                                 <span class="sr-only">{"Edit"}</span>
@@ -278,6 +288,9 @@ pub fn cert_list() -> Html {
                                     } else {
                                         {"Yes"}
                                     }
+                                </td>
+                                <td class="px-4 py-4">
+                                    {format_expiry(entry.not_after)}
                                 </td>
                                 <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
                                     <a class="cursor-pointer font-medium text-blue-600 hover:underline mr-5" onclick={download_onclick}>{"Download"}</a>
