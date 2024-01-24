@@ -25,3 +25,5 @@ url = "2.4.0"
 base64 = "0.21.2"
 time = { version = "0.3.23", features = ["formatting"] }
 gloo-events = "0.1.2"
+web-time = "1.0.0"
+fancy-duration = "0.9.1"
