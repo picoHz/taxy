@@ -21,7 +21,6 @@ use taxy_api::{
     multiaddr::Multiaddr,
     port::PortEntry,
     proxy::ProxyEntry,
-    subject_name::SubjectName,
 };
 use tokio::sync::Mutex;
 use url::Url;
