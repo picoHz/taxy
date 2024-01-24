@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.3.20 - 2024-01-24
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.20 -->
+### What's Changed
+
+#### Bug Fixes
+
+* Fix vhost matching in http proxy by @picoHz in https://github.com/picoHz/taxy/pull/31
+
+#### New Features
+
+* Support dark theme on error page by @picoHz in https://github.com/picoHz/taxy/pull/30
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.19...v0.3.20
+
 ## v0.3.19 - 2024-01-23
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.19 -->
