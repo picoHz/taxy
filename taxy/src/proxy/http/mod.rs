@@ -275,7 +275,7 @@ async fn start(
                 res.uri.path_and_query().cloned()
             };
 
-            if let Some(server) = route.servers.get(0) {
+            if let Some(server) = route.servers.first() {
                 parts.scheme = Some(match server.url.scheme() {
                     "https" | "wss" => Scheme::HTTPS,
                     _ => Scheme::HTTP,
