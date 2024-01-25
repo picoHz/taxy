@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.3.22 - 2024-01-25
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.22 -->
+### What's Changed
+
+#### Bug Fixes
+
+* Support wss scheme in target server URL by @picoHz in https://github.com/picoHz/taxy/pull/37
+* Use fmt::Display instead of fmt::Debug in logging if possible by @picoHz in https://github.com/picoHz/taxy/pull/38
+
+#### New Features
+
+* Add error logging to HTTP requests by @picoHz in https://github.com/picoHz/taxy/pull/39
+
+#### Other Changes
+
+* Improve instructions for setting up development environment by @picoHz in https://github.com/picoHz/taxy/pull/36
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.21...v0.3.22
+
 ## v0.3.21 - 2024-01-24
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.21 -->
