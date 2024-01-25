@@ -76,7 +76,7 @@ impl FileStorage {
         let mut doc = match self.load_document(path).await {
             Ok(doc) => doc,
             Err(err) => {
-                warn!(?path, ?err, "failed to load config");
+                warn!(?path, %err, "failed to load config");
                 Document::new()
             }
         };
@@ -127,7 +127,7 @@ impl FileStorage {
         let mut doc = match self.load_document(path).await {
             Ok(doc) => doc,
             Err(err) => {
-                warn!(?path, ?err, "failed to load config");
+                warn!(?path, %err, "failed to load config");
                 Document::new()
             }
         };
@@ -168,7 +168,7 @@ impl FileStorage {
         let mut doc = match self.load_document(path).await {
             Ok(doc) => doc,
             Err(err) => {
-                warn!(?path, ?err, "failed to load config");
+                warn!(?path, %err, "failed to load config");
                 Document::new()
             }
         };
@@ -187,7 +187,7 @@ impl FileStorage {
         let mut doc = match self.load_document(path).await {
             Ok(doc) => doc,
             Err(err) => {
-                warn!(?path, ?err, "failed to load config");
+                warn!(?path, %err, "failed to load config");
                 Document::new()
             }
         };
@@ -309,7 +309,7 @@ impl FileStorage {
         let accounts = match self.load_accounts().await {
             Ok(accounts) => accounts,
             Err(err) => {
-                error!(?err, "failed to load accounts: {err}");
+                error!(%err, "failed to load accounts: {err}");
                 return Err(Error::InvalidLoginCredentials);
             }
         };
@@ -317,7 +317,7 @@ impl FileStorage {
         let account = match accounts.get(name) {
             Some(account) => account,
             None => {
-                error!(?name, "account not found: {name}");
+                error!(%name, "account not found: {name}");
                 return Err(Error::InvalidLoginCredentials);
             }
         };
@@ -325,14 +325,14 @@ impl FileStorage {
         let parsed_hash = match PasswordHash::new(&account.password) {
             Ok(parsed_hash) => parsed_hash,
             Err(err) => {
-                error!(?err, "failed to parse password hash: {err}");
+                error!(%err, "failed to parse password hash: {err}");
                 return Err(Error::InvalidLoginCredentials);
             }
         };
 
         let argon2 = Argon2::default();
         if let Err(err) = argon2.verify_password(password.as_bytes(), &parsed_hash) {
-            error!(?err, "failed to verify password: {err}");
+            error!(%err, "failed to verify password: {err}");
             return Err(Error::InvalidLoginCredentials);
         }
 
@@ -347,7 +347,7 @@ impl FileStorage {
         let accounts = match self.load_accounts().await {
             Ok(accounts) => accounts,
             Err(err) => {
-                error!(?err, "failed to load accounts: {err}");
+                error!(%err, "failed to load accounts: {err}");
                 return Err(Error::InvalidLoginCredentials);
             }
         };
@@ -355,7 +355,7 @@ impl FileStorage {
         let account = match accounts.get(name) {
             Some(account) => account,
             None => {
-                error!(?name, "account not found: {name}");
+                error!(%name, "account not found: {name}");
                 return Err(Error::InvalidLoginCredentials);
             }
         };
@@ -365,7 +365,7 @@ impl FileStorage {
                 .to_bytes()
                 .map_err(|_| Error::InvalidLoginCredentials)?,
             None => {
-                error!(?name, "totp not found: {name}");
+                error!(%name, "totp not found: {name}");
                 return Err(Error::InvalidLoginCredentials);
             }
         };

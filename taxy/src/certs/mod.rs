@@ -222,7 +222,7 @@ impl Cert {
         let cert = match rcgen::Certificate::from_params(params) {
             Ok(cert) => cert,
             Err(err) => {
-                error!(?err);
+                error!(%err);
                 return Err(Error::FailedToGerateSelfSignedCertificate);
             }
         };
@@ -249,7 +249,7 @@ impl Cert {
         let ca_cert = match rcgen::Certificate::from_params(ca_params) {
             Ok(cert) => cert,
             Err(err) => {
-                error!(?err);
+                error!(%err);
                 return Err(Error::FailedToGerateSelfSignedCertificate);
             }
         };
@@ -278,7 +278,7 @@ impl Cert {
         let cert = match rcgen::Certificate::from_params(params) {
             Ok(cert) => cert,
             Err(err) => {
-                error!(?err);
+                error!(%err);
                 return Err(Error::FailedToGerateSelfSignedCertificate);
             }
         };
@@ -301,7 +301,7 @@ impl Cert {
         match self.certified_impl() {
             Ok(certified) => Ok(certified),
             Err(err) => {
-                error!(?err);
+                error!(%err);
                 Err(Error::FailedToReadPrivateKey)
             }
         }

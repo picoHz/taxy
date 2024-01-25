@@ -73,7 +73,7 @@ impl ServerState {
                     ports.update(ctx);
                 }
                 Err(err) => {
-                    error!(?err, "failed to create proxy state");
+                    error!(%err, "failed to create proxy state");
                 }
             };
         }
@@ -260,7 +260,7 @@ impl ServerState {
                 .await
             {
                 span.in_scope(|| {
-                    error!(?err, "failed to setup port");
+                    error!(%err, "failed to setup port");
                 });
             }
         }
@@ -268,7 +268,7 @@ impl ServerState {
 
     pub async fn run_background_tasks(&mut self, app_info: &AppInfo) {
         if let Err(err) = self.cleanup_old_logs(app_info).await {
-            error!(?err, "failed to cleanup old logs");
+            error!(%err, "failed to cleanup old logs");
         }
 
         self.start_http_challenges().await;
@@ -292,7 +292,7 @@ impl ServerState {
         }
         for id in &removing_items {
             if let Err(err) = self.certs.delete(*id) {
-                error!(?err, "failed to delete cert");
+                error!(%err, "failed to delete cert");
             }
         }
         if !removing_items.is_empty() {
@@ -398,7 +398,7 @@ impl ServerState {
                     }
                     Err(err) => {
                         let _enter = span.enter();
-                        error!(?err, "failed to start challenge");
+                        error!(%err, "failed to start challenge");
                     }
                 }
             }

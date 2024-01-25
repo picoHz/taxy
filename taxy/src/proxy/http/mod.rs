@@ -60,7 +60,12 @@ pub struct HttpPortContext {
 
 impl HttpPortContext {
     pub fn new(entry: &PortEntry) -> Result<Self, Error> {
-        let span = span!(Level::INFO, "proxy", resource_id = entry.id.to_string(), listen = ?entry.port.listen);
+        let span = span!(
+            Level::INFO,
+            "proxy",
+            resource_id = entry.id.to_string(),
+            listen = %entry.port.listen
+        );
         let enter = span.clone();
         let _enter = enter.enter();
 
