@@ -266,7 +266,7 @@ async fn start(
 
         let req = if domain_fronting {
             Err(ProxyError::DomainFrontingDetected)
-        } else if let Some((route, res, _)) = shared.router.get_route(&req) {
+        } else if let Some((route, res, resource_id)) = shared.router.get_route(&req) {
             let mut parts = Parts::default();
 
             parts.path_and_query = if let Some(query) = req.uri().query() {
@@ -292,19 +292,20 @@ async fn start(
             }
 
             info!(target: "taxy::access_log", remote = %remote, %local, action, target = %req.uri());
+            let span: Span = span!(Level::INFO, "http", %resource_id, remote = %remote, %local, action, target = %req.uri());
 
             shared
                 .header_rewriter
                 .pre_process(req.headers_mut(), remote.ip());
             shared.header_rewriter.post_process(req.headers_mut());
-            Ok(req)
+            Ok((req, span))
         } else {
             Err(ProxyError::NoRouteFound)
         };
 
         async move {
             map_response(match req {
-                Ok(req) => pool.request(req).await,
+                Ok((req, span)) => pool.request(req).instrument(span).await,
                 Err(err) => Err(err.into()),
             })
         }

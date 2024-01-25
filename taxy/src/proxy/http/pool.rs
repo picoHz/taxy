@@ -14,7 +14,7 @@ use hyper::{
 use std::sync::Arc;
 use tokio::net::{self, TcpSocket};
 use tokio_rustls::{rustls::ClientConfig, TlsConnector};
-use tracing::debug;
+use tracing::{debug, error};
 use warp::host::Authority;
 
 pub struct ConnectionPool {
@@ -52,6 +52,7 @@ impl ConnectionPool {
             .unwrap_or_default();
 
         *req.version_mut() = hyper::Version::HTTP_11;
+
         let result: Result<_, anyhow::Error> =
             self.client.request(req).await.map_err(|err| err.into());
 
@@ -85,6 +86,10 @@ impl ConnectionPool {
 
             Response::from_parts(parts, body)
         });
+
+        if let Err(err) = &result {
+            error!(%err);
+        }
 
         map_response(result)
     }
