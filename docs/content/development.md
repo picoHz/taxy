@@ -16,46 +16,33 @@ Before getting started, make sure to install the following prerequisites:
 
 # Development Setup
 
-To set up the development environment, follow these steps:
+```bash
+# Clone the repository
+git clone https://github.com/picoHz/taxy
 
-1. Clone the repository: `git clone https://github.com/picoHz/taxy`
-2. Start the server:
+# Start the server
+cd taxy
+cargo run
 
-   ```bash
-   cd taxy
-   cargo run
-   ```
-
-3. In a separate terminal, start `trunk serve` for the WebUI:
-
-   ```bash
-   cd taxy-webui
-   trunk serve
-   ```
+# In a separate terminal, start `trunk serve` for the WebUI
+cd taxy-webui
+trunk serve
+```
 
 # Building for Release
 
-To build the project for a release, execute the following steps:
+```bash
+# Build the WebUI
+cd taxy/taxy-webui
+trunk build --release
 
-1. Build the WebUI:
+# Build the Server
+cd ..
+cargo build --release
 
-   ```bash
-   cd taxy/taxy-webui
-   trunk build --release
-   ```
-
-2. In a separate terminal, build the project:
-
-   ```bash
-   cd ..
-   cargo build --release
-   ```
-
-3. Start the server:
-
-   ```bash
-   target/release/taxy start
-   ```
+# Start the server
+target/release/taxy start
+```
 
 # Gitpod
 
