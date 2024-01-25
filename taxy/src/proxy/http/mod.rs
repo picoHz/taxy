@@ -270,13 +270,10 @@ async fn start(
                 res.uri.path_and_query().cloned()
             };
 
-            if !route.servers.is_empty() {
-                let server = &route.servers[0];
-
-                parts.scheme = Some(if server.url.scheme() == "http" {
-                    Scheme::HTTP
-                } else {
-                    Scheme::HTTPS
+            if let Some(server) = route.servers.get(0) {
+                parts.scheme = Some(match server.url.scheme() {
+                    "https" | "wss" => Scheme::HTTPS,
+                    _ => Scheme::HTTP,
                 });
 
                 let authority = server.authority.clone();
