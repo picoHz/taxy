@@ -10,7 +10,7 @@ sort_by = "weight"
 
 # Key Features
 
-- Built with Rust for optimal performance and safety, powered by tokio and hyper
+- Built with Rust for optimal performance and safety, powered by [tokio](https://tokio.rs/) and [hyper](https://hyper.rs/)
 - Supports TCP, TLS, HTTP1, and HTTP2, including HTTP upgrading and WebSocket functionality
 - Easily deployable single binary with a built-in WebUI
 - Allows live configuration updates via a REST API without restarting the service
@@ -121,9 +121,9 @@ $ taxy start
 
 Once the server is running, you can access the admin panel at [http://localhost:46492/](http://localhost:46492/).
 
-> If you run the server on a remote machine, it is strongly recommended to use SSH port forwarding to access the admin panel instead of exposing the port to the public, as the connection is plain HTTP and not encrypted.
+> To ensure the security of your server's admin panel, it is highly recommended to employ SSH port forwarding when running the server on a remote machine. This practice prevents exposing the admin panel's port to the public, as the connection is in plain HTTP and lacks encryption. However, you have the option to serve the admin panel via HTTPS using Taxy later on.
 >
-> You can serve the admin panel via HTTPS by using Taxy itself later on.
+> Please note that the WebUI relies on the Secure cookie attribute to store the session token. Consequently, the WebUI will only function over HTTPS unless it's being served on localhost. It's worth mentioning that some browsers, such as Safari, may still block it even on localhost. If you intend to use the WebUI over HTTP, you can utilize the `--insecure-webui` command-line option.
 
 # Tutorial
 
