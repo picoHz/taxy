@@ -150,15 +150,15 @@ pub fn proxy_config(props: &Props) -> Html {
         <>
             <label class="relative inline-flex items-center cursor-pointer mb-6">
                 <input onchange={active_onchange} type="checkbox" checked={*active} class="sr-only peer" />
-                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-                <span class="ml-3 text-sm font-medium text-gray-900">{"Active"}</span>
+                <div class="w-9 h-5 bg-neutral-200 dark:bg-neutral-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                <span class="ml-3 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Active"}</span>
             </label>
 
-            <label class="block mb-2 text-sm font-medium text-neutral-900">{"Friendly Name (Optional)"}</label>
-            <input type="text" value={name.to_string()} onchange={name_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="My Website" />
+            <label class="block mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Friendly Name (Optional)"}</label>
+            <input type="text" value={name.to_string()} onchange={name_onchange} class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="My Website" />
 
-            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Protocol"}</label>
-            <select onchange={protocol_onchange} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Protocol"}</label>
+            <select onchange={protocol_onchange} class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
                 { PROTOCOLS.iter().enumerate().map(|(i, item)| {
                     html! {
                         <option selected={&*protocol == item} value={i.to_string()}>{item.to_string()}</option>
@@ -166,8 +166,8 @@ pub fn proxy_config(props: &Props) -> Html {
                 }).collect::<Html>() }
             </select>
 
-            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Ports"}</label>
-            <ul class="h-32 pb-3 overflow-y-auto text-sm text-gray-700 bg-gray-50 border border-gray-300 rounded-lg">
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Ports"}</label>
+            <ul class="h-32 pb-3 overflow-y-auto text-sm text-neutral-700 bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 rounded-lg">
                 { compatible_ports.into_iter().map(|entry| {
                     let bound_ports_cloned = bound_ports.clone();
                     let onchange = Callback::from(move |event: Event| {
@@ -185,9 +185,9 @@ pub fn proxy_config(props: &Props) -> Html {
                     let bound_ports_cloned = bound_ports.clone();
                     html! {
                         <li>
-                            <div class="flex items-center pl-2 rounded hover:bg-gray-100">
-                                <input {onchange} id={entry.id.to_string()} type="checkbox" checked={bound_ports_cloned.contains(&entry.id)} class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2" />
-                                <label for={entry.id.to_string()} class="w-full py-2 ml-2 text-sm font-medium text-gray-900 rounded">{entry.port.listen.to_string()}</label>
+                            <div class="flex items-center pl-2 rounded hover:bg-neutral-100 dark:hover:bg-neutral-900">
+                                <input {onchange} id={entry.id.to_string()} type="checkbox" checked={bound_ports_cloned.contains(&entry.id)} class="w-4 h-4 text-blue-600 bg-neutral-100 border-neutral-300 rounded focus:ring-blue-500 focus:ring-2" />
+                                <label for={entry.id.to_string()} class="w-full py-2 ml-2 text-sm font-medium text-neutral-900 dark:text-neutral-200 rounded">{entry.port.listen.to_string()}</label>
                             </div>
                         </li>
                     }
