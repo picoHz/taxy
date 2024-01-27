@@ -131,15 +131,15 @@ pub fn port_config(props: &Props) -> Html {
         <>
             <label class="relative inline-flex items-center cursor-pointer mb-6">
                 <input onchange={active_onchange} type="checkbox" checked={*active} class="sr-only peer" />
-                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-                <span class="ml-3 text-sm font-medium text-gray-900">{"Active"}</span>
+                <div class="w-9 h-5 bg-neutral-200 dark:bg-neutral-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                <span class="ml-3 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Active"}</span>
             </label>
 
-            <label class="block mb-2 text-sm font-medium text-neutral-900">{"Friendly Name (Optional)"}</label>
-            <input type="text" value={name.to_string()} onchange={name_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="My Website" />
+            <label class="block mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Friendly Name (Optional)"}</label>
+            <input type="text" value={name.to_string()} onchange={name_onchange} class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="My Website" />
 
-            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Interface"}</label>
-            <select onchange={interface_onchange} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Interface"}</label>
+            <select onchange={interface_onchange} class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
                 { interfaces.iter().map(|value| {
                     html! {
                         <option selected={&*interface == value} value={value.clone()}>{value}</option>
@@ -147,11 +147,11 @@ pub fn port_config(props: &Props) -> Html {
                 }).collect::<Html>() }
             </select>
 
-            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Port"}</label>
-            <input type="number" placeholder="8080" onchange={port_onchange} value={port.to_string()} max="65535" min="1" class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Port"}</label>
+            <input type="number" placeholder="8080" onchange={port_onchange} value={port.to_string()} max="65535" min="1" class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
 
-            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Protocol"}</label>
-            <select onchange={protocol_onchange} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Protocol"}</label>
+            <select onchange={protocol_onchange} class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
                 { PROTOCOLS.iter().map(|(value, label)| {
                     html! {
                         <option selected={&*protocol == value} value={*value}>{label}</option>

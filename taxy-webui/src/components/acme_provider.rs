@@ -74,23 +74,23 @@ pub fn letsencrypt(props: &Props) -> Html {
     html! {
         <>
             if props.eab {
-                <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"EAB Key ID"}</label>
-                <input type="text" onchange={eab_kid_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
+                <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"EAB Key ID"}</label>
+                <input type="text" onchange={eab_kid_onchange} class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
 
-                <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"EAB HMAC Key"}</label>
-                <input type="text" onchange={eab_hmac_key_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
+                <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"EAB HMAC Key"}</label>
+                <input type="text" onchange={eab_hmac_key_onchange} class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
             }
 
-            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Email Address"}</label>
-            <input type="email" placeholder="admin@example.com" onchange={email_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Email Address"}</label>
+            <input type="email" placeholder="admin@example.com" onchange={email_onchange} class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
 
-            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Challenge"}</label>
-            <select class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Challenge"}</label>
+            <select class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
                 <option selected={true}>{"HTTP"}</option>
             </select>
 
-            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Domain Name"}</label>
-            <input type="taxt" autocapitalize="off" placeholder="example.com" onchange={domain_name_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Domain Name"}</label>
+            <input type="taxt" autocapitalize="off" placeholder="example.com" onchange={domain_name_onchange} class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
         </>
     }
 }

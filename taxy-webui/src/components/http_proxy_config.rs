@@ -66,11 +66,11 @@ pub fn http_proxy_config(props: &Props) -> Html {
 
     html! {
         <>
-            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Virtual Hosts"}</label>
-            <input type="text" autocapitalize="off" value={vhosts.to_string()} onchange={vhosts_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="example.com" />
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Virtual Hosts"}</label>
+            <input type="text" autocapitalize="off" value={vhosts.to_string()} onchange={vhosts_onchange} class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="example.com" />
             <p class="mt-2 text-sm text-neutral-500">{"You can use commas to list multiple names, e.g, example.com, *.test.examle.com."}</p>
 
-            <label class="block mt-4 text-sm font-medium text-neutral-900">{"Routes"}</label>
+            <label class="block mt-4 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Routes"}</label>
 
             { routes.iter().enumerate().map(|(i, (path, servers))| {
                 let routes_len = routes.len();
@@ -108,18 +108,18 @@ pub fn http_proxy_config(props: &Props) -> Html {
                 });
 
                 html! {
-                    <div class="mt-2 bg-white shadow-sm p-5 border border-neutral-300 rounded-md">
-                        <label class="block mb-2 text-sm font-medium text-neutral-900">{"Path"}</label>
-                        <input type="text" autocapitalize="off" placeholder="/" onchange={path_onchange} value={path.clone()} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
+                    <div class="mt-2 bg-white dark:text-neutral-200 dark:bg-neutral-800 shadow-sm p-5 border border-neutral-300 dark:border-neutral-700 rounded-md">
+                        <label class="block mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Path"}</label>
+                        <input type="text" autocapitalize="off" placeholder="/" onchange={path_onchange} value={path.clone()} class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
 
-                        <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Target"}</label>
-                        <input type="url" placeholder="https://example.com/backend" value={servers.join("\n").to_string()} onchange={servers_onchange} class="bg-neutral-50 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
+                        <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Target"}</label>
+                        <input type="url" placeholder="https://example.com/backend" value={servers.join("\n").to_string()} onchange={servers_onchange} class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" />
 
                         <div class="flex justify-end rounded-md mt-4 sm:ml-auto px-4 lg:px-0" role="group">
-                            <button type="button" onclick={add_onclick} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 bg-white border border-neutral-300 rounded-l-lg hover:bg-neutral-100 focus:z-10 focus:ring-4 focus:ring-neutral-200">
+                            <button type="button" onclick={add_onclick} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 dark:text-neutral-200 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-l-lg hover:bg-neutral-100 hover:dark:bg-neutral-900 focus:z-10 focus:ring-4 focus:ring-neutral-200 dark:focus:ring-neutral-600">
                                 <img src="/assets/icons/add.svg" class="w-4 h-4" />
                             </button>
-                            <button type="button" onclick={remove_onclick} disabled={routes_len <= 1} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 bg-white border border-l-0 border-neutral-300 rounded-r-lg hover:bg-neutral-100 focus:z-10 focus:ring-4 focus:ring-neutral-200">
+                            <button type="button" onclick={remove_onclick} disabled={routes_len <= 1} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 dark:text-neutral-200 bg-white dark:bg-neutral-800 border border-l-0 border-neutral-300 dark:border-neutral-700 rounded-r-lg hover:bg-neutral-100 hover:dark:bg-neutral-900 focus:z-10 focus:ring-4 focus:ring-neutral-200 dark:focus:ring-neutral-600">
                                 <img src="/assets/icons/remove.svg" class="w-4 h-4" />
                             </button>
                         </div>

@@ -90,18 +90,18 @@ pub fn upload() -> Html {
 
     html! {
         <>
-            <form {onsubmit} class="bg-white shadow-sm p-5 border border-neutral-300 lg:rounded-md">
-                <label class="block mb-2 text-sm font-medium text-neutral-900">{"Certificate Chain"}</label>
-                <input onchange={chain_onchange} class="block w-full text-sm text-neutral-900 border border-neutral-300 rounded-lg cursor-pointer bg-neutral-50 focus:outline-none file:bg-transparent file:border-0 file:bg-neutral-100 file:mr-4 file:py-3 file:px-4" type="file" />
+            <form {onsubmit} class="bg-white dark:bg-neutral-800 shadow-sm p-5 border border-neutral-300 dark:border-neutral-700 lg:rounded-md">
+                <label class="block mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Certificate Chain"}</label>
+                <input onchange={chain_onchange} class="block w-full text-sm text-neutral-900 border border-neutral-300 rounded-lg cursor-pointer bg-neutral-50 dark:text-neutral-200 dark:file:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 focus:outline-none file:bg-transparent file:border-0 file:bg-neutral-100 file:mr-4 file:py-3 file:px-4" type="file" />
 
-                <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900">{"Private Key"}</label>
-                <input onchange={key_onchange} class="block w-full text-sm text-neutral-900 border border-neutral-300 rounded-lg cursor-pointer bg-neutral-50 focus:outline-none file:bg-transparent file:border-0 file:bg-neutral-100 file:mr-4 file:py-3 file:px-4" type="file" />
+                <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Private Key"}</label>
+                <input onchange={key_onchange} class="block w-full text-sm text-neutral-900 border border-neutral-300 rounded-lg cursor-pointer bg-neutral-50 dark:text-neutral-200 dark:file:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 focus:outline-none file:bg-transparent file:border-0 file:bg-neutral-100 file:mr-4 file:py-3 file:px-4" type="file" />
 
                 <div class="flex mt-4 items-center justify-end">
-                    <button type="button" onclick={cancel_onclick} class="mr-2 inline-flex items-center text-neutral-500 bg-neutral-50 focus:outline-none hover:bg-neutral-100 focus:ring-4 focus:ring-neutral-200 font-medium rounded-lg text-sm px-4 py-2">
+                    <button type="button" onclick={cancel_onclick} class="mr-2 inline-flex items-center text-neutral-500 bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 focus:outline-none hover:bg-neutral-100 hover:dark:bg-neutral-900 focus:ring-4 focus:ring-neutral-200 dark:focus:ring-neutral-600 font-medium rounded-lg text-sm px-4 py-2">
                         {"Cancel"}
                     </button>
-                    <button type="submit" disabled={!uploadable} class="inline-flex items-center text-neutral-500 bg-neutral-50 border border-neutral-300 focus:outline-none hover:bg-neutral-100 focus:ring-4 focus:ring-neutral-200 font-medium rounded-lg text-sm px-4 py-2">
+                    <button type="submit" disabled={!uploadable} class="inline-flex items-center text-neutral-500 bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 focus:outline-none hover:bg-neutral-100 hover:dark:bg-neutral-900 focus:ring-4 focus:ring-neutral-200 dark:focus:ring-neutral-600 font-medium rounded-lg text-sm px-4 py-2">
                         {"Upload"}
                     </button>
                 </div>
