@@ -26,4 +26,4 @@ thiserror = "1.0.43"
 time = "0.3.23"
 url = { version = "2.4.0", features = ["serde"] }
 utoipa = "4.2.0"
-warp = { version = "0.3.5", optional = true }
+warp = { version = "0.3.6", optional = true }
