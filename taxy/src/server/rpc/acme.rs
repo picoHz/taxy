@@ -13,7 +13,11 @@ impl RpcMethod for GetAcmeList {
     type Output = Vec<AcmeInfo>;
 
     async fn call(self, state: &mut ServerState) -> Result<Self::Output, Error> {
-        Ok(state.acmes.entries().map(|acme| acme.info()).collect())
+        Ok(state
+            .acmes
+            .entries()
+            .map(|acme| acme.info(&state.certs))
+            .collect())
     }
 }
 
@@ -29,7 +33,7 @@ impl RpcMethod for GetAcme {
         state
             .acmes
             .get(self.id)
-            .map(|acme| acme.info())
+            .map(|acme| acme.info(&state.certs))
             .ok_or(Error::IdNotFound {
                 id: self.id.to_string(),
             })

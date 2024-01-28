@@ -1,5 +1,5 @@
 use crate::auth::use_ensure_auth;
-use crate::format::format_expiry;
+use crate::format::format_time;
 use crate::pages::Route;
 use crate::store::{AcmeStore, CertStore};
 use crate::API_ENDPOINT;
@@ -210,7 +210,7 @@ pub fn cert_list() -> Html {
                                         {entry.id.to_string()}
                                     </td>
                                     <td class="px-4 py-4">
-                                        {format_expiry(entry.not_after)}
+                                        {format_time(entry.not_after)}
                                     </td>
                                     <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
                                         <a class="cursor-pointer font-medium text-blue-600 dark:text-blue-400 hover:underline mr-5" onclick={download_onclick}>{"Download"}</a>
@@ -289,7 +289,7 @@ pub fn cert_list() -> Html {
                                     }
                                 </td>
                                 <td class="px-4 py-4">
-                                    {format_expiry(entry.not_after)}
+                                    {format_time(entry.not_after)}
                                 </td>
                                 <td class="px-4 py-4 w-0 whitespace-nowrap" align="right">
                                     <a class="cursor-pointer font-medium text-blue-600 dark:text-blue-400 hover:underline mr-5" onclick={download_onclick}>{"Download"}</a>
@@ -320,6 +320,9 @@ pub fn cert_list() -> Html {
                             </th>
                             <th scope="col" class="px-4 py-3">
                                 {"Provider"}
+                            </th>
+                            <th scope="col" class="px-4 py-3">
+                                {"Renews on"}
                             </th>
                             <th scope="col" class="px-4 py-3" align="center">
                                 {"Active"}
@@ -365,6 +368,11 @@ pub fn cert_list() -> Html {
                                 </td>
                                 <td class="px-4 py-4">
                                     {provider}
+                                </td>
+                                <td class="px-4 py-4">
+                                    if let Some(time) = entry.next_renewal {
+                                        { format_time(time) }
+                                    }
                                 </td>
                                 <td class="px-4 py-4 w-0 whitespace-nowrap" align="center">
                                     <label class="relative inline-flex items-center cursor-pointer mt-1">
