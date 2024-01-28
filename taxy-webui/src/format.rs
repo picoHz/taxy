@@ -3,7 +3,7 @@ use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 use wasm_bindgen::UnwrapThrowExt;
 use web_time::{Duration, SystemTime, UNIX_EPOCH};
 
-pub fn format_expiry(unix_time: i64) -> String {
+pub fn format_time(unix_time: i64) -> String {
     let time = OffsetDateTime::from_unix_timestamp(unix_time).unwrap_throw();
     let timestamp = time.format(&Rfc3339).unwrap_throw();
     let date = timestamp.split('T').next().unwrap_throw().to_string();

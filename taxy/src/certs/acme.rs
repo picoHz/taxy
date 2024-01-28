@@ -1,4 +1,4 @@
-use crate::certs::Cert;
+use crate::{certs::Cert, server::cert_list::CertList};
 use anyhow::bail;
 use backoff::{backoff::Backoff, ExponentialBackoffBuilder};
 use instant_acme::{
@@ -81,7 +81,7 @@ impl AcmeEntry {
         self.id
     }
 
-    pub fn info(&self) -> AcmeInfo {
+    pub fn info(&self, certs: &CertList) -> AcmeInfo {
         AcmeInfo {
             id: self.id,
             config: self.acme.config.clone(),
@@ -92,7 +92,31 @@ impl AcmeEntry {
                 .map(|id| id.to_string())
                 .collect(),
             challenge_type: self.acme.challenge_type.clone(),
+            next_renewal: self
+                .next_renewal(certs)
+                .and_then(|t| t.duration_since(SystemTime::UNIX_EPOCH).ok())
+                .map(|t| t.as_secs() as i64),
         }
+    }
+
+    pub fn last_issued(&self, certs: &CertList) -> Option<SystemTime> {
+        certs
+            .find_certs_by_acme(self.id)
+            .iter()
+            .map(|cert| {
+                cert.metadata
+                    .as_ref()
+                    .map(|meta| meta.created_at)
+                    .unwrap_or(SystemTime::UNIX_EPOCH)
+            })
+            .max()
+    }
+
+    pub fn next_renewal(&self, certs: &CertList) -> Option<SystemTime> {
+        let last_issued = self.last_issued(certs)?;
+        let renewal_days = self.acme.config.renewal_days;
+        let next_renewal = last_issued + Duration::from_secs(60 * 60 * 24 * renewal_days);
+        Some(next_renewal)
     }
 }
 

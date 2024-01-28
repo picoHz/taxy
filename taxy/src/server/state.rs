@@ -15,11 +15,7 @@ use rand::seq::SliceRandom;
 use std::collections::HashSet;
 use std::convert::Infallible;
 use std::str;
-use std::{
-    collections::HashMap,
-    sync::Arc,
-    time::{Duration, SystemTime},
-};
+use std::{collections::HashMap, sync::Arc};
 use taxy_api::app::{AppConfig, AppInfo};
 use taxy_api::error::Error;
 use taxy_api::event::ServerEvent;
@@ -215,7 +211,11 @@ impl ServerState {
 
     pub async fn update_acmes(&mut self) {
         let _ = self.br_sender.send(ServerEvent::AcmeUpdated {
-            entries: self.acmes.entries().map(|acme| acme.info()).collect(),
+            entries: self
+                .acmes
+                .entries()
+                .map(|acme| acme.info(&self.certs))
+                .collect(),
         });
         self.start_http_challenges().await;
     }
@@ -316,21 +316,10 @@ impl ServerState {
         let entries = entries
             .filter(|entry| {
                 entry.acme.config.active
-                    && self
-                        .certs
-                        .find_certs_by_acme(entry.id)
-                        .iter()
-                        .map(|cert| {
-                            cert.metadata
-                                .as_ref()
-                                .map(|meta| meta.created_at)
-                                .unwrap_or(SystemTime::UNIX_EPOCH)
-                        })
-                        .max()
-                        .unwrap_or(SystemTime::UNIX_EPOCH)
-                        .elapsed()
+                    && entry
+                        .next_renewal(&self.certs)
+                        .map(|next| next.elapsed().is_ok())
                         .unwrap_or_default()
-                        > Duration::from_secs(60 * 60 * 24 * entry.acme.config.renewal_days)
             })
             .collect::<Vec<_>>();
 

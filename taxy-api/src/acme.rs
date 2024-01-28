@@ -49,6 +49,7 @@ pub struct AcmeInfo {
     pub identifiers: Vec<String>,
     #[schema(value_type = String, example = "http-01")]
     pub challenge_type: String,
+    pub next_renewal: Option<i64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, ToSchema)]
