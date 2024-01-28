@@ -45,15 +45,22 @@ pub fn use_event_subscriber() {
                                 });
                             }
                             ServerEvent::CertsUpdated { entries } => {
-                                certs.set(CertStore { entries });
+                                certs.set(CertStore {
+                                    entries,
+                                    loaded: true,
+                                });
                             }
                             ServerEvent::AcmeUpdated { entries } => {
-                                acme.set(AcmeStore { entries });
+                                acme.set(AcmeStore {
+                                    entries,
+                                    loaded: true,
+                                });
                             }
                             ServerEvent::ProxiesUpdated { entries } => {
                                 proxies.reduce(|state| {
                                     ProxyStore {
                                         entries,
+                                        loaded: true,
                                         ..(*state).clone()
                                     }
                                     .into()

@@ -47,6 +47,7 @@ pub fn proxy_config(props: &Props) -> Html {
                 if let Ok(res) = get_ports().await {
                     dispatcher.set(PortStore {
                         entries: res,
+                        loaded: true,
                         ..(*ports_cloned).clone()
                     });
                 }
