@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.3.23 - 2024-02-01
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.23 -->
+### What's Changed
+
+#### New Features
+
+* Show acme renewal date on WebUI by @picoHz in https://github.com/picoHz/taxy/pull/42
+
+#### WebUI Updates
+
+* Add dark theme support by @picoHz in https://github.com/picoHz/taxy/pull/40
+* Fix loading indicator bahovior by @picoHz in https://github.com/picoHz/taxy/pull/41
+
+#### Other Changes
+
+* Update dependencies around tungstenite by @picoHz in https://github.com/picoHz/taxy/pull/43
+* build(deps): bump h2 from 0.3.20 to 0.3.24 by @dependabot in https://github.com/picoHz/taxy/pull/44
+* build(deps): bump rustix from 0.37.23 to 0.37.27 by @dependabot in https://github.com/picoHz/taxy/pull/45
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.22...v0.3.23
+
 ## v0.3.22 - 2024-01-25
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.22 -->
