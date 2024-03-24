@@ -122,8 +122,6 @@ $ taxy start
 Once the server is running, you can access the admin panel at [http://localhost:46492/](http://localhost:46492/).
 
 > To ensure the security of your server's admin panel, it is highly recommended to employ SSH port forwarding when running the server on a remote machine. This practice prevents exposing the admin panel's port to the public, as the connection is in plain HTTP and lacks encryption. However, you have the option to serve the admin panel via HTTPS using Taxy later on.
->
-> Please note that the WebUI relies on the Secure cookie attribute to store the session token. Consequently, the WebUI will only function over HTTPS unless it's being served on localhost. It's worth mentioning that some browsers, such as Safari, may still block it even on localhost. If you intend to use the WebUI over HTTP, you can utilize the `--insecure-webui` command-line option.
 
 # Tutorial
 
