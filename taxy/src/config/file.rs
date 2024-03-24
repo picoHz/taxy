@@ -24,7 +24,7 @@ use taxy_api::{
 };
 use tokio::fs;
 use tokio::io::AsyncReadExt;
-use toml_edit::Document;
+use toml_edit::DocumentMut;
 use totp_rs::{Secret, TOTP};
 use tracing::{error, info, warn};
 
@@ -77,7 +77,7 @@ impl FileStorage {
             Ok(doc) => doc,
             Err(err) => {
                 warn!(?path, %err, "failed to load config");
-                Document::new()
+                DocumentMut::new()
             }
         };
 
@@ -101,10 +101,10 @@ impl FileStorage {
         Ok(())
     }
 
-    async fn load_document(&self, path: &Path) -> anyhow::Result<Document> {
+    async fn load_document(&self, path: &Path) -> anyhow::Result<DocumentMut> {
         info!(?path, "load config");
         let content = fs::read_to_string(path).await?;
-        Ok(content.parse::<Document>()?)
+        Ok(content.parse::<DocumentMut>()?)
     }
 
     async fn load_ports_impl(&self, path: &Path) -> anyhow::Result<Vec<PortEntry>> {
@@ -128,7 +128,7 @@ impl FileStorage {
             Ok(doc) => doc,
             Err(err) => {
                 warn!(?path, %err, "failed to load config");
-                Document::new()
+                DocumentMut::new()
             }
         };
 
@@ -169,7 +169,7 @@ impl FileStorage {
             Ok(doc) => doc,
             Err(err) => {
                 warn!(?path, %err, "failed to load config");
-                Document::new()
+                DocumentMut::new()
             }
         };
 
@@ -188,7 +188,7 @@ impl FileStorage {
             Ok(doc) => doc,
             Err(err) => {
                 warn!(?path, %err, "failed to load config");
-                Document::new()
+                DocumentMut::new()
             }
         };
 
@@ -271,8 +271,8 @@ impl FileStorage {
         info!(?path, "save account");
 
         let mut doc = match fs::read_to_string(&path).await {
-            Ok(content) => content.parse::<Document>().unwrap_or_default(),
-            Err(_) => Document::default(),
+            Ok(content) => content.parse::<DocumentMut>().unwrap_or_default(),
+            Err(_) => DocumentMut::default(),
         };
 
         let salt = SaltString::generate(rand::thread_rng());
