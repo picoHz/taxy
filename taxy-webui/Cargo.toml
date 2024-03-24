@@ -22,7 +22,7 @@ futures = "0.3.28"
 gloo-dialogs = "0.1.1"
 gloo-timers = "0.2.6"
 url = "2.4.0"
-base64 = "0.21.2"
+base64 = "0.22.0"
 time = { version = "0.3.23", features = ["formatting"] }
 gloo-events = "0.1.2"
 web-time = "1.0.0"
