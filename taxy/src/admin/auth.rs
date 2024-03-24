@@ -66,6 +66,7 @@ pub async fn login(
         }
     }
 
+    let insecure = request.insecure || state.data.lock().await.insecure;
     let result = state.call(VerifyAccount { request }).await;
     match result {
         Err(err) => Err(warp::reject::custom(err)),
@@ -74,7 +75,6 @@ pub async fn login(
                 LoginResponse::Success => SessionKind::Admin,
                 _ => SessionKind::Login,
             };
-            let insecure = state.data.lock().await.insecure;
             let secure_cookie = if insecure { "" } else { "Secure" };
             Ok(warp::reply::with_header(
                 warp::reply::json(&res),
