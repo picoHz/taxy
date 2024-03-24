@@ -24,7 +24,7 @@ arc-swap = "1.6.0"
 argon2 = "0.5.0"
 async-trait = "0.1.71"
 backoff = { version = "0.4.0", features = ["tokio"] }
-base64 = "0.21.2"
+base64 = "0.22.0"
 brotli = "3.3.4"
 clap = { version = "4.3.11", features = ["derive", "env"] }
 dashmap = "5.5.0"
