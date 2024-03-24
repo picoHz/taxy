@@ -16,6 +16,8 @@ pub struct LoginRequest {
     #[schema(inline)]
     #[serde(flatten)]
     pub method: LoginMethod,
+    #[serde(default)]
+    pub insecure: bool,
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]

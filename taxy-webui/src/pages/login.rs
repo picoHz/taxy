@@ -115,10 +115,15 @@ pub fn login() -> Html {
         };
 
         wasm_bindgen_futures::spawn_local(async move {
+            let insecure = web_sys::window()
+                .and_then(|window| window.location().protocol().ok())
+                .unwrap_or_default()
+                != "https:";
             let login: ApiResult<LoginResponse> = Request::post(&format!("{API_ENDPOINT}/login"))
                 .json(&LoginRequest {
                     username: username.to_string(),
                     method,
+                    insecure,
                 })
                 .unwrap()
                 .send()
