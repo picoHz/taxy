@@ -1,4 +1,3 @@
-use hyper::header::LOCATION;
 use reqwest::redirect::Policy;
 use std::sync::Arc;
 use taxy::certs::Cert;
@@ -244,7 +243,7 @@ async fn https_proxy_automatic_upgrade() -> anyhow::Result<()> {
         let resp = client.get(proxy_port.http_url("/hello")).send().await?;
         assert_eq!(resp.status(), 308);
         assert_eq!(
-            resp.headers().get(LOCATION).unwrap().to_str().unwrap(),
+            resp.headers().get("Location").unwrap().to_str().unwrap(),
             proxy_port.https_url("/hello").to_string()
         );
 
@@ -256,7 +255,7 @@ async fn https_proxy_automatic_upgrade() -> anyhow::Result<()> {
         let resp = client.get(proxy_port.http_url("/hello")).send().await?;
         assert_eq!(resp.status(), 308);
         assert_eq!(
-            resp.headers().get(LOCATION).unwrap().to_str().unwrap(),
+            resp.headers().get("Location").unwrap().to_str().unwrap(),
             proxy_port.https_url("/hello").to_string()
         );
 
@@ -268,7 +267,7 @@ async fn https_proxy_automatic_upgrade() -> anyhow::Result<()> {
         let resp = client.get(proxy_port.http_url("/hello")).send().await?;
         assert_eq!(resp.status(), 308);
         assert_eq!(
-            resp.headers().get(LOCATION).unwrap().to_str().unwrap(),
+            resp.headers().get("Location").unwrap().to_str().unwrap(),
             proxy_port.https_url("/hello").to_string()
         );
 

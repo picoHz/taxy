@@ -100,12 +100,13 @@ built = "0.6.1"
 [dev-dependencies]
 mockito = "1.1.0"
 net2 = "0.2.39"
-reqwest = { version = "0.11.18", default-features = false, features = [
+reqwest = { version = "0.12.1", default-features = false, features = [
     "rustls-tls",
     "gzip",
     "brotli",
     "json",
     "stream",
+    "http2",
 ] }
 tokio-tungstenite = { version = "0.21.0", features = [
     "rustls-tls-native-roots",
