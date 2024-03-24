@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.3.24 - 2024-03-24
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.24 -->
+### What's Changed
+
+#### Bug Fixes
+
+* Fix text style in empty list message by @picoHz in https://github.com/picoHz/taxy/pull/49
+
+#### WebUI Updates
+
+* Use insecure cookie automatically on HTTP by @picoHz in https://github.com/picoHz/taxy/pull/50
+
+#### Other Changes
+
+* Update dependencies by @picoHz in https://github.com/picoHz/taxy/pull/47
+* build(deps): bump mio from 0.8.8 to 0.8.11 by @dependabot in https://github.com/picoHz/taxy/pull/48
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.23...v0.3.24
+
 ## v0.3.23 - 2024-02-01
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.23 -->
