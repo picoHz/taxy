@@ -36,7 +36,9 @@ pub fn navbar() -> Html {
     let navigator_cloned = navigator.clone();
     let logout_onclick = Callback::from(move |e: MouseEvent| {
         e.prevent_default();
-        navigator_cloned.push(&Route::Logout);
+        if gloo_dialogs::confirm(&format!("Are you sure to log out?")) {
+            navigator_cloned.push(&Route::Logout);
+        }
     });
 
     let navigator_cloned = navigator.clone();
