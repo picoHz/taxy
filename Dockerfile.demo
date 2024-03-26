@@ -4,7 +4,7 @@ FROM rust:latest as builder
 RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
 
 # Add Cargo.toml
-COPY Cargo.toml .
+COPY Cargo.toml CHANGELOG.md ./
 
 # Install pre-built taxy
 RUN cargo binstall -y taxy
