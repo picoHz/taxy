@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.3.25 - 2024-03-27
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.25 -->
+### What's Changed
+
+#### Bug Fixes
+
+* Fix path matching in RequestFilter by @picoHz in https://github.com/picoHz/taxy/pull/53
+
+#### WebUI Updates
+
+* Fix human-friendly duration formatting by @picoHz in https://github.com/picoHz/taxy/pull/51
+* Add confirmation dialog for logout by @picoHz in https://github.com/picoHz/taxy/pull/52
+* Use vertical tabs on larger screens by @picoHz in https://github.com/picoHz/taxy/pull/54
+
+#### Other Changes
+
+* Remove --insecure-webui option by @picoHz in https://github.com/picoHz/taxy/pull/55
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.24...v0.3.25
+
 ## v0.3.24 - 2024-03-24
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.24 -->
