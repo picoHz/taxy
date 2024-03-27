@@ -114,9 +114,9 @@ pub fn cert_list() -> Html {
     let active_index = use_state(|| -1);
     html! {
         <>
-        <div class="flex flex-col mb-4 px-4 lg:px-0">
+        <div class="flex flex-col mb-4 px-4 lg:px-0 lg:float-left">
             <div class="text-sm font-medium text-center text-neutral-500 dark:text-neutral-300">
-                <ul class="flex justify-center sm:justify-start flex-wrap -mb-px">
+                <ul class="flex justify-center sm:justify-start flex-wrap lg:flex-col lg:w-48 lg:mr-2 -mb-px">
                     { TABS.into_iter().map(|item| {
                         let navigator = navigator.clone();
                         let active_index = active_index.clone();
@@ -128,13 +128,13 @@ pub fn cert_list() -> Html {
                             let _ = navigator.push_with_query(&Route::Certs, &CertsQuery { tab: item });
                         });
                         let class = if is_active {
-                            vec!["text-blue-600", "dark:text-blue-400", "border-blue-600", "dark:border-blue-400", "active"]
+                            vec!["bg-neutral-100", "dark:bg-neutral-800", "text-neutral-600", "dark:text-neutral-200", "dark:text-neutral-100", "active"]
                         } else {
-                            vec!["border-transparent"]
+                            vec!["border-transparent", "dark:border-transparent"]
                         };
                         html! {
                             <li class="mr-2">
-                                <a {onclick} class={classes!("inline-block", "cursor-pointer", "px-4", "py-2", "border-b-2", "rounded-t-lg", "hover:border-neutral-300", class)}>{item}</a>
+                                <a {onclick} class={classes!("inline-block", "cursor-pointer", "border-2", "border-neutral-400", "px-4", "py-2", "rounded-md", "hover:bg-neutral-100", "dark:hover:bg-neutral-800", "w-full", "lg:py-3", "lg:mb-2", class)}>{item}</a>
                             </li>
                         }
                     }).collect::<Html>() }
