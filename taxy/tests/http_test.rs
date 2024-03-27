@@ -24,6 +24,17 @@ async fn http_proxy() -> anyhow::Result<()> {
         .create_async()
         .await;
 
+    let mock_get_with_path = server
+        .mock("GET", "/Hello?world=1")
+        .match_header("via", "taxy")
+        .match_header("x-forwarded-for", mockito::Matcher::Missing)
+        .match_header("x-forwarded-host", mockito::Matcher::Missing)
+        .match_header("x-real-ip", mockito::Matcher::Missing)
+        .match_header("accept-encoding", "gzip, br")
+        .with_body("Hello")
+        .create_async()
+        .await;
+
     let mock_get_trailing_slash = server
         .mock("GET", "/hello/?world=1")
         .match_header("via", "taxy")
@@ -78,12 +89,20 @@ async fn http_proxy() -> anyhow::Result<()> {
                 ports: vec!["test".parse().unwrap()],
                 kind: ProxyKind::Http(HttpProxy {
                     vhosts: vec!["localhost".parse().unwrap()],
-                    routes: vec![Route {
-                        path: "/".into(),
-                        servers: vec![taxy_api::proxy::Server {
-                            url: server.url().parse().unwrap(),
-                        }],
-                    }],
+                    routes: vec![
+                        Route {
+                            path: "/was/ist/passiert".into(),
+                            servers: vec![taxy_api::proxy::Server {
+                                url: server.url().parse().unwrap(),
+                            }],
+                        },
+                        Route {
+                            path: "/".into(),
+                            servers: vec![taxy_api::proxy::Server {
+                                url: server.url().parse().unwrap(),
+                            }],
+                        },
+                    ],
                 }),
                 ..Default::default()
             },
@@ -94,6 +113,17 @@ async fn http_proxy() -> anyhow::Result<()> {
         let client = reqwest::Client::builder().build()?;
         let resp = client
             .get(proxy_port.http_url("/hello?world=1"))
+            .header("x-forwarded-for", "0.0.0.0")
+            .header("x-forwarded-host", "untrusted.example.com")
+            .header("x-real-ip", "0.0.0.0")
+            .send()
+            .await?
+            .text()
+            .await?;
+        assert_eq!(resp, "Hello");
+
+        let resp = client
+            .get(proxy_port.http_url("/was/ist/passiert/Hello?world=1"))
             .header("x-forwarded-for", "0.0.0.0")
             .header("x-forwarded-host", "untrusted.example.com")
             .header("x-real-ip", "0.0.0.0")
@@ -146,6 +176,7 @@ async fn http_proxy() -> anyhow::Result<()> {
     .await?;
 
     mock_get.assert_async().await;
+    mock_get_with_path.assert_async().await;
     mock_get_trailing_slash.assert_async().await;
     mock_post.assert_async().await;
     mock_stream.assert_async().await;

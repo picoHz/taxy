@@ -43,14 +43,14 @@ impl RequestFilter {
         if !host_matched && !self.vhosts.is_empty() {
             return None;
         }
-        let path = req.uri().path().split('/');
+        let path = req.uri().path().trim_start_matches('/').split('/');
         let count = path
             .clone()
             .zip(self.path.iter())
             .take_while(|(a, b)| a == b)
             .count();
         if count == self.path.len() {
-            let new_path = path.skip(count).collect::<Vec<_>>().join("/");
+            let new_path = "/".to_string() + &path.skip(count).collect::<Vec<_>>().join("/");
             FilterResult::new(&new_path).ok()
         } else {
             None
