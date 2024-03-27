@@ -40,12 +40,11 @@ mod swagger;
 pub async fn start_admin(
     app_info: AppInfo,
     addr: SocketAddr,
-    insecure: bool,
     command: mpsc::Sender<ServerCommand>,
     mut callback: mpsc::Receiver<RpcCallback>,
     event: broadcast::Sender<ServerEvent>,
 ) -> anyhow::Result<()> {
-    let data = Data::new(app_info, insecure).await?;
+    let data = Data::new(app_info).await?;
     let data = Arc::new(Mutex::new(data));
     let app_state = AppState {
         sender: command,
@@ -222,7 +221,6 @@ struct Data {
     config: AppConfig,
     sessions: SessionStore,
     log: Arc<LogReader>,
-    insecure: bool,
 
     rpc_counter: usize,
     rpc_callbacks: HashMap<usize, oneshot::Sender<CallbackData>>,
@@ -260,11 +258,10 @@ impl AppState {
 }
 
 impl Data {
-    async fn new(app_info: AppInfo, insecure: bool) -> anyhow::Result<Self> {
+    async fn new(app_info: AppInfo) -> anyhow::Result<Self> {
         let log = app_info.log_path.join("log.db");
         Ok(Self {
             app_info,
-            insecure,
             config: AppConfig::default(),
             sessions: Default::default(),
             log: Arc::new(LogReader::new(&log).await?),
