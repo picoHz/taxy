@@ -1,6 +1,7 @@
 use pkcs8::{PrivateKeyInfo, SecretDocument};
 use rcgen::{
-    BasicConstraints, CertificateParams, DistinguishedName, DnType, IsCa, KeyPair, SanType,
+    BasicConstraints, CertificateParams, DistinguishedName, DnType, Ia5String, IsCa, KeyPair,
+    SanType,
 };
 use sha2::{Digest, Sha256};
 use std::fmt;
@@ -219,7 +220,9 @@ impl Cert {
         params.is_ca = IsCa::Ca(BasicConstraints::Unconstrained);
         params.distinguished_name = distinguished_name;
 
-        let cert = match rcgen::Certificate::from_params(params) {
+        let keypair =
+            KeyPair::generate().map_err(|_| Error::FailedToGerateSelfSignedCertificate)?;
+        let cert = match params.self_signed(&keypair) {
             Ok(cert) => cert,
             Err(err) => {
                 error!(%err);
@@ -227,13 +230,8 @@ impl Cert {
             }
         };
 
-        let pem = cert
-            .serialize_pem()
-            .map_err(|_| Error::FailedToGerateSelfSignedCertificate)?;
-
-        let pem_chain = pem.into_bytes();
-        let pem_key = cert.serialize_private_key_pem().into_bytes();
-
+        let pem_chain = cert.pem().into_bytes();
+        let pem_key = keypair.serialize_pem().into_bytes();
         Self::new(CertKind::Root, pem_chain, Some(pem_key))
     }
 
@@ -243,10 +241,10 @@ impl Cert {
         let pem_key = ca.pem_key.as_ref().ok_or(Error::FailedToReadPrivateKey)?;
         let key_pem = std::str::from_utf8(pem_key).map_err(|_| Error::FailedToReadPrivateKey)?;
         let ca_keypair = KeyPair::from_pem(key_pem).map_err(|_| Error::FailedToReadPrivateKey)?;
-        let ca_params = CertificateParams::from_ca_cert_pem(ca_pem, ca_keypair)
+        let ca_params = CertificateParams::from_ca_cert_pem(ca_pem)
             .map_err(|_| Error::FailedToGerateSelfSignedCertificate)?;
 
-        let ca_cert = match rcgen::Certificate::from_params(ca_params) {
+        let ca_cert = match ca_params.self_signed(&ca_keypair) {
             Ok(cert) => cert,
             Err(err) => {
                 error!(%err);
@@ -255,16 +253,16 @@ impl Cert {
         };
 
         let mut params = CertificateParams::default();
-        params.subject_alt_names = san
-            .iter()
-            .map(|name| {
-                if let SubjectName::IPAddress(ip) = name {
-                    SanType::IpAddress(*ip)
-                } else {
-                    SanType::DnsName(name.to_string())
-                }
-            })
-            .collect();
+        for name in san {
+            let name = if let SubjectName::IPAddress(ip) = name {
+                SanType::IpAddress(*ip)
+            } else {
+                let name = Ia5String::from_str(&name.to_string())
+                    .map_err(|_| Error::FailedToGerateSelfSignedCertificate)?;
+                SanType::DnsName(name)
+            };
+            params.subject_alt_names.push(name);
+        }
 
         let common_name = san
             .iter()
@@ -275,7 +273,9 @@ impl Cert {
         distinguished_name.push(DnType::CommonName, common_name);
         params.distinguished_name = distinguished_name;
 
-        let cert = match rcgen::Certificate::from_params(params) {
+        let keypair =
+            KeyPair::generate().map_err(|_| Error::FailedToGerateSelfSignedCertificate)?;
+        let cert = match params.signed_by(&keypair, &ca_cert, &ca_keypair) {
             Ok(cert) => cert,
             Err(err) => {
                 error!(%err);
@@ -283,17 +283,8 @@ impl Cert {
             }
         };
 
-        let cert_pem = cert
-            .serialize_pem_with_signer(&ca_cert)
-            .map_err(|_| Error::FailedToGerateSelfSignedCertificate)?;
-
-        let ca_pem = ca_cert
-            .serialize_pem()
-            .map_err(|_| Error::FailedToGerateSelfSignedCertificate)?;
-
-        let pem_chain = format!("{}\r\n{}", cert_pem, ca_pem).into_bytes();
-        let pem_key = cert.serialize_private_key_pem().into_bytes();
-
+        let pem_chain = format!("{}\r\n{}", cert.pem(), ca_cert.pem()).into_bytes();
+        let pem_key = keypair.serialize_pem().into_bytes();
         Self::new(CertKind::Server, pem_chain, Some(pem_key))
     }
 
