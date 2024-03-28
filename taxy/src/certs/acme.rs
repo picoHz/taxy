@@ -5,7 +5,7 @@ use instant_acme::{
     Account, AccountCredentials, AuthorizationStatus, ChallengeType, ExternalAccountKey,
     Identifier, NewAccount, NewOrder, Order, OrderStatus,
 };
-use rcgen::{Certificate, CertificateParams, DistinguishedName};
+use rcgen::{CertificateParams, DistinguishedName, KeyPair};
 use serde_derive::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -252,12 +252,14 @@ impl AcmeOrder {
             })
             .collect::<Vec<_>>();
 
-        let mut params = CertificateParams::new(san);
+        let mut params = CertificateParams::new(san)?;
         params.distinguished_name = DistinguishedName::new();
-        let cert = Certificate::from_params(params)?;
-        let csr = cert.serialize_request_der()?;
 
-        self.order.finalize(&csr).await?;
+        let keypair = KeyPair::generate()?;
+        let request = params.serialize_request(&keypair)?;
+        let csr = request.der();
+
+        self.order.finalize(csr).await?;
         let cert_chain_pem = loop {
             match self.order.certificate().await? {
                 Some(cert_chain_pem) => break cert_chain_pem,
@@ -275,7 +277,7 @@ impl AcmeOrder {
         let cert = Cert::new(
             CertKind::Server,
             cert_chain_pem.into_bytes(),
-            Some(cert.serialize_private_key_pem().into_bytes()),
+            Some(keypair.serialize_pem().into_bytes()),
         );
 
         Ok(cert?)
