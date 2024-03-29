@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.3.26 - 2024-03-29
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.26 -->
+### What's Changed
+
+#### Bug Fixes
+
+* acme: fix requests not triggered without old certs by @picoHz in https://github.com/picoHz/taxy/pull/56
+
+#### WebUI Updates
+
+* Fix status indicator shrinking issue by @picoHz in https://github.com/picoHz/taxy/pull/58
+
+#### Other Changes
+
+* update rcgen to v0.13.0 by @picoHz in https://github.com/picoHz/taxy/pull/57
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.25...v0.3.26
+
 ## v0.3.25 - 2024-03-27
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.25 -->
