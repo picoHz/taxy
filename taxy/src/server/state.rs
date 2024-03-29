@@ -314,12 +314,13 @@ impl ServerState {
     async fn start_http_challenges(&mut self) {
         let entries = self.acmes.entries().cloned();
         let entries = entries
+            .filter(|entry| entry.acme.config.active)
             .filter(|entry| {
-                entry.acme.config.active
-                    && entry
-                        .next_renewal(&self.certs)
-                        .map(|next| next.elapsed().is_ok())
-                        .unwrap_or_default()
+                if let Some(next) = entry.next_renewal(&self.certs) {
+                    next.elapsed().is_ok()
+                } else {
+                    true
+                }
             })
             .collect::<Vec<_>>();
 
