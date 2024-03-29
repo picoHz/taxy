@@ -155,7 +155,7 @@ pub fn proxy_list() -> Html {
                                 </td>
                                 <td class="px-4 py-4">
                                     <div class="flex items-center">
-                                        <div class={classes!("h-2.5", "w-2.5", "rounded-full", "bg-green-500", "mr-2", tag)}></div> {status_text}
+                                        <div class={classes!("h-2.5", "w-2.5", "shrink-0", "rounded-full", "bg-green-500", "mr-2", tag)}></div> {status_text}
                                     </div>
                                 </td>
                                 <td class="px-4 py-4 w-0 whitespace-nowrap" align="center">
