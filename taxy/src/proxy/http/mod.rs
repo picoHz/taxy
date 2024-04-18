@@ -266,6 +266,11 @@ async fn start(
             _ => false,
         };
 
+        let host = header_host
+            .or(sni.as_deref())
+            .or(req.uri().host())
+            .and_then(|s| HeaderValue::from_str(s).ok());
+
         let action = format!("{} {}", req.method().as_str(), req.uri());
         let pool = pool.clone();
         let shared = shared_cache.load();
@@ -293,11 +298,14 @@ async fn start(
                 *req.uri_mut() = uri;
             }
 
-            req.headers_mut()
-                .insert("x-forwarded-proto", forwarded_proto.clone());
-
             info!(target: "taxy::access_log", remote = %remote, %local, action, target = %req.uri());
             let span: Span = span!(Level::INFO, "http", %resource_id, remote = %remote, %local, action, target = %req.uri());
+
+            let headers = req.headers_mut();
+            headers.insert("x-forwarded-proto", forwarded_proto.clone());
+            if let Some(host) = host {
+                headers.insert(HOST, host);
+            }
 
             shared
                 .header_rewriter
