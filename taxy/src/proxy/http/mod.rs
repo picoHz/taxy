@@ -233,6 +233,12 @@ async fn start(
     let mut server_http2 = false;
     let mut sni = None;
 
+    let forwarded_proto = if tls_acceptor.is_some() {
+        HeaderValue::from_static("https")
+    } else {
+        HeaderValue::from_static("http")
+    };
+
     if let Some(acceptor) = tls_acceptor {
         debug!(%remote, "server: tls handshake");
         let accepted = acceptor.accept(stream).await?;
@@ -290,6 +296,9 @@ async fn start(
             if let Ok(uri) = Uri::from_parts(parts) {
                 *req.uri_mut() = uri;
             }
+
+            req.headers_mut()
+                .insert("x-forwarded-proto", forwarded_proto.clone());
 
             info!(target: "taxy::access_log", remote = %remote, %local, action, target = %req.uri());
             let span: Span = span!(Level::INFO, "http", %resource_id, remote = %remote, %local, action, target = %req.uri());
