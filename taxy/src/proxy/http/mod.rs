@@ -280,11 +280,7 @@ async fn start(
                     "https" | "wss" => Scheme::HTTPS,
                     _ => Scheme::HTTP,
                 });
-
-                let authority = server.authority.clone();
-                req.headers_mut()
-                    .insert(HOST, HeaderValue::from_str(authority.as_str()).unwrap());
-                parts.authority = Some(authority);
+                parts.authority = Some(server.authority.clone());
             }
 
             if let Ok(uri) = Uri::from_parts(parts) {
