@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.3.27 - 2024-04-18
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.27 -->
+### What's Changed
+
+#### Bug Fixes
+
+* Preserve original HOST header value in HTTP requests by @picoHz in https://github.com/picoHz/taxy/pull/61
+
+#### New Features
+
+* Add x-forwarded-proto header by @picoHz in https://github.com/picoHz/taxy/pull/60
+
+#### Other Changes
+
+* Update serde_qs to version 0.13.0 and brotli to version 5.0.0 by @picoHz in https://github.com/picoHz/taxy/pull/62
+* build(deps): bump whoami from 1.4.1 to 1.5.1 by @dependabot in https://github.com/picoHz/taxy/pull/63
+* build(deps): bump h2 from 0.3.24 to 0.3.26 by @dependabot in https://github.com/picoHz/taxy/pull/64
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.26...v0.3.27
+
 ## v0.3.26 - 2024-03-29
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.26 -->
