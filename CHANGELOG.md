@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.3.28 - 2024-04-20
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.28 -->
+### What's Changed
+
+#### Bug Fixes
+
+* Upgrade websocket protocol using existing connection by @picoHz in https://github.com/picoHz/taxy/pull/66
+
+#### New Features
+
+* Always set HOST header in HTTP requests by @picoHz in https://github.com/picoHz/taxy/pull/65
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.27...v0.3.28
+
 ## v0.3.27 - 2024-04-18
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.27 -->
