@@ -42,7 +42,6 @@ mod header;
 mod hyper_tls;
 mod pool;
 mod route;
-mod upgrade;
 
 const MAX_BUFFER_SIZE: usize = 4096;
 const HTTP2_MAX_FRAME_SIZE: usize = 16384;

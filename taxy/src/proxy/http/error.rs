@@ -8,9 +8,6 @@ pub enum ProxyError {
     #[error("domain fronting detected")]
     DomainFrontingDetected,
 
-    #[error("dns lookup failed")]
-    DnsLookupFailed,
-
     #[error("no route found")]
     NoRouteFound,
 }
@@ -20,7 +17,6 @@ impl ProxyError {
         match self {
             Self::DomainFrontingDetected => StatusCode::MISDIRECTED_REQUEST,
             Self::NoRouteFound => StatusCode::BAD_GATEWAY,
-            Self::DnsLookupFailed => StatusCode::from_u16(523).unwrap(),
         }
     }
 }
