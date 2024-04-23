@@ -40,6 +40,28 @@ Please note, you can change the configuration freely, but due to the instance be
 
 There are multiple ways to install Taxy.
 
+## Docker
+
+Run the following command to start Taxy using Docker:
+
+```bash
+docker run -d \
+  -v taxy-config:/root/.config/taxy \
+  -p 80:80 \
+  -p 443:443 \
+  -p 127.0.0.1:46492:46492 \
+  --restart unless-stopped \
+  --name taxy \
+  ghcr.io/picohz/taxy:latest
+```
+
+To log in to the admin panel, you'll first need to create a user. Follow the steps below to create an admin user:
+
+```bash
+docker exec -t -i taxy taxy add-user admin
+password?: ******
+```
+
 ### Docker Compose
 
 Create a file named `docker-compose.yml` with the following content:
