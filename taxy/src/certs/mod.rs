@@ -313,8 +313,9 @@ impl Cert {
         let key = key
             .decode_msg::<PrivateKeyInfo>()
             .map_err(|err| anyhow::anyhow!("{err}"))?;
-        let signing_key = sign::any_supported_type(&PrivateKeyDer::Sec1(key.private_key.into()))
-            .map_err(|err| anyhow::anyhow!("{err}"))?;
+        let key =
+            PrivateKeyDer::try_from(key.private_key).map_err(|err| anyhow::anyhow!("{err}"))?;
+        let signing_key = sign::any_supported_type(&key).map_err(|err| anyhow::anyhow!("{err}"))?;
         let chain = self.certificates()?;
         Ok(CertifiedKey::new(chain, signing_key))
     }
