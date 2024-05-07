@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.3.29 - 2024-05-07
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.29 -->
+### What's Changed
+
+#### Bug Fixes
+
+* Support multiple private key formats by @picoHz in https://github.com/picoHz/taxy/pull/74
+* Support certificates without Subject Alternate Name by @picoHz in https://github.com/picoHz/taxy/pull/73
+
+#### Other Changes
+
+* Update sqlx version to 0.7.4 by @picoHz in https://github.com/picoHz/taxy/pull/67
+* Add Docker installation instructions to docs by @picoHz in https://github.com/picoHz/taxy/pull/68
+* Update network-interface version to 2.0.0 by @picoHz in https://github.com/picoHz/taxy/pull/69
+* Update brotli version to 6.0.0 by @picoHz in https://github.com/picoHz/taxy/pull/71
+* Update utoipa-swagger-ui version to 7.0.0 by @picoHz in https://github.com/picoHz/taxy/pull/72
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.28...v0.3.29
+
 ## v0.3.28 - 2024-04-20
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.28 -->
