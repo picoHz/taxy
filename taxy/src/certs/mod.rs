@@ -164,15 +164,11 @@ impl Cert {
         let parsed_chain = parse_chain(&certs)?;
         let x509 = parsed_chain.first().ok_or(Error::FailedToReadCertificate)?;
 
-        let common_name = x509
-            .subject()
-            .iter_common_name()
-            .filter_map(|name| {
-                name.as_str()
-                    .ok()
-                    .and_then(|name| SubjectName::from_str(name).ok())
-            })
-            .next();
+        let common_name = x509.subject().iter_common_name().find_map(|name| {
+            name.as_str()
+                .ok()
+                .and_then(|name| SubjectName::from_str(name).ok())
+        });
 
         let san = common_name
             .clone()
