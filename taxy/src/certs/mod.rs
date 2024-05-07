@@ -163,27 +163,43 @@ impl Cert {
 
         let parsed_chain = parse_chain(&certs)?;
         let x509 = parsed_chain.first().ok_or(Error::FailedToReadCertificate)?;
-        let san = x509
-            .subject_alternative_name()
-            .into_iter()
-            .flatten()
-            .flat_map(|name| &name.value.general_names)
-            .filter_map(|name| match name {
-                GeneralName::DNSName(name) => SubjectName::from_str(name).ok(),
-                GeneralName::IPAddress(ip) => match ip.len() {
-                    4 => {
-                        let addr = [ip[0], ip[1], ip[2], ip[3]];
-                        Some(SubjectName::IPAddress(IpAddr::V4(addr.into())))
-                    }
-                    16 => {
-                        let mut addr = [0; 16];
-                        addr.copy_from_slice(ip);
-                        Some(SubjectName::IPAddress(IpAddr::V6(addr.into())))
-                    }
-                    _ => None,
-                },
-                _ => None,
+
+        let common_name = x509
+            .subject()
+            .iter_common_name()
+            .filter_map(|name| {
+                name.as_str()
+                    .ok()
+                    .and_then(|name| SubjectName::from_str(name).ok())
             })
+            .next();
+
+        let san = common_name
+            .clone()
+            .into_iter()
+            .chain(
+                x509.subject_alternative_name()
+                    .into_iter()
+                    .flatten()
+                    .flat_map(|name| &name.value.general_names)
+                    .filter_map(|name| match name {
+                        GeneralName::DNSName(name) => SubjectName::from_str(name).ok(),
+                        GeneralName::IPAddress(ip) => match ip.len() {
+                            4 => {
+                                let addr = [ip[0], ip[1], ip[2], ip[3]];
+                                Some(SubjectName::IPAddress(IpAddr::V4(addr.into())))
+                            }
+                            16 => {
+                                let mut addr = [0; 16];
+                                addr.copy_from_slice(ip);
+                                Some(SubjectName::IPAddress(IpAddr::V6(addr.into())))
+                            }
+                            _ => None,
+                        },
+                        _ => None,
+                    })
+                    .filter(|name| Some(name) != common_name.as_ref()),
+            )
             .collect();
 
         let not_after = x509.validity().not_after;
