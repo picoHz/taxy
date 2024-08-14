@@ -27,7 +27,7 @@ backoff = { version = "0.4.0", features = ["tokio"] }
 base64 = "0.22.0"
 brotli = "6.0.0"
 clap = { version = "4.3.11", features = ["derive", "env"] }
-dashmap = "5.5.0"
+dashmap = "6.0.1"
 directories = "5.0.1"
 flate2 = "1.0.26"
 fnv = "1.0.7"
