@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.3.30 - 2024-08-14
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.30 -->
+### What's Changed
+
+#### Bug Fixes
+
+* Fix server URL validation and ignore invalid routes by @picoHz in https://github.com/picoHz/taxy/pull/81
+
+#### Other Changes
+
+* Update dependencies by @picoHz in https://github.com/picoHz/taxy/pull/80
+* Fix clippy warnings by @picoHz in https://github.com/picoHz/taxy/pull/82
+* Update wasm-bindgen crate to v0.2.93 by @picoHz in https://github.com/picoHz/taxy/pull/84
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.29...v0.3.30
+
 ## v0.3.29 - 2024-05-07
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.29 -->
