@@ -1,6 +1,6 @@
 use crate::error::Error;
 use serde::{Deserialize, Serialize};
-use std::{net::IpAddr, str::FromStr};
+use std::{fmt::Display, net::IpAddr, str::FromStr};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SubjectName {
@@ -44,12 +44,12 @@ impl<'de> Deserialize<'de> for SubjectName {
     }
 }
 
-impl ToString for SubjectName {
-    fn to_string(&self) -> String {
+impl Display for SubjectName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::DnsName(name) => name.to_owned(),
-            Self::WildcardDnsName(name) => format!("*.{}", name),
-            Self::IPAddress(addr) => addr.to_string(),
+            Self::DnsName(name) => write!(f, "{}", name),
+            Self::WildcardDnsName(name) => write!(f, "*.{}", name),
+            Self::IPAddress(addr) => write!(f, "{}", addr),
         }
     }
 }

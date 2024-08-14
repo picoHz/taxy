@@ -4,6 +4,7 @@ use crate::pages::cert_list::{CertsQuery, CertsTab};
 use crate::{auth::use_ensure_auth, pages::Route, API_ENDPOINT};
 use gloo_net::http::Request;
 use std::collections::HashMap;
+use std::fmt::Display;
 use taxy_api::acme::AcmeRequest;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use web_sys::HtmlSelectElement;
@@ -35,13 +36,13 @@ impl Provider {
     }
 }
 
-impl ToString for Provider {
-    fn to_string(&self) -> String {
+impl Display for Provider {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Provider::LetsEncrypt => "Let's Encrypt".to_string(),
-            Provider::GoogleTrustServices => "Google Trust Services".to_string(),
-            Provider::ZeroSSL => "ZeroSSL".to_string(),
-            Provider::Custom => "Custom".to_string(),
+            Provider::LetsEncrypt => write!(f, "Let's Encrypt"),
+            Provider::GoogleTrustServices => write!(f, "Google Trust Services"),
+            Provider::ZeroSSL => write!(f, "ZeroSSL"),
+            Provider::Custom => write!(f, "Custom"),
         }
     }
 }

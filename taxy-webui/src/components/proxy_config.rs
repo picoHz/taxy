@@ -4,6 +4,7 @@ use crate::store::PortStore;
 use crate::API_ENDPOINT;
 use gloo_net::http::Request;
 use std::collections::HashMap;
+use std::fmt::Display;
 use taxy_api::id::ShortId;
 use taxy_api::proxy::{HttpProxy, ProxyKind, TcpProxy};
 use taxy_api::{port::PortEntry, proxy::Proxy};
@@ -18,11 +19,11 @@ pub enum ProxyProtocol {
     Tcp,
 }
 
-impl ToString for ProxyProtocol {
-    fn to_string(&self) -> String {
+impl Display for ProxyProtocol {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ProxyProtocol::Http => "HTTP / HTTPS".to_string(),
-            ProxyProtocol::Tcp => "TCP / TCP over TLS".to_string(),
+            ProxyProtocol::Http => write!(f, "HTTP / HTTPS"),
+            ProxyProtocol::Tcp => write!(f, "TCP / TCP over TLS"),
         }
     }
 }

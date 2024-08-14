@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::auth::use_ensure_auth;
 use crate::format::format_duration;
 use crate::pages::Route;
@@ -27,14 +29,13 @@ pub struct CertsQuery {
     pub tab: CertsTab,
 }
 
-impl ToString for CertsTab {
-    fn to_string(&self) -> String {
+impl Display for CertsTab {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CertsTab::Server => "Server Certs",
-            CertsTab::Root => "Root Certs",
-            CertsTab::Acme => "ACME",
+            CertsTab::Server => write!(f, "Server Certs"),
+            CertsTab::Root => write!(f, "Root Certs"),
+            CertsTab::Acme => write!(f, "ACME"),
         }
-        .into()
     }
 }
 
