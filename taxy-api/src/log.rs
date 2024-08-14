@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 use time::OffsetDateTime;
 use utoipa::{IntoParams, ToSchema};
 
@@ -28,14 +28,14 @@ impl TryFrom<u8> for LogLevel {
     }
 }
 
-impl ToString for LogLevel {
-    fn to_string(&self) -> String {
+impl Display for LogLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LogLevel::Error => "error".to_string(),
-            LogLevel::Warn => "warn".to_string(),
-            LogLevel::Info => "info".to_string(),
-            LogLevel::Debug => "debug".to_string(),
-            LogLevel::Trace => "trace".to_string(),
+            LogLevel::Error => write!(f, "error"),
+            LogLevel::Warn => write!(f, "warn"),
+            LogLevel::Info => write!(f, "info"),
+            LogLevel::Debug => write!(f, "debug"),
+            LogLevel::Trace => write!(f, "trace"),
         }
     }
 }
