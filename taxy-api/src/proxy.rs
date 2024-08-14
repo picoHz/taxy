@@ -1,14 +1,12 @@
-use std::fmt;
-use std::str::FromStr;
-
 use crate::error::Error;
 use crate::subject_name::SubjectName;
 use crate::{id::ShortId, port::UpstreamServer};
 use serde_default::DefaultFromSerde;
 use serde_derive::{Deserialize, Serialize};
+use std::fmt;
+use std::str::FromStr;
 use url::Url;
 use utoipa::ToSchema;
-use warp::filters::host::Authority;
 
 #[derive(Debug, DefaultFromSerde, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct Proxy {
@@ -118,14 +116,12 @@ impl ServerUrl {
         self.0.host_str()
     }
 
-    pub fn authority(&self) -> Option<Authority> {
-        format!(
+    pub fn authority(&self) -> Option<String> {
+        Some(format!(
             "{}:{}",
             self.hostname()?,
             self.0.port_or_known_default().unwrap_or_default()
-        )
-        .parse()
-        .ok()
+        ))
     }
 }
 
