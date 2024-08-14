@@ -50,7 +50,7 @@ async fn ws_proxy() -> anyhow::Result<()> {
                     routes: vec![Route {
                         path: "/".into(),
                         servers: vec![taxy_api::proxy::Server {
-                            url: listen_port.http_url("/"),
+                            url: listen_port.http_url("/").try_into().unwrap(),
                         }],
                     }],
                 }),

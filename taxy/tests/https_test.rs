@@ -51,7 +51,7 @@ async fn https_proxy() -> anyhow::Result<()> {
                     routes: vec![Route {
                         path: "/".into(),
                         servers: vec![taxy_api::proxy::Server {
-                            url: listen_port.https_url("/"),
+                            url: listen_port.https_url("/").try_into().unwrap(),
                         }],
                     }],
                 }),
@@ -147,7 +147,7 @@ async fn https_proxy_invalid_cert() -> anyhow::Result<()> {
                     routes: vec![Route {
                         path: "/".into(),
                         servers: vec![taxy_api::proxy::Server {
-                            url: listen_port.https_url("/"),
+                            url: listen_port.https_url("/").try_into().unwrap(),
                         }],
                     }],
                 }),
@@ -224,7 +224,7 @@ async fn https_proxy_automatic_upgrade() -> anyhow::Result<()> {
                     routes: vec![Route {
                         path: "/".into(),
                         servers: vec![taxy_api::proxy::Server {
-                            url: listen_port.https_url("/"),
+                            url: listen_port.https_url("/").try_into().unwrap(),
                         }],
                     }],
                 }),
@@ -316,7 +316,7 @@ async fn https_proxy_domain_fronting() -> anyhow::Result<()> {
                     routes: vec![Route {
                         path: "/".into(),
                         servers: vec![taxy_api::proxy::Server {
-                            url: listen_port.https_url("/"),
+                            url: listen_port.https_url("/").try_into().unwrap(),
                         }],
                     }],
                 }),

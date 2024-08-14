@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 use std::str::FromStr;
-use taxy_api::proxy::{HttpProxy, Route, Server};
+use taxy_api::proxy::{HttpProxy, Route, Server, ServerUrl};
 use taxy_api::subject_name::SubjectName;
-use url::Url;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
@@ -159,7 +158,7 @@ fn get_proxy(
         let servers = route.1.clone();
         let mut urls = Vec::new();
         for url in servers {
-            match Url::from_str(&url) {
+            match ServerUrl::from_str(&url) {
                 Ok(url) => urls.push(Server { url }),
                 Err(err) => {
                     errors.insert(format!("routes_{}", i), err.to_string());

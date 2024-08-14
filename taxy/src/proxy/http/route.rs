@@ -94,28 +94,19 @@ impl TryFrom<Server> for ParsedServer {
     type Error = Error;
 
     fn try_from(server: Server) -> Result<Self, Self::Error> {
-        let hostname = server
-            .url
-            .host_str()
-            .ok_or_else(|| Error::InvalidServerUrl {
-                url: server.url.clone(),
-            })?;
-        let authority = format!(
-            "{}:{}",
-            hostname,
-            server.url.port_or_known_default().unwrap_or_default()
-        )
-        .parse()
-        .map_err(|_| Error::InvalidServerUrl {
-            url: server.url.clone(),
+        let authority = server.url.authority().ok_or(Error::InvalidServerUrl {
+            url: server.url.to_string(),
+        })?;
+        let hostname = server.url.hostname().ok_or(Error::InvalidServerUrl {
+            url: server.url.to_string(),
         })?;
         let server_name = ServerName::try_from(hostname)
             .map_err(|_| Error::InvalidServerUrl {
-                url: server.url.clone(),
+                url: server.url.to_string(),
             })?
             .to_owned();
         Ok(Self {
-            url: server.url,
+            url: server.url.into(),
             authority,
             server_name,
         })
