@@ -1,6 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
-use url::Url;
 use utoipa::ToSchema;
 
 use crate::{id::ShortId, multiaddr::Multiaddr};
@@ -31,7 +30,7 @@ pub enum Error {
     InvalidSubjectName { name: String },
 
     #[error("invalid server url: {url}")]
-    InvalidServerUrl { url: Url },
+    InvalidServerUrl { url: String },
 
     #[error("invalid multiaddr: {addr}")]
     InvalidMultiaddr { addr: String },
