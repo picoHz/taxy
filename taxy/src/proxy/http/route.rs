@@ -1,5 +1,6 @@
 use super::filter::{FilterResult, RequestFilter};
 use hyper::Request;
+use std::str::FromStr;
 use taxy_api::{
     error::Error,
     id::ShortId,
@@ -88,6 +89,7 @@ impl TryFrom<Server> for ParsedServer {
     type Error = Error;
 
     fn try_from(server: Server) -> Result<Self, Self::Error> {
+        let url = server.url.clone().into();
         let authority = server.url.authority().ok_or(Error::InvalidServerUrl {
             url: server.url.to_string(),
         })?;
@@ -95,8 +97,10 @@ impl TryFrom<Server> for ParsedServer {
             url: server.url.to_string(),
         })?;
         Ok(Self {
-            url: server.url.into(),
-            authority,
+            url,
+            authority: Authority::from_str(&authority).map_err(|_| Error::InvalidServerUrl {
+                url: hostname.to_owned(),
+            })?,
         })
     }
 }
