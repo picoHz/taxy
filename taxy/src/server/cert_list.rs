@@ -21,19 +21,16 @@ impl CertList {
         certs.sort_unstable_by(|_, v1, _, v2| v1.partial_cmp(v2).unwrap());
 
         let mut system_root_certs = RootCertStore::empty();
-        if let Ok(certs) = tokio::task::spawn_blocking(rustls_native_certs::load_native_certs).await
+        if let Ok(result) =
+            tokio::task::spawn_blocking(rustls_native_certs::load_native_certs).await
         {
-            match certs {
-                Ok(certs) => {
-                    for cert in certs {
-                        if let Err(err) = system_root_certs.add(cert) {
-                            warn!("failed to add native certs: {err}");
-                        }
-                    }
+            for cert in result.certs {
+                if let Err(err) = system_root_certs.add(cert) {
+                    warn!("failed to add native certs: {err}");
                 }
-                Err(err) => {
-                    warn!("failed to load native certs: {err}");
-                }
+            }
+            for error in result.errors {
+                warn!("failed to load native certs: {error}");
             }
         }
 
