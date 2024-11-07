@@ -233,9 +233,9 @@ async fn start(
     let mut sni = None;
 
     let forwarded_proto = if tls_acceptor.is_some() {
-        HeaderValue::from_static("https")
+        "https"
     } else {
-        HeaderValue::from_static("http")
+        "http"
     };
 
     if let Some(acceptor) = tls_acceptor {
@@ -301,14 +301,13 @@ async fn start(
             let span: Span = span!(Level::INFO, "http", %resource_id, remote = %remote, %local, action, target = %req.uri());
 
             let headers = req.headers_mut();
-            headers.insert("x-forwarded-proto", forwarded_proto.clone());
             if let Some(host) = host {
                 headers.insert(HOST, host);
             }
 
             shared
                 .header_rewriter
-                .pre_process(req.headers_mut(), remote.ip());
+                .pre_process(req.headers_mut(), remote.ip(), forwarded_proto);
             shared.header_rewriter.post_process(req.headers_mut());
             Ok((req, span))
         } else {
