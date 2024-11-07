@@ -72,6 +72,7 @@ impl HeaderRewriter {
         &self,
         headers: &mut HeaderMap,
         remote_addr: IpAddr,
+        header_host: Option<String>,
         forwarded_proto: &'static str,
     ) {
         let mut x_forwarded_for = Vec::new();
@@ -100,6 +101,7 @@ impl HeaderRewriter {
                 &forwarded
                     .into_iter()
                     .chain(iter::once(forwarded_for_directive(remote_addr)))
+                    .chain(header_host.map(|host| forwarded_host_directive(&host)))
                     .chain(iter::once(forwarded_proto_directive(forwarded_proto)))
                     .collect::<Vec<_>>()
                     .join(", "),
@@ -159,6 +161,10 @@ fn forwarded_for_directive(addr: IpAddr) -> String {
     }
 }
 
+fn forwarded_host_directive(host: &str) -> String {
+    format!("host={host}")
+}
+
 fn forwarded_proto_directive(proto: &str) -> String {
     format!("proto={proto}")
 }
@@ -179,6 +185,7 @@ mod test {
         rewriter.pre_process(
             &mut headers,
             Ipv4Addr::new(127, 0, 0, 1).into(),
+            Some("example.com".into()),
             forwarded_proto,
         );
         assert_eq!(headers.get("x-forwarded-for").unwrap(), "127.0.0.1");
@@ -193,11 +200,12 @@ mod test {
         rewriter.pre_process(
             &mut headers,
             Ipv4Addr::new(127, 0, 0, 1).into(),
+            Some("example.com".into()),
             forwarded_proto,
         );
         assert_eq!(
             headers.get(FORWARDED).unwrap(),
-            "for=192.168.0.1, for=127.0.0.1, proto=http"
+            "for=192.168.0.1, for=127.0.0.1, host=example.com, proto=http"
         );
         assert_eq!(headers.get("x-forwarded-proto").unwrap(), "http");
 
@@ -210,6 +218,7 @@ mod test {
         rewriter.pre_process(
             &mut headers,
             Ipv4Addr::new(127, 0, 0, 1).into(),
+            Some("example.com".into()),
             forwarded_proto,
         );
         assert_eq!(
@@ -225,10 +234,15 @@ mod test {
             .trust_upstream_headers(true)
             .use_std_forwarded(true)
             .build();
-        rewriter.pre_process(&mut headers, Ipv6Addr::LOCALHOST.into(), forwarded_proto);
+        rewriter.pre_process(
+            &mut headers,
+            Ipv6Addr::LOCALHOST.into(),
+            Some("example.com".into()),
+            forwarded_proto,
+        );
         assert_eq!(
             headers.get(FORWARDED).unwrap(),
-            "for=192.168.0.1, for=\"[::1]\", proto=http"
+            "for=192.168.0.1, for=\"[::1]\", host=example.com, proto=http"
         );
         assert_eq!(headers.get("x-forwarded-proto").unwrap(), "http");
     }

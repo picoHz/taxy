@@ -261,7 +261,7 @@ async fn start(
             .and_then(|h| h.to_str().ok().and_then(|host| host.split(':').next()));
 
         let domain_fronting = match (&sni, header_host) {
-            (Some(sni), Some(header)) => !sni.eq_ignore_ascii_case(header),
+            (Some(sni), Some(header)) => !sni.eq_ignore_ascii_case(&header),
             _ => false,
         };
 
@@ -269,6 +269,7 @@ async fn start(
             .or(sni.as_deref())
             .or(req.uri().host())
             .and_then(|s| HeaderValue::from_str(s).ok());
+        let header_host = header_host.map(|h| h.to_string());
 
         let action = format!("{} {}", req.method().as_str(), req.uri());
         let pool = pool.clone();
@@ -305,9 +306,12 @@ async fn start(
                 headers.insert(HOST, host);
             }
 
-            shared
-                .header_rewriter
-                .pre_process(req.headers_mut(), remote.ip(), forwarded_proto);
+            shared.header_rewriter.pre_process(
+                req.headers_mut(),
+                remote.ip(),
+                header_host.map(|h| h.to_string()),
+                forwarded_proto,
+            );
             shared.header_rewriter.post_process(req.headers_mut());
             Ok((req, span))
         } else {
