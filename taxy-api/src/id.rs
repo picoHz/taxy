@@ -80,7 +80,7 @@ mod test {
     }
 
     #[test]
-    fn parse_hypen_id() {
+    fn parse_hyphen_id() {
         let id = ShortId::from_str("djs-vjd").unwrap();
         assert_eq!(id.to_string(), "djs-vjd");
     }

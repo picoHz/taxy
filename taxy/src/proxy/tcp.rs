@@ -93,7 +93,7 @@ impl TcpPortContext {
 
     pub fn event(&mut self, event: PortContextEvent) {
         match event {
-            PortContextEvent::SocketStateUpadted(state) => {
+            PortContextEvent::SocketStateUpdated(state) => {
                 if self.status.state.socket != state {
                     self.status.started_at = if state == SocketState::Listening {
                         Some(SystemTime::now())
@@ -157,10 +157,10 @@ pub async fn start(
     let remote = stream.get_ref().peer_addr()?;
     let local = stream.get_ref().local_addr()?;
 
-    let (mut client_strem, server_stream) = tokio::io::duplex(MAX_BUFFER_SIZE);
+    let (mut client_stream, server_stream) = tokio::io::duplex(MAX_BUFFER_SIZE);
     tokio::spawn(async move {
         tokio::select! {
-            result = tokio::io::copy_bidirectional(&mut stream, &mut client_strem) => {
+            result = tokio::io::copy_bidirectional(&mut stream, &mut client_stream) => {
                 if let Err(err) = result {
                     error!("{err}");
                 }

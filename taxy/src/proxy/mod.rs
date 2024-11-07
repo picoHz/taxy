@@ -15,7 +15,7 @@ pub mod tls;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PortContextEvent {
-    SocketStateUpadted(SocketState),
+    SocketStateUpdated(SocketState),
 }
 
 #[derive(Debug)]

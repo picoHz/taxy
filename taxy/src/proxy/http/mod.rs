@@ -128,7 +128,7 @@ impl HttpPortContext {
 
     pub fn event(&mut self, event: PortContextEvent) {
         match event {
-            PortContextEvent::SocketStateUpadted(state) => {
+            PortContextEvent::SocketStateUpdated(state) => {
                 if self.status.state.socket != state {
                     self.status.started_at = if state == SocketState::Listening {
                         Some(SystemTime::now())
