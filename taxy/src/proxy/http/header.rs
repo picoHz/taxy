@@ -9,7 +9,6 @@ use std::{iter, net::IpAddr};
 #[derive(Default, Debug)]
 pub struct HeaderRewriter {
     trust_upstream_headers: bool,
-    use_std_forwarded: bool,
     set_via: Option<HeaderValue>,
 }
 
@@ -85,30 +84,25 @@ impl HeaderRewriter {
             self.remove_untrusted_headers(headers);
         }
 
-        headers.insert(
-            "x-forwarded-proto",
-            HeaderValue::from_static(forwarded_proto),
-        );
+        if forwarded.is_empty() {
+            forwarded = x_forwarded_for
+                .iter()
+                .map(|ip| forwarded_for_directive(*ip))
+                .collect();
+        }
+        if let Ok(forwarded_value) = HeaderValue::from_str(
+            &forwarded
+                .into_iter()
+                .chain(iter::once(forwarded_for_directive(remote_addr)))
+                .chain(header_host.map(|host| forwarded_host_directive(&host)))
+                .chain(iter::once(forwarded_proto_directive(forwarded_proto)))
+                .collect::<Vec<_>>()
+                .join(", "),
+        ) {
+            headers.insert(FORWARDED, forwarded_value);
+        }
 
-        if self.use_std_forwarded || !forwarded.is_empty() {
-            if forwarded.is_empty() {
-                forwarded = x_forwarded_for
-                    .into_iter()
-                    .map(forwarded_for_directive)
-                    .collect();
-            }
-            if let Ok(forwarded_value) = HeaderValue::from_str(
-                &forwarded
-                    .into_iter()
-                    .chain(iter::once(forwarded_for_directive(remote_addr)))
-                    .chain(header_host.map(|host| forwarded_host_directive(&host)))
-                    .chain(iter::once(forwarded_proto_directive(forwarded_proto)))
-                    .collect::<Vec<_>>()
-                    .join(", "),
-            ) {
-                headers.insert(FORWARDED, forwarded_value);
-            }
-        } else if let Ok(x_forwarded_value) = HeaderValue::from_str(
+        if let Ok(x_forwarded_value) = HeaderValue::from_str(
             &x_forwarded_for
                 .iter()
                 .chain(iter::once(&remote_addr))
@@ -118,6 +112,11 @@ impl HeaderRewriter {
         ) {
             headers.insert("x-forwarded-for", x_forwarded_value);
         }
+
+        headers.insert(
+            "x-forwarded-proto",
+            HeaderValue::from_static(forwarded_proto),
+        );
     }
 
     pub fn post_process(&self, headers: &mut HeaderMap) {
@@ -135,11 +134,6 @@ pub struct Builder {
 impl Builder {
     pub fn trust_upstream_headers(mut self, trust: bool) -> Self {
         self.inner.trust_upstream_headers = trust;
-        self
-    }
-
-    pub fn use_std_forwarded(mut self, use_std: bool) -> Self {
-        self.inner.use_std_forwarded = use_std;
         self
     }
 
@@ -207,6 +201,7 @@ mod test {
             headers.get(FORWARDED).unwrap(),
             "for=192.168.0.1, for=127.0.0.1, host=example.com, proto=http"
         );
+        assert_eq!(headers.get("x-forwarded-for").unwrap(), "127.0.0.1");
         assert_eq!(headers.get("x-forwarded-proto").unwrap(), "http");
 
         let mut headers = HeaderMap::new();
@@ -232,7 +227,6 @@ mod test {
 
         let rewriter = HeaderRewriter::builder()
             .trust_upstream_headers(true)
-            .use_std_forwarded(true)
             .build();
         rewriter.pre_process(
             &mut headers,
@@ -244,6 +238,7 @@ mod test {
             headers.get(FORWARDED).unwrap(),
             "for=192.168.0.1, for=\"[::1]\", host=example.com, proto=http"
         );
+        assert_eq!(headers.get("x-forwarded-for").unwrap(), "192.168.0.1, ::1");
         assert_eq!(headers.get("x-forwarded-proto").unwrap(), "http");
     }
 

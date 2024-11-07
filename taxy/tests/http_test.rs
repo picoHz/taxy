@@ -16,8 +16,6 @@ async fn http_proxy() -> anyhow::Result<()> {
     let mock_get = server
         .mock("GET", "/hello?world=1")
         .match_header("via", "taxy")
-        .match_header("x-forwarded-for", mockito::Matcher::Missing)
-        .match_header("x-forwarded-host", mockito::Matcher::Missing)
         .match_header("x-real-ip", mockito::Matcher::Missing)
         .match_header("x-forwarded-proto", "http")
         .match_header("accept-encoding", "gzip, br")
@@ -28,8 +26,6 @@ async fn http_proxy() -> anyhow::Result<()> {
     let mock_get_with_path = server
         .mock("GET", "/Hello?world=1")
         .match_header("via", "taxy")
-        .match_header("x-forwarded-for", mockito::Matcher::Missing)
-        .match_header("x-forwarded-host", mockito::Matcher::Missing)
         .match_header("x-real-ip", mockito::Matcher::Missing)
         .match_header("x-forwarded-proto", "http")
         .match_header("accept-encoding", "gzip, br")
@@ -40,8 +36,6 @@ async fn http_proxy() -> anyhow::Result<()> {
     let mock_get_trailing_slash = server
         .mock("GET", "/hello/?world=1")
         .match_header("via", "taxy")
-        .match_header("x-forwarded-for", mockito::Matcher::Missing)
-        .match_header("x-forwarded-host", mockito::Matcher::Missing)
         .match_header("x-real-ip", mockito::Matcher::Missing)
         .match_header("x-forwarded-proto", "http")
         .match_header("accept-encoding", "gzip, br")
@@ -52,8 +46,6 @@ async fn http_proxy() -> anyhow::Result<()> {
     let mock_post = server
         .mock("POST", "/hello?world=1")
         .match_header("via", "taxy")
-        .match_header("x-forwarded-for", mockito::Matcher::Missing)
-        .match_header("x-forwarded-host", mockito::Matcher::Missing)
         .match_header("x-real-ip", mockito::Matcher::Missing)
         .match_header("x-forwarded-proto", "http")
         .match_header("accept-encoding", "gzip, br")
@@ -67,8 +59,6 @@ async fn http_proxy() -> anyhow::Result<()> {
     let mock_stream = server
         .mock("POST", "/hello?world=1")
         .match_header("via", "taxy")
-        .match_header("x-forwarded-for", mockito::Matcher::Missing)
-        .match_header("x-forwarded-host", mockito::Matcher::Missing)
         .match_header("x-real-ip", mockito::Matcher::Missing)
         .match_header("x-forwarded-proto", "http")
         .match_header("accept-encoding", "gzip, br")
