@@ -1,7 +1,8 @@
 use super::{with_state, AppState};
 use crate::server::rpc::acme::*;
 use taxy_api::{
-    acme::{AcmeConfig, AcmeRequest},
+    acme::{AcmeConfig, AcmeInfo, AcmeRequest},
+    error::Error,
     id::ShortId,
 };
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};

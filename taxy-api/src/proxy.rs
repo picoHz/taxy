@@ -109,6 +109,7 @@ pub struct Server {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, ToSchema)]
 #[serde(transparent)]
+#[schema(value_type = String)]
 pub struct ServerUrl(Url);
 
 impl ServerUrl {

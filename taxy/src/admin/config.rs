@@ -1,6 +1,6 @@
 use super::{with_state, AppState};
 use crate::server::rpc::config::*;
-use taxy_api::app::AppConfig;
+use taxy_api::{app::AppConfig, error::Error};
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
