@@ -18,12 +18,7 @@ impl HeaderRewriter {
     }
 
     fn remove_untrusted_headers(&self, headers: &mut HeaderMap) {
-        let header_keys = &[
-            FORWARDED.as_str(),
-            "x-forwarded-for",
-            "x-forwarded-host",
-            "x-real-ip",
-        ];
+        let header_keys = &[FORWARDED.as_str(), "x-forwarded-for", "x-real-ip"];
         for key in header_keys {
             if let Entry::Occupied(entry) = headers.entry(*key) {
                 entry.remove_entry_mult();
@@ -94,7 +89,11 @@ impl HeaderRewriter {
             &forwarded
                 .into_iter()
                 .chain(iter::once(forwarded_for_directive(remote_addr)))
-                .chain(header_host.map(|host| forwarded_host_directive(&host)))
+                .chain(
+                    header_host
+                        .as_ref()
+                        .map(|host| forwarded_host_directive(&host)),
+                )
                 .chain(iter::once(forwarded_proto_directive(forwarded_proto)))
                 .collect::<Vec<_>>()
                 .join(", "),
@@ -117,6 +116,12 @@ impl HeaderRewriter {
             "x-forwarded-proto",
             HeaderValue::from_static(forwarded_proto),
         );
+
+        if let Some(host) = &header_host {
+            if let Ok(host) = HeaderValue::from_str(host) {
+                headers.insert("x-forwarded-host", host);
+            }
+        }
     }
 
     pub fn post_process(&self, headers: &mut HeaderMap) {
@@ -184,6 +189,7 @@ mod test {
         );
         assert_eq!(headers.get("x-forwarded-for").unwrap(), "127.0.0.1");
         assert_eq!(headers.get("x-forwarded-proto").unwrap(), "http");
+        assert_eq!(headers.get("x-forwarded-host").unwrap(), "example.com");
 
         let mut headers = HeaderMap::new();
         headers.append(FORWARDED, "for=192.168.0.1".parse().unwrap());
@@ -203,6 +209,7 @@ mod test {
         );
         assert_eq!(headers.get("x-forwarded-for").unwrap(), "127.0.0.1");
         assert_eq!(headers.get("x-forwarded-proto").unwrap(), "http");
+        assert_eq!(headers.get("x-forwarded-host").unwrap(), "example.com");
 
         let mut headers = HeaderMap::new();
         headers.append("x-forwarded-for", "192.168.0.1".parse().unwrap());
@@ -221,6 +228,7 @@ mod test {
             "192.168.0.1, 127.0.0.1"
         );
         assert_eq!(headers.get("x-forwarded-proto").unwrap(), "http");
+        assert_eq!(headers.get("x-forwarded-host").unwrap(), "example.com");
 
         let mut headers = HeaderMap::new();
         headers.append("x-forwarded-for", "192.168.0.1".parse().unwrap());
@@ -240,6 +248,7 @@ mod test {
         );
         assert_eq!(headers.get("x-forwarded-for").unwrap(), "192.168.0.1, ::1");
         assert_eq!(headers.get("x-forwarded-proto").unwrap(), "http");
+        assert_eq!(headers.get("x-forwarded-host").unwrap(), "example.com");
     }
 
     #[test]
