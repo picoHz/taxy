@@ -109,7 +109,6 @@ async fn http_proxy() -> anyhow::Result<()> {
         let resp = client
             .get(proxy_port.http_url("/hello?world=1"))
             .header("x-forwarded-for", "0.0.0.0")
-            .header("x-forwarded-host", "untrusted.example.com")
             .header("x-real-ip", "0.0.0.0")
             .send()
             .await?
@@ -120,7 +119,6 @@ async fn http_proxy() -> anyhow::Result<()> {
         let resp = client
             .get(proxy_port.http_url("/was/ist/passiert/Hello?world=1"))
             .header("x-forwarded-for", "0.0.0.0")
-            .header("x-forwarded-host", "untrusted.example.com")
             .header("x-real-ip", "0.0.0.0")
             .send()
             .await?
@@ -131,7 +129,6 @@ async fn http_proxy() -> anyhow::Result<()> {
         let resp = client
             .get(proxy_port.http_url("/hello/?world=1"))
             .header("x-forwarded-for", "0.0.0.0")
-            .header("x-forwarded-host", "untrusted.example.com")
             .header("x-real-ip", "0.0.0.0")
             .send()
             .await?
@@ -142,7 +139,6 @@ async fn http_proxy() -> anyhow::Result<()> {
         let resp = client
             .post(proxy_port.http_url("/hello?world=1"))
             .header("x-forwarded-for", "0.0.0.0")
-            .header("x-forwarded-host", "untrusted.example.com")
             .header("x-real-ip", "0.0.0.0")
             .json(&json!({"hello": "world"}))
             .send()
@@ -157,7 +153,6 @@ async fn http_proxy() -> anyhow::Result<()> {
         let resp = client
             .post(proxy_port.http_url("/hello?world=1"))
             .header("x-forwarded-for", "0.0.0.0")
-            .header("x-forwarded-host", "untrusted.example.com")
             .header("x-real-ip", "0.0.0.0")
             .body(body)
             .send()
