@@ -103,7 +103,6 @@ impl HttpPortContext {
             router: Router::new(proxies),
             header_rewriter: HeaderRewriter::builder()
                 .trust_upstream_headers(false)
-                .use_std_forwarded(true)
                 .set_via(HeaderValue::from_static("taxy"))
                 .build(),
         }));
