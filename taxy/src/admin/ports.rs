@@ -1,6 +1,10 @@
 use super::{with_state, AppState};
 use crate::server::rpc::ports::*;
-use taxy_api::{id::ShortId, port::Port};
+use taxy_api::{
+    error::Error,
+    id::ShortId,
+    port::{NetworkInterface, Port, PortEntry, PortStatus},
+};
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {

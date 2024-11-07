@@ -1,4 +1,5 @@
 use super::{with_state, AppState};
+use taxy_api::app::AppInfo;
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {

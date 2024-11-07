@@ -3,7 +3,7 @@ use crate::{certs::Cert, server::rpc::certs::*};
 use hyper::Response;
 use std::{io::Read, ops::Deref, sync::Arc};
 use taxy_api::{
-    cert::{SelfSignedCertRequest, UploadQuery},
+    cert::{CertInfo, CertPostBody, SelfSignedCertRequest, UploadQuery},
     error::Error,
     id::ShortId,
 };

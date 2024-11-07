@@ -1,8 +1,9 @@
 use crate::error::Error;
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
+use utoipa::ToSchema;
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ToSchema)]
 pub struct ShortId([u8; 8]);
 
 impl ShortId {
