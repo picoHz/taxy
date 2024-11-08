@@ -26,8 +26,10 @@ jobs:
             target/
           key: ${{ runner.os }}-stable-cargo-${{ hashFiles('**/Cargo.lock') }}
       - uses: rui314/setup-mold@v1
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@v1.10.3
       - name: Install trunk
-        run: cargo install trunk
+        run: cargo binstall trunk --force -y
       - name: Add toolchain
         run: rustup target add wasm32-unknown-unknown
       - name: Build webui
@@ -63,8 +65,10 @@ jobs:
             target/
           key: ${{ runner.os }}-stable-cargo-${{ hashFiles('**/Cargo.lock') }}
       - uses: msys2/setup-msys2@v2
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@v1.10.3
       - name: Install trunk
-        run: cargo install trunk
+        run: cargo binstall trunk --force -y
       - name: Add toolchain
         run: rustup target add wasm32-unknown-unknown
       - name: Build webui
@@ -101,8 +105,10 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-stable-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@v1.10.3
       - name: Install trunk
-        run: cargo install trunk
+        run: cargo binstall trunk --force -y
       - name: Add toolchain
         run: rustup target add wasm32-unknown-unknown
       - name: Build webui
@@ -142,8 +148,10 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.toolchain }}-stable-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Install toolchain
         run: rustup target add ${{ matrix.toolchain }}
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@v1.10.3
       - name: Install trunk
-        run: cargo install trunk
+        run: cargo binstall trunk --force -y
       - name: Add toolchain
         run: rustup target add wasm32-unknown-unknown
       - name: Build webui
@@ -165,7 +173,11 @@ jobs:
   release-cross:
     strategy:
       matrix:
-        toolchain: [aarch64-unknown-linux-gnu, armv7-unknown-linux-gnueabihf]
+        toolchain:
+          [
+            aarch64-unknown-linux-gnu,
+            armv7-unknown-linux-gnueabihf,
+          ]
     name: Upload Release Assets
     runs-on: ubuntu-latest
     steps:
@@ -181,11 +193,12 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-${{ matrix.toolchain }}-stable-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Install cross
-        run: cargo install cross --git https://github.com/cross-rs/cross
-        continue-on-error: true
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@v1.10.3
       - name: Install trunk
-        run: cargo install trunk
+        run: cargo binstall trunk --force -y
+      - name: Install cross
+        run: cargo binstall cross --force -y
       - name: Add toolchain
         run: rustup target add wasm32-unknown-unknown
       - name: Build webui
