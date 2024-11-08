@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.3.31 - 2024-11-08
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.31 -->
+### What's Changed
+
+#### New Features
+
+* Support proto and host directive in forwarded header by @picoHz in https://github.com/picoHz/taxy/pull/91
+* Send both forwarded and x-forwarded-for headers by default by @picoHz in https://github.com/picoHz/taxy/pull/92
+* Support for x-forwarded-host header by @picoHz in https://github.com/picoHz/taxy/pull/93
+
+#### Other Changes
+
+* Update outdated dependencies by @picoHz in https://github.com/picoHz/taxy/pull/88
+* build(deps): bump openssl from 0.10.64 to 0.10.66 by @dependabot in https://github.com/picoHz/taxy/pull/89
+* Update outdated dependencies by @picoHz in https://github.com/picoHz/taxy/pull/90
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.30...v0.3.31
+
 ## v0.3.30 - 2024-08-14
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.30 -->
