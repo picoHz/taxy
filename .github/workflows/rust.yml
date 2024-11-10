@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  test:
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -33,3 +33,22 @@ jobs:
         run: cargo build --all-features
       - name: Run tests
         run: cargo nextest run --all-features
+
+  test_freebsd:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Test in FreeBSD
+      id: test
+      uses: vmactions/freebsd-vm@v1
+      with:
+        envs: 'CARGO_TERM_COLOR'
+        usesh: true
+        prepare: |
+          pkg install -y curl gcc
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        run: |
+          . "$HOME/.cargo/env"
+          cargo build --all-features
+          cargo test --all-features
+          cargo clean
