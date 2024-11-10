@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.3.32 - 2024-11-10
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.32 -->
+### What's Changed
+
+#### Bug Fixes
+
+* Always overwrite the HOST header value by @picoHz in https://github.com/picoHz/taxy/pull/95
+
+#### New Features
+
+* Use hickory-resolver for DNS lookup by @picoHz in https://github.com/picoHz/taxy/pull/94
+* Add UDP proxy support by @picoHz in https://github.com/picoHz/taxy/pull/96
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.31...v0.3.32
+
 ## v0.3.31 - 2024-11-08
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.31 -->
