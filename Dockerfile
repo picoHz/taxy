@@ -16,7 +16,7 @@ COPY taxy-webui taxy-webui
 
 # Build the web UI
 WORKDIR /usr/src/app/taxy-webui
-RUN trunk build --release
+RUN trunk build --cargo-profile web-release --release
 WORKDIR /usr/src/app
 
 # Build the Rust project

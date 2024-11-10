@@ -34,7 +34,7 @@ trunk serve
 ```bash
 # Build the WebUI
 cd taxy/taxy-webui
-trunk build --release
+trunk build --cargo-profile web-release --release
 
 # Build the Server
 cd ..

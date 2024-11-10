@@ -33,7 +33,7 @@ jobs:
       - name: Add toolchain
         run: rustup target add wasm32-unknown-unknown
       - name: Build webui
-        run: cd taxy-webui && trunk build --release
+        run: cd taxy-webui && trunk build --cargo-profile web-release --release
       - name: Build project
         run: cargo b --bin taxy --release
       - name: Make archive
@@ -72,7 +72,7 @@ jobs:
       - name: Add toolchain
         run: rustup target add wasm32-unknown-unknown
       - name: Build webui
-        run: cd taxy-webui && trunk build --release && cargo clean
+        run: cd taxy-webui && trunk build --cargo-profile web-release --release && cargo clean
       - name: Build project
         run: cargo b --bin taxy --release
       - name: Make archive
@@ -112,7 +112,7 @@ jobs:
       - name: Add toolchain
         run: rustup target add wasm32-unknown-unknown
       - name: Build webui
-        run: cd taxy-webui && trunk build --release
+        run: cd taxy-webui && trunk build --cargo-profile web-release --release
       - name: Build project
         run: cargo b --bin taxy --release
       - name: Make archive
@@ -155,7 +155,7 @@ jobs:
       - name: Add toolchain
         run: rustup target add wasm32-unknown-unknown
       - name: Build webui
-        run: cd taxy-webui && trunk build --release
+        run: cd taxy-webui && trunk build --cargo-profile web-release --release
       - name: Build project
         run: cargo b --bin taxy --release --target ${{ matrix.toolchain }}
       - name: Make archive
@@ -202,7 +202,7 @@ jobs:
       - name: Add toolchain
         run: rustup target add wasm32-unknown-unknown
       - name: Build webui
-        run: cd taxy-webui && trunk build --release && cargo clean
+        run: cd taxy-webui && trunk build --cargo-profile web-release --release && cargo clean
       - name: Build project
         run: cross build -p taxy --release --target ${{ matrix.toolchain }}
       - name: Make archive
