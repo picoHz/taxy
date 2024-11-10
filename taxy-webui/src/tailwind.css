@@ -2,13 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
 body {
   background-color: #fafafa;
+  height: 100%;
 }
 
 @media (prefers-color-scheme: dark) {
+
+  html,
   body {
     background-color: #333;
     color: #fff;
+    height: 100%;
   }
 }
