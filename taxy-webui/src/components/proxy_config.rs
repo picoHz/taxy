@@ -1,12 +1,13 @@
 use crate::components::http_proxy_config::HttpProxyConfig;
 use crate::components::tcp_proxy_config::TcpProxyConfig;
+use crate::components::udp_proxy_config::UdpProxyConfig;
 use crate::store::PortStore;
 use crate::API_ENDPOINT;
 use gloo_net::http::Request;
 use std::collections::HashMap;
 use std::fmt::Display;
 use taxy_api::id::ShortId;
-use taxy_api::proxy::{HttpProxy, ProxyKind, TcpProxy};
+use taxy_api::proxy::{HttpProxy, ProxyKind, TcpProxy, UdpProxy};
 use taxy_api::{port::PortEntry, proxy::Proxy};
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use web_sys::{HtmlInputElement, HtmlSelectElement};
@@ -17,6 +18,7 @@ use yewdux::prelude::*;
 pub enum ProxyProtocol {
     Http,
     Tcp,
+    Udp,
 }
 
 impl Display for ProxyProtocol {
@@ -24,11 +26,12 @@ impl Display for ProxyProtocol {
         match self {
             ProxyProtocol::Http => write!(f, "HTTP / HTTPS"),
             ProxyProtocol::Tcp => write!(f, "TCP / TCP over TLS"),
+            ProxyProtocol::Udp => write!(f, "UDP"),
         }
     }
 }
 
-const PROTOCOLS: &[ProxyProtocol] = &[ProxyProtocol::Http, ProxyProtocol::Tcp];
+const PROTOCOLS: &[ProxyProtocol] = &[ProxyProtocol::Http, ProxyProtocol::Tcp, ProxyProtocol::Udp];
 
 #[derive(Properties, PartialEq)]
 pub struct Props {
@@ -76,8 +79,10 @@ pub fn proxy_config(props: &Props) -> Html {
     let protocol = use_state(|| {
         if matches!(props.proxy.kind, ProxyKind::Http(_)) {
             ProxyProtocol::Http
-        } else {
+        } else if matches!(props.proxy.kind, ProxyKind::Tcp(_)) {
             ProxyProtocol::Tcp
+        } else {
+            ProxyProtocol::Udp
         }
     });
     let protocol_onchange = Callback::from({
@@ -110,11 +115,24 @@ pub fn proxy_config(props: &Props) -> Html {
             tcp_proxy_cloned.set(updated.map(ProxyKind::Tcp));
         });
 
+    let udp_proxy = use_state::<Result<ProxyKind, HashMap<String, String>>, _>(|| {
+        Ok(ProxyKind::Udp(Default::default()))
+    });
+    let udp_proxy_cloned = udp_proxy.clone();
+    let udp_proxy_onchanged: Callback<Result<UdpProxy, HashMap<String, String>>> =
+        Callback::from(move |updated: Result<UdpProxy, HashMap<String, String>>| {
+            udp_proxy_cloned.set(updated.map(ProxyKind::Udp));
+        });
+
     let compatible_ports = ports
         .entries
         .clone()
         .into_iter()
-        .filter(|entry| entry.port.listen.is_http() ^ (*protocol == ProxyProtocol::Tcp))
+        .filter(|entry| match *protocol {
+            ProxyProtocol::Http => entry.port.listen.is_http(),
+            ProxyProtocol::Tcp => !entry.port.listen.is_udp() && !entry.port.listen.is_http(),
+            ProxyProtocol::Udp => entry.port.listen.is_udp(),
+        })
         .collect::<Vec<_>>();
 
     let prev_entry =
@@ -123,10 +141,10 @@ pub fn proxy_config(props: &Props) -> Html {
         *active,
         &name,
         &bound_ports,
-        if *protocol == ProxyProtocol::Http {
-            &http_proxy
-        } else {
-            &tcp_proxy
+        match *protocol {
+            ProxyProtocol::Http => &http_proxy,
+            ProxyProtocol::Tcp => &tcp_proxy,
+            ProxyProtocol::Udp => &udp_proxy,
         },
         &compatible_ports,
     );
@@ -144,6 +162,12 @@ pub fn proxy_config(props: &Props) -> Html {
 
     let tcp_proxy = if let ProxyKind::Tcp(tcp_proxy) = &props.proxy.kind {
         tcp_proxy.clone()
+    } else {
+        Default::default()
+    };
+
+    let udp_proxy = if let ProxyKind::Udp(udp_proxy) = &props.proxy.kind {
+        udp_proxy.clone()
     } else {
         Default::default()
     };
@@ -198,8 +222,10 @@ pub fn proxy_config(props: &Props) -> Html {
 
             if *protocol == ProxyProtocol::Http {
                 <HttpProxyConfig onchanged={http_proxy_onchanged} proxy={http_proxy} />
-            } else {
+            } else if *protocol == ProxyProtocol::Tcp {
                 <TcpProxyConfig onchanged={tcp_proxy_onchanged} proxy={tcp_proxy} />
+            } else {
+                <UdpProxyConfig onchanged={udp_proxy_onchanged} proxy={udp_proxy} />
             }
         </>
     }

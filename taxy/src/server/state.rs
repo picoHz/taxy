@@ -1,7 +1,8 @@
 use super::acme_list::AcmeList;
 use super::cert_list::CertList;
 use super::proxy_list::ProxyList;
-use super::{listener::TcpListenerPool, port_list::PortList, rpc::RpcCallback};
+use super::udp::UdpListenerPool;
+use super::{port_list::PortList, rpc::RpcCallback, tcp::TcpListenerPool};
 use crate::certs::acme::AcmeOrder;
 use crate::config::storage::Storage;
 use crate::log::DatabaseLayer;
@@ -14,6 +15,7 @@ use hyper::{service::service_fn, Body};
 use rand::seq::SliceRandom;
 use std::collections::HashSet;
 use std::convert::Infallible;
+use std::net::SocketAddr;
 use std::str;
 use std::{collections::HashMap, sync::Arc};
 use taxy_api::app::{AppConfig, AppInfo};
@@ -22,6 +24,7 @@ use taxy_api::event::ServerEvent;
 use taxy_api::id::ShortId;
 use taxy_api::proxy::ProxyEntry;
 use tokio::io::AsyncBufReadExt;
+use tokio::select;
 use tokio::{
     io::BufStream,
     net::TcpStream,
@@ -38,12 +41,18 @@ pub struct ServerState {
     pub ports: PortList,
     pub storage: Box<dyn Storage>,
     config: AppConfig,
-    pool: TcpListenerPool,
+    tcp_pool: TcpListenerPool,
+    udp_pool: UdpListenerPool,
     http_challenges: HashMap<String, String>,
     command_sender: mpsc::Sender<ServerCommand>,
     br_sender: broadcast::Sender<ServerEvent>,
     callback_sender: mpsc::Sender<RpcCallback>,
     broadcast_events: bool,
+}
+
+pub enum Received {
+    Tcp(usize, TcpStream),
+    Udp(usize, usize, SocketAddr, Vec<u8>),
 }
 
 impl ServerState {
@@ -81,7 +90,8 @@ impl ServerState {
             ports,
             storage: Box::new(storage),
             config,
-            pool: TcpListenerPool::new(),
+            tcp_pool: TcpListenerPool::new(),
+            udp_pool: UdpListenerPool::new(),
             http_challenges: HashMap::new(),
             command_sender,
             br_sender,
@@ -123,14 +133,22 @@ impl ServerState {
     }
 
     pub fn has_active_listeners(&self) -> bool {
-        self.pool.has_active_listeners()
+        self.tcp_pool.has_active_listeners() || self.udp_pool.has_active_listeners()
     }
 
-    pub async fn select(&mut self) -> Option<(usize, TcpStream)> {
-        self.pool.select().await
+    pub async fn select(&mut self) -> Option<Received> {
+        select! {
+            Some((index, stream)) = self.tcp_pool.select() => {
+                Some(Received::Tcp(index, stream))
+            }
+            Some((index, config_index, addr, data)) = self.udp_pool.select() => {
+                Some(Received::Udp(index, config_index, addr, data))
+            }
+            else => None
+        }
     }
 
-    pub async fn handle_connection(&mut self, index: usize, stream: TcpStream) {
+    pub async fn handle_tcp_connection(&mut self, index: usize, stream: TcpStream) {
         let mut stream = BufStream::new(stream);
 
         if !self.http_challenges.is_empty() {
@@ -162,14 +180,32 @@ impl ServerState {
                 PortContextKind::Http(http) => {
                     http.start_proxy(stream);
                 }
-                PortContextKind::Reserved => (),
+                _ => (),
+            }
+        }
+    }
+
+    pub async fn handle_udp_packet(
+        &mut self,
+        index: usize,
+        config_index: usize,
+        _addr: SocketAddr,
+        data: Vec<u8>,
+    ) {
+        if config_index < self.ports.as_slice().len() {
+            let state = &mut self.ports.as_mut_slice()[config_index];
+            if let PortContextKind::Udp(udp) = state.kind_mut() {
+                for addr in udp.target_addrs().await {
+                    self.udp_pool.send_to(index, addr, &data).await;
+                }
             }
         }
     }
 
     pub async fn update_ports(&mut self) {
         let entries = self.ports.entries().cloned().collect::<Vec<_>>();
-        self.pool.update(self.ports.as_mut_slice()).await;
+        self.tcp_pool.update(self.ports.as_mut_slice()).await;
+        self.udp_pool.update(self.ports.as_mut_slice()).await;
         self.storage.save_ports(&entries).await;
         if self.proxies.remove_incompatible_ports(&entries) {
             self.update_proxies().await;
@@ -356,8 +392,8 @@ impl ServerState {
 
     async fn stop_http_challenges(&mut self) {
         self.http_challenges.clear();
-        self.pool.set_http_challenge_addr(None);
-        self.pool.update(self.ports.as_mut_slice()).await;
+        self.tcp_pool.set_http_challenge_addr(None);
+        self.tcp_pool.update(self.ports.as_mut_slice()).await;
     }
 
     async fn continue_http_challenges(&mut self, orders: Vec<AcmeOrder>) {
@@ -367,9 +403,9 @@ impl ServerState {
             .collect();
 
         self.http_challenges = challenges;
-        self.pool
+        self.tcp_pool
             .set_http_challenge_addr(Some(self.config.http_challenge_addr));
-        self.pool.update(self.ports.as_mut_slice()).await;
+        self.tcp_pool.update(self.ports.as_mut_slice()).await;
 
         let command = self.command_sender.clone();
         tokio::task::spawn(async move {

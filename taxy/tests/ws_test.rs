@@ -10,12 +10,12 @@ use url::Url;
 use warp::Filter;
 
 mod common;
-use common::{alloc_port, with_server, TestStorage};
+use common::{alloc_tcp_port, with_server, TestStorage};
 
 #[tokio::test]
 async fn ws_proxy() -> anyhow::Result<()> {
-    let listen_port = alloc_port().await?;
-    let proxy_port = alloc_port().await?;
+    let listen_port = alloc_tcp_port().await?;
+    let proxy_port = alloc_tcp_port().await?;
 
     let routes = warp::path("ws").and(warp::ws()).map(|ws: warp::ws::Ws| {
         ws.on_upgrade(|websocket| {

@@ -2,6 +2,7 @@ use self::rpc::RpcCallback;
 use self::state::ServerState;
 use crate::command::ServerCommand;
 use crate::config::storage::Storage;
+use state::Received;
 use taxy_api::app::AppInfo;
 use taxy_api::event::ServerEvent;
 use tokio::sync::broadcast::error::RecvError;
@@ -10,11 +11,12 @@ use tracing::{info, warn};
 
 mod acme_list;
 pub mod cert_list;
-mod listener;
 mod port_list;
 mod proxy_list;
 pub mod rpc;
 mod state;
+mod tcp;
+mod udp;
 
 pub struct Server {
     app_info: AppInfo,
@@ -107,8 +109,14 @@ async fn start_server(
                 }
             }
             sock = server.select(), if server.has_active_listeners() => {
-                if let Some((index, stream)) = sock {
-                    server.handle_connection(index, stream).await;
+                match sock {
+                    Some(Received::Tcp(index, stream)) => {
+                        server.handle_tcp_connection(index, stream).await;
+                    }
+                    Some(Received::Udp(index, config_index, addr, data)) => {
+                        server.handle_udp_packet(index, config_index, addr, data).await;
+                    }
+                    None => (),
                 }
             }
             _ = background_task_interval.tick() => {

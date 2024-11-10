@@ -8,12 +8,12 @@ use taxy_api::{
 use warp::Filter;
 
 mod common;
-use common::{alloc_port, with_server, TestStorage};
+use common::{alloc_tcp_port, with_server, TestStorage};
 
 #[tokio::test]
 async fn tls_proxy() -> anyhow::Result<()> {
-    let listen_port = alloc_port().await?;
-    let proxy_port = alloc_port().await?;
+    let listen_port = alloc_tcp_port().await?;
+    let proxy_port = alloc_tcp_port().await?;
 
     let root = Arc::new(Cert::new_ca().unwrap());
     let cert = Arc::new(Cert::new_self_signed(&["localhost".parse().unwrap()], &root).unwrap());

@@ -94,9 +94,12 @@ impl ProxyList {
                     ports
                         .iter()
                         .find(|p| p.id == *port)
-                        .map(|port| {
-                            port.port.listen.is_http()
-                                ^ (matches!(ctx.entry.proxy.kind, ProxyKind::Tcp(_)))
+                        .map(|port| match ctx.entry.proxy.kind {
+                            ProxyKind::Http(_) => port.port.listen.is_http(),
+                            ProxyKind::Tcp(_) => {
+                                !port.port.listen.is_udp() && !port.port.listen.is_http()
+                            }
+                            ProxyKind::Udp(_) => port.port.listen.is_udp(),
                         })
                         .unwrap_or_default()
                 })

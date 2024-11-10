@@ -2,7 +2,7 @@
 
 use futures::Future;
 use hickory_resolver::{config::LookupIpStrategy, system_conf::read_system_conf, AsyncResolver};
-use net2::TcpBuilder;
+use net2::{TcpBuilder, UdpBuilder};
 use std::{
     collections::HashMap,
     net::{SocketAddr, ToSocketAddrs},
@@ -197,7 +197,7 @@ impl TestStorageBuilder {
     }
 }
 
-pub async fn alloc_port() -> Result<TestPort, std::io::Error> {
+pub async fn alloc_tcp_port() -> Result<TestPort, std::io::Error> {
     let (conf, mut opts) = read_system_conf().unwrap_or_default();
     opts.ip_strategy = LookupIpStrategy::Ipv4AndIpv6;
     let resolver = AsyncResolver::tokio(conf, opts);
@@ -217,6 +217,33 @@ pub async fn alloc_port() -> Result<TestPort, std::io::Error> {
         TcpBuilder::new_v4()?
     } else {
         TcpBuilder::new_v6()?
+    }
+    .reuse_address(true)?
+    .bind(addr)?
+    .local_addr()?;
+    Ok(TestPort { addr })
+}
+
+pub async fn alloc_udp_port() -> Result<TestPort, std::io::Error> {
+    let (conf, mut opts) = read_system_conf().unwrap_or_default();
+    opts.ip_strategy = LookupIpStrategy::Ipv4AndIpv6;
+    let resolver = AsyncResolver::tokio(conf, opts);
+
+    let addr = "localhost:0".to_socket_addrs().unwrap().next().unwrap();
+    let addr = SocketAddr::new(
+        resolver
+            .lookup_ip("localhost")
+            .await
+            .unwrap()
+            .iter()
+            .next()
+            .unwrap(),
+        addr.port(),
+    );
+    let addr = if addr.is_ipv4() {
+        UdpBuilder::new_v4()?
+    } else {
+        UdpBuilder::new_v6()?
     }
     .reuse_address(true)?
     .bind(addr)?
@@ -253,6 +280,14 @@ impl TestPort {
         let protocol = if self.addr.is_ipv4() { "ip4" } else { "ip6" };
         let addr = self.addr.ip();
         format!("/{protocol}/{addr}/tcp/{}", self.addr.port())
+            .parse()
+            .unwrap()
+    }
+
+    pub fn multiaddr_udp(&self) -> Multiaddr {
+        let protocol = if self.addr.is_ipv4() { "ip4" } else { "ip6" };
+        let addr = self.addr.ip();
+        format!("/{protocol}/{addr}/udp/{}", self.addr.port())
             .parse()
             .unwrap()
     }

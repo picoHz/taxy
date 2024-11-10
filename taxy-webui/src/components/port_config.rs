@@ -33,6 +33,7 @@ const PROTOCOLS: &[(&str, &str)] = &[
     ("https", "HTTPS"),
     ("tcp", "TCP"),
     ("tls", "TCP over TLS"),
+    ("udp", "UDP"),
 ];
 
 #[function_component(PortConfig)]
@@ -40,6 +41,7 @@ pub fn port_config(props: &Props) -> Html {
     let stack = &props.port.listen;
     let tls = stack.is_tls();
     let http = stack.is_http();
+    let udp = stack.is_udp();
     let interface = stack.host().unwrap();
     let port = stack.port().unwrap();
 
@@ -76,11 +78,12 @@ pub fn port_config(props: &Props) -> Html {
         (),
     );
 
-    let protocol = match (tls, http) {
-        (true, true) => "https",
-        (true, false) => "tls",
-        (false, true) => "http",
-        (false, false) => "tcp",
+    let protocol = match (udp, tls, http) {
+        (true, _, _) => "udp",
+        (false, true, true) => "https",
+        (false, true, false) => "tls",
+        (false, false, true) => "http",
+        (false, false, false) => "tcp",
     };
 
     let name = use_state(|| props.port.name.clone());
@@ -195,6 +198,9 @@ fn get_port(
         }
         "https" => {
             addr.push_str(&format!("/tcp/{port}/https"));
+        }
+        "udp" => {
+            addr.push_str(&format!("/udp/{port}"));
         }
         _ => {
             errors.insert("protocol".into(), "Invalid protocol".into());
