@@ -260,7 +260,7 @@ async fn start(
             .and_then(|h| h.to_str().ok().and_then(|host| host.split(':').next()));
 
         let domain_fronting = match (&sni, header_host) {
-            (Some(sni), Some(header)) => !sni.eq_ignore_ascii_case(&header),
+            (Some(sni), Some(header)) => !sni.eq_ignore_ascii_case(header),
             _ => false,
         };
 

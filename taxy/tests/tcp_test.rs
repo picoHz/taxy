@@ -7,12 +7,12 @@ use tokio_stream::wrappers::TcpListenerStream;
 use warp::Filter;
 
 mod common;
-use common::{alloc_port, with_server, TestStorage};
+use common::{alloc_tcp_port, with_server, TestStorage};
 
 #[tokio::test]
 async fn tcp_proxy() -> anyhow::Result<()> {
-    let listen_port = alloc_port().await?;
-    let proxy_port = alloc_port().await?;
+    let listen_port = alloc_tcp_port().await?;
+    let proxy_port = alloc_tcp_port().await?;
 
     let listener = TcpListener::bind(listen_port.socket_addr()).await.unwrap();
     let hello = warp::path!("hello").map(|| "Hello".to_string());

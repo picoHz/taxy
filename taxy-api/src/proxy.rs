@@ -39,10 +39,17 @@ fn default_kind() -> ProxyKind {
 pub enum ProxyKind {
     Tcp(TcpProxy),
     Http(HttpProxy),
+    Udp(UdpProxy),
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct TcpProxy {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub upstream_servers: Vec<UpstreamServer>,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct UdpProxy {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub upstream_servers: Vec<UpstreamServer>,
 }

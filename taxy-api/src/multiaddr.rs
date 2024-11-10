@@ -21,6 +21,10 @@ impl Multiaddr {
             .any(|p| matches!(p, Protocol::Http(_)))
     }
 
+    pub fn is_udp(&self) -> bool {
+        self.protocols.iter().any(|p| matches!(p, Protocol::Udp(_)))
+    }
+
     pub fn socket_addr(&self) -> Result<SocketAddr, Error> {
         self.ip_addr()
             .and_then(|ip| self.port().map(|port| SocketAddr::new(ip, port)))
@@ -43,6 +47,7 @@ impl Multiaddr {
             .iter()
             .find_map(|p| match p {
                 Protocol::Tcp(port) => Some(*port),
+                Protocol::Udp(port) => Some(*port),
                 _ => None,
             })
             .ok_or_else(|| Error::InvalidMultiaddr {
@@ -64,11 +69,12 @@ impl Multiaddr {
     }
 
     pub fn protocol_name(&self) -> &'static str {
-        match (self.is_http(), self.is_tls()) {
-            (true, true) => "HTTPS",
-            (true, false) => "HTTP",
-            (false, true) => "TCP over TLS",
-            (false, false) => "TCP",
+        match (self.is_udp(), self.is_http(), self.is_tls()) {
+            (true, _, _) => "UDP",
+            (false, true, true) => "HTTPS",
+            (false, true, false) => "HTTP",
+            (false, false, true) => "TCP over TLS",
+            (false, false, false) => "TCP",
         }
     }
 }
@@ -78,6 +84,7 @@ pub enum Protocol {
     Dns(String),
     Ip(IpAddr),
     Tcp(u16),
+    Udp(u16),
     Tls,
     Http(String),
 }
@@ -127,6 +134,14 @@ impl FromStr for Multiaddr {
                     protocols.push(Protocol::Http(format!("/{next}")));
                     rest = "";
                 }
+                "udp" => {
+                    let (port, next) = next.split_once('/').unwrap_or((next, ""));
+                    let port = port.parse::<u16>().map_err(|_| Error::InvalidMultiaddr {
+                        addr: s.to_string(),
+                    })?;
+                    protocols.push(Protocol::Udp(port));
+                    rest = next;
+                }
                 _ => rest = next,
             }
         }
@@ -147,6 +162,7 @@ impl fmt::Display for Multiaddr {
                     }
                 }
                 Protocol::Tcp(port) => write!(f, "/tcp/{}", port)?,
+                Protocol::Udp(port) => write!(f, "/udp/{}", port)?,
                 Protocol::Tls => {
                     if !self.is_http() {
                         write!(f, "/tls")?
@@ -216,5 +232,11 @@ mod test {
         );
         assert!(addr.is_http());
         assert!(addr.is_tls());
+
+        let addr = Multiaddr::from_str("/ip4/127.0.0.1/udp/8080").unwrap();
+        assert_eq!(addr.to_string(), "/ip4/127.0.0.1/udp/8080");
+        assert!(!addr.is_http());
+        assert!(!addr.is_tls());
+        assert!(addr.is_udp());
     }
 }

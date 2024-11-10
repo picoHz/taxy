@@ -92,7 +92,7 @@ impl HeaderRewriter {
                 .chain(
                     header_host
                         .as_ref()
-                        .map(|host| forwarded_host_directive(&host)),
+                        .map(|host| forwarded_host_directive(host)),
                 )
                 .chain(iter::once(forwarded_proto_directive(forwarded_proto)))
                 .collect::<Vec<_>>()
