@@ -4,7 +4,7 @@ description = "Type definitions and API for taxy"
 version = "0.1.19"
 edition = "2021"
 authors = ["picoHz <picoHz@outlook.com>"]
-keywords = ["tcp", "udp", "http", "tls", "proxy", "reverse-proxy"]
+keywords = ["tcp", "http", "tls", "proxy", "reverse-proxy"]
 categories = [
     "network-programming",
     "web-programming",

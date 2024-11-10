@@ -6,7 +6,7 @@ include = ["/src", "/templates", "/build.rs", "/LICENSE", "/dist/webui"]
 build = "build.rs"
 description = "A reverse proxy server with built-in WebUI, supporting TCP/HTTP/TLS/WebSocket."
 authors = ["picoHz <picoHz@outlook.com>"]
-keywords = ["tcp", "udp", "http", "tls", "proxy", "reverse-proxy"]
+keywords = ["tcp", "http", "tls", "proxy", "reverse-proxy"]
 categories = [
     "network-programming",
     "web-programming",
@@ -34,7 +34,10 @@ fnv = "1.0.7"
 futures = "0.3.28"
 globwalk = "0.9.1"
 hex = "0.4.3"
-hickory-resolver = { version = "0.24.1", features = ["tokio-runtime", "system-config"] }
+hickory-resolver = { version = "0.24.1", features = [
+    "tokio-runtime",
+    "system-config",
+] }
 humantime-serde = "1.1.1"
 hyper = { version = "0.14.27", features = ["full"] }
 include_dir = "0.7.3"
