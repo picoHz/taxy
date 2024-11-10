@@ -1,11 +1,15 @@
 use super::{tls::TlsTermination, PortContextEvent, PortStatus, SocketState};
 use crate::server::cert_list::CertList;
+use hickory_resolver::config::LookupIpStrategy;
+use hickory_resolver::name_server::{GenericConnector, TokioRuntimeProvider};
+use hickory_resolver::system_conf::read_system_conf;
+use hickory_resolver::AsyncResolver;
 use std::{net::SocketAddr, sync::Arc, time::SystemTime};
 use taxy_api::{error::Error, multiaddr::Multiaddr, proxy::ProxyKind};
 use taxy_api::{port::PortEntry, proxy::ProxyEntry};
 use tokio::{
     io::AsyncWriteExt,
-    net::{self, TcpSocket, TcpStream},
+    net::{TcpSocket, TcpStream},
 };
 use tokio::{
     io::{AsyncRead, AsyncWrite, BufStream},
@@ -26,6 +30,7 @@ pub struct TcpPortContext {
     servers: Vec<Connection>,
     status: PortStatus,
     span: Span,
+    resolver: AsyncResolver<GenericConnector<TokioRuntimeProvider>>,
     tls_termination: Option<TlsTermination>,
     tls_client_config: Arc<ClientConfig>,
     stop_notifier: Arc<Notify>,
@@ -48,11 +53,16 @@ impl TcpPortContext {
             None
         };
 
+        let (conf, mut opts) = read_system_conf().unwrap_or_default();
+        opts.ip_strategy = LookupIpStrategy::Ipv4AndIpv6;
+        let resolver = AsyncResolver::tokio(conf, opts);
+
         Ok(Self {
             listen,
             servers: Default::default(),
             status: Default::default(),
             span,
+            resolver,
             tls_termination,
             tls_client_config: Arc::new(
                 ClientConfig::builder()
@@ -133,11 +143,19 @@ impl TcpPortContext {
             .and_then(|tls| tls.acceptor.clone());
 
         let stop_notifier = self.stop_notifier.clone();
+        let resolver = self.resolver.clone();
 
         tokio::spawn(
             async move {
-                if let Err(err) =
-                    start(stream, conn, tls_client_config, tls_acceptor, stop_notifier).await
+                if let Err(err) = start(
+                    stream,
+                    conn,
+                    resolver,
+                    tls_client_config,
+                    tls_acceptor,
+                    stop_notifier,
+                )
+                .await
                 {
                     error!("{err}");
                 }
@@ -150,6 +168,7 @@ impl TcpPortContext {
 pub async fn start(
     mut stream: BufStream<TcpStream>,
     conn: Connection,
+    resolver: AsyncResolver<GenericConnector<TokioRuntimeProvider>>,
     tls_client_config: Option<Arc<ClientConfig>>,
     tls_acceptor: Option<TlsAcceptor>,
     stop_notifier: Arc<Notify>,
@@ -179,10 +198,13 @@ pub async fn start(
         },
         _ => unreachable!(),
     };
-    let host = format!("{}:{}", name, conn.port);
-
-    let resolved = net::lookup_host(&host).await?.next().unwrap();
-    debug!(host, %resolved);
+    let resolved = resolver
+        .lookup_ip(&name)
+        .await?
+        .iter()
+        .next()
+        .ok_or_else(|| anyhow::anyhow!("No IP address found for {name}"))?;
+    debug!(name, %resolved);
 
     let sock = if resolved.is_ipv4() {
         TcpSocket::new_v4()
@@ -190,10 +212,11 @@ pub async fn start(
         TcpSocket::new_v6()
     }?;
 
-    info!(target: "taxy::access_log", remote = %remote, %local, target = host);
+    let target: SocketAddr = (resolved, conn.port).into();
+    info!(target: "taxy::access_log", remote = %remote, %local, %target);
 
-    let out = sock.connect(resolved).await?;
-    debug!(%resolved, "connected");
+    let out = sock.connect(target).await?;
+    debug!(%target, "connected");
 
     let mut stream: Box<dyn IoStream> = Box::new(server_stream);
     if let Some(acceptor) = tls_acceptor {

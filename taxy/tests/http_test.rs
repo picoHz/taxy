@@ -10,7 +10,7 @@ use common::{alloc_port, with_server, TestStorage};
 
 #[tokio::test]
 async fn http_proxy() -> anyhow::Result<()> {
-    let proxy_port = alloc_port()?;
+    let proxy_port = alloc_port().await?;
     let mut server = mockito::Server::new_async().await;
 
     let mock_get = server
@@ -175,7 +175,7 @@ async fn http_proxy() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn http_proxy_dns_error() -> anyhow::Result<()> {
-    let proxy_port = alloc_port()?;
+    let proxy_port = alloc_port().await?;
 
     let config = TestStorage::builder()
         .ports(vec![PortEntry {

@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use futures::Future;
+use hickory_resolver::{config::LookupIpStrategy, system_conf::read_system_conf, AsyncResolver};
 use net2::TcpBuilder;
 use std::{
     collections::HashMap,
@@ -196,8 +197,22 @@ impl TestStorageBuilder {
     }
 }
 
-pub fn alloc_port() -> Result<TestPort, std::io::Error> {
+pub async fn alloc_port() -> Result<TestPort, std::io::Error> {
+    let (conf, mut opts) = read_system_conf().unwrap_or_default();
+    opts.ip_strategy = LookupIpStrategy::Ipv4AndIpv6;
+    let resolver = AsyncResolver::tokio(conf, opts);
+
     let addr = "localhost:0".to_socket_addrs().unwrap().next().unwrap();
+    let addr = SocketAddr::new(
+        resolver
+            .lookup_ip("localhost")
+            .await
+            .unwrap()
+            .iter()
+            .next()
+            .unwrap(),
+        addr.port(),
+    );
     let addr = if addr.is_ipv4() {
         TcpBuilder::new_v4()?
     } else {

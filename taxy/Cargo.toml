@@ -34,6 +34,7 @@ fnv = "1.0.7"
 futures = "0.3.28"
 globwalk = "0.9.1"
 hex = "0.4.3"
+hickory-resolver = { version = "0.24.1", features = ["tokio-runtime", "system-config"] }
 humantime-serde = "1.1.1"
 hyper = { version = "0.14.27", features = ["full"] }
 include_dir = "0.7.3"
@@ -107,6 +108,7 @@ reqwest = { version = "0.12.1", default-features = false, features = [
     "json",
     "stream",
     "http2",
+    "hickory-dns",
 ] }
 tokio-tungstenite = { version = "0.21.0", features = [
     "rustls-tls-native-roots",

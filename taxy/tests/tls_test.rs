@@ -12,8 +12,8 @@ use common::{alloc_port, with_server, TestStorage};
 
 #[tokio::test]
 async fn tls_proxy() -> anyhow::Result<()> {
-    let listen_port = alloc_port()?;
-    let proxy_port = alloc_port()?;
+    let listen_port = alloc_port().await?;
+    let proxy_port = alloc_port().await?;
 
     let root = Arc::new(Cert::new_ca().unwrap());
     let cert = Arc::new(Cert::new_self_signed(&["localhost".parse().unwrap()], &root).unwrap());
