@@ -8,12 +8,13 @@ weight = 0
 
 Before configuring a proxy, you need to bind a port to listen on. You can do this in the "Ports" section.
 
-Taxy supports four types of ports:
+Taxy supports five types of ports:
 
 - HTTP
 - HTTPS (HTTP over TLS)
 - TCP
 - TCP over TLS
+- UDP
 
 ## Resetting a Port
 
@@ -21,10 +22,11 @@ Changing the port configuration does not affect existing connections. Old connec
 
 # Proxies
 
-Taxy supports four types of proxies:
+Taxy supports three types of proxies:
 
 - HTTP / HTTPS
 - TCP / TCP over TLS
+- UDP
 
 Multiple ports can be bound to a proxy. However, it's not possible to bind TCP / TCP over TLS ports to an HTTP / HTTPS proxy and vice versa.
 
