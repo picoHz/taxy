@@ -280,6 +280,7 @@ impl ServerState {
     }
 
     pub async fn reload_proxies(&mut self) {
+        let ports = self.ports.entries().cloned().collect::<Vec<_>>();
         for ctx in self.ports.as_mut_slice() {
             let proxies = self
                 .proxies
@@ -291,7 +292,7 @@ impl ServerState {
                 .collect();
             let span = span!(Level::INFO, "port", resource_id = ctx.entry.id.to_string());
             if let Err(err) = ctx
-                .setup(&self.certs, proxies)
+                .setup(&ports, &self.certs, proxies)
                 .instrument(span.clone())
                 .await
             {

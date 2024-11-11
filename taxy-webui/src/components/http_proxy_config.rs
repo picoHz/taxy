@@ -32,6 +32,15 @@ pub fn http_proxy_config(props: &Props) -> Html {
         }
     });
 
+    let upgrade_insecure = use_state(|| props.proxy.upgrade_insecure);
+    let upgrade_insecure_onchange = Callback::from({
+        let upgrade_insecure = upgrade_insecure.clone();
+        move |event: Event| {
+            let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
+            upgrade_insecure.set(target.checked());
+        }
+    });
+
     let routes = use_state(|| {
         props
             .proxy
@@ -56,7 +65,7 @@ pub fn http_proxy_config(props: &Props) -> Html {
 
     let prev_entry =
         use_state::<Result<HttpProxy, HashMap<String, String>>, _>(|| Err(Default::default()));
-    let entry = get_proxy(&vhosts, &routes);
+    let entry = get_proxy(&vhosts, &routes, *upgrade_insecure);
 
     if entry != *prev_entry {
         prev_entry.set(entry.clone());
@@ -65,9 +74,15 @@ pub fn http_proxy_config(props: &Props) -> Html {
 
     html! {
         <>
+            <label class="relative inline-flex items-center cursor-pointer my-6">
+                <input onchange={upgrade_insecure_onchange} type="checkbox" checked={*upgrade_insecure} class="sr-only peer" />
+                <div class="w-9 h-5 bg-neutral-200 dark:bg-neutral-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                <span class="ml-3 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Automatically Redirect HTTP to HTTPS"}</span>
+            </label>
+
             <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Virtual Hosts"}</label>
             <input type="text" autocapitalize="off" value={vhosts.to_string()} onchange={vhosts_onchange} class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="example.com" />
-            <p class="mt-2 text-sm text-neutral-500">{"You can use commas to list multiple names, e.g, example.com, *.test.examle.com."}</p>
+            <p class="mt-2 text-sm text-neutral-500">{"You can use commas to list multiple names, e.g, example.com, *.test.example.com."}</p>
 
             <label class="block mt-4 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Routes"}</label>
 
@@ -133,6 +148,7 @@ pub fn http_proxy_config(props: &Props) -> Html {
 fn get_proxy(
     vhosts: &str,
     routes: &[(String, Vec<String>)],
+    upgrade_insecure: bool,
 ) -> Result<HttpProxy, HashMap<String, String>> {
     let mut errors = HashMap::new();
     let mut hosts = Vec::new();
@@ -177,6 +193,7 @@ fn get_proxy(
         Ok(HttpProxy {
             vhosts: hosts,
             routes: parsed_routes,
+            upgrade_insecure,
         })
     } else {
         Err(errors)

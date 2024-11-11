@@ -26,10 +26,6 @@ fn default_active() -> bool {
     true
 }
 
-fn is_true(b: &bool) -> bool {
-    *b
-}
-
 fn default_kind() -> ProxyKind {
     ProxyKind::Http(HttpProxy::default())
 }
@@ -54,12 +50,22 @@ pub struct UdpProxy {
     pub upstream_servers: Vec<UpstreamServer>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, DefaultFromSerde, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct HttpProxy {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     #[schema(value_type = [String], example = json!(["example.com"]))]
     pub vhosts: Vec<SubjectName>,
     pub routes: Vec<Route>,
+    #[serde(default = "upgrade_insecure_default", skip_serializing_if = "is_true")]
+    pub upgrade_insecure: bool,
+}
+
+fn upgrade_insecure_default() -> bool {
+    true
+}
+
+fn is_true(b: &bool) -> bool {
+    *b
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
