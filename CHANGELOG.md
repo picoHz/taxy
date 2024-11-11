@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.3.33 - 2024-11-11
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.33 -->
+### What's Changed
+
+#### Bug Fixes
+
+* Fix style errors in webui by @picoHz in https://github.com/picoHz/taxy/pull/97
+
+#### New Features
+
+* Add FreeBSD pre-built binary release workflow by @picoHz in https://github.com/picoHz/taxy/pull/98
+* Redirect HTTP requests to available HTTPS ports by default by @picoHz in https://github.com/picoHz/taxy/pull/99
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.32...v0.3.33
+
 ## v0.3.32 - 2024-11-10
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.32 -->
