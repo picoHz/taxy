@@ -64,10 +64,15 @@ impl PortContext {
         &mut self.kind
     }
 
-    pub async fn setup(&mut self, certs: &CertList, proxies: Vec<ProxyEntry>) -> Result<(), Error> {
+    pub async fn setup(
+        &mut self,
+        ports: &[PortEntry],
+        certs: &CertList,
+        proxies: Vec<ProxyEntry>,
+    ) -> Result<(), Error> {
         match &mut self.kind {
             PortContextKind::Tcp(ctx) => ctx.setup(certs, proxies).await,
-            PortContextKind::Http(ctx) => ctx.setup(certs, proxies).await,
+            PortContextKind::Http(ctx) => ctx.setup(ports, certs, proxies).await,
             PortContextKind::Udp(ctx) => ctx.setup(proxies).await,
             PortContextKind::Reserved => Ok(()),
         }

@@ -1,8 +1,9 @@
-use reqwest::Body;
+use reqwest::{header::HOST, redirect::Policy, Body};
 use serde_json::json;
 use taxy_api::{
-    port::{Port, PortEntry},
+    port::{Port, PortEntry, PortOptions},
     proxy::{HttpProxy, Proxy, ProxyEntry, ProxyKind, Route},
+    tls::TlsTermination,
 };
 
 mod common;
@@ -98,6 +99,7 @@ async fn http_proxy() -> anyhow::Result<()> {
                             }],
                         },
                     ],
+                    upgrade_insecure: false,
                 }),
                 ..Default::default()
             },
@@ -174,6 +176,82 @@ async fn http_proxy() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn http_proxy_upgrade_insecure() -> anyhow::Result<()> {
+    let proxy_port = alloc_tcp_port().await?;
+    let proxy_port2 = alloc_tcp_port().await?;
+
+    let config = TestStorage::builder()
+        .ports(vec![
+            PortEntry {
+                id: "test".parse().unwrap(),
+                port: Port {
+                    active: true,
+                    name: String::new(),
+                    listen: proxy_port.multiaddr_http(),
+                    opts: Default::default(),
+                },
+            },
+            PortEntry {
+                id: "secure".parse().unwrap(),
+                port: Port {
+                    active: true,
+                    name: String::new(),
+                    listen: proxy_port2.multiaddr_https(),
+                    opts: PortOptions {
+                        tls_termination: Some(TlsTermination {
+                            server_names: vec!["localhost".into()],
+                        }),
+                    },
+                },
+            },
+        ])
+        .proxies(vec![ProxyEntry {
+            id: "test2".parse().unwrap(),
+            proxy: Proxy {
+                ports: vec!["test".parse().unwrap(), "secure".parse().unwrap()],
+                kind: ProxyKind::Http(HttpProxy {
+                    vhosts: vec!["localhost".parse().unwrap()],
+                    routes: vec![Route {
+                        path: "/".into(),
+                        servers: vec![taxy_api::proxy::Server {
+                            url: "https://httpbin.org/".parse().unwrap(),
+                        }],
+                    }],
+                    upgrade_insecure: true,
+                }),
+                ..Default::default()
+            },
+        }])
+        .build();
+
+    with_server(config, |_| async move {
+        let client = reqwest::Client::builder()
+            .redirect(Policy::none())
+            .build()?;
+        let url = proxy_port.http_url("/hello");
+        let resp = client
+            .get(url.clone())
+            .header(HOST, url.host_str().unwrap())
+            .send()
+            .await?;
+        assert_eq!(resp.status(), 301);
+        assert_eq!(
+            resp.headers()
+                .get("location")
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_string(),
+            proxy_port2.https_url("/hello").to_string()
+        );
+        Ok(())
+    })
+    .await?;
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn http_proxy_dns_error() -> anyhow::Result<()> {
     let proxy_port = alloc_tcp_port().await?;
 
@@ -199,6 +277,7 @@ async fn http_proxy_dns_error() -> anyhow::Result<()> {
                             url: "https://example.nodomain/".parse().unwrap(),
                         }],
                     }],
+                    upgrade_insecure: false,
                 }),
                 ..Default::default()
             },

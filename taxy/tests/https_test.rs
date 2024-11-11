@@ -54,6 +54,7 @@ async fn https_proxy() -> anyhow::Result<()> {
                             url: listen_port.https_url("/").try_into().unwrap(),
                         }],
                     }],
+                    upgrade_insecure: false,
                 }),
                 ..Default::default()
             },
@@ -150,6 +151,7 @@ async fn https_proxy_invalid_cert() -> anyhow::Result<()> {
                             url: listen_port.https_url("/").try_into().unwrap(),
                         }],
                     }],
+                    upgrade_insecure: false,
                 }),
                 ..Default::default()
             },
@@ -227,6 +229,7 @@ async fn https_proxy_automatic_upgrade() -> anyhow::Result<()> {
                             url: listen_port.https_url("/").try_into().unwrap(),
                         }],
                     }],
+                    upgrade_insecure: false,
                 }),
                 ..Default::default()
             },
@@ -319,6 +322,7 @@ async fn https_proxy_domain_fronting() -> anyhow::Result<()> {
                             url: listen_port.https_url("/").try_into().unwrap(),
                         }],
                     }],
+                    upgrade_insecure: false,
                 }),
                 ..Default::default()
             },

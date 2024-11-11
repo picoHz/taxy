@@ -16,9 +16,9 @@ pub struct Router {
 }
 
 impl Router {
-    pub fn new(entries: Vec<ProxyEntry>) -> Self {
+    pub fn new(proxies: Vec<ProxyEntry>, https_port: Option<u16>) -> Self {
         let mut routes = vec![];
-        for (id, http) in entries
+        for (id, http) in proxies
             .into_iter()
             .filter_map(|entry| match entry.proxy.kind {
                 ProxyKind::Http(http) => Some((entry.id, http)),
@@ -33,6 +33,7 @@ impl Router {
                             resource_id: id,
                             filter,
                             route,
+                            https_port: https_port.filter(|_| http.upgrade_insecure),
                         });
                     }
                     Err(e) => {
@@ -44,13 +45,13 @@ impl Router {
         Self { routes }
     }
 
-    pub fn get_route<T>(&self, req: &Request<T>) -> Option<(&ParsedRoute, FilterResult, ShortId)> {
-        self.routes.iter().find_map(|route| {
-            route
-                .filter
-                .test(req)
-                .map(|res| (&route.route, res, route.resource_id))
-        })
+    pub fn get_route<T>(
+        &self,
+        req: &Request<T>,
+    ) -> Option<(&ParsedRoute, FilterResult, &FilteredRoute)> {
+        self.routes
+            .iter()
+            .find_map(|route| route.filter.test(req).map(|res| (&route.route, res, route)))
     }
 }
 
@@ -59,6 +60,7 @@ pub struct FilteredRoute {
     pub resource_id: ShortId,
     pub filter: RequestFilter,
     pub route: ParsedRoute,
+    pub https_port: Option<u16>,
 }
 
 #[derive(Debug)]

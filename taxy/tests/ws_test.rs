@@ -53,6 +53,7 @@ async fn ws_proxy() -> anyhow::Result<()> {
                             url: listen_port.http_url("/").try_into().unwrap(),
                         }],
                     }],
+                    upgrade_insecure: false,
                 }),
                 ..Default::default()
             },

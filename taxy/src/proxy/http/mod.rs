@@ -8,14 +8,14 @@ use crate::server::cert_list::CertList;
 use arc_swap::{ArcSwap, Cache};
 use header::HeaderRewriter;
 use hyper::{
-    header::HOST,
+    header::{HOST, LOCATION},
     http::{
         uri::{Parts, Scheme},
         HeaderValue,
     },
     server::conn::Http,
     service::service_fn,
-    Response, StatusCode, Uri,
+    Body, Request, Response, StatusCode, Uri,
 };
 use std::{net::SocketAddr, sync::Arc, time::SystemTime};
 use taxy_api::error::Error;
@@ -98,9 +98,45 @@ impl HttpPortContext {
         })
     }
 
-    pub async fn setup(&mut self, certs: &CertList, proxies: Vec<ProxyEntry>) -> Result<(), Error> {
+    pub async fn setup(
+        &mut self,
+        ports: &[PortEntry],
+        certs: &CertList,
+        proxies: Vec<ProxyEntry>,
+    ) -> Result<(), Error> {
+        let https_ports = ports
+            .iter()
+            .filter(|entry| entry.port.listen.is_http() && entry.port.listen.is_tls())
+            .filter(|entry| {
+                proxies
+                    .iter()
+                    .any(|proxy| proxy.proxy.ports.contains(&entry.id))
+            })
+            .collect::<Vec<_>>();
+        let https_port = if self.listen.is_ipv4() {
+            https_ports.iter().find(|entry| {
+                entry
+                    .port
+                    .listen
+                    .ip_addr()
+                    .map(|ip| ip.is_ipv4())
+                    .unwrap_or_default()
+            })
+        } else {
+            https_ports.iter().find(|entry| {
+                entry
+                    .port
+                    .listen
+                    .ip_addr()
+                    .map(|ip| ip.is_ipv6())
+                    .unwrap_or_default()
+            })
+        }
+        .or(https_ports.first())
+        .and_then(|entry| entry.port.listen.port().ok());
+
         self.shared.store(Arc::new(SharedContext {
-            router: Router::new(proxies),
+            router: Router::new(proxies, https_port),
             header_rewriter: HeaderRewriter::builder()
                 .trust_upstream_headers(false)
                 .set_via(HeaderValue::from_static("taxy"))
@@ -270,55 +306,86 @@ async fn start(
         let shared = shared_cache.load();
 
         let req = if domain_fronting {
-            Err(ProxyError::DomainFrontingDetected)
-        } else if let Some((route, res, resource_id)) = shared.router.get_route(&req) {
-            let mut parts = Parts::default();
+            ProxiedRequest::Err(ProxyError::DomainFrontingDetected)
+        } else if let Some((parsed, res, route)) = shared.router.get_route(&req) {
+            let resource_id = route.resource_id;
 
-            parts.path_and_query = if let Some(query) = req.uri().query() {
-                format!("{}?{}", res.uri.path(), query).parse().ok()
+            let mut redirect = None;
+            if forwarded_proto == "http" {
+                if let Some(port) = route.https_port {
+                    if let Some(uri) = header_host
+                        .as_ref()
+                        .and_then(|host| host.parse::<Uri>().ok())
+                    {
+                        let mut parts = Parts::from(uri);
+                        parts.scheme = Some(Scheme::HTTPS);
+                        if let Some(authority) = parts.authority {
+                            parts.authority = format!("{}:{}", authority.host(), port).parse().ok();
+                        }
+                        parts.path_and_query = req.uri().path_and_query().cloned();
+                        if let Ok(uri) = Uri::from_parts(parts) {
+                            redirect = Response::builder()
+                                .status(301)
+                                .header(LOCATION, uri.to_string())
+                                .body(Body::empty())
+                                .ok();
+                        }
+                    }
+                }
+            }
+
+            if let Some(redirect) = redirect {
+                ProxiedRequest::Redirect(redirect)
             } else {
-                res.uri.path_and_query().cloned()
-            };
+                let mut parts = Parts::default();
 
-            if let Some(server) = route.servers.first() {
-                parts.scheme = Some(match server.url.scheme() {
-                    "https" | "wss" => Scheme::HTTPS,
-                    _ => Scheme::HTTP,
-                });
-                parts.authority = Some(server.authority.clone());
+                parts.path_and_query = if let Some(query) = req.uri().query() {
+                    format!("{}?{}", res.uri.path(), query).parse().ok()
+                } else {
+                    res.uri.path_and_query().cloned()
+                };
+
+                if let Some(server) = parsed.servers.first() {
+                    parts.scheme = Some(match server.url.scheme() {
+                        "https" | "wss" => Scheme::HTTPS,
+                        _ => Scheme::HTTP,
+                    });
+                    parts.authority = Some(server.authority.clone());
+                }
+
+                if let Ok(uri) = Uri::from_parts(parts) {
+                    *req.uri_mut() = uri;
+                }
+
+                info!(target: "taxy::access_log", remote = %remote, %local, action, target = %req.uri());
+                let span: Span = span!(Level::INFO, "http", %resource_id, remote = %remote, %local, action, target = %req.uri());
+
+                if let Some(host) = req
+                    .uri()
+                    .authority()
+                    .and_then(|host| HeaderValue::from_str(host.as_str()).ok())
+                {
+                    req.headers_mut().insert(HOST, host);
+                }
+
+                shared.header_rewriter.pre_process(
+                    req.headers_mut(),
+                    remote.ip(),
+                    header_host.map(|h| h.to_string()),
+                    forwarded_proto,
+                );
+                shared.header_rewriter.post_process(req.headers_mut());
+                ProxiedRequest::Ok(req, span)
             }
-
-            if let Ok(uri) = Uri::from_parts(parts) {
-                *req.uri_mut() = uri;
-            }
-
-            info!(target: "taxy::access_log", remote = %remote, %local, action, target = %req.uri());
-            let span: Span = span!(Level::INFO, "http", %resource_id, remote = %remote, %local, action, target = %req.uri());
-
-            if let Some(host) = req
-                .uri()
-                .authority()
-                .and_then(|host| HeaderValue::from_str(host.as_str()).ok())
-            {
-                req.headers_mut().insert(HOST, host);
-            }
-
-            shared.header_rewriter.pre_process(
-                req.headers_mut(),
-                remote.ip(),
-                header_host.map(|h| h.to_string()),
-                forwarded_proto,
-            );
-            shared.header_rewriter.post_process(req.headers_mut());
-            Ok((req, span))
         } else {
-            Err(ProxyError::NoRouteFound)
+            ProxiedRequest::Err(ProxyError::NoRouteFound)
         };
 
         async move {
             map_response(match req {
-                Ok((req, span)) => pool.request(req).instrument(span).await,
-                Err(err) => Err(err.into()),
+                ProxiedRequest::Ok(req, span) => pool.request(req).instrument(span).await,
+                ProxiedRequest::Redirect(resp) => Ok(resp),
+                ProxiedRequest::Err(err) => Err(err.into()),
             })
         }
         .instrument(span)
@@ -338,6 +405,12 @@ async fn start(
     );
 
     Ok(())
+}
+
+enum ProxiedRequest {
+    Ok(Request<Body>, Span),
+    Redirect(Response<Body>),
+    Err(ProxyError),
 }
 
 #[derive(Debug)]
