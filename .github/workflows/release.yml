@@ -216,3 +216,49 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload ${{ github.ref_name }} *.tar.*
+  release-freebsd:
+    name: Upload Release Assets (FreeBSD)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/cache@v3
+      continue-on-error: true
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-x86_64-unknown-freebsd-stable-cargo-${{ hashFiles('**/Cargo.lock') }}
+    - name: Install cargo-binstall
+      uses: cargo-bins/cargo-binstall@v1.10.3
+    - name: Install trunk
+      run: cargo binstall trunk --force -y
+    - name: Add toolchain
+      run: rustup target add wasm32-unknown-unknown
+    - name: Build webui
+      run: cd taxy-webui && trunk build --cargo-profile web-release --release && cargo clean
+    - name: Build for FreeBSD
+      id: build
+      uses: vmactions/freebsd-vm@v1
+      with:
+        usesh: true
+        envs: 'CARGO_TERM_COLOR'
+        prepare: |
+          pkg install -y curl gcc
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        run: |
+          . "$HOME/.cargo/env"
+          cargo b --bin taxy --release
+          tar -C target/release -Jcvf taxy-x86_64-unknown-freebsd.tar.xz taxy
+          cargo clean
+    - name: Create release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: gh release create ${{ github.ref_name }} --generate-notes --draft
+      continue-on-error: true
+    - name: Upload archive
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: gh release upload ${{ github.ref_name }} *.tar.*
