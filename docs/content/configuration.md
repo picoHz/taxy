@@ -78,6 +78,10 @@ If needed, these files can be edited manually. Note, however, that Taxy does not
 
 Taxy includes a built-in WebUI. By default, it is served on localhost:46492. However, you can customize the port using the `TAXY_WEBUI` environment variable or the `--webui` command-line option. If you wish to disable the WebUI, set the `TAXY_NO_WEBUI=1` environment variable or use the `--no-webui` command-line option.
 
+# Web API
+
+Taxy can be configured using its Web API. The API documentation is available at https://taxy.onrender.com/swagger-ui/.
+
 # Logging
 
 Taxy logs to the standard output as its default setting. You can change this behavior by setting the `TAXY_LOG`, `TAXY_ACCESS_LOG` environment variable or using the `--log`, `--access-log` command-line option.
