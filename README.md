@@ -32,7 +32,7 @@ Taxy is currently in early development. Please be aware that breaking changes ma
 
 ## Web UI Demo
 
-Visit https://taxy.onrender.com/. (username: `admin`, password: `admin`)
+Visit https://demo.taxy.dev/. (username: `admin`, password: `admin`)
 
 Please note, you can change the configuration freely, but due to the instance being behind a firewall, the configured proxies are not accessible from the outside.
 
@@ -148,7 +148,7 @@ Once the server is running, you can access the admin panel at [http://localhost:
 
 ## Web API
 
-Taxy can be configured using its Web API. The API documentation is available at https://taxy.onrender.com/swagger-ui/.
+Taxy can be configured using its Web API. The API documentation is available at https://demo.taxy.dev/swagger-ui/.
 
 ## Development
 

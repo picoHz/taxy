@@ -80,7 +80,7 @@ Taxy includes a built-in WebUI. By default, it is served on localhost:46492. How
 
 # Web API
 
-Taxy can be configured using its Web API. The API documentation is available at https://taxy.onrender.com/swagger-ui/.
+Taxy can be configured using its Web API. The API documentation is available at https://demo.taxy.dev/swagger-ui/.
 
 # Logging
 

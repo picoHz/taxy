@@ -1,13 +1,26 @@
+# Use the official Rust image as the base image for the builder stage
 FROM rust:latest as builder
 
-# Install cargo-binstall
-RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+# Install trunk
+RUN cargo install trunk
+RUN rustup target add wasm32-unknown-unknown
 
-# Add Cargo.toml
-COPY Cargo.toml CHANGELOG.md ./
+# Set the working directory
+WORKDIR /usr/src/app
 
-# Install pre-built taxy
-RUN cargo binstall -y taxy
+# Copy the actual source code
+COPY Cargo.toml Cargo.lock ./
+COPY taxy taxy
+COPY taxy-api taxy-api
+COPY taxy-webui taxy-webui
+
+# Build the web UI
+WORKDIR /usr/src/app/taxy-webui
+RUN trunk build --cargo-profile web-release --release
+WORKDIR /usr/src/app
+
+# Build the Rust project
+RUN cargo build --release
 
 # Prepare the final image
 FROM debian:bookworm-slim as runtime
@@ -22,10 +35,10 @@ RUN apt-get update && \
 WORKDIR /app
 
 # Copy the Rust binary from the builder stage
-COPY --from=builder /usr/local/cargo/bin/taxy .
+COPY --from=builder /usr/src/app/target/release/taxy /usr/bin
 
 # Add admin user
-RUN ./taxy add-user admin -p admin
+RUN taxy add-user admin -p admin
 
 # Set the entrypoint to run the Rust binary
-ENTRYPOINT ["./taxy", "start", "--webui", "0.0.0.0:8080"]
+ENTRYPOINT ["taxy", "start", "--webui", "0.0.0.0:8080"]

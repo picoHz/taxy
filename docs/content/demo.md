@@ -4,7 +4,7 @@ description = "Admin Panel Demo"
 weight = 1
 +++
 
-The demo admin panel is available at [https://taxy.onrender.com/](https://taxy.onrender.com/).
+The demo admin panel is available at [https://demo.taxy.dev/](https://demo.taxy.dev/).
 Please use the following credentials to log in:
 
 - Username: `admin`
