@@ -23,7 +23,7 @@ RUN trunk build --cargo-profile web-release --release
 WORKDIR /usr/src/app
 
 # Build the Rust project
-RUN cargo build --release
+RUN cargo build --all-features --release
 
 # Prepare the final image
 FROM debian:bookworm-slim as runtime
