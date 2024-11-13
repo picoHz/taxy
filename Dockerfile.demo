@@ -1,8 +1,11 @@
 # Use the official Rust image as the base image for the builder stage
 FROM rust:latest as builder
 
+# Install cargo-binstall
+RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+
 # Install trunk
-RUN cargo install trunk
+RUN cargo binstall trunk -y
 RUN rustup target add wasm32-unknown-unknown
 
 # Set the working directory
