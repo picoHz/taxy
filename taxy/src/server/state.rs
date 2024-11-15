@@ -11,6 +11,7 @@ use crate::{
     proxy::{PortContext, PortContextKind},
 };
 use hyper::server::conn::Http;
+use hyper::Response;
 use hyper::{service::service_fn, Body};
 use rand::seq::SliceRandom;
 use std::collections::HashSet;
@@ -31,7 +32,6 @@ use tokio::{
     sync::{broadcast, mpsc},
 };
 use tracing::{error, info, span, Instrument, Level};
-use warp::http::Response;
 use x509_parser::time::ASN1Time;
 
 pub struct ServerState {

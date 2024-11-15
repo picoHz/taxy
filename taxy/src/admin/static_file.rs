@@ -1,18 +1,24 @@
+use axum::{
+    body::Bytes,
+    http::{HeaderMap, StatusCode, Uri},
+    response::IntoResponse,
+};
 use fnv::FnvHasher;
-use hyper::StatusCode;
 use include_dir::{include_dir, Dir};
-use std::hash::Hasher;
-use std::path::Path;
-use warp::{path::FullPath, reply::WithStatus, Rejection, Reply};
+use std::{hash::Hasher, path::Path};
+
+use super::AppError;
 
 static STATIC_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/dist");
 
 const IMMUTABLE_FILE_PREFIXES: &[&str] = &["taxy-webui-", "tailwind-"];
 
-pub async fn get(path: FullPath, if_none_match: Option<String>) -> Result<impl Reply, Rejection> {
-    let path = path.as_str();
+pub async fn fallback(uri: Uri, req_headers: HeaderMap) -> Result<impl IntoResponse, AppError> {
+    let mut headers = HeaderMap::new();
+
+    let path = uri.path();
     if path.starts_with("/api/") {
-        return Err(warp::reject::not_found());
+        return Err(AppError::NotFound);
     }
     let path_has_extension = path
         .rfind('.')
@@ -24,6 +30,8 @@ pub async fn get(path: FullPath, if_none_match: Option<String>) -> Result<impl R
         path.trim_start_matches('/')
     };
 
+    let path = Path::new("webui").join(format!("{path}.gz"));
+
     let immutable = IMMUTABLE_FILE_PREFIXES
         .iter()
         .any(|prefix| path.starts_with(prefix));
@@ -34,11 +42,22 @@ pub async fn get(path: FullPath, if_none_match: Option<String>) -> Result<impl R
         "public, max-age=604800, must-revalidate"
     };
 
-    let path = Path::new("webui").join(format!("{path}.gz"));
+    headers.insert("Content-Encoding", "gzip".parse().unwrap());
+    headers.insert("Cache-Control", cache_control.parse().unwrap());
+
     if let Some(file) = STATIC_DIR.get_file(path) {
         let mut hasher = FnvHasher::default();
         hasher.write(file.contents());
         let etag = format!("{:x}", hasher.finish());
+        headers.insert("ETag", etag.parse().unwrap());
+
+        if req_headers
+            .get("If-None-Match")
+            .map(|x| x.to_str().unwrap_or_default())
+            == Some(&etag)
+        {
+            return Ok((StatusCode::NOT_MODIFIED, headers, Bytes::new()));
+        }
 
         let ext = file
             .path()
@@ -46,17 +65,10 @@ pub async fn get(path: FullPath, if_none_match: Option<String>) -> Result<impl R
             .and_then(|x| x.to_str())
             .unwrap_or_default();
         let mime = mime_guess::from_path(ext).first_or_octet_stream();
-        let reply: WithStatus<&[u8]> = if if_none_match.as_ref() == Some(&etag) {
-            warp::reply::with_status(&[], StatusCode::NOT_MODIFIED)
-        } else {
-            warp::reply::with_status(file.contents(), StatusCode::OK)
-        };
-        let reply = warp::reply::with_header(reply, "Content-Encoding", "gzip");
-        let reply = warp::reply::with_header(reply, "Content-Type", mime.to_string());
-        let reply = warp::reply::with_header(reply, "Cache-Control", cache_control);
-        let reply = warp::reply::with_header(reply, "ETag", etag);
-        Ok(reply)
-    } else {
-        Err(warp::reject::not_found())
+        headers.insert("Content-Type", mime.to_string().parse().unwrap());
+
+        return Ok((StatusCode::OK, headers, Bytes::from_static(file.contents())));
     }
+
+    Err(AppError::NotFound)
 }

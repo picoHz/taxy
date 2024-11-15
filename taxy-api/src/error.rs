@@ -39,7 +39,7 @@ pub enum Error {
     TlsTerminationConfigMissing,
 
     #[error("failed to generate self-signed certificate")]
-    FailedToGerateSelfSignedCertificate,
+    FailedToGenerateSelfSignedCertificate,
 
     #[error("failed to read certificate")]
     FailedToReadCertificate,
@@ -80,9 +80,6 @@ pub enum Error {
     #[error("failed to list network interfaces")]
     FailedToListNetworkInterfaces,
 }
-
-#[cfg(feature = "warp")]
-impl warp::reject::Reject for Error {}
 
 impl Error {
     pub fn status_code(&self) -> u16 {

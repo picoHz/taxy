@@ -1,54 +1,31 @@
-use super::{with_state, AppState};
+use super::{AppError, AppState};
+use axum::{
+    extract::{Path, Query, State},
+    Json,
+};
 use sqlx::ConnectOptions;
 use sqlx::{sqlite::SqliteConnectOptions, Row, SqlitePool};
-use std::path::Path;
 use std::time::Duration;
-use taxy_api::error::Error;
-use taxy_api::log::{LogLevel, LogQuery, SystemLogRow};
+use taxy_api::{
+    error::Error,
+    log::{LogLevel, LogQuery, SystemLogRow},
+};
 use time::OffsetDateTime;
-use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 const REQUEST_INTERVAL: Duration = Duration::from_secs(1);
 const REQUEST_DEFAULT_LIMIT: u32 = 100;
 
-pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
-    warp::get()
-        .and(warp::path("logs"))
-        .and(
-            with_state(app_state)
-                .and(warp::path::param())
-                .and(warp::query())
-                .and(warp::path::end())
-                .and_then(get),
-        )
-        .boxed()
-}
-
-/// Get log.
-#[utoipa::path(
-    get,
-    path = "/api/logs/{id}",
-    params(
-        ("id" = String, Path, description = "Resource ID"),
-        LogQuery
-    ),
-    responses(
-        (status = 200, body = Vec<SystemLogRow>),
-        (status = 408),
-        (status = 404),
-        (status = 401),
-    ),
-    security(
-        ("cookie"=[])
-    )
-)]
-pub async fn get(state: AppState, id: String, query: LogQuery) -> Result<impl Reply, Rejection> {
+pub async fn get(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Query(query): Query<LogQuery>,
+) -> Result<Json<Vec<SystemLogRow>>, AppError> {
     let log = state.data.lock().await.log.clone();
     let rows = log
         .fetch_system_log(&id, query.since, query.until, query.limit)
         .await?;
-    Ok(warp::reply::json(&rows))
+    Ok(Json(rows))
 }
 
 pub struct LogReader {
@@ -56,7 +33,7 @@ pub struct LogReader {
 }
 
 impl LogReader {
-    pub async fn new(path: &Path) -> anyhow::Result<Self> {
+    pub async fn new(path: &std::path::Path) -> anyhow::Result<Self> {
         let opt = SqliteConnectOptions::new()
             .filename(path)
             .read_only(true)

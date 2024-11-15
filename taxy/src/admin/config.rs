@@ -1,49 +1,15 @@
-use super::{with_state, AppState};
-use crate::server::rpc::config::*;
-use taxy_api::{app::AppConfig, error::Error};
-use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
+use super::{AppError, AppState};
+use crate::server::rpc::config::{GetConfig, SetConfig};
+use axum::{extract::State, Json};
+use taxy_api::app::AppConfig;
 
-pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
-    let api_get = warp::get()
-        .and(warp::path::end())
-        .and(with_state(app_state.clone()).and_then(get));
-
-    let api_put = warp::put()
-        .and(warp::path::end())
-        .and(with_state(app_state).and(warp::body::json()).and_then(put));
-    warp::path("config").and(api_get.or(api_put)).boxed()
+pub async fn get(State(state): State<AppState>) -> Result<Json<Box<AppConfig>>, AppError> {
+    Ok(Json(state.call(GetConfig).await?))
 }
 
-/// Get the application configuration.
-#[utoipa::path(
-    get,
-    path = "/api/config",
-    responses(
-        (status = 200, body = AppConfig),
-        (status = 401),
-    ),
-    security(
-        ("cookie"=[])
-    )
-)]
-pub async fn get(state: AppState) -> Result<impl Reply, Rejection> {
-    Ok(warp::reply::json(&state.call(GetConfig).await?))
-}
-
-/// Update the application configuration.
-#[utoipa::path(
-    put,
-    path = "/api/config",
-    request_body = AppConfig,
-    responses(
-        (status = 200),
-        (status = 400, body = Error),
-        (status = 401),
-    ),
-    security(
-        ("cookie"=[])
-    )
-)]
-pub async fn put(state: AppState, config: AppConfig) -> Result<impl Reply, Rejection> {
-    Ok(warp::reply::json(&state.call(SetConfig { config }).await?))
+pub async fn put(
+    State(state): State<AppState>,
+    Json(config): Json<AppConfig>,
+) -> Result<Json<Box<()>>, AppError> {
+    Ok(Json(state.call(SetConfig { config }).await?))
 }

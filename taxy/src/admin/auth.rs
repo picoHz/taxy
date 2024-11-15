@@ -1,57 +1,35 @@
-use super::{with_state, AppState};
+use super::{AppError, AppState};
 use crate::server::rpc::auth::VerifyAccount;
+use axum::{
+    extract::{Request, State},
+    middleware::Next,
+    response::{IntoResponse, Response},
+    Json,
+};
+use axum_extra::extract::{
+    cookie::{Cookie, SameSite},
+    CookieJar,
+};
 use rand::distributions::{Alphanumeric, DistString};
-use serde_json::Value;
 use std::{
     collections::HashMap,
-    net::SocketAddr,
     time::{Duration, Instant},
 };
 use taxy_api::{
     auth::{LoginMethod, LoginRequest, LoginResponse},
     error::Error,
 };
-use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 const MINIMUM_SESSION_EXPIRY: Duration = Duration::from_secs(60 * 5); // 5 minutes
 const SESSION_TOKEN_LENGTH: usize = 32;
 
-pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
-    let api_login = warp::post().and(
-        rate_limit(app_state.clone())
-            .and(warp::path("login"))
-            .and(warp::body::json())
-            .and(warp::cookie::optional("token"))
-            .and(warp::path::end())
-            .and_then(login),
-    );
-
-    let api_logout = warp::get().and(warp::path("logout")).and(
-        with_state(app_state)
-            .and(warp::cookie::cookie("token"))
-            .and(warp::path::end())
-            .and_then(logout),
-    );
-
-    api_login.or(api_logout).boxed()
-}
-
-/// Login.
-#[utoipa::path(
-    post,
-    path = "/api/login",
-    request_body = LoginRequest,
-    responses(
-        (status = 200, body = LoginResponse),
-        (status = 400),
-    )
-)]
 pub async fn login(
-    state: AppState,
-    request: LoginRequest,
-    token: Option<String>,
-) -> Result<impl Reply, Rejection> {
+    State(state): State<AppState>,
+    jar: CookieJar,
+    Json(request): Json<LoginRequest>,
+) -> Result<impl IntoResponse, AppError> {
     let username = request.username.clone();
+    let token = jar.get("token").map(|c| c.value().to_string());
 
     if let LoginMethod::Totp { .. } = &request.method {
         let mut data = state.data.lock().await;
@@ -62,56 +40,61 @@ pub async fn login(
             .map(|session| session.username == username)
             .unwrap_or_default();
         if !ok {
-            return Err(warp::reject::custom(Error::InvalidLoginCredentials));
+            return Err(Error::InvalidLoginCredentials.into());
         }
     }
 
-    let secure_cookie = if request.insecure { "" } else { "Secure" };
-    let result = state.call(VerifyAccount { request }).await;
-    match result {
-        Err(err) => Err(warp::reject::custom(err)),
-        Ok(res) => {
-            let session = match *res {
-                LoginResponse::Success => SessionKind::Admin,
-                _ => SessionKind::Login,
-            };
-            Ok(warp::reply::with_header(
-                warp::reply::json(&res),
-                "Set-Cookie",
-                &format!(
-                    "token={}; HttpOnly; SameSite=Strict; {secure_cookie}",
-                    state
-                        .data
-                        .lock()
-                        .await
-                        .sessions
-                        .new_token(session, &username)
-                ),
-            ))
-        }
-    }
+    let insecure = request.insecure;
+    let result = state.call(VerifyAccount { request }).await?;
+
+    let session = match *result {
+        LoginResponse::Success => SessionKind::Admin,
+        _ => SessionKind::Login,
+    };
+
+    let token = state
+        .data
+        .lock()
+        .await
+        .sessions
+        .new_token(session, &username);
+
+    let cookie = Cookie::build(("token", token))
+        .http_only(true)
+        .same_site(SameSite::Strict)
+        .secure(!insecure)
+        .build();
+
+    Ok((jar.add(cookie), Json(result)))
 }
 
-/// Logout.
-#[utoipa::path(
-    get,
-    path = "/api/logout",
-    responses(
-        (status = 200),
-        (status = 401),
-    ),
-    security(
-        ("cookie"=[])
-    )
-)]
-pub async fn logout(state: AppState, token: String) -> Result<impl Reply, Rejection> {
-    let mut data = state.data.lock().await;
-    data.sessions.remove(&token);
-    Ok(warp::reply::with_header(
-        warp::reply::json(&Value::Object(Default::default())),
-        "Set-Cookie",
-        "token=",
-    ))
+pub async fn logout(State(state): State<AppState>, jar: CookieJar) -> impl IntoResponse {
+    if let Some(token) = jar.get("token") {
+        state.data.lock().await.sessions.remove(token.value());
+    }
+    jar.remove("token")
+}
+
+pub async fn verify(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    request: Request,
+    next: Next,
+) -> Response {
+    if let Some(token) = jar.get("token") {
+        let mut data = state.data.lock().await;
+        let expiry = data.config.admin.session_expiry;
+        if data
+            .sessions
+            .verify(SessionKind::Admin, token.value(), expiry)
+            .is_some()
+        {
+            std::mem::drop(data);
+            let response = next.run(request).await;
+            return response;
+        }
+    }
+    AppError::Taxy(Error::Unauthorized).into_response()
 }
 
 #[derive(Debug, Clone)]
@@ -161,34 +144,4 @@ impl SessionStore {
     pub fn remove(&mut self, token: &str) {
         self.tokens.remove(token);
     }
-}
-
-fn rate_limit(state: AppState) -> impl Filter<Extract = (AppState,), Error = Rejection> + Clone {
-    let data = state.data.clone();
-    warp::any()
-        .and(
-            warp::addr::remote().and_then(move |addr: Option<SocketAddr>| {
-                let data = data.clone();
-                async move {
-                    let mut data = data.lock().await;
-                    let config = data.config.admin;
-                    let rate_limiter = &mut data.rate_limiter;
-                    *rate_limiter = rate_limiter
-                        .drain()
-                        .filter(|(_, (_, t))| t.elapsed() < config.login_attempts_reset)
-                        .collect();
-                    let addr = addr.map(|addr| addr.ip()).unwrap_or([0, 0, 0, 0].into());
-                    let entry = rate_limiter
-                        .entry(addr)
-                        .or_insert_with(|| (0, Instant::now()));
-                    entry.0 += 1;
-                    if entry.0 > config.max_login_attempts as _ {
-                        Err(warp::reject::custom(Error::TooManyLoginAttempts))
-                    } else {
-                        Ok(())
-                    }
-                }
-            }),
-        )
-        .map(move |_| state.clone())
 }

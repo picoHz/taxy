@@ -1,5 +1,12 @@
+use axum::{
+    extract::{ws::WebSocket, WebSocketUpgrade},
+    response::IntoResponse,
+    routing::any,
+    Router,
+};
+use axum_server::tls_rustls::RustlsConfig;
 use core::panic;
-use futures::{FutureExt, SinkExt, StreamExt};
+use futures::{SinkExt, StreamExt};
 use std::sync::Arc;
 use taxy::certs::Cert;
 use taxy_api::{
@@ -10,7 +17,6 @@ use taxy_api::{
 use tokio_rustls::rustls::{client::ClientConfig, RootCertStore};
 use tokio_tungstenite::{connect_async_tls_with_config, tungstenite::Message, Connector};
 use url::Url;
-use warp::Filter;
 
 mod common;
 use common::{alloc_tcp_port, with_server, TestStorage};
@@ -23,24 +29,15 @@ async fn wss_proxy() -> anyhow::Result<()> {
     let root = Arc::new(Cert::new_ca().unwrap());
     let cert = Arc::new(Cert::new_self_signed(&["localhost".parse().unwrap()], &root).unwrap());
 
-    let routes = warp::path("ws").and(warp::ws()).map(|ws: warp::ws::Ws| {
-        ws.on_upgrade(|websocket| {
-            let (tx, rx) = websocket.split();
-            rx.forward(tx).map(|result| {
-                if let Err(e) = result {
-                    eprintln!("websocket error: {:?}", e);
-                }
-            })
-        })
-    });
-
+    let config = RustlsConfig::from_pem(
+        cert.pem_chain.to_vec(),
+        cert.pem_key.as_ref().unwrap().to_vec(),
+    )
+    .await
+    .unwrap();
+    let app = Router::new().route("/ws", any(ws_handler));
     let addr = listen_port.socket_addr();
-    let (_, server) = warp::serve(routes)
-        .tls()
-        .cert(&cert.pem_chain)
-        .key(&cert.pem_key.as_ref().unwrap())
-        .bind_ephemeral(addr);
-    tokio::spawn(server);
+    tokio::spawn(axum_server::bind_rustls(addr, config).serve(app.into_make_service()));
 
     let config = TestStorage::builder()
         .ports(vec![PortEntry {
@@ -113,4 +110,18 @@ async fn wss_proxy() -> anyhow::Result<()> {
         Ok(())
     })
     .await
+}
+
+async fn ws_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
+    ws.on_upgrade(move |socket| handle_socket(socket))
+}
+
+async fn handle_socket(mut socket: WebSocket) {
+    while let Some(msg) = socket.recv().await {
+        if let Ok(msg) = msg {
+            socket.send(msg).await.unwrap();
+        } else {
+            return;
+        }
+    }
 }

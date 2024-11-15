@@ -1,26 +1,7 @@
-use super::{with_state, AppState};
+use super::{AppError, AppState};
+use axum::{extract::State, Json};
 use taxy_api::app::AppInfo;
-use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
-pub fn api(app_state: AppState) -> BoxedFilter<(impl Reply,)> {
-    warp::path("app_info")
-        .and(warp::get())
-        .and(with_state(app_state).and(warp::path::end()).and_then(get))
-        .boxed()
-}
-
-/// Get app info.
-#[utoipa::path(
-    get,
-    path = "/api/app_info",
-    responses(
-        (status = 200, body = AppInfo),
-        (status = 401),
-    ),
-    security(
-        ("cookie"=[])
-    )
-)]
-pub async fn get(state: AppState) -> Result<impl Reply, Rejection> {
-    Ok(warp::reply::json(&state.data.lock().await.app_info))
+pub async fn get(State(state): State<AppState>) -> Result<Json<AppInfo>, AppError> {
+    Ok(Json(state.data.lock().await.app_info.clone()))
 }
