@@ -1,41 +1,51 @@
-use self::auth::{SessionKind, SessionStore};
-use self::log::LogReader;
 use crate::command::ServerCommand;
-use crate::server::rpc::ErasedRpcMethod;
-use crate::server::rpc::{RpcCallback, RpcMethod, RpcWrapper};
+use crate::server::rpc::{ErasedRpcMethod, RpcCallback, RpcMethod, RpcWrapper};
+use auth::SessionStore;
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
+use axum::routing::{delete, post, put};
+use axum::{middleware, Json};
+use axum::{
+    response::{
+        sse::{Event, KeepAlive},
+        Sse,
+    },
+    routing::get,
+    Router,
+};
 use futures::{Stream, TryStreamExt};
-use hyper::StatusCode;
+use logs::LogReader;
 use std::any::Any;
 use std::collections::HashMap;
-use std::net::IpAddr;
-use std::pin::Pin;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::task::{Context, Poll};
-use std::time::Instant;
-use std::{convert::Infallible, net::SocketAddr, sync::Arc};
+use std::{
+    net::SocketAddr,
+    pin::Pin,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
+    task::{Context, Poll},
+};
 use taxy_api::app::{AppConfig, AppInfo};
 use taxy_api::error::{Error, ErrorMessage};
 use taxy_api::event::ServerEvent;
 use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::{broadcast, mpsc, oneshot, Mutex};
-use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
-use tokio_stream::wrappers::BroadcastStream;
-use tracing::{error, info, trace, warn};
-use utoipa::OpenApi;
-use warp::filters::body::BodyDeserializeError;
-use warp::{sse::Event, Filter, Rejection, Reply};
+use tokio_stream::wrappers::{errors::BroadcastStreamRecvError, BroadcastStream};
+use tower_governor::governor::GovernorConfigBuilder;
+use tower_governor::{GovernorError, GovernorLayer};
+use tracing::{trace, warn};
 
 mod acme;
 mod app_info;
 mod auth;
 mod certs;
 mod config;
-mod log;
+mod logs;
 mod ports;
 mod proxies;
 mod static_file;
-mod swagger;
 
 pub async fn start_admin(
     app_info: AppInfo,
@@ -78,11 +88,6 @@ pub async fn start_admin(
         }
     });
 
-    let static_file = warp::get()
-        .and(warp::path::full())
-        .and(warp::header::optional::<String>("If-None-Match"))
-        .and_then(static_file::get);
-
     let event_stream = EventStream {
         send: event.clone(),
         recv: event.subscribe(),
@@ -92,49 +97,107 @@ pub async fn start_admin(
 
     let counter = app_state.event_listener_counter.clone();
     let sender = app_state.sender.clone();
-    let api_events = warp::path("events")
-        .and(with_state(app_state.clone()))
-        .and(warp::path::end())
-        .and(warp::get())
-        .map(move |_| {
-            let event_stream = event_stream.clone();
-            let counter = counter.clone();
-            let sender = sender.clone();
-            warp::sse::reply(warp::sse::keep_alive().stream(StreamWrapper::new(
-                BroadcastStream::new(event_stream.recv),
-                counter,
-                sender,
-            )))
-        });
 
-    let options = warp::options().map(warp::reply);
-    let not_found = warp::get().and_then(handle_not_found);
-
-    let api_doc = warp::path("api-doc.json")
-        .and(warp::get())
-        .map(|| warp::reply::json(&swagger::ApiDoc::openapi()));
-
-    let api = warp::path("api").and(
-        options
-            .or(app_info::api(app_state.clone()))
-            .or(config::api(app_state.clone()))
-            .or(ports::api(app_state.clone()))
-            .or(proxies::api(app_state.clone()))
-            .or(certs::api(app_state.clone()))
-            .or(acme::api(app_state.clone()))
-            .or(auth::api(app_state.clone()))
-            .or(log::api(app_state))
-            .or(api_events)
-            .or(api_doc)
-            .or(not_found),
+    let governor_conf = Arc::new(
+        GovernorConfigBuilder::default()
+            .per_second(4)
+            .burst_size(2)
+            .error_handler(|error| match error {
+                GovernorError::TooManyRequests { .. } => {
+                    AppError::Taxy(Error::TooManyLoginAttempts).into_response()
+                }
+                _ => AppError::Anyhow(anyhow::anyhow!(error)).into_response(),
+            })
+            .finish()
+            .unwrap(),
     );
 
-    let (_, server) = warp::serve(
-        api.or(swagger::swagger_ui())
-            .or(static_file)
-            .recover(handle_rejection),
+    let event_routes = Router::new().route(
+        "/",
+        get(move || async move {
+            let event_stream = event_stream.clone();
+            let stream =
+                StreamWrapper::new(BroadcastStream::new(event_stream.recv), counter, sender);
+            Sse::new(stream).keep_alive(KeepAlive::default())
+        }),
+    );
+
+    let auth_routes = Router::new()
+        .route(
+            "/login",
+            post(auth::login).layer(GovernorLayer {
+                config: governor_conf,
+            }),
+        )
+        .route("/logout", get(auth::logout));
+
+    let config_routes = Router::new()
+        .route("/", get(config::get))
+        .route("/", put(config::put));
+
+    let ports_routes = Router::new()
+        .route("/", get(ports::list))
+        .route("/", post(ports::add))
+        .route("/:id", get(ports::get))
+        .route("/:id/status", get(ports::status))
+        .route("/:id", put(ports::put))
+        .route("/:id", delete(ports::delete))
+        .route("/:id/reset", get(ports::reset));
+
+    let proxies_routes = Router::new()
+        .route("/", get(proxies::list))
+        .route("/", post(proxies::add))
+        .route("/:id", get(proxies::get))
+        .route("/:id/status", get(proxies::status))
+        .route("/:id", put(proxies::put))
+        .route("/:id", delete(proxies::delete));
+
+    let certs_routes = Router::new()
+        .route("/", get(certs::list))
+        .route("/self_sign", post(certs::self_sign))
+        .route("/upload", post(certs::upload))
+        .route("/:id/download", get(certs::download))
+        .route("/:id", get(certs::get))
+        .route("/:id", delete(certs::delete));
+
+    let acme_routes = Router::new()
+        .route("/", get(acme::list))
+        .route("/:id", get(acme::get))
+        .route("/:id", put(acme::put))
+        .route("/", post(acme::add))
+        .route("/:id", delete(acme::delete));
+
+    let logs_routes = Router::new().route("/:id", get(logs::get));
+
+    let app_info_routes = Router::new().route("/", get(app_info::get));
+
+    let api_routes = Router::new()
+        .nest("/events", event_routes)
+        .nest("/config", config_routes)
+        .nest("/ports", ports_routes)
+        .nest("/proxies", proxies_routes)
+        .nest("/certs", certs_routes)
+        .nest("/acme", acme_routes)
+        .nest("/logs", logs_routes)
+        .nest("/app_info", app_info_routes)
+        .route_layer(middleware::from_fn_with_state(
+            app_state.clone(),
+            auth::verify,
+        ));
+
+    let app = Router::new()
+        .nest("/api", auth_routes)
+        .nest("/api", api_routes)
+        .fallback(static_file::fallback)
+        .with_state(app_state);
+
+    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
     )
-    .try_bind_with_graceful_shutdown(addr, async move {
+    .with_graceful_shutdown(async move {
         loop {
             let event = event_recv.recv().await;
             trace!("received server event: {:?}", event);
@@ -148,22 +211,9 @@ pub async fn start_admin(
                 _ => {}
             }
         }
-    })?;
-
-    info!("webui server started on {}", addr);
-    server.await;
+    })
+    .await?;
     Ok(())
-}
-
-async fn handle_not_found() -> Result<&'static [u8], Rejection> {
-    Err(warp::reject::not_found())
-}
-
-#[derive(Clone)]
-pub struct AppState {
-    sender: mpsc::Sender<ServerCommand>,
-    event_listener_counter: Arc<AtomicUsize>,
-    data: Arc<Mutex<Data>>,
 }
 
 struct StreamWrapper {
@@ -214,22 +264,72 @@ impl Drop for StreamWrapper {
     }
 }
 
-type CallbackData = Result<Box<dyn Any + Send + Sync>, Error>;
+struct EventStream {
+    send: broadcast::Sender<ServerEvent>,
+    recv: broadcast::Receiver<ServerEvent>,
+}
 
-struct Data {
-    app_info: AppInfo,
-    config: AppConfig,
-    sessions: SessionStore,
-    log: Arc<LogReader>,
+impl Clone for EventStream {
+    fn clone(&self) -> Self {
+        Self {
+            send: self.send.clone(),
+            recv: self.send.subscribe(),
+        }
+    }
+}
 
-    rpc_counter: usize,
-    rpc_callbacks: HashMap<usize, oneshot::Sender<CallbackData>>,
+pub enum AppError {
+    NotFound,
+    Anyhow(anyhow::Error),
+    Taxy(taxy_api::error::Error),
+}
 
-    rate_limiter: HashMap<IpAddr, (usize, Instant)>,
+impl From<anyhow::Error> for AppError {
+    fn from(err: anyhow::Error) -> Self {
+        AppError::Anyhow(err)
+    }
+}
+
+impl From<taxy_api::error::Error> for AppError {
+    fn from(err: taxy_api::error::Error) -> Self {
+        AppError::Taxy(err)
+    }
+}
+
+impl IntoResponse for AppError {
+    fn into_response(self) -> Response {
+        let code;
+        let message;
+        let mut error = None;
+        match self {
+            AppError::NotFound => {
+                message = "NOT_FOUND".to_string();
+                code = StatusCode::NOT_FOUND;
+            }
+            AppError::Anyhow(err) => {
+                message = err.to_string();
+                code = StatusCode::INTERNAL_SERVER_ERROR;
+            }
+            AppError::Taxy(err) => {
+                message = err.to_string();
+                code = StatusCode::from_u16(err.status_code())
+                    .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+                error = Some(err);
+            }
+        }
+        (code, Json(ErrorMessage { message, error })).into_response()
+    }
+}
+
+#[derive(Clone)]
+pub struct AppState {
+    pub sender: mpsc::Sender<ServerCommand>,
+    pub event_listener_counter: Arc<AtomicUsize>,
+    pub data: Arc<Mutex<Data>>,
 }
 
 impl AppState {
-    async fn call<T>(&self, method: T) -> Result<Box<T::Output>, Error>
+    pub async fn call<T>(&self, method: T) -> Result<Box<T::Output>, Error>
     where
         T: RpcMethod,
     {
@@ -257,8 +357,20 @@ impl AppState {
     }
 }
 
+pub type CallbackData = Result<Box<dyn Any + Send + Sync>, Error>;
+
+pub struct Data {
+    pub app_info: AppInfo,
+    pub config: AppConfig,
+    pub sessions: SessionStore,
+    pub log: Arc<LogReader>,
+
+    pub rpc_counter: usize,
+    pub rpc_callbacks: HashMap<usize, oneshot::Sender<CallbackData>>,
+}
+
 impl Data {
-    async fn new(app_info: AppInfo) -> anyhow::Result<Self> {
+    pub async fn new(app_info: AppInfo) -> anyhow::Result<Self> {
         let log = app_info.log_path.join("log.db");
         Ok(Self {
             app_info,
@@ -267,74 +379,6 @@ impl Data {
             log: Arc::new(LogReader::new(&log).await?),
             rpc_counter: 0,
             rpc_callbacks: HashMap::new(),
-            rate_limiter: HashMap::new(),
         })
     }
-}
-
-fn with_state(state: AppState) -> impl Filter<Extract = (AppState,), Error = Rejection> + Clone {
-    let data = state.data.clone();
-    warp::any()
-        .and(
-            warp::cookie::optional("token").and_then(move |token: Option<String>| {
-                let data = data.clone();
-                async move {
-                    if let Some(token) = token {
-                        let mut data = data.lock().await;
-                        let expiry = data.config.admin.session_expiry;
-                        if data
-                            .sessions
-                            .verify(SessionKind::Admin, &token, expiry)
-                            .is_some()
-                        {
-                            return Ok(());
-                        }
-                    }
-                    Err(warp::reject::custom(Error::Unauthorized))
-                }
-            }),
-        )
-        .map(move |_| state.clone())
-}
-
-struct EventStream {
-    send: broadcast::Sender<ServerEvent>,
-    recv: broadcast::Receiver<ServerEvent>,
-}
-
-impl Clone for EventStream {
-    fn clone(&self) -> Self {
-        Self {
-            send: self.send.clone(),
-            recv: self.send.subscribe(),
-        }
-    }
-}
-
-async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible> {
-    let code;
-    let message;
-    let mut error = None;
-
-    if err.is_not_found() {
-        code = StatusCode::NOT_FOUND;
-        message = "NOT_FOUND".to_string();
-    } else if err.find::<BodyDeserializeError>().is_some() {
-        message = "BAD_REQUEST".to_string();
-        code = StatusCode::BAD_REQUEST;
-    } else if let Some(err) = err.find::<Error>() {
-        message = err.to_string();
-        code = StatusCode::from_u16(err.status_code()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
-        error = Some(err.clone());
-    } else if err.find::<warp::reject::MethodNotAllowed>().is_some() {
-        code = StatusCode::METHOD_NOT_ALLOWED;
-        message = "METHOD_NOT_ALLOWED".to_string();
-    } else {
-        error!("unhandled rejection: {:?}", err);
-        code = StatusCode::INTERNAL_SERVER_ERROR;
-        message = "UNHANDLED_REJECTION".to_string();
-    }
-
-    let json = warp::reply::json(&ErrorMessage { message, error });
-    Ok(warp::reply::with_status(json, code))
 }

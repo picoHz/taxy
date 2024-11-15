@@ -1,9 +1,9 @@
 use hyper::header::HOST;
+use hyper::http::uri::Authority;
 use hyper::{Request, Uri};
 use std::str::FromStr;
 use taxy_api::proxy::Route;
 use taxy_api::subject_name::SubjectName;
-use warp::filters::host::Authority;
 
 #[derive(Debug, Default)]
 pub struct RequestFilter {

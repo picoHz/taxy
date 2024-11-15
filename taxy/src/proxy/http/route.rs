@@ -1,4 +1,5 @@
 use super::filter::{FilterResult, RequestFilter};
+use hyper::http::uri::Authority;
 use hyper::Request;
 use std::str::FromStr;
 use taxy_api::{
@@ -8,7 +9,6 @@ use taxy_api::{
 };
 use tracing::error;
 use url::Url;
-use warp::host::Authority;
 
 #[derive(Default, Debug)]
 pub struct Router {

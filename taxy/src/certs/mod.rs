@@ -233,12 +233,12 @@ impl Cert {
         params.distinguished_name = distinguished_name;
 
         let keypair =
-            KeyPair::generate().map_err(|_| Error::FailedToGerateSelfSignedCertificate)?;
+            KeyPair::generate().map_err(|_| Error::FailedToGenerateSelfSignedCertificate)?;
         let cert = match params.self_signed(&keypair) {
             Ok(cert) => cert,
             Err(err) => {
                 error!(%err);
-                return Err(Error::FailedToGerateSelfSignedCertificate);
+                return Err(Error::FailedToGenerateSelfSignedCertificate);
             }
         };
 
@@ -254,13 +254,13 @@ impl Cert {
         let key_pem = std::str::from_utf8(pem_key).map_err(|_| Error::FailedToReadPrivateKey)?;
         let ca_keypair = KeyPair::from_pem(key_pem).map_err(|_| Error::FailedToReadPrivateKey)?;
         let ca_params = CertificateParams::from_ca_cert_pem(ca_pem)
-            .map_err(|_| Error::FailedToGerateSelfSignedCertificate)?;
+            .map_err(|_| Error::FailedToGenerateSelfSignedCertificate)?;
 
         let ca_cert = match ca_params.self_signed(&ca_keypair) {
             Ok(cert) => cert,
             Err(err) => {
                 error!(%err);
-                return Err(Error::FailedToGerateSelfSignedCertificate);
+                return Err(Error::FailedToGenerateSelfSignedCertificate);
             }
         };
 
@@ -270,7 +270,7 @@ impl Cert {
                 SanType::IpAddress(*ip)
             } else {
                 let name = Ia5String::from_str(&name.to_string())
-                    .map_err(|_| Error::FailedToGerateSelfSignedCertificate)?;
+                    .map_err(|_| Error::FailedToGenerateSelfSignedCertificate)?;
                 SanType::DnsName(name)
             };
             params.subject_alt_names.push(name);
@@ -286,12 +286,12 @@ impl Cert {
         params.distinguished_name = distinguished_name;
 
         let keypair =
-            KeyPair::generate().map_err(|_| Error::FailedToGerateSelfSignedCertificate)?;
+            KeyPair::generate().map_err(|_| Error::FailedToGenerateSelfSignedCertificate)?;
         let cert = match params.signed_by(&keypair, &ca_cert, &ca_keypair) {
             Ok(cert) => cert,
             Err(err) => {
                 error!(%err);
-                return Err(Error::FailedToGerateSelfSignedCertificate);
+                return Err(Error::FailedToGenerateSelfSignedCertificate);
             }
         };
 

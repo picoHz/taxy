@@ -1,11 +1,8 @@
+use axum::{routing::get, Router};
 use taxy_api::{
     port::{Port, PortEntry, UpstreamServer},
     proxy::{Proxy, ProxyEntry, ProxyKind, TcpProxy},
 };
-use tokio::net::TcpListener;
-use tokio_stream::wrappers::TcpListenerStream;
-use warp::Filter;
-
 mod common;
 use common::{alloc_tcp_port, with_server, TestStorage};
 
@@ -14,9 +11,13 @@ async fn tcp_proxy() -> anyhow::Result<()> {
     let listen_port = alloc_tcp_port().await?;
     let proxy_port = alloc_tcp_port().await?;
 
-    let listener = TcpListener::bind(listen_port.socket_addr()).await.unwrap();
-    let hello = warp::path!("hello").map(|| "Hello".to_string());
-    tokio::spawn(warp::serve(hello).run_incoming(TcpListenerStream::new(listener)));
+    async fn handler() -> &'static str {
+        "Hello"
+    }
+    let app = Router::new().route("/hello", get(handler));
+
+    let addr = listen_port.socket_addr();
+    tokio::spawn(axum_server::bind(addr).serve(app.into_make_service()));
 
     let config = TestStorage::builder()
         .ports(vec![PortEntry {

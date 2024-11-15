@@ -15,7 +15,7 @@ repository = "https://github.com/picoHz/taxy"
 homepage = "https://taxy.dev/"
 
 [dependencies]
-base64 = "0.22.0"
+base64 = "0.22.1"
 hex = "0.4.3"
 humantime-serde = "1.1.1"
 serde = { version = "1.0.171", features = ["rc"] }
@@ -26,4 +26,3 @@ thiserror = "1.0.43"
 time = "0.3.36"
 url = { version = "2.4.0", features = ["serde"] }
 utoipa = "5.2.0"
-warp = { version = "0.3.6", optional = true }

@@ -1,3 +1,5 @@
+use axum::{routing::get, Router};
+use axum_server::tls_rustls::RustlsConfig;
 use reqwest::redirect::Policy;
 use std::sync::Arc;
 use taxy::certs::Cert;
@@ -6,7 +8,6 @@ use taxy_api::{
     proxy::{HttpProxy, Proxy, ProxyEntry, ProxyKind, Route},
     tls::TlsTermination,
 };
-use warp::Filter;
 
 mod common;
 use common::{alloc_tcp_port, with_server, TestStorage};
@@ -19,14 +20,20 @@ async fn https_proxy() -> anyhow::Result<()> {
     let root = Arc::new(Cert::new_ca().unwrap());
     let cert = Arc::new(Cert::new_self_signed(&["localhost".parse().unwrap()], &root).unwrap());
 
+    let config = RustlsConfig::from_pem(
+        cert.pem_chain.to_vec(),
+        cert.pem_key.as_ref().unwrap().to_vec(),
+    )
+    .await
+    .unwrap();
+
+    async fn handler() -> &'static str {
+        "Hello"
+    }
+    let app = Router::new().route("/hello", get(handler));
+
     let addr = listen_port.socket_addr();
-    let hello = warp::path!("hello").map(|| "Hello".to_string());
-    let (_, server) = warp::serve(hello)
-        .tls()
-        .cert(&cert.pem_chain)
-        .key(cert.pem_key.as_ref().unwrap())
-        .bind_ephemeral(addr);
-    tokio::spawn(server);
+    tokio::spawn(axum_server::bind_rustls(addr, config).serve(app.into_make_service()));
 
     let config = TestStorage::builder()
         .ports(vec![PortEntry {
@@ -116,14 +123,20 @@ async fn https_proxy_invalid_cert() -> anyhow::Result<()> {
     let root = Arc::new(Cert::new_ca().unwrap());
     let cert = Arc::new(Cert::new_self_signed(&["localhost".parse().unwrap()], &root).unwrap());
 
+    let config = RustlsConfig::from_pem(
+        cert.pem_chain.to_vec(),
+        cert.pem_key.as_ref().unwrap().to_vec(),
+    )
+    .await
+    .unwrap();
+
+    async fn handler() -> &'static str {
+        "Hello"
+    }
+    let app = Router::new().route("/hello", get(handler));
+
     let addr = listen_port.socket_addr();
-    let hello = warp::path!("hello").map(|| "Hello".to_string());
-    let (_, server) = warp::serve(hello)
-        .tls()
-        .cert(&cert.pem_chain)
-        .key(cert.pem_key.as_ref().unwrap())
-        .bind_ephemeral(addr);
-    tokio::spawn(server);
+    tokio::spawn(axum_server::bind_rustls(addr, config).serve(app.into_make_service()));
 
     let config = TestStorage::builder()
         .ports(vec![PortEntry {
@@ -194,14 +207,20 @@ async fn https_proxy_automatic_upgrade() -> anyhow::Result<()> {
     let root = Arc::new(Cert::new_ca().unwrap());
     let cert = Arc::new(Cert::new_self_signed(&["localhost".parse().unwrap()], &root).unwrap());
 
+    let config = RustlsConfig::from_pem(
+        cert.pem_chain.to_vec(),
+        cert.pem_key.as_ref().unwrap().to_vec(),
+    )
+    .await
+    .unwrap();
+
+    async fn handler() -> &'static str {
+        "Hello"
+    }
+    let app = Router::new().route("/hello", get(handler));
+
     let addr = listen_port.socket_addr();
-    let hello = warp::path!("hello").map(|| "Hello".to_string());
-    let (_, server) = warp::serve(hello)
-        .tls()
-        .cert(&cert.pem_chain)
-        .key(cert.pem_key.as_ref().unwrap())
-        .bind_ephemeral(addr);
-    tokio::spawn(server);
+    tokio::spawn(axum_server::bind_rustls(addr, config).serve(app.into_make_service()));
 
     let config = TestStorage::builder()
         .ports(vec![PortEntry {
@@ -287,14 +306,20 @@ async fn https_proxy_domain_fronting() -> anyhow::Result<()> {
     let root = Arc::new(Cert::new_ca().unwrap());
     let cert = Arc::new(Cert::new_self_signed(&["localhost".parse().unwrap()], &root).unwrap());
 
+    let config = RustlsConfig::from_pem(
+        cert.pem_chain.to_vec(),
+        cert.pem_key.as_ref().unwrap().to_vec(),
+    )
+    .await
+    .unwrap();
+
+    async fn handler() -> &'static str {
+        "Hello"
+    }
+    let app = Router::new().route("/hello", get(handler));
+
     let addr = listen_port.socket_addr();
-    let hello = warp::path!("hello").map(|| "Hello".to_string());
-    let (_, server) = warp::serve(hello)
-        .tls()
-        .cert(&cert.pem_chain)
-        .key(cert.pem_key.as_ref().unwrap())
-        .bind_ephemeral(addr);
-    tokio::spawn(server);
+    tokio::spawn(axum_server::bind_rustls(addr, config).serve(app.into_make_service()));
 
     let config = TestStorage::builder()
         .ports(vec![PortEntry {

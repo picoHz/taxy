@@ -146,10 +146,6 @@ $ taxy start
 
 Once the server is running, you can access the admin panel at [http://localhost:46492/](http://localhost:46492/).
 
-## Web API
-
-Taxy can be configured using its Web API. The API documentation is available at https://demo.taxy.dev/swagger-ui/.
-
 ## Development
 
 To contribute or develop Taxy, follow these steps:

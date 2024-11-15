@@ -23,8 +23,11 @@ anyhow = "1.0.71"
 arc-swap = "1.6.0"
 argon2 = "0.5.0"
 async-trait = "0.1.71"
+axum = { version = "0.7.7", features = ["ws", "multipart"] }
+axum-extra = { version = "0.9.4", features = ["cookie"] }
+axum-server = { version = "0.7.1", features = ["tls-rustls-no-provider"] }
 backoff = { version = "0.4.0", features = ["tokio"] }
-base64 = "0.22.0"
+base64 = "0.22.1"
 brotli = "7.0.0"
 clap = { version = "4.3.11", features = ["derive", "env"] }
 dashmap = "6.0.1"
@@ -70,7 +73,7 @@ sqlx = { version = "0.8.2", features = [
     "time",
 ] }
 tar = "0.4.38"
-taxy-api = { version = "0.1.21", features = ["warp"] }
+taxy-api = { version = "0.1.21" }
 thiserror = "2.0.0"
 time = { version = "0.3.36", features = ["serde"] }
 tokio = { version = "1.29.1", features = [
@@ -88,13 +91,12 @@ tokio-stream = { version = "0.1.14", features = ["sync", "net"] }
 toml = "0.8.8"
 toml_edit = { version = "0.22.9", features = ["serde"] }
 totp-rs = { version = "5.1.0", features = ["gen_secret", "zeroize"] }
+tower_governor = "0.4.3"
 tracing = { version = "0.1.37", features = ["release_max_level_info"] }
 tracing-appender = "0.2.2"
 tracing-subscriber = { version = "0.3.17", features = ["json"] }
 url = { version = "2.4.0", features = ["serde"] }
 utoipa = "5.2.0"
-utoipa-swagger-ui = { version = "8.0.3", optional = true }
-warp = "0.3.6"
 webpki = "0.22.4"
 x509-parser = "0.16.0"
 
@@ -116,4 +118,3 @@ reqwest = { version = "0.12.1", default-features = false, features = [
 tokio-tungstenite = { version = "0.21.0", features = [
     "rustls-tls-native-roots",
 ] }
-warp = { version = "0.3.6", features = ["tls"] }
