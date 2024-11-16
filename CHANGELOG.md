@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.3.34 - 2024-11-16
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.34 -->
+### What's Changed
+
+#### New Features
+
+* Support regex patterns in virtual hosts by @picoHz in https://github.com/picoHz/taxy/pull/102
+* Include target server URL path in proxied requests by @picoHz in https://github.com/picoHz/taxy/pull/103
+
+#### Other Changes
+
+* Migrate from warp to axum for HTTP handling by @picoHz in https://github.com/picoHz/taxy/pull/100
+* Migrate to hyper v1 by @picoHz in https://github.com/picoHz/taxy/pull/101
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.33...v0.3.34
+
 ## v0.3.33 - 2024-11-11
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.33 -->
