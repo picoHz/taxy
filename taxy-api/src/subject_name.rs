@@ -1,4 +1,5 @@
 use crate::error::Error;
+use rustls_pki_types::ServerName;
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, net::IpAddr, str::FromStr};
 
@@ -58,7 +59,7 @@ impl FromStr for SubjectName {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if !s.is_ascii() {
+        if ServerName::try_from(s.replace('*', "a")).is_err() {
             return Err(Error::InvalidSubjectName {
                 name: s.to_string(),
             });

@@ -1,5 +1,5 @@
 use crate::error::Error;
-use crate::subject_name::SubjectName;
+use crate::vhost::VirtualHost;
 use crate::{id::ShortId, port::UpstreamServer};
 use serde_default::DefaultFromSerde;
 use serde_derive::{Deserialize, Serialize};
@@ -54,7 +54,7 @@ pub struct UdpProxy {
 pub struct HttpProxy {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     #[schema(value_type = [String], example = json!(["example.com"]))]
-    pub vhosts: Vec<SubjectName>,
+    pub vhosts: Vec<VirtualHost>,
     pub routes: Vec<Route>,
     #[serde(default = "upgrade_insecure_default", skip_serializing_if = "is_true")]
     pub upgrade_insecure: bool,

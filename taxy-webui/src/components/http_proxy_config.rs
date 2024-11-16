@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 use taxy_api::proxy::{HttpProxy, Route, Server, ServerUrl};
-use taxy_api::subject_name::SubjectName;
+use taxy_api::vhost::VirtualHost;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
@@ -82,7 +82,7 @@ pub fn http_proxy_config(props: &Props) -> Html {
 
             <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Virtual Hosts"}</label>
             <input type="text" autocapitalize="off" value={vhosts.to_string()} onchange={vhosts_onchange} class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="example.com" />
-            <p class="mt-2 text-sm text-neutral-500">{"You can use commas to list multiple names, e.g, example.com, *.test.example.com."}</p>
+            <p class="mt-2 text-sm text-neutral-500">{"You can use commas to list multiple names and regex patterns, e.g, example.com, *.test.example.com, ^([a-z]+\\.)+example\\.com$ ."}</p>
 
             <label class="block mt-4 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Routes"}</label>
 
@@ -157,7 +157,7 @@ fn get_proxy(
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty())
     {
-        match SubjectName::from_str(&host) {
+        match VirtualHost::from_str(&host) {
             Ok(host) => hosts.push(host),
             Err(err) => {
                 errors.insert("vhosts".into(), err.to_string());

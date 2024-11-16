@@ -1,18 +1,16 @@
-use hyper::header::HOST;
-use hyper::http::uri::Authority;
 use hyper::{Request, Uri};
 use std::str::FromStr;
 use taxy_api::proxy::Route;
-use taxy_api::subject_name::SubjectName;
+use taxy_api::vhost::VirtualHost;
 
 #[derive(Debug, Default)]
 pub struct RequestFilter {
-    pub vhosts: Vec<SubjectName>,
+    pub vhosts: Vec<VirtualHost>,
     pub path: Vec<String>,
 }
 
 impl RequestFilter {
-    pub fn new(vhosts: &[SubjectName], route: &Route) -> Self {
+    pub fn new(vhosts: &[VirtualHost], route: &Route) -> Self {
         Self {
             vhosts: vhosts.to_vec(),
             path: route
@@ -24,18 +22,7 @@ impl RequestFilter {
         }
     }
 
-    pub fn test<T>(&self, req: &Request<T>) -> Option<FilterResult> {
-        let auth = req.uri().authority();
-        let header_auth = if auth.is_none() {
-            req.headers()
-                .get(HOST)
-                .and_then(|v| v.to_str().ok())
-                .and_then(|s| Authority::from_str(s).ok())
-        } else {
-            None
-        };
-        let host = auth.or(header_auth.as_ref()).map(|a| a.host());
-
+    pub fn test<T>(&self, req: &Request<T>, host: Option<&str>) -> Option<FilterResult> {
         let host_matched = match host {
             Some(host) => self.vhosts.iter().any(|vhost| vhost.test(host)),
             None => false,

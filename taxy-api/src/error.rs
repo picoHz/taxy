@@ -29,6 +29,9 @@ pub enum Error {
     #[error("invalid subject name: {name}")]
     InvalidSubjectName { name: String },
 
+    #[error("invalid virtual host: {host}")]
+    InvalidVirtualHost { host: String },
+
     #[error("invalid server url: {url}")]
     InvalidServerUrl { url: String },
 
