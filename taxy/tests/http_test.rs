@@ -287,7 +287,7 @@ async fn http_proxy_dns_error() -> anyhow::Result<()> {
     with_server(config, |_| async move {
         let client = reqwest::Client::builder().build()?;
         let resp = client.get(proxy_port.http_url("/hello")).send().await?;
-        assert_eq!(resp.status(), 523);
+        assert_eq!(resp.status(), 502);
         Ok(())
     })
     .await?;

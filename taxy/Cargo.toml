@@ -28,7 +28,7 @@ axum-extra = { version = "0.9.4", features = ["cookie"] }
 axum-server = { version = "0.7.1", features = ["tls-rustls-no-provider"] }
 backoff = { version = "0.4.0", features = ["tokio"] }
 base64 = "0.22.1"
-brotli = "7.0.0"
+bytes = "1.8.0"
 clap = { version = "4.3.11", features = ["derive", "env"] }
 dashmap = "6.0.1"
 directories = "5.0.1"
@@ -41,8 +41,15 @@ hickory-resolver = { version = "0.24.1", features = [
     "tokio-runtime",
     "system-config",
 ] }
+http-body-util = "0.1.2"
 humantime-serde = "1.1.1"
-hyper = { version = "0.14.27", features = ["full"] }
+hyper = { version = "1.4.1", features = ["full"] }
+hyper-util = { version = "0.1.10", features = [
+    "full",
+    "http1",
+    "http2",
+    "server",
+] }
 include_dir = "0.7.3"
 indexmap = { version = "2.0.0", features = ["serde"] }
 instant-acme = "0.7.1"
@@ -83,7 +90,7 @@ tokio = { version = "1.29.1", features = [
     "signal",
     "io-util",
 ] }
-tokio-rustls = { version = "0.25.0", default-features = false, features = [
+tokio-rustls = { version = "0.26.0", default-features = false, features = [
     "tls12",
     "ring",
 ] }
@@ -91,6 +98,7 @@ tokio-stream = { version = "0.1.14", features = ["sync", "net"] }
 toml = "0.8.8"
 toml_edit = { version = "0.22.9", features = ["serde"] }
 totp-rs = { version = "5.1.0", features = ["gen_secret", "zeroize"] }
+tower-service = "0.3.3"
 tower_governor = "0.4.3"
 tracing = { version = "0.1.37", features = ["release_max_level_info"] }
 tracing-appender = "0.2.2"
@@ -104,7 +112,7 @@ x509-parser = "0.16.0"
 built = "0.6.1"
 
 [dev-dependencies]
-mockito = "1.1.0"
+mockito = "1.6.1"
 net2 = "0.2.39"
 reqwest = { version = "0.12.1", default-features = false, features = [
     "rustls-tls",
@@ -115,6 +123,6 @@ reqwest = { version = "0.12.1", default-features = false, features = [
     "http2",
     "hickory-dns",
 ] }
-tokio-tungstenite = { version = "0.21.0", features = [
+tokio-tungstenite = { version = "0.24.0", features = [
     "rustls-tls-native-roots",
 ] }

@@ -178,21 +178,21 @@ async fn https_proxy_invalid_cert() -> anyhow::Result<()> {
             .add_root_certificate(ca.clone())
             .build()?;
         let resp = client.get(proxy_port.https_url("/hello")).send().await?;
-        assert_eq!(resp.status(), 526);
+        assert_eq!(resp.status(), 502);
 
         let client = reqwest::Client::builder()
             .http1_only()
             .add_root_certificate(ca.clone())
             .build()?;
         let resp = client.get(proxy_port.https_url("/hello")).send().await?;
-        assert_eq!(resp.status(), 526);
+        assert_eq!(resp.status(), 502);
 
         let client = reqwest::Client::builder()
             .http2_prior_knowledge()
             .add_root_certificate(ca)
             .build()?;
         let resp = client.get(proxy_port.https_url("/hello")).send().await?;
-        assert_eq!(resp.status(), 526);
+        assert_eq!(resp.status(), 502);
 
         Ok(())
     })

@@ -10,9 +10,10 @@ use crate::{
     command::ServerCommand,
     proxy::{PortContext, PortContextKind},
 };
-use hyper::server::conn::Http;
+use hyper::service::service_fn;
 use hyper::Response;
-use hyper::{service::service_fn, Body};
+use hyper_util::rt::{TokioExecutor, TokioIo};
+use hyper_util::server::conn::auto;
 use rand::seq::SliceRandom;
 use std::collections::HashSet;
 use std::convert::Infallible;
@@ -154,12 +155,13 @@ impl ServerState {
         if !self.http_challenges.is_empty() {
             if let Some(body) = self.handle_http_challenge(&mut stream).await {
                 tokio::task::spawn(async move {
-                    if let Err(err) = Http::new()
+                    let stream = TokioIo::new(BufStream::new(stream));
+                    if let Err(err) = auto::Builder::new(TokioExecutor::new())
                         .serve_connection(
                             stream,
                             service_fn(|_| {
                                 let body = body.clone();
-                                async move { Ok::<_, Infallible>(Response::new(Body::from(body))) }
+                                async move { Ok::<_, Infallible>(Response::new(body)) }
                             }),
                         )
                         .await

@@ -5,12 +5,12 @@ use axum::{
     Router,
 };
 use futures::{SinkExt, StreamExt};
+use hyper::Uri;
 use taxy_api::{
     port::{Port, PortEntry},
     proxy::{HttpProxy, Proxy, ProxyEntry, ProxyKind, Route},
 };
 use tokio_tungstenite::{connect_async, tungstenite::Message};
-use url::Url;
 
 mod common;
 use common::{alloc_tcp_port, with_server, TestStorage};
@@ -54,7 +54,7 @@ async fn ws_proxy() -> anyhow::Result<()> {
         .build();
 
     with_server(config, |_| async move {
-        let url = Url::parse(&format!(
+        let url = Uri::try_from(&format!(
             "ws://localhost:{}/ws",
             proxy_port.socket_addr().port()
         ))?;
@@ -74,7 +74,7 @@ async fn ws_proxy() -> anyhow::Result<()> {
 }
 
 async fn ws_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| handle_socket(socket))
+    ws.on_upgrade(handle_socket)
 }
 
 async fn handle_socket(mut socket: WebSocket) {

@@ -16,7 +16,6 @@ sort_by = "weight"
 - Allows live configuration updates via a REST API without restarting the service
 - Imports TLS certificates from the GUI or can generate a self-signed certificate
 - Provides Let's Encrypt support (ACME v2, HTTP challenge only) for seamless certificate provisioning
-- Supports automatic HTTP Brotli compression
 
 # Installation
 
