@@ -22,7 +22,7 @@ use hyper_util::{
     rt::{TokioExecutor, TokioIo},
     server::conn::auto,
 };
-use std::{net::SocketAddr, sync::Arc, time::SystemTime};
+use std::{net::SocketAddr, str::FromStr, sync::Arc, time::SystemTime};
 use taxy_api::error::Error;
 use taxy_api::port::{PortStatus, SocketState};
 use taxy_api::{port::PortEntry, proxy::ProxyEntry};
@@ -347,24 +347,15 @@ async fn start(
             if let Some(redirect) = redirect {
                 ProxiedRequest::Redirect(redirect)
             } else {
-                let mut parts = Parts::default();
-
-                parts.path_and_query = if let Some(query) = req.uri().query() {
-                    format!("{}?{}", res.uri.path(), query).parse().ok()
-                } else {
-                    res.uri.path_and_query().cloned()
-                };
-
                 if let Some(server) = parsed.servers.first() {
-                    parts.scheme = Some(match server.url.scheme() {
-                        "https" | "wss" => Scheme::HTTPS,
-                        _ => Scheme::HTTP,
-                    });
-                    parts.authority = Some(server.authority.clone());
-                }
-
-                if let Ok(uri) = Uri::from_parts(parts) {
-                    *req.uri_mut() = uri;
+                    let mut url = server.url.0.clone();
+                    if let Ok(mut segments) = url.path_segments_mut() {
+                        segments.extend(res.path_segments);
+                    }
+                    url.set_query(req.uri().query());
+                    if let Ok(uri) = Uri::from_str(url.as_str()) {
+                        *req.uri_mut() = uri;
+                    }
                 }
 
                 info!(target: "taxy::access_log", remote = %remote, %local, action, target = %req.uri());

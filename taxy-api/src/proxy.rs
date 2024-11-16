@@ -123,7 +123,7 @@ pub struct Server {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, ToSchema)]
 #[serde(transparent)]
 #[schema(value_type = String)]
-pub struct ServerUrl(Url);
+pub struct ServerUrl(pub Url);
 
 impl ServerUrl {
     pub fn hostname(&self) -> Option<&str> {

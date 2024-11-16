@@ -1,5 +1,4 @@
-use hyper::{Request, Uri};
-use std::str::FromStr;
+use hyper::Request;
 use taxy_api::proxy::Route;
 use taxy_api::vhost::VirtualHost;
 
@@ -37,8 +36,9 @@ impl RequestFilter {
             .take_while(|(a, b)| a == b)
             .count();
         if count == self.path.len() {
-            let new_path = "/".to_string() + &path.skip(count).collect::<Vec<_>>().join("/");
-            FilterResult::new(&new_path).ok()
+            Some(FilterResult {
+                path_segments: path.skip(count).map(|s| s.to_string()).collect(),
+            })
         } else {
             None
         }
@@ -47,12 +47,5 @@ impl RequestFilter {
 
 #[derive(Debug)]
 pub struct FilterResult {
-    pub uri: Uri,
-}
-
-impl FilterResult {
-    pub fn new(new_path: &str) -> anyhow::Result<Self> {
-        let uri = Uri::from_str(new_path)?;
-        Ok(Self { uri })
-    }
+    pub path_segments: Vec<String>,
 }
