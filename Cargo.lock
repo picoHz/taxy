@@ -3618,7 +3618,7 @@ dependencies = [
 
 [[package]]
 name = "taxy-api"
-version = "0.1.21"
+version = "0.2.0"
 dependencies = [
  "base64 0.22.1",
  "hex",
