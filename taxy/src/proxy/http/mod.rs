@@ -7,15 +7,20 @@ use super::{tls::TlsTermination, PortContextEvent};
 use crate::server::cert_list::CertList;
 use arc_swap::{ArcSwap, Cache};
 use header::HeaderRewriter;
+use http_body_util::{combinators::BoxBody, BodyExt};
 use hyper::{
+    body::Incoming,
     header::{HOST, LOCATION},
     http::{
         uri::{Parts, Scheme},
         HeaderValue,
     },
-    server::conn::Http,
     service::service_fn,
-    Body, Request, Response, StatusCode, Uri,
+    Request, Response, StatusCode, Uri,
+};
+use hyper_util::{
+    rt::{TokioExecutor, TokioIo},
+    server::conn::auto,
 };
 use std::{net::SocketAddr, sync::Arc, time::SystemTime};
 use taxy_api::error::Error;
@@ -35,7 +40,6 @@ use tokio_rustls::{
 };
 use tracing::{debug, error, info, span, Instrument, Level, Span};
 
-mod compression;
 mod error;
 mod filter;
 mod header;
@@ -251,7 +255,8 @@ async fn start(
     if tls_acceptor.is_some() && local.port() != 80 && first_byte != 0x16 {
         tokio::task::spawn(
             async move {
-                if let Err(err) = Http::new()
+                let server_stream = TokioIo::new(server_stream);
+                if let Err(err) = auto::Builder::new(TokioExecutor::new())
                     .serve_connection(server_stream, service_fn(redirect))
                     .await
                 {
@@ -283,9 +288,9 @@ async fn start(
     }
 
     let pool = Arc::new(ConnectionPool::new(tls_client_config));
-    let mut shared_cache = shared_cache.clone();
     let span_cloned = span.clone();
-    let service = hyper::service::service_fn(move |mut req| {
+    let service = hyper::service::service_fn(move |mut req: Request<Incoming>| {
+        let mut shared_cache = shared_cache.clone();
         let span = span_cloned.clone();
         let enter = span.clone();
         let _enter = enter.enter();
@@ -327,7 +332,7 @@ async fn start(
                             redirect = Response::builder()
                                 .status(301)
                                 .header(LOCATION, uri.to_string())
-                                .body(Body::empty())
+                                .body(String::new())
                                 .ok();
                         }
                     }
@@ -383,8 +388,14 @@ async fn start(
 
         async move {
             map_response(match req {
-                ProxiedRequest::Ok(req, span) => pool.request(req).instrument(span).await,
-                ProxiedRequest::Redirect(resp) => Ok(resp),
+                ProxiedRequest::Ok(req, span) => {
+                    pool.request(req.map(|b| BoxBody::new(b.map_err(Into::into))))
+                        .instrument(span)
+                        .await
+                }
+                ProxiedRequest::Redirect(resp) => {
+                    Ok(resp.map(|b| BoxBody::new(b.map_err(Into::into))))
+                }
                 ProxiedRequest::Err(err) => Err(err.into()),
             })
         }
@@ -393,10 +404,14 @@ async fn start(
 
     tokio::task::spawn(
         async move {
-            let http = Http::new()
-                .http2_only(server_http2)
-                .serve_connection(stream, service)
-                .with_upgrades();
+            let stream = TokioIo::new(stream);
+            let builder = auto::Builder::new(TokioExecutor::new());
+            let builder = if server_http2 {
+                builder.http2_only()
+            } else {
+                builder
+            };
+            let http = builder.serve_connection_with_upgrades(stream, service);
             if let Err(err) = http.await {
                 error!("Failed to serve the connection: {:?}", err);
             }
@@ -408,8 +423,8 @@ async fn start(
 }
 
 enum ProxiedRequest {
-    Ok(Request<Body>, Span),
-    Redirect(Response<Body>),
+    Ok(Request<Incoming>, Span),
+    Redirect(Response<String>),
     Err(ProxyError),
 }
 
@@ -430,22 +445,20 @@ pub struct Connection {
     pub tls: bool,
 }
 
-async fn redirect(
-    req: hyper::Request<hyper::Body>,
-) -> Result<Response<hyper::Body>, hyper::http::Error> {
+async fn redirect(req: hyper::Request<Incoming>) -> Result<Response<String>, hyper::http::Error> {
     if let Ok(uri) = get_secure_uri(&req) {
         Response::builder()
             .header("Location", uri.to_string())
             .status(StatusCode::PERMANENT_REDIRECT)
-            .body(hyper::Body::empty())
+            .body(String::new())
     } else {
         Response::builder()
             .status(StatusCode::BAD_REQUEST)
-            .body(hyper::Body::from("TLS required\r\n"))
+            .body(String::from("TLS required\r\n"))
     }
 }
 
-fn get_secure_uri(req: &hyper::Request<hyper::Body>) -> anyhow::Result<Uri> {
+fn get_secure_uri(req: &hyper::Request<Incoming>) -> anyhow::Result<Uri> {
     let mut parts = req.uri().clone().into_parts();
     if let Some(host) = req.headers().get(HOST) {
         parts.authority = Some(host.to_str()?.parse()?);

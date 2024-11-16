@@ -4,11 +4,14 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
-use hyper::{client::connect::HttpConnector, service::Service, Uri};
-use tokio::io::{AsyncRead, AsyncWrite};
+use hyper::rt::{Read, Write};
+use hyper::Uri;
+use hyper_util::client::legacy::connect::HttpConnector;
+use hyper_util::rt::TokioIo;
 use tokio_rustls::rustls::pki_types::ServerName;
 use tokio_rustls::rustls::ClientConfig;
 use tokio_rustls::TlsConnector;
+use tower_service::Service;
 
 use super::stream::MaybeHttpsStream;
 
@@ -75,7 +78,7 @@ impl<T: fmt::Debug> fmt::Debug for HttpsConnector<T> {
 impl<T> Service<Uri> for HttpsConnector<T>
 where
     T: Service<Uri>,
-    T::Response: AsyncRead + AsyncWrite + Send + Unpin,
+    T::Response: Read + Write + Send + Unpin,
     T::Future: Send + 'static,
     T::Error: Into<BoxError>,
 {
@@ -104,13 +107,23 @@ where
             .trim_matches(|c| c == '[' || c == ']')
             .to_owned();
         let connecting = self.http.call(dst);
-        let tls = self.tls.clone();
+
+        let tls_connector = self.tls.clone();
+
         let fut = async move {
             let tcp = connecting.await.map_err(Into::into)?;
+
             let maybe = if is_https {
-                let tls = tls
-                    .connect(ServerName::try_from(host.as_str()).unwrap().to_owned(), tcp)
-                    .await?;
+                let stream = TokioIo::new(tcp);
+
+                let tls = TokioIo::new(
+                    tls_connector
+                        .connect(
+                            ServerName::try_from(host.as_str()).unwrap().to_owned(),
+                            stream,
+                        )
+                        .await?,
+                );
                 MaybeHttpsStream::Https(tls)
             } else {
                 MaybeHttpsStream::Http(tcp)
@@ -130,7 +143,7 @@ type BoxedFut<T> = Pin<Box<dyn Future<Output = Result<MaybeHttpsStream<T>, BoxEr
 /// A Future representing work to connect to a URL, and a TLS handshake.
 pub struct HttpsConnecting<T>(BoxedFut<T>);
 
-impl<T: AsyncRead + AsyncWrite + Unpin> Future for HttpsConnecting<T> {
+impl<T: Read + Write + Unpin> Future for HttpsConnecting<T> {
     type Output = Result<MaybeHttpsStream<T>, BoxError>;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {

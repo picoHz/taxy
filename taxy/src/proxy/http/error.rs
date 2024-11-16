@@ -1,4 +1,6 @@
-use hyper::{Body, Response, StatusCode};
+use bytes::Bytes;
+use http_body_util::{combinators::BoxBody, BodyExt, Full};
+use hyper::{body::Body, Response, StatusCode};
 use sailfish::TemplateOnce;
 use thiserror::Error;
 use tokio_rustls::rustls;
@@ -21,17 +23,22 @@ impl ProxyError {
     }
 }
 
-pub fn map_response(
-    res: Result<Response<Body>, anyhow::Error>,
-) -> Result<Response<Body>, anyhow::Error> {
+pub fn map_response<B>(
+    res: Result<Response<B>, anyhow::Error>,
+) -> Result<Response<BoxBody<Bytes, anyhow::Error>>, anyhow::Error>
+where
+    B: Body<Data = Bytes, Error = anyhow::Error> + Send + Sync + 'static,
+{
     match res {
-        Ok(res) => Ok(res),
+        Ok(res) => Ok(res.map(|body| BoxBody::new(body))),
         Err(err) => {
             let code = map_error(err);
             let ctx = ErrorTemplate {
                 code: code.as_u16(),
             };
-            let mut res = Response::new(Body::from(ctx.render_once().unwrap()));
+            let mut res = Response::new(BoxBody::new(
+                Full::new(Bytes::from(ctx.render_once().unwrap())).map_err(Into::into),
+            ));
             *res.status_mut() = code;
             Ok(res)
         }
@@ -42,30 +49,17 @@ fn map_error(err: anyhow::Error) -> StatusCode {
     if let Some(err) = err.downcast_ref::<ProxyError>() {
         return err.code();
     }
-    if let Some(err) = err.downcast_ref::<std::io::Error>() {
-        if err.kind() == std::io::ErrorKind::TimedOut {
-            return StatusCode::GATEWAY_TIMEOUT;
+    if let Some(err) = err.downcast_ref::<rustls::Error>() {
+        if matches!(err, rustls::Error::InvalidCertificate(_)) {
+            return StatusCode::from_u16(526).unwrap();
+        } else {
+            return StatusCode::from_u16(525).unwrap();
         }
     }
     if let Ok(err) = err.downcast::<hyper::Error>() {
-        let is_connect = err.is_connect();
-        if let Some(inner) = err.into_cause() {
-            if let Ok(err) = inner.downcast::<std::io::Error>() {
-                if err.kind() == std::io::ErrorKind::TimedOut {
-                    return StatusCode::GATEWAY_TIMEOUT;
-                }
-                if let Some(inner) = err.into_inner() {
-                    if let Ok(err) = inner.downcast::<rustls::Error>() {
-                        if matches!(*err, rustls::Error::InvalidCertificate(_)) {
-                            return StatusCode::from_u16(526).unwrap();
-                        } else {
-                            return StatusCode::from_u16(525).unwrap();
-                        }
-                    }
-                }
-            }
-        }
-        if is_connect {
+        if err.is_timeout() {
+            return StatusCode::GATEWAY_TIMEOUT;
+        } else {
             return StatusCode::from_u16(523).unwrap();
         }
     }

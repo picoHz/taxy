@@ -7,6 +7,7 @@ use axum::{
 use axum_server::tls_rustls::RustlsConfig;
 use core::panic;
 use futures::{SinkExt, StreamExt};
+use hyper::Uri;
 use std::sync::Arc;
 use taxy::certs::Cert;
 use taxy_api::{
@@ -16,7 +17,6 @@ use taxy_api::{
 };
 use tokio_rustls::rustls::{client::ClientConfig, RootCertStore};
 use tokio_tungstenite::{connect_async_tls_with_config, tungstenite::Message, Connector};
-use url::Url;
 
 mod common;
 use common::{alloc_tcp_port, with_server, TestStorage};
@@ -87,7 +87,7 @@ async fn wss_proxy() -> anyhow::Result<()> {
         .with_no_client_auth();
 
     with_server(config, |_| async move {
-        let url = Url::parse(&format!(
+        let url = Uri::try_from(&format!(
             "wss://localhost:{}/ws",
             proxy_port.socket_addr().port()
         ))?;
@@ -113,7 +113,7 @@ async fn wss_proxy() -> anyhow::Result<()> {
 }
 
 async fn ws_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| handle_socket(socket))
+    ws.on_upgrade(handle_socket)
 }
 
 async fn handle_socket(mut socket: WebSocket) {
