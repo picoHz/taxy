@@ -18,6 +18,8 @@ homepage = "https://taxy.dev/"
 base64 = "0.22.1"
 hex = "0.4.3"
 humantime-serde = "1.1.1"
+regex = "1.11.1"
+rustls-pki-types = "1.10.0"
 serde = { version = "1.0.171", features = ["rc"] }
 serde_default = "0.2.0"
 serde_derive = "1.0.171"

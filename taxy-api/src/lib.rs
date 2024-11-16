@@ -11,3 +11,4 @@ pub mod port;
 pub mod proxy;
 pub mod subject_name;
 pub mod tls;
+pub mod vhost;

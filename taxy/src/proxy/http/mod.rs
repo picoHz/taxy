@@ -305,6 +305,11 @@ async fn start(
             _ => false,
         };
 
+        let host = header_host
+            .or(sni.as_deref())
+            .or(req.uri().host())
+            .or(header_host);
+
         let header_host = header_host.map(|h| h.to_string());
         let action = format!("{} {}", req.method().as_str(), req.uri());
         let pool = pool.clone();
@@ -312,7 +317,7 @@ async fn start(
 
         let req = if domain_fronting {
             ProxiedRequest::Err(ProxyError::DomainFrontingDetected)
-        } else if let Some((parsed, res, route)) = shared.router.get_route(&req) {
+        } else if let Some((parsed, res, route)) = shared.router.get_route(&req, host) {
             let resource_id = route.resource_id;
 
             let mut redirect = None;

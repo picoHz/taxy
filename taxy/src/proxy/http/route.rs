@@ -48,10 +48,14 @@ impl Router {
     pub fn get_route<T>(
         &self,
         req: &Request<T>,
+        host: Option<&str>,
     ) -> Option<(&ParsedRoute, FilterResult, &FilteredRoute)> {
-        self.routes
-            .iter()
-            .find_map(|route| route.filter.test(req).map(|res| (&route.route, res, route)))
+        self.routes.iter().find_map(|route| {
+            route
+                .filter
+                .test(req, host)
+                .map(|res| (&route.route, res, route))
+        })
     }
 }
 
