@@ -36,12 +36,12 @@ async fn http_proxy() -> anyhow::Result<()> {
         .await;
 
     let mock_get_with_path = server
-        .mock("GET", "/Hello?world=1")
+        .mock("GET", "/bye/Hello?world=1")
         .match_header("via", "taxy")
         .match_header("x-real-ip", mockito::Matcher::Missing)
         .match_header("x-forwarded-proto", "http")
         .match_header("accept-encoding", "gzip, br")
-        .with_body("Hello")
+        .with_body("Bye")
         .create_async()
         .await;
 
@@ -103,7 +103,7 @@ async fn http_proxy() -> anyhow::Result<()> {
                         Route {
                             path: "/was/ist/passiert".into(),
                             servers: vec![taxy_api::proxy::Server {
-                                url: server.url().parse().unwrap(),
+                                url: format!("{}/bye", server.url()).parse().unwrap(),
                             }],
                         },
                         Route {
@@ -140,7 +140,7 @@ async fn http_proxy() -> anyhow::Result<()> {
             .await?
             .text()
             .await?;
-        assert_eq!(resp, "Hello");
+        assert_eq!(resp, "Bye");
 
         let resp = client
             .get(proxy_port.http_url("/hello/?world=1"))
