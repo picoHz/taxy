@@ -25,16 +25,13 @@ pub fn proxy_view(props: &Props) -> Html {
     let site = use_state(|| proxies.entries.iter().find(|e| e.id == props.id).cloned());
     let id = props.id;
     let proxy_cloned = site.clone();
-    use_effect_with_deps(
-        move |_| {
-            wasm_bindgen_futures::spawn_local(async move {
-                if let Ok(entry) = get_site(id).await {
-                    proxy_cloned.set(Some(entry));
-                }
-            });
-        },
-        (),
-    );
+    use_effect_with((),move |_| {
+        wasm_bindgen_futures::spawn_local(async move {
+            if let Ok(entry) = get_site(id).await {
+                proxy_cloned.set(Some(entry));
+            }
+        });
+    });
 
     let navigator = use_navigator().unwrap();
 

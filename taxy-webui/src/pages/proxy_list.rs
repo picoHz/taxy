@@ -19,42 +19,36 @@ pub fn proxy_list() -> Html {
     let (ports, ports_dispatcher) = use_store::<PortStore>();
     let (proxies, proxies_dispatcher) = use_store::<ProxyStore>();
 
-    use_effect_with_deps(
-        move |_| {
-            wasm_bindgen_futures::spawn_local(async move {
-                if let Ok(res) = get_list().await {
-                    let mut statuses = HashMap::new();
-                    for entry in &res {
-                        if let Ok(status) = get_status(entry.id).await {
-                            statuses.insert(entry.id, status);
-                        }
+    use_effect_with((),move |_| {
+        wasm_bindgen_futures::spawn_local(async move {
+            if let Ok(res) = get_list().await {
+                let mut statuses = HashMap::new();
+                for entry in &res {
+                    if let Ok(status) = get_status(entry.id).await {
+                        statuses.insert(entry.id, status);
                     }
-                    proxies_dispatcher.set(ProxyStore {
-                        entries: res,
-                        statuses,
-                        loaded: true,
-                    });
                 }
-            });
-        },
-        (),
-    );
+                proxies_dispatcher.set(ProxyStore {
+                    entries: res,
+                    statuses,
+                    loaded: true,
+                });
+            }
+        });
+    });
 
     let ports_cloned = ports.clone();
-    use_effect_with_deps(
-        move |_| {
-            wasm_bindgen_futures::spawn_local(async move {
-                if let Ok(res) = get_ports().await {
-                    ports_dispatcher.set(PortStore {
-                        entries: res,
-                        loaded: true,
-                        ..(*ports_cloned).clone()
-                    });
-                }
-            });
-        },
-        (),
-    );
+    use_effect_with((),move |_| {
+        wasm_bindgen_futures::spawn_local(async move {
+            if let Ok(res) = get_ports().await {
+                ports_dispatcher.set(PortStore {
+                    entries: res,
+                    loaded: true,
+                    ..(*ports_cloned).clone()
+                });
+            }
+        });
+    });
 
     let navigator = use_navigator().unwrap();
     let list = proxies.entries.clone();

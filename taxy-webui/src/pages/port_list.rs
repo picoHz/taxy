@@ -18,26 +18,23 @@ pub fn post_list() -> Html {
 
     let (ports, dispatcher) = use_store::<PortStore>();
 
-    use_effect_with_deps(
-        move |_| {
-            wasm_bindgen_futures::spawn_local(async move {
-                if let Ok(res) = get_list().await {
-                    let mut statuses = HashMap::new();
-                    for entry in &res {
-                        if let Ok(status) = get_status(entry.id).await {
-                            statuses.insert(entry.id, status);
-                        }
+    use_effect_with((),move |_| {
+        wasm_bindgen_futures::spawn_local(async move {
+            if let Ok(res) = get_list().await {
+                let mut statuses = HashMap::new();
+                for entry in &res {
+                    if let Ok(status) = get_status(entry.id).await {
+                        statuses.insert(entry.id, status);
                     }
-                    dispatcher.set(PortStore {
-                        entries: res,
-                        statuses,
-                        loaded: true,
-                    });
                 }
-            });
-        },
-        (),
-    );
+                dispatcher.set(PortStore {
+                    entries: res,
+                    statuses,
+                    loaded: true,
+                });
+            }
+        });
+    });
 
     let navigator = use_navigator().unwrap();
 

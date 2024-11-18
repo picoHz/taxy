@@ -31,22 +31,19 @@ extern "C" {
 pub fn login() -> Html {
     let navigator = use_navigator().unwrap();
 
-    use_effect_with_deps(
-        move |_| {
-            EventListener::new(&gloo_utils::document(), "visibilitychange", move |_event| {
-                wasm_bindgen_futures::spawn_local(async move {
-                    if !test_token().await {
-                        logout();
-                    }
-                });
-            })
-            .forget();
-        },
-        (),
-    );
+    use_effect_with((), move |_| {
+        EventListener::new(&gloo_utils::document(), "visibilitychange", move |_event| {
+            wasm_bindgen_futures::spawn_local(async move {
+                if !test_token().await {
+                    logout();
+                }
+            });
+        })
+        .forget();
+    });
 
     let location = use_location().unwrap();
-    let query: LoginQuery = location.query().unwrap_or_default();
+    let query = location.query::<LoginQuery>().unwrap_or_default();
 
     let username = use_state(String::new);
     let password = use_state(String::new);

@@ -54,23 +54,20 @@ pub fn self_sign() -> Html {
     let ca_cert_list = use_state(Vec::<CertInfo>::new);
     let ca_cert_list_cloned = ca_cert_list.clone();
     let ca_cert_cloned = ca_cert.clone();
-    use_effect_with_deps(
-        move |_| {
-            wasm_bindgen_futures::spawn_local(async move {
-                if let Ok(res) = get_cert_list().await {
-                    let list = res
-                        .into_iter()
-                        .filter(|cert| cert.has_private_key && cert.kind == CertKind::Root)
-                        .collect::<Vec<_>>();
-                    if let Some(cert) = list.first() {
-                        ca_cert_cloned.set(cert.id);
-                    }
-                    ca_cert_list_cloned.set(list);
+    use_effect_with((),move |_| {
+        wasm_bindgen_futures::spawn_local(async move {
+            if let Ok(res) = get_cert_list().await {
+                let list = res
+                    .into_iter()
+                    .filter(|cert| cert.has_private_key && cert.kind == CertKind::Root)
+                    .collect::<Vec<_>>();
+                if let Some(cert) = list.first() {
+                    ca_cert_cloned.set(cert.id);
                 }
-            });
-        },
-        (),
-    );
+                ca_cert_list_cloned.set(list);
+            }
+        });
+    });
 
     let validation = use_state(|| false);
 

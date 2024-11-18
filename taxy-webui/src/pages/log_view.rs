@@ -22,12 +22,9 @@ pub fn log_view(props: &Props) -> Html {
     let id = props.id.clone();
     let log_cloned = log.clone();
     let ul_ref_cloned = ul_ref.clone();
-    use_effect_with_deps(
-        move |_| {
-            poll_log(id.clone(), ul_ref_cloned.clone(), log_cloned, vec![], None);
-        },
-        (),
-    );
+    use_effect_with((),move |_| {
+        poll_log(id.clone(), ul_ref_cloned.clone(), log_cloned, vec![], None);
+    });
 
     let navigator = use_navigator().unwrap();
     let back_onclick = Callback::from(move |_| {

@@ -45,20 +45,17 @@ pub fn proxy_config(props: &Props) -> Html {
     let (ports, dispatcher) = use_store::<PortStore>();
 
     let ports_cloned = ports.clone();
-    use_effect_with_deps(
-        move |_| {
-            wasm_bindgen_futures::spawn_local(async move {
-                if let Ok(res) = get_ports().await {
-                    dispatcher.set(PortStore {
-                        entries: res,
-                        loaded: true,
-                        ..(*ports_cloned).clone()
-                    });
-                }
-            });
-        },
-        (),
-    );
+    use_effect_with((),move |_| {
+        wasm_bindgen_futures::spawn_local(async move {
+            if let Ok(res) = get_ports().await {
+                dispatcher.set(PortStore {
+                    entries: res,
+                    loaded: true,
+                    ..(*ports_cloned).clone()
+                });
+            }
+        });
+    });
 
     let active = use_state(|| props.proxy.active);
     let active_cloned = active.clone();
