@@ -55,28 +55,25 @@ pub fn port_config(props: &Props) -> Html {
     let interfaces = use_state(|| vec![interface.clone()]);
     let interfaces_cloned = interfaces.clone();
     let interface_cloned = interface.clone();
-    use_effect_with_deps(
-        move |_| {
-            wasm_bindgen_futures::spawn_local(async move {
-                if let Ok(entry) = get_interfaces().await {
-                    let mut list = vec!["0.0.0.0".into(), "::".into()]
-                        .into_iter()
-                        .chain(
-                            entry
-                                .into_iter()
-                                .flat_map(|ifs| ifs.addrs)
-                                .map(|addr| addr.ip.to_string()),
-                        )
-                        .collect::<Vec<_>>();
-                    if !list.contains(&interface_cloned) {
-                        list.push(interface_cloned);
-                    }
-                    interfaces_cloned.set(list);
+    use_effect_with((),move |_| {
+        wasm_bindgen_futures::spawn_local(async move {
+            if let Ok(entry) = get_interfaces().await {
+                let mut list = vec!["0.0.0.0".into(), "::".into()]
+                    .into_iter()
+                    .chain(
+                        entry
+                            .into_iter()
+                            .flat_map(|ifs| ifs.addrs)
+                            .map(|addr| addr.ip.to_string()),
+                    )
+                    .collect::<Vec<_>>();
+                if !list.contains(&interface_cloned) {
+                    list.push(interface_cloned);
                 }
-            });
-        },
-        (),
-    );
+                interfaces_cloned.set(list);
+            }
+        });
+    });
 
     let protocol = match (udp, tls, http) {
         (true, _, _) => "udp",

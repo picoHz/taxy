@@ -18,7 +18,7 @@ pub fn upload() -> Html {
     use_ensure_auth();
 
     let location = use_location().unwrap();
-    let query: UploadQuery = location.query().unwrap_or_default();
+    let query = location.query::<UploadQuery>().unwrap_or_default();
 
     let navigator = use_navigator().unwrap();
     let navigator_cloned = navigator.clone();

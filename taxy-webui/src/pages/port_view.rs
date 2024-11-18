@@ -26,16 +26,13 @@ pub fn port_view(props: &Props) -> Html {
     let port = use_state(|| ports.entries.iter().find(|e| e.id == props.id).cloned());
     let id = props.id;
     let port_cloned = port.clone();
-    use_effect_with_deps(
-        move |_| {
-            wasm_bindgen_futures::spawn_local(async move {
-                if let Ok(entry) = get_port(id).await {
-                    port_cloned.set(Some(entry));
-                }
-            });
-        },
-        (),
-    );
+    use_effect_with((),move |_| {
+        wasm_bindgen_futures::spawn_local(async move {
+            if let Ok(entry) = get_port(id).await {
+                port_cloned.set(Some(entry));
+            }
+        });
+    });
 
     let navigator = use_navigator().unwrap();
 

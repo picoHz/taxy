@@ -46,31 +46,28 @@ pub fn cert_list() -> Html {
     use_ensure_auth();
 
     let location = use_location().unwrap();
-    let query: CertsQuery = location.query().unwrap_or_default();
+    let query = location.query::<CertsQuery>().unwrap_or_default();
     let tab = use_state(|| query.tab);
 
     let (certs, certs_dispatcher) = use_store::<CertStore>();
     let (acme, acme_dispatcher) = use_store::<AcmeStore>();
 
-    use_effect_with_deps(
-        move |_| {
-            wasm_bindgen_futures::spawn_local(async move {
-                if let Ok(res) = get_cert_list().await {
-                    certs_dispatcher.set(CertStore {
-                        entries: res,
-                        loaded: true,
-                    });
-                }
-                if let Ok(res) = get_acme_list().await {
-                    acme_dispatcher.set(AcmeStore {
-                        entries: res,
-                        loaded: true,
-                    });
-                }
-            });
-        },
-        (),
-    );
+    use_effect_with((), move |_| {
+        wasm_bindgen_futures::spawn_local(async move {
+            if let Ok(res) = get_cert_list().await {
+                certs_dispatcher.set(CertStore {
+                    entries: res,
+                    loaded: true,
+                });
+            }
+            if let Ok(res) = get_acme_list().await {
+                acme_dispatcher.set(AcmeStore {
+                    entries: res,
+                    loaded: true,
+                });
+            }
+        });
+    });
 
     let navigator = use_navigator().unwrap();
 
@@ -135,7 +132,7 @@ pub fn cert_list() -> Html {
                         };
                         html! {
                             <li class="mr-2">
-                                <a {onclick} class={classes!("inline-block", "cursor-pointer", "border-2", "border-neutral-400", "px-4", "py-2", "rounded-md", "hover:bg-neutral-100", "dark:hover:bg-neutral-800", "w-full", "lg:py-3", "lg:mb-2", class)}>{item}</a>
+                                <a {onclick} class={classes!("inline-block", "cursor-pointer", "border-2", "border-neutral-400", "px-4", "py-2", "rounded-md", "hover:bg-neutral-100", "dark:hover:bg-neutral-800", "w-full", "lg:py-3", "lg:mb-2", class)}>{item.to_string()}</a>
                             </li>
                         }
                     }).collect::<Html>() }
