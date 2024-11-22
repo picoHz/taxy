@@ -28,7 +28,8 @@ impl Router {
                     route: ParsedRoute {
                         servers: route.servers,
                     },
-                    https_port: https_port.filter(|_| http.upgrade_insecure),
+                    https_port,
+                    upgrade_insecure: http.upgrade_insecure,
                 });
             }
         }
@@ -55,6 +56,7 @@ pub struct FilteredRoute {
     pub filter: RequestFilter,
     pub route: ParsedRoute,
     pub https_port: Option<u16>,
+    pub upgrade_insecure: bool,
 }
 
 #[derive(Debug)]

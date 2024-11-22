@@ -1,12 +1,7 @@
-use self::{
-    error::{map_response, ProxyError},
-    pool::ConnectionPool,
-    route::Router,
-};
+use self::{error::ProxyError, pool::ConnectionPool, route::Router};
 use super::{tls::TlsTermination, PortContextEvent};
 use crate::server::cert_list::CertList;
 use arc_swap::{ArcSwap, Cache};
-use header::HeaderRewriter;
 use http_body_util::{combinators::BoxBody, BodyExt};
 use hyper::{
     body::Incoming,
@@ -22,6 +17,7 @@ use hyper_util::{
     rt::{TokioExecutor, TokioIo},
     server::conn::auto,
 };
+use rewriter::{RequestRewriter, ResponseRewriter};
 use std::{net::SocketAddr, str::FromStr, sync::Arc, time::SystemTime};
 use taxy_api::error::Error;
 use taxy_api::port::{PortStatus, SocketState};
@@ -42,9 +38,9 @@ use tracing::{debug, error, info, span, Instrument, Level, Span};
 
 mod error;
 mod filter;
-mod header;
 mod hyper_tls;
 mod pool;
+mod rewriter;
 mod route;
 
 const MAX_BUFFER_SIZE: usize = 4096;
@@ -141,7 +137,7 @@ impl HttpPortContext {
 
         self.shared.store(Arc::new(SharedContext {
             router: Router::new(proxies, https_port),
-            header_rewriter: HeaderRewriter::builder()
+            header_rewriter: RequestRewriter::builder()
                 .trust_upstream_headers(false)
                 .set_via(HeaderValue::from_static("taxy"))
                 .build(),
@@ -315,13 +311,15 @@ async fn start(
         let pool = pool.clone();
         let shared = shared_cache.load();
 
+        let mut response_rewriter = ResponseRewriter::builder();
         let req = if domain_fronting {
             ProxiedRequest::Err(ProxyError::DomainFrontingDetected)
         } else if let Some((parsed, res, route)) = shared.router.get_route(&req, host) {
             let resource_id = route.resource_id;
 
             let mut redirect = None;
-            if forwarded_proto == "http" {
+            response_rewriter = response_rewriter.https_port(route.https_port);
+            if forwarded_proto == "http" && route.upgrade_insecure {
                 if let Some(port) = route.https_port {
                     if let Some(uri) = header_host
                         .as_ref()
@@ -383,7 +381,7 @@ async fn start(
         };
 
         async move {
-            map_response(match req {
+            response_rewriter.build().map_response(match req {
                 ProxiedRequest::Ok(req, span) => {
                     pool.request(req.map(|b| BoxBody::new(b.map_err(Into::into))))
                         .instrument(span)
@@ -427,7 +425,7 @@ enum ProxiedRequest {
 #[derive(Debug)]
 struct SharedContext {
     pub router: Router,
-    pub header_rewriter: HeaderRewriter,
+    pub header_rewriter: RequestRewriter,
 }
 
 pub trait IoStream: AsyncRead + AsyncWrite + Unpin + Send {}
