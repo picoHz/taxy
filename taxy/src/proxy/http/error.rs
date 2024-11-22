@@ -1,6 +1,4 @@
-use bytes::Bytes;
-use http_body_util::{combinators::BoxBody, BodyExt, Full};
-use hyper::{body::Body, Response, StatusCode};
+use hyper::StatusCode;
 use sailfish::TemplateOnce;
 use thiserror::Error;
 use tokio_rustls::rustls;
@@ -23,29 +21,7 @@ impl ProxyError {
     }
 }
 
-pub fn map_response<B>(
-    res: Result<Response<B>, anyhow::Error>,
-) -> Result<Response<BoxBody<Bytes, anyhow::Error>>, anyhow::Error>
-where
-    B: Body<Data = Bytes, Error = anyhow::Error> + Send + Sync + 'static,
-{
-    match res {
-        Ok(res) => Ok(res.map(|body| BoxBody::new(body))),
-        Err(err) => {
-            let code = map_error(err);
-            let ctx = ErrorTemplate {
-                code: code.as_u16(),
-            };
-            let mut res = Response::new(BoxBody::new(
-                Full::new(Bytes::from(ctx.render_once().unwrap())).map_err(Into::into),
-            ));
-            *res.status_mut() = code;
-            Ok(res)
-        }
-    }
-}
-
-fn map_error(err: anyhow::Error) -> StatusCode {
+pub fn map_error(err: anyhow::Error) -> StatusCode {
     if let Some(err) = err.downcast_ref::<ProxyError>() {
         return err.code();
     }
@@ -68,7 +44,7 @@ fn map_error(err: anyhow::Error) -> StatusCode {
 
 #[derive(TemplateOnce)]
 #[template(path = "error.stpl")]
-struct ErrorTemplate {
+pub struct ErrorTemplate {
     #[allow(unused_variables)]
-    code: u16,
+    pub code: u16,
 }

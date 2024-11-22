@@ -1,4 +1,3 @@
-use super::error::map_response;
 use crate::proxy::http::{hyper_tls::client::HttpsConnector, HTTP2_MAX_FRAME_SIZE};
 use bytes::Bytes;
 use http_body_util::{combinators::BoxBody, BodyExt, Full};
@@ -10,6 +9,8 @@ use hyper_util::{
 use std::sync::Arc;
 use tokio_rustls::rustls::ClientConfig;
 use tracing::error;
+
+use super::rewriter::ResponseRewriter;
 
 pub struct ConnectionPool {
     client: Client<HttpsConnector<HttpConnector>, BoxBody<Bytes, anyhow::Error>>,
@@ -76,7 +77,7 @@ impl ConnectionPool {
             error!(%err);
         }
 
-        map_response(result)
+        ResponseRewriter::default().map_response(result)
     }
 }
 

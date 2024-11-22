@@ -1,19 +1,25 @@
+use bytes::Bytes;
+use http_body_util::{combinators::BoxBody, BodyExt, Full};
+use hyper::header::ALT_SVC;
+use hyper::{body::Body, Response};
 use hyper::{
     header::{FORWARDED, VIA},
-    http::header::Entry,
-    http::HeaderValue,
+    http::{header::Entry, HeaderValue},
     HeaderMap,
 };
+use sailfish::TemplateOnce;
 use std::{iter, net::IpAddr};
 
+use super::error::{map_error, ErrorTemplate};
+
 #[derive(Default, Debug)]
-pub struct HeaderRewriter {
+pub struct RequestRewriter {
     trust_upstream_headers: bool,
     set_via: Option<HeaderValue>,
 }
 
-impl HeaderRewriter {
-    pub fn builder() -> Builder {
+impl RequestRewriter {
+    pub fn builder() -> RequestRewriterBuilder {
         Default::default()
     }
 
@@ -132,11 +138,11 @@ impl HeaderRewriter {
 }
 
 #[derive(Default)]
-pub struct Builder {
-    inner: HeaderRewriter,
+pub struct RequestRewriterBuilder {
+    inner: RequestRewriter,
 }
 
-impl Builder {
+impl RequestRewriterBuilder {
     pub fn trust_upstream_headers(mut self, trust: bool) -> Self {
         self.inner.trust_upstream_headers = trust;
         self
@@ -147,7 +153,7 @@ impl Builder {
         self
     }
 
-    pub fn build(self) -> HeaderRewriter {
+    pub fn build(self) -> RequestRewriter {
         self.inner
     }
 }
@@ -168,6 +174,65 @@ fn forwarded_proto_directive(proto: &str) -> String {
     format!("proto={proto}")
 }
 
+#[derive(Default, Debug)]
+pub struct ResponseRewriter {
+    https_port: Option<u16>,
+}
+
+impl ResponseRewriter {
+    pub fn builder() -> ResponseRewriterBuilder {
+        Default::default()
+    }
+
+    pub fn map_response<B>(
+        &self,
+        res: Result<Response<B>, anyhow::Error>,
+    ) -> Result<Response<BoxBody<Bytes, anyhow::Error>>, anyhow::Error>
+    where
+        B: Body<Data = Bytes, Error = anyhow::Error> + Send + Sync + 'static,
+    {
+        match res {
+            Ok(mut res) => {
+                res.headers_mut().remove(ALT_SVC);
+                if let Some(port) = self.https_port {
+                    res.headers_mut().insert(
+                        ALT_SVC,
+                        HeaderValue::from_str(&format!("h2=\":{}\"", port)).unwrap(),
+                    );
+                }
+                Ok(res.map(|body| BoxBody::new(body)))
+            }
+            Err(err) => {
+                let code = map_error(err);
+                let ctx = ErrorTemplate {
+                    code: code.as_u16(),
+                };
+                let mut res = Response::new(BoxBody::new(
+                    Full::new(Bytes::from(ctx.render_once().unwrap())).map_err(Into::into),
+                ));
+                *res.status_mut() = code;
+                Ok(res)
+            }
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct ResponseRewriterBuilder {
+    inner: ResponseRewriter,
+}
+
+impl ResponseRewriterBuilder {
+    pub fn https_port(mut self, port: Option<u16>) -> Self {
+        self.inner.https_port = port;
+        self
+    }
+
+    pub fn build(self) -> ResponseRewriter {
+        self.inner
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -180,7 +245,7 @@ mod test {
         let mut headers = HeaderMap::new();
         headers.append("x-forwarded-for", "192.168.0.1".parse().unwrap());
 
-        let rewriter = HeaderRewriter::builder().build();
+        let rewriter = RequestRewriter::builder().build();
         rewriter.pre_process(
             &mut headers,
             Ipv4Addr::new(127, 0, 0, 1).into(),
@@ -194,7 +259,7 @@ mod test {
         let mut headers = HeaderMap::new();
         headers.append(FORWARDED, "for=192.168.0.1".parse().unwrap());
 
-        let rewriter = HeaderRewriter::builder()
+        let rewriter = RequestRewriter::builder()
             .trust_upstream_headers(true)
             .build();
         rewriter.pre_process(
@@ -214,7 +279,7 @@ mod test {
         let mut headers = HeaderMap::new();
         headers.append("x-forwarded-for", "192.168.0.1".parse().unwrap());
 
-        let rewriter = HeaderRewriter::builder()
+        let rewriter = RequestRewriter::builder()
             .trust_upstream_headers(true)
             .build();
         rewriter.pre_process(
@@ -233,7 +298,7 @@ mod test {
         let mut headers = HeaderMap::new();
         headers.append("x-forwarded-for", "192.168.0.1".parse().unwrap());
 
-        let rewriter = HeaderRewriter::builder()
+        let rewriter = RequestRewriter::builder()
             .trust_upstream_headers(true)
             .build();
         rewriter.pre_process(
@@ -254,7 +319,7 @@ mod test {
     #[test]
     fn test_header_rewriter_post_process() {
         let mut headers = HeaderMap::new();
-        let rewriter = HeaderRewriter::builder()
+        let rewriter = RequestRewriter::builder()
             .set_via("taxy".parse().unwrap())
             .build();
         rewriter.post_process(&mut headers);

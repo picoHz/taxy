@@ -1,3 +1,4 @@
+use hyper::header::ALT_SVC;
 use reqwest::{header::HOST, redirect::Policy, Body};
 use serde_json::json;
 use taxy_api::{
@@ -20,6 +21,7 @@ async fn http_proxy() -> anyhow::Result<()> {
         .match_header("x-real-ip", mockito::Matcher::Missing)
         .match_header("x-forwarded-proto", "http")
         .match_header("accept-encoding", "gzip, br")
+        .with_header(ALT_SVC, "h2=\":443\"")
         .with_body("Hello")
         .create_async()
         .await;
@@ -31,6 +33,7 @@ async fn http_proxy() -> anyhow::Result<()> {
         .match_header("x-forwarded-proto", "http")
         .match_header("x-forwarded-host", "sphinx.of.black.quartz.judge.my.vow")
         .match_header("accept-encoding", "gzip, br")
+        .with_header(ALT_SVC, "h2=\":443\"")
         .with_body("Hello")
         .create_async()
         .await;
@@ -41,6 +44,7 @@ async fn http_proxy() -> anyhow::Result<()> {
         .match_header("x-real-ip", mockito::Matcher::Missing)
         .match_header("x-forwarded-proto", "http")
         .match_header("accept-encoding", "gzip, br")
+        .with_header(ALT_SVC, "h2=\":443\"")
         .with_body("Bye")
         .create_async()
         .await;
@@ -51,6 +55,7 @@ async fn http_proxy() -> anyhow::Result<()> {
         .match_header("x-real-ip", mockito::Matcher::Missing)
         .match_header("x-forwarded-proto", "http")
         .match_header("accept-encoding", "gzip, br")
+        .with_header(ALT_SVC, "h2=\":443\"")
         .with_body("Hello")
         .create_async()
         .await;
@@ -62,6 +67,7 @@ async fn http_proxy() -> anyhow::Result<()> {
         .match_header("x-forwarded-proto", "http")
         .match_header("accept-encoding", "gzip, br")
         .match_header("content-type", "application/json")
+        .with_header(ALT_SVC, "h2=\":443\"")
         .match_body(mockito::Matcher::Json(json!({"hello": "world"})))
         .with_body("Hello")
         .create_async()
@@ -75,6 +81,7 @@ async fn http_proxy() -> anyhow::Result<()> {
         .match_header("x-forwarded-proto", "http")
         .match_header("accept-encoding", "gzip, br")
         .match_header("transfer-encoding", "chunked")
+        .with_header(ALT_SVC, "h2=\":443\"")
         .match_body(chunks.concat().as_str())
         .with_body("Hello")
         .create_async()
@@ -127,9 +134,11 @@ async fn http_proxy() -> anyhow::Result<()> {
             .header("x-forwarded-for", "0.0.0.0")
             .header("x-real-ip", "0.0.0.0")
             .send()
-            .await?
-            .text()
             .await?;
+
+        assert_eq!(resp.status(), 200);
+        assert!(resp.headers().get(ALT_SVC).is_none());
+        let resp = resp.text().await?;
         assert_eq!(resp, "Hello");
 
         let resp = client
@@ -137,9 +146,11 @@ async fn http_proxy() -> anyhow::Result<()> {
             .header("x-forwarded-for", "0.0.0.0")
             .header("x-real-ip", "0.0.0.0")
             .send()
-            .await?
-            .text()
             .await?;
+
+        assert_eq!(resp.status(), 200);
+        assert!(resp.headers().get(ALT_SVC).is_none());
+        let resp = resp.text().await?;
         assert_eq!(resp, "Bye");
 
         let resp = client
@@ -147,9 +158,11 @@ async fn http_proxy() -> anyhow::Result<()> {
             .header("x-forwarded-for", "0.0.0.0")
             .header("x-real-ip", "0.0.0.0")
             .send()
-            .await?
-            .text()
             .await?;
+
+        assert_eq!(resp.status(), 200);
+        assert!(resp.headers().get(ALT_SVC).is_none());
+        let resp = resp.text().await?;
         assert_eq!(resp, "Hello");
 
         let resp = client
@@ -158,9 +171,11 @@ async fn http_proxy() -> anyhow::Result<()> {
             .header("x-real-ip", "0.0.0.0")
             .json(&json!({"hello": "world"}))
             .send()
-            .await?
-            .text()
             .await?;
+
+        assert_eq!(resp.status(), 200);
+        assert!(resp.headers().get(ALT_SVC).is_none());
+        let resp = resp.text().await?;
         assert_eq!(resp, "Hello");
 
         let stream = tokio_stream::iter(chunks.into_iter().map(Ok::<_, ::std::io::Error>));
@@ -172,9 +187,11 @@ async fn http_proxy() -> anyhow::Result<()> {
             .header("x-real-ip", "0.0.0.0")
             .body(body)
             .send()
-            .await?
-            .text()
             .await?;
+
+        assert_eq!(resp.status(), 200);
+        assert!(resp.headers().get(ALT_SVC).is_none());
+        let resp = resp.text().await?;
         assert_eq!(resp, "Hello");
 
         let client = reqwest::Client::builder().build()?;
@@ -184,9 +201,11 @@ async fn http_proxy() -> anyhow::Result<()> {
             .header("x-real-ip", "0.0.0.0")
             .header(HOST, "sphinx.of.black.quartz.judge.my.vow")
             .send()
-            .await?
-            .text()
             .await?;
+
+        assert_eq!(resp.status(), 200);
+        assert!(resp.headers().get(ALT_SVC).is_none());
+        let resp = resp.text().await?;
         assert_eq!(resp, "Hello");
 
         Ok(())
@@ -262,6 +281,15 @@ async fn http_proxy_upgrade_insecure() -> anyhow::Result<()> {
             .send()
             .await?;
         assert_eq!(resp.status(), 301);
+        assert_eq!(
+            resp.headers()
+                .get("alt-svc")
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_string(),
+            format!("h2=\":{}\"", proxy_port2.socket_addr().port())
+        );
         assert_eq!(
             resp.headers()
                 .get("location")
