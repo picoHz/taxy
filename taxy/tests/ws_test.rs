@@ -60,12 +60,12 @@ async fn ws_proxy() -> anyhow::Result<()> {
         ))?;
         let (mut ws_stream, _) = connect_async(url).await?;
         ws_stream
-            .send(Message::Text("Hello, server!".to_string()))
+            .send(Message::Text("Hello, server!".to_string().into()))
             .await?;
 
         let message = ws_stream.next().await.unwrap();
         match message {
-            Ok(msg) => assert_eq!("Hello, server!", msg.into_text()?),
+            Ok(msg) => assert_eq!("Hello, server!", msg.into_text()?.as_str()),
             Err(e) => panic!("{e}"),
         }
         Ok(())
