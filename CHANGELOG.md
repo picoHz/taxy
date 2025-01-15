@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.3.35 - 2025-01-15
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.35 -->
+### What's Changed
+
+#### New Features
+
+* Rewrite Alt-Svc response header according to port configuration by @picoHz in https://github.com/picoHz/taxy/pull/106
+
+#### Other Changes
+
+* Update gloo dependencies to latest versions by @picoHz in https://github.com/picoHz/taxy/pull/104
+* Update Yew to version 0.21 and related dependencies by @picoHz in https://github.com/picoHz/taxy/pull/105
+* Update dependencies by @picoHz in https://github.com/picoHz/taxy/pull/108
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.34...v0.3.35
+
 ## v0.3.34 - 2024-11-16
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.34 -->
