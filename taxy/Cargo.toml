@@ -23,15 +23,15 @@ anyhow = "1.0.71"
 arc-swap = "1.6.0"
 argon2 = "0.5.0"
 async-trait = "0.1.71"
-axum = { version = "0.7.7", features = ["ws", "multipart"] }
-axum-extra = { version = "0.9.4", features = ["cookie"] }
+axum = { version = "0.8.1", features = ["ws", "multipart"] }
+axum-extra = { version = "0.10.0", features = ["cookie"] }
 axum-server = { version = "0.7.1", features = ["tls-rustls-no-provider"] }
 backoff = { version = "0.4.0", features = ["tokio"] }
 base64 = "0.22.1"
 bytes = "1.8.0"
 clap = { version = "4.3.11", features = ["derive", "env"] }
 dashmap = "6.0.1"
-directories = "5.0.1"
+directories = "6.0.0"
 flate2 = "1.0.26"
 fnv = "1.0.7"
 futures = "0.3.28"
@@ -99,7 +99,7 @@ toml = "0.8.8"
 toml_edit = { version = "0.22.9", features = ["serde"] }
 totp-rs = { version = "5.1.0", features = ["gen_secret", "zeroize"] }
 tower-service = "0.3.3"
-tower_governor = "0.4.3"
+tower_governor = "0.6.0"
 tracing = { version = "0.1.37", features = ["release_max_level_info"] }
 tracing-appender = "0.2.2"
 tracing-subscriber = { version = "0.3.17", features = ["json"] }
@@ -123,6 +123,6 @@ reqwest = { version = "0.12.1", default-features = false, features = [
     "http2",
     "hickory-dns",
 ] }
-tokio-tungstenite = { version = "0.24.0", features = [
+tokio-tungstenite = { version = "0.26.0", features = [
     "rustls-tls-native-roots",
 ] }
