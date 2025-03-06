@@ -138,36 +138,36 @@ pub async fn start_admin(
     let ports_routes = Router::new()
         .route("/", get(ports::list))
         .route("/", post(ports::add))
-        .route("/:id", get(ports::get))
-        .route("/:id/status", get(ports::status))
-        .route("/:id", put(ports::put))
-        .route("/:id", delete(ports::delete))
-        .route("/:id/reset", get(ports::reset));
+        .route("/{id}", get(ports::get))
+        .route("/{id}/status", get(ports::status))
+        .route("/{id}", put(ports::put))
+        .route("/{id}", delete(ports::delete))
+        .route("/{id}/reset", get(ports::reset));
 
     let proxies_routes = Router::new()
         .route("/", get(proxies::list))
         .route("/", post(proxies::add))
-        .route("/:id", get(proxies::get))
-        .route("/:id/status", get(proxies::status))
-        .route("/:id", put(proxies::put))
-        .route("/:id", delete(proxies::delete));
+        .route("/{id}", get(proxies::get))
+        .route("/{id}/status", get(proxies::status))
+        .route("/{id}", put(proxies::put))
+        .route("/{id}", delete(proxies::delete));
 
     let certs_routes = Router::new()
         .route("/", get(certs::list))
         .route("/self_sign", post(certs::self_sign))
         .route("/upload", post(certs::upload))
-        .route("/:id/download", get(certs::download))
-        .route("/:id", get(certs::get))
-        .route("/:id", delete(certs::delete));
+        .route("/{id}/download", get(certs::download))
+        .route("/{id}", get(certs::get))
+        .route("/{id}", delete(certs::delete));
 
     let acme_routes = Router::new()
         .route("/", get(acme::list))
-        .route("/:id", get(acme::get))
-        .route("/:id", put(acme::put))
+        .route("/{id}", get(acme::get))
+        .route("/{id}", put(acme::put))
         .route("/", post(acme::add))
-        .route("/:id", delete(acme::delete));
+        .route("/{id}", delete(acme::delete));
 
-    let logs_routes = Router::new().route("/:id", get(logs::get));
+    let logs_routes = Router::new().route("/{id}", get(logs::get));
 
     let app_info_routes = Router::new().route("/", get(app_info::get));
 
