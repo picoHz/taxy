@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.3.36 - 2025-03-06
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.36 -->
+### What's Changed
+
+#### Bug Fixes
+
+* Fix outdated axum router syntax by @picoHz in https://github.com/picoHz/taxy/pull/111
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.35...v0.3.36
+
 ## v0.3.35 - 2025-01-15
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.35 -->
