@@ -56,8 +56,7 @@ impl CertList {
             .values()
             .filter(|cert| {
                 cert.metadata
-                    .as_ref()
-                    .map_or(false, |meta| meta.acme_id == acme)
+                    .as_ref().is_some_and(|meta| meta.acme_id == acme)
             })
             .collect()
     }
