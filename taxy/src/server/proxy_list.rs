@@ -76,7 +76,7 @@ impl ProxyList {
         if !self.entries.contains_key(&id) {
             Err(Error::IdNotFound { id: id.to_string() })
         } else {
-            self.entries.remove(&id);
+            self.entries.swap_remove(&id);
             Ok(())
         }
     }
@@ -99,7 +99,9 @@ impl ProxyList {
                             ProxyKind::Tcp(_) => {
                                 !port.port.listen.is_udp() && !port.port.listen.is_http()
                             }
-                            ProxyKind::Udp(_) => port.port.listen.is_udp(),
+                            ProxyKind::Udp(_) => {
+                                port.port.listen.is_udp() && !port.port.listen.is_http()
+                            }
                         })
                         .unwrap_or_default()
                 })

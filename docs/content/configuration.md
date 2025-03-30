@@ -8,10 +8,11 @@ weight = 0
 
 Before configuring a proxy, you need to bind a port to listen on. You can do this in the "Ports" section.
 
-Taxy supports five types of ports:
+Taxy supports six types of ports:
 
 - HTTP
 - HTTPS (HTTP over TLS)
+- HTTP over QUIC (HTTP/3)
 - TCP
 - TCP over TLS
 - UDP
@@ -37,6 +38,12 @@ Taxy supports HTTP/2 for HTTP and HTTPS proxies in both upstream and downstream 
 ## WebSocket
 
 Taxy supports WebSocket (and HTTP upgrading) for HTTP and HTTPS proxies. You don't need to do anything special to enable WebSocket support.
+
+## HTTP/3
+
+To enable HTTP/3 proxying, bind a QUIC port in the Ports section and select HTTP over QUIC as the protocol. Note that HTTP/3 is only supported for incoming connections—upstream connections will be downgraded to HTTP/2 or HTTP/1.1.
+
+WebTransport is not supported.
 
 # Certificates
 

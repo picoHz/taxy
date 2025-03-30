@@ -46,7 +46,7 @@ impl AcmeList {
         if !self.entries.contains_key(&id) {
             Err(Error::IdNotFound { id: id.to_string() })
         } else {
-            self.entries.remove(&id);
+            self.entries.swap_remove(&id);
             Ok(())
         }
     }

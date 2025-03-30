@@ -45,7 +45,7 @@ pub fn proxy_config(props: &Props) -> Html {
     let (ports, dispatcher) = use_store::<PortStore>();
 
     let ports_cloned = ports.clone();
-    use_effect_with((),move |_| {
+    use_effect_with((), move |_| {
         wasm_bindgen_futures::spawn_local(async move {
             if let Ok(res) = get_ports().await {
                 dispatcher.set(PortStore {
@@ -128,7 +128,7 @@ pub fn proxy_config(props: &Props) -> Html {
         .filter(|entry| match *protocol {
             ProxyProtocol::Http => entry.port.listen.is_http(),
             ProxyProtocol::Tcp => !entry.port.listen.is_udp() && !entry.port.listen.is_http(),
-            ProxyProtocol::Udp => entry.port.listen.is_udp(),
+            ProxyProtocol::Udp => entry.port.listen.is_udp() && !entry.port.listen.is_http(),
         })
         .collect::<Vec<_>>();
 

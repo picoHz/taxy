@@ -1,6 +1,7 @@
 use super::acme_list::AcmeList;
 use super::cert_list::CertList;
 use super::proxy_list::ProxyList;
+use super::quic::QuicListenerPool;
 use super::udp::UdpListenerPool;
 use super::{port_list::PortList, rpc::RpcCallback, tcp::TcpListenerPool};
 use crate::certs::acme::AcmeOrder;
@@ -14,6 +15,7 @@ use hyper::service::service_fn;
 use hyper::Response;
 use hyper_util::rt::{TokioExecutor, TokioIo};
 use hyper_util::server::conn::auto;
+use quinn::Incoming;
 use rand::seq::SliceRandom;
 use std::collections::HashSet;
 use std::convert::Infallible;
@@ -44,6 +46,7 @@ pub struct ServerState {
     config: AppConfig,
     tcp_pool: TcpListenerPool,
     udp_pool: UdpListenerPool,
+    quic_pool: QuicListenerPool,
     http_challenges: HashMap<String, String>,
     command_sender: mpsc::Sender<ServerCommand>,
     br_sender: broadcast::Sender<ServerEvent>,
@@ -54,6 +57,7 @@ pub struct ServerState {
 pub enum Received {
     Tcp(usize, TcpStream),
     Udp(usize, usize, SocketAddr, Vec<u8>),
+    Quic(usize, Incoming),
 }
 
 impl ServerState {
@@ -93,6 +97,7 @@ impl ServerState {
             config,
             tcp_pool: TcpListenerPool::new(),
             udp_pool: UdpListenerPool::new(),
+            quic_pool: QuicListenerPool::new(),
             http_challenges: HashMap::new(),
             command_sender,
             br_sender,
@@ -134,7 +139,9 @@ impl ServerState {
     }
 
     pub fn has_active_listeners(&self) -> bool {
-        self.tcp_pool.has_active_listeners() || self.udp_pool.has_active_listeners()
+        self.tcp_pool.has_active_listeners()
+            || self.udp_pool.has_active_listeners()
+            || self.quic_pool.has_active_listeners()
     }
 
     pub async fn select(&mut self) -> Option<Received> {
@@ -144,6 +151,9 @@ impl ServerState {
             }
             Some((index, config_index, addr, data)) = self.udp_pool.select() => {
                 Some(Received::Udp(index, config_index, addr, data))
+            }
+            Some((index, stream)) = self.quic_pool.select() => {
+                Some(Received::Quic(index, stream))
             }
             else => None
         }
@@ -204,10 +214,29 @@ impl ServerState {
         }
     }
 
+    pub async fn handle_quic_connection(&mut self, index: usize, stream: Incoming) {
+        if index < self.ports.as_slice().len() {
+            let state = &mut self.ports.as_mut_slice()[index];
+            if let PortContextKind::Http3(http) = state.kind_mut() {
+                http.start_quic_proxy(stream);
+            }
+        }
+    }
+
     pub async fn update_ports(&mut self) {
         let entries = self.ports.entries().cloned().collect::<Vec<_>>();
+        self.tcp_pool
+            .remove_unused_ports(self.ports.as_slice())
+            .await;
+        self.udp_pool
+            .remove_unused_ports(self.ports.as_slice())
+            .await;
+        self.quic_pool
+            .remove_unused_ports(self.ports.as_slice())
+            .await;
         self.tcp_pool.update(self.ports.as_mut_slice()).await;
         self.udp_pool.update(self.ports.as_mut_slice()).await;
+        self.quic_pool.update(self.ports.as_mut_slice()).await;
         self.storage.save_ports(&entries).await;
         if self.proxies.remove_incompatible_ports(&entries) {
             self.update_proxies().await;
@@ -477,5 +506,9 @@ impl ServerState {
                 return id;
             }
         }
+    }
+
+    pub async fn shutdown(self) {
+        std::mem::drop(self.quic_pool);
     }
 }

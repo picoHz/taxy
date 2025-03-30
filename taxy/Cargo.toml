@@ -36,6 +36,8 @@ flate2 = "1.0.26"
 fnv = "1.0.7"
 futures = "0.3.28"
 globwalk = "0.9.1"
+h3 = "0.0.7"
+h3-quinn = "0.0.9"
 hex = "0.4.3"
 hickory-resolver = { version = "0.24.1", features = [
     "tokio-runtime",
@@ -61,7 +63,12 @@ percent-encoding = "2.3.0"
 phf = { version = "0.11.2", features = ["macros"] }
 pin-project-lite = "0.2.10"
 pkcs8 = { version = "0.10.2", features = ["pem"] }
-rand = "0.8.0"
+quinn = { version = "0.11.6", default-features = false, features = [
+    "runtime-tokio",
+    "rustls",
+    "ring",
+] }
+rand = "0.8.5"
 rcgen = { version = "0.13.0", features = ["pem", "x509-parser"] }
 rpassword = "7.2.0"
 rustls-native-certs = "0.8.0"

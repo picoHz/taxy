@@ -56,7 +56,8 @@ impl CertList {
             .values()
             .filter(|cert| {
                 cert.metadata
-                    .as_ref().is_some_and(|meta| meta.acme_id == acme)
+                    .as_ref()
+                    .is_some_and(|meta| meta.acme_id == acme)
             })
             .collect()
     }
@@ -78,7 +79,7 @@ impl CertList {
         if !self.certs.contains_key(&id) {
             Err(Error::IdNotFound { id: id.to_string() })
         } else {
-            if let Some(cert) = self.certs.remove(&id) {
+            if let Some(cert) = self.certs.swap_remove(&id) {
                 if cert.kind == CertKind::Root {
                     self.update_root_certs();
                 }

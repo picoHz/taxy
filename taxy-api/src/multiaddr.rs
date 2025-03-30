@@ -25,6 +25,10 @@ impl Multiaddr {
         self.protocols.iter().any(|p| matches!(p, Protocol::Udp(_)))
     }
 
+    pub fn is_quic(&self) -> bool {
+        self.protocols.iter().any(|p| matches!(p, Protocol::Quic))
+    }
+
     pub fn socket_addr(&self) -> Result<SocketAddr, Error> {
         self.ip_addr()
             .and_then(|ip| self.port().map(|port| SocketAddr::new(ip, port)))
@@ -69,12 +73,14 @@ impl Multiaddr {
     }
 
     pub fn protocol_name(&self) -> &'static str {
-        match (self.is_udp(), self.is_http(), self.is_tls()) {
-            (true, _, _) => "UDP",
-            (false, true, true) => "HTTPS",
-            (false, true, false) => "HTTP",
-            (false, false, true) => "TCP over TLS",
-            (false, false, false) => "TCP",
+        match (self.is_udp(), self.is_http(), self.is_tls(), self.is_quic()) {
+            (_, false, _, true) => "QUIC",
+            (_, true, _, true) => "HTTP over QUIC",
+            (true, _, _, _) => "UDP",
+            (false, true, true, _) => "HTTPS",
+            (false, true, false, _) => "HTTP",
+            (false, false, true, _) => "TCP over TLS",
+            (false, false, false, _) => "TCP",
         }
     }
 }
@@ -87,6 +93,7 @@ pub enum Protocol {
     Udp(u16),
     Tls,
     Http(String),
+    Quic,
 }
 
 impl FromStr for Multiaddr {
@@ -123,6 +130,10 @@ impl FromStr for Multiaddr {
                 }
                 "tls" => {
                     protocols.push(Protocol::Tls);
+                    rest = next;
+                }
+                "quic" => {
+                    protocols.push(Protocol::Quic);
                     rest = next;
                 }
                 "http" => {
@@ -180,6 +191,7 @@ impl fmt::Display for Multiaddr {
                         write!(f, "/http{}", path)?;
                     }
                 }
+                Protocol::Quic => write!(f, "/quic")?,
             }
         }
         Ok(())
@@ -238,5 +250,12 @@ mod test {
         assert!(!addr.is_http());
         assert!(!addr.is_tls());
         assert!(addr.is_udp());
+
+        let addr = Multiaddr::from_str("/ip4/127.0.0.1/udp/8080/quic/http").unwrap();
+        assert_eq!(addr.to_string(), "/ip4/127.0.0.1/udp/8080/quic/http");
+        assert!(addr.is_http());
+        assert!(!addr.is_tls());
+        assert!(addr.is_udp());
+        assert!(addr.is_quic());
     }
 }

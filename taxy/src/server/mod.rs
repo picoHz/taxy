@@ -13,6 +13,7 @@ mod acme_list;
 pub mod cert_list;
 mod port_list;
 mod proxy_list;
+mod quic;
 pub mod rpc;
 mod state;
 mod tcp;
@@ -96,7 +97,9 @@ async fn start_server(
             }
             event = event_recv.recv() => {
                 match event {
-                    Ok(ServerEvent::Shutdown) => break,
+                    Ok(ServerEvent::Shutdown) => {
+                        break
+                    },
                     Ok(ServerEvent::AppConfigUpdated { config }) => {
                         let mut new_interval = tokio::time::interval(config.background_task_interval);
                         new_interval.tick().await;
@@ -116,6 +119,9 @@ async fn start_server(
                     Some(Received::Udp(index, config_index, addr, data)) => {
                         server.handle_udp_packet(index, config_index, addr, data).await;
                     }
+                    Some(Received::Quic(index, conn)) => {
+                        server.handle_quic_connection(index, conn).await;
+                    }
                     None => (),
                 }
             }
@@ -129,5 +135,6 @@ async fn start_server(
         }
     }
 
+    server.shutdown().await;
     Ok(())
 }

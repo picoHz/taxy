@@ -25,6 +25,24 @@ impl UdpListenerPool {
         !self.listeners.is_empty()
     }
 
+    pub async fn remove_unused_ports(&mut self, ports: &[PortContext]) {
+        let used_addrs = ports
+            .iter()
+            .filter_map(|ctx| match ctx.kind() {
+                PortContextKind::Udp(state) => Some(state.listen),
+                _ => None,
+            })
+            .collect::<HashSet<_>>();
+
+        self.listeners.retain(|listener| {
+            if let Ok(addr) = listener.inner.local_addr() {
+                used_addrs.contains(&addr)
+            } else {
+                false
+            }
+        });
+    }
+
     pub async fn update(&mut self, ports: &mut [PortContext]) {
         let used_addrs = ports
             .iter()
@@ -94,10 +112,7 @@ impl UdpListenerPool {
 
     pub async fn select(&mut self) -> Option<(usize, usize, SocketAddr, Vec<u8>)> {
         let streams = &mut self.listeners;
-        match futures::stream::select_all(streams.iter_mut())
-            .next()
-            .await
-        {
+        match futures::stream::select_all(streams.iter_mut()).next().await {
             Some((index, config_index, Ok((addr, data)))) => {
                 Some((index, config_index, addr, data))
             }
