@@ -31,6 +31,7 @@ fn create_default_port() -> Port {
 const PROTOCOLS: &[(&str, &str)] = &[
     ("http", "HTTP"),
     ("https", "HTTPS"),
+    ("http3", "HTTP over QUIC (HTTP/3)"),
     ("tcp", "TCP"),
     ("tls", "TCP over TLS"),
     ("udp", "UDP"),
@@ -42,6 +43,7 @@ pub fn port_config(props: &Props) -> Html {
     let tls = stack.is_tls();
     let http = stack.is_http();
     let udp = stack.is_udp();
+    let quic = stack.is_quic();
     let interface = stack.host().unwrap();
     let port = stack.port().unwrap();
 
@@ -55,7 +57,7 @@ pub fn port_config(props: &Props) -> Html {
     let interfaces = use_state(|| vec![interface.clone()]);
     let interfaces_cloned = interfaces.clone();
     let interface_cloned = interface.clone();
-    use_effect_with((),move |_| {
+    use_effect_with((), move |_| {
         wasm_bindgen_futures::spawn_local(async move {
             if let Ok(entry) = get_interfaces().await {
                 let mut list = vec!["0.0.0.0".into(), "::".into()]
@@ -75,12 +77,13 @@ pub fn port_config(props: &Props) -> Html {
         });
     });
 
-    let protocol = match (udp, tls, http) {
-        (true, _, _) => "udp",
-        (false, true, true) => "https",
-        (false, true, false) => "tls",
-        (false, false, true) => "http",
-        (false, false, false) => "tcp",
+    let protocol = match (udp, tls, http, quic) {
+        (_, _, true, true) => "http3",
+        (true, _, _, _) => "udp",
+        (false, true, true, _) => "https",
+        (false, true, false, _) => "tls",
+        (false, false, true, _) => "http",
+        (false, false, false, _) => "tcp",
     };
 
     let name = use_state(|| props.port.name.clone());
@@ -199,6 +202,9 @@ fn get_port(
         "udp" => {
             addr.push_str(&format!("/udp/{port}"));
         }
+        "http3" => {
+            addr.push_str(&format!("/udp/{port}/quic/http"));
+        }
         _ => {
             errors.insert("protocol".into(), "Invalid protocol".into());
         }
@@ -210,7 +216,7 @@ fn get_port(
         listen: addr.parse().unwrap(),
         opts: PortOptions {
             tls_termination: Some(TlsTermination::default())
-                .filter(|_| protocol == "tls" || protocol == "https"),
+                .filter(|_| protocol == "tls" || protocol == "https" || protocol == "http3"),
         },
     };
 

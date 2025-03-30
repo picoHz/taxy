@@ -177,6 +177,7 @@ fn forwarded_proto_directive(proto: &str) -> String {
 #[derive(Default, Debug)]
 pub struct ResponseRewriter {
     https_port: Option<u16>,
+    quic_port: Option<u16>,
 }
 
 impl ResponseRewriter {
@@ -194,11 +195,18 @@ impl ResponseRewriter {
         match res {
             Ok(mut res) => {
                 res.headers_mut().remove(ALT_SVC);
-                if let Some(port) = self.https_port {
-                    res.headers_mut().insert(
-                        ALT_SVC,
-                        HeaderValue::from_str(&format!("h2=\":{}\"", port)).unwrap(),
-                    );
+                let alt_svc = match (self.https_port, self.quic_port) {
+                    (Some(https), Some(quic)) => Some(format!(
+                        "h2=\":{}\", h3=\":{}\", h3-25=\":{}\"",
+                        https, quic, quic
+                    )),
+                    (Some(https), None) => Some(format!("h2=\":{}\"", https)),
+                    (None, Some(quic)) => Some(format!("h3=\":{}\", h3-25=\":{}\"", quic, quic)),
+                    _ => None,
+                };
+                if let Some(alt_svc) = alt_svc {
+                    res.headers_mut()
+                        .insert(ALT_SVC, HeaderValue::from_str(&alt_svc).unwrap());
                 }
                 Ok(res.map(|body| BoxBody::new(body)))
             }
@@ -225,6 +233,11 @@ pub struct ResponseRewriterBuilder {
 impl ResponseRewriterBuilder {
     pub fn https_port(mut self, port: Option<u16>) -> Self {
         self.inner.https_port = port;
+        self
+    }
+
+    pub fn quic_port(mut self, port: Option<u16>) -> Self {
+        self.inner.quic_port = port;
         self
     }
 

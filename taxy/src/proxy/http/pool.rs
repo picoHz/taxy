@@ -13,7 +13,7 @@ use tracing::error;
 use super::rewriter::ResponseRewriter;
 
 pub struct ConnectionPool {
-    client: Client<HttpsConnector<HttpConnector>, BoxBody<Bytes, anyhow::Error>>,
+    pub client: Client<HttpsConnector<HttpConnector>, BoxBody<Bytes, anyhow::Error>>,
 }
 
 impl ConnectionPool {

@@ -71,7 +71,7 @@ impl TlsTermination {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct CertResolver {
     certs: Vec<Arc<Cert>>,
     default_names: Vec<SubjectName>,

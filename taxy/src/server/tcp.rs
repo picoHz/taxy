@@ -31,6 +31,25 @@ impl TcpListenerPool {
         !self.listeners.is_empty()
     }
 
+    pub async fn remove_unused_ports(&mut self, ports: &[PortContext]) {
+        let used_addrs = ports
+            .iter()
+            .filter_map(|ctx| match ctx.kind() {
+                PortContextKind::Tcp(state) => Some(state.listen),
+                PortContextKind::Http(state) => Some(state.listen),
+                _ => None,
+            })
+            .collect::<HashSet<_>>();
+
+        self.listeners.retain(|listener| {
+            if let Ok(addr) = listener.inner.local_addr() {
+                used_addrs.contains(&addr)
+            } else {
+                false
+            }
+        });
+    }
+
     pub async fn update(&mut self, ports: &mut [PortContext]) {
         let mut reserved_ports = Vec::new();
         if let Some(reserved_addr) = self.http_challenge_addr {

@@ -20,6 +20,7 @@ Taxy is currently in early development. Please be aware that breaking changes ma
 
 - Built with Rust for optimal performance and safety, powered by tokio and hyper
 - Supports TCP, UDP, TLS, HTTP1, and HTTP2, including HTTP upgrading and WebSocket functionality
+- Partial HTTP/3 support (incoming QUIC connections only; WebTransport not supported)
 - Easily deployable single binary with a built-in WebUI
 - Allows live configuration updates via a REST API without restarting the service
 - Imports TLS certificates from the GUI or can generate a self-signed certificate

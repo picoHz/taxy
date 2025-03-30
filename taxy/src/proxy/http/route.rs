@@ -11,7 +11,7 @@ pub struct Router {
 }
 
 impl Router {
-    pub fn new(proxies: Vec<ProxyEntry>, https_port: Option<u16>) -> Self {
+    pub fn new(proxies: Vec<ProxyEntry>, https_port: Option<u16>, quic_port: Option<u16>) -> Self {
         let mut routes = vec![];
         for (id, http) in proxies
             .into_iter()
@@ -29,6 +29,7 @@ impl Router {
                         servers: route.servers,
                     },
                     https_port,
+                    quic_port,
                     upgrade_insecure: http.upgrade_insecure,
                 });
             }
@@ -56,6 +57,7 @@ pub struct FilteredRoute {
     pub filter: RequestFilter,
     pub route: ParsedRoute,
     pub https_port: Option<u16>,
+    pub quic_port: Option<u16>,
     pub upgrade_insecure: bool,
 }
 
