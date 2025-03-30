@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.3.37 - 2025-03-30
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.37 -->
+### What's Changed
+
+#### New Features
+
+* feat: add HTTP/3 support by @picoHz in https://github.com/picoHz/taxy/pull/113
+
+#### Other Changes
+
+* build(deps): bump ring from 0.17.7 to 0.17.13 by @dependabot in https://github.com/picoHz/taxy/pull/112
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.36...v0.3.37
+
 ## v0.3.36 - 2025-03-06
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.36 -->
