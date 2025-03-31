@@ -7,7 +7,9 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 use taxy_api::port::SocketState;
 use tokio::net::{TcpListener, TcpStream};
-use tracing::{error, info, span, Instrument, Level};
+use tracing::{error, info, span, Level};
+
+const SOCKET_BACKLOG_SIZE: i32 = 128;
 
 #[derive(Debug)]
 pub struct TcpListenerPool {
@@ -111,7 +113,7 @@ impl TcpListenerPool {
                 span.in_scope(|| {
                     info!(%bind, "listening on tcp port");
                 });
-                match TcpListener::bind(bind).instrument(span.clone()).await {
+                match create_tcp_listener(bind) {
                     Ok(sock) => (
                         Some(TcpListenerStream {
                             index: 0,
@@ -147,6 +149,22 @@ impl TcpListenerPool {
             _ => None,
         }
     }
+}
+
+fn create_tcp_listener(addr: SocketAddr) -> io::Result<TcpListener> {
+    let socket = socket2::Socket::new(
+        socket2::Domain::for_address(addr),
+        socket2::Type::STREAM,
+        None,
+    )?;
+    if addr.is_ipv6() {
+        socket.set_only_v6(true)?;
+    }
+    socket.set_reuse_address(true)?;
+    socket.set_nonblocking(true)?;
+    socket.bind(&addr.into())?;
+    socket.listen(SOCKET_BACKLOG_SIZE)?;
+    TcpListener::from_std(socket.into())
 }
 
 #[derive(Debug)]
