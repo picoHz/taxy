@@ -1,6 +1,7 @@
 use super::{AppError, AppState};
 use crate::server::rpc::ports::{
-    AddPort, DeletePort, GetPort, GetPortList, GetPortStatus, ResetPort, UpdatePort,
+    AddPort, DeletePort, GetNetworkInterfaceList, GetPort, GetPortList, GetPortStatus, ResetPort,
+    UpdatePort,
 };
 use axum::{
     extract::{Path, State},
@@ -8,7 +9,7 @@ use axum::{
 };
 use taxy_api::{
     id::ShortId,
-    port::{Port, PortEntry, PortStatus},
+    port::{NetworkInterface, Port, PortEntry, PortStatus},
 };
 
 pub async fn list(State(state): State<AppState>) -> Result<Json<Box<Vec<PortEntry>>>, AppError> {
@@ -57,4 +58,10 @@ pub async fn reset(
     Path(id): Path<ShortId>,
 ) -> Result<Json<Box<()>>, AppError> {
     Ok(Json(state.call(ResetPort { id }).await?))
+}
+
+pub async fn interfaces(
+    State(state): State<AppState>,
+) -> Result<Json<Box<Vec<NetworkInterface>>>, AppError> {
+    Ok(Json(state.call(GetNetworkInterfaceList).await?))
 }

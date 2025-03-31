@@ -142,7 +142,8 @@ pub async fn start_admin(
         .route("/{id}/status", get(ports::status))
         .route("/{id}", put(ports::put))
         .route("/{id}", delete(ports::delete))
-        .route("/{id}/reset", get(ports::reset));
+        .route("/{id}/reset", get(ports::reset))
+        .route("/interfaces", get(ports::interfaces));
 
     let proxies_routes = Router::new()
         .route("/", get(proxies::list))
