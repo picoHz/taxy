@@ -86,7 +86,8 @@ impl QuicListenerPool {
                 let server_config = quinn::ServerConfig::with_crypto(Arc::new(
                     QuicServerConfig::try_from(tls_config.clone()).unwrap(),
                 ));
-                match quinn::Endpoint::server(server_config, bind) {
+
+                match create_quic_endpoint(bind, server_config) {
                     Ok(sock) => {
                         let local_addr = sock.local_addr().unwrap();
                         let (send, recv) = tokio::sync::mpsc::channel(1);
@@ -158,6 +159,31 @@ impl QuicListenerPool {
             _ => None,
         }
     }
+}
+
+fn create_quic_endpoint(
+    addr: SocketAddr,
+    server_config: quinn::ServerConfig,
+) -> io::Result<quinn::Endpoint> {
+    let socket = socket2::Socket::new(
+        socket2::Domain::for_address(addr),
+        socket2::Type::DGRAM,
+        None,
+    )?;
+    if addr.is_ipv6() {
+        socket.set_only_v6(true)?;
+    }
+    socket.set_reuse_address(true)?;
+    socket.set_nonblocking(true)?;
+    socket.bind(&addr.into())?;
+    let runtime = quinn::default_runtime()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "quinn runtime not available"))?;
+    quinn::Endpoint::new(
+        quinn::EndpointConfig::default(),
+        Some(server_config),
+        socket.into(),
+        runtime,
+    )
 }
 
 #[derive(Debug)]
