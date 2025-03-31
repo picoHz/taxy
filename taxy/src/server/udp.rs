@@ -7,7 +7,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 use taxy_api::port::SocketState;
 use tokio::net::UdpSocket;
-use tracing::{error, info, span, Instrument, Level};
+use tracing::{error, info, span, Level};
 
 #[derive(Debug)]
 pub struct UdpListenerPool {
@@ -79,7 +79,7 @@ impl UdpListenerPool {
                 span.in_scope(|| {
                     info!(%bind, "listening on udp port");
                 });
-                match UdpSocket::bind(bind).instrument(span.clone()).await {
+                match create_udp_socket(bind) {
                     Ok(sock) => (
                         Some(UdpListenerStream {
                             index: 0,
@@ -125,6 +125,21 @@ impl UdpListenerPool {
             let _ = listener.inner.send_to(data, addr).await;
         }
     }
+}
+
+fn create_udp_socket(addr: SocketAddr) -> io::Result<UdpSocket> {
+    let socket = socket2::Socket::new(
+        socket2::Domain::for_address(addr),
+        socket2::Type::DGRAM,
+        None,
+    )?;
+    if addr.is_ipv6() {
+        socket.set_only_v6(true)?;
+    }
+    socket.set_reuse_address(true)?;
+    socket.set_nonblocking(true)?;
+    socket.bind(&addr.into())?;
+    UdpSocket::from_std(socket.into())
 }
 
 #[derive(Debug)]
