@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.3.39 - 2025-03-31
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.39 -->
+### What's Changed
+
+#### Bug Fixes
+
+* Apply IPV6_V6ONLY flag to QUIC ports by @picoHz in https://github.com/picoHz/taxy/pull/117
+
+#### Other Changes
+
+* Update yewdux to version 0.11.0 and remove anymap dependency by @picoHz in https://github.com/picoHz/taxy/pull/118
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.38...v0.3.39
+
 ## v0.3.38 - 2025-03-31
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.38 -->
