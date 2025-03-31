@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.3.38 - 2025-03-31
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.38 -->
+### What's Changed
+
+#### Bug Fixes
+
+* Fix missing /ports/interfaces endpoint by @picoHz in https://github.com/picoHz/taxy/pull/115
+* Use IPV6_V6ONLY flag to avoid dualstack binding by @picoHz in https://github.com/picoHz/taxy/pull/116
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.37...v0.3.38
+
 ## v0.3.37 - 2025-03-30
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.37 -->
