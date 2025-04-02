@@ -178,10 +178,10 @@ fn create_quic_endpoint(
     socket.bind(&addr.into())?;
     let runtime = quinn::default_runtime()
         .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "quinn runtime not available"))?;
-    quinn::Endpoint::new(
+    quinn::Endpoint::new_with_abstract_socket(
         quinn::EndpointConfig::default(),
         Some(server_config),
-        socket.into(),
+        runtime.wrap_udp_socket(socket.into())?,
         runtime,
     )
 }
