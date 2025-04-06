@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.3.40 - 2025-04-06
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.3.40 -->
+### What's Changed
+
+#### Bug Fixes
+
+* Change QUIC endpoint creation to use abstract socket for improved runtime handling by @picoHz in https://github.com/picoHz/taxy/pull/119
+
+**Full Changelog**: https://github.com/picoHz/taxy/compare/v0.3.39...v0.3.40
+
 ## v0.3.39 - 2025-03-31
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.3.39 -->
