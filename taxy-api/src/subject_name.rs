@@ -1,13 +1,14 @@
 use crate::error::Error;
 use rustls_pki_types::ServerName;
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, net::IpAddr, str::FromStr};
+use std::{fmt::Display, net::IpAddr, str::FromStr, collections::HashMap};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SubjectName {
     DnsName(String),
     WildcardDnsName(String),
     IPAddress(IpAddr),
+    CustomHeaders(Vec<HashMap<String, String>>),
 }
 
 impl SubjectName {
@@ -22,6 +23,7 @@ impl SubjectName {
                 IpAddr::V4(addr) => name.eq_ignore_ascii_case(&addr.to_string()),
                 IpAddr::V6(addr) => name.eq_ignore_ascii_case(&addr.to_string()),
             },
+            Self::CustomHeaders(h) => !h.is_empty(),
         }
     }
 }
@@ -51,6 +53,7 @@ impl Display for SubjectName {
             Self::DnsName(name) => write!(f, "{}", name),
             Self::WildcardDnsName(name) => write!(f, "*.{}", name),
             Self::IPAddress(addr) => write!(f, "{}", addr),
+            Self::CustomHeaders(h) => write!(f, "{:?}", h),
         }
     }
 }

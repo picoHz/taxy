@@ -452,7 +452,7 @@ async fn start(
             ProxiedRequest::Err(ProxyError::DomainFrontingDetected)
         } else if let Some((parsed, res, route)) = shared.router.get_route(&req, host) {
             let resource_id = route.resource_id;
-
+            let custom_headers = &route.filter.custom_headers;
             let mut redirect = None;
             response_rewriter = response_rewriter
                 .https_port(route.https_port)

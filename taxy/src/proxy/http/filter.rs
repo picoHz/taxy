@@ -1,4 +1,7 @@
-use hyper::Request;
+use hyper::{
+    header::{HeaderValue, HeaderMap},
+    Request
+};
 use taxy_api::proxy::Route;
 use taxy_api::vhost::VirtualHost;
 
@@ -6,10 +9,11 @@ use taxy_api::vhost::VirtualHost;
 pub struct RequestFilter {
     pub vhosts: Vec<VirtualHost>,
     pub path: Vec<String>,
+    pub custom_headers: Vec<HeaderMap>,
 }
 
 impl RequestFilter {
-    pub fn new(vhosts: &[VirtualHost], route: &Route) -> Self {
+    pub fn new(vhosts: &[VirtualHost], route: &Route, custom_headers: Vec<HeaderMap>) -> Self {
         Self {
             vhosts: vhosts.to_vec(),
             path: route
@@ -18,6 +22,7 @@ impl RequestFilter {
                 .filter(|seg| !seg.is_empty())
                 .map(|s| s.to_owned())
                 .collect(),
+            custom_headers,
         }
     }
 
