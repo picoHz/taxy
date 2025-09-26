@@ -62,6 +62,7 @@ async fn https_proxy() -> anyhow::Result<()> {
                         }],
                     }],
                     upgrade_insecure: false,
+                    ..Default::default()
                 }),
                 ..Default::default()
             },
@@ -165,6 +166,7 @@ async fn https_proxy_invalid_cert() -> anyhow::Result<()> {
                         }],
                     }],
                     upgrade_insecure: false,
+                    ..Default::default()
                 }),
                 ..Default::default()
             },
@@ -249,6 +251,7 @@ async fn https_proxy_automatic_upgrade() -> anyhow::Result<()> {
                         }],
                     }],
                     upgrade_insecure: false,
+                    ..Default::default()
                 }),
                 ..Default::default()
             },
@@ -348,6 +351,7 @@ async fn https_proxy_domain_fronting() -> anyhow::Result<()> {
                         }],
                     }],
                     upgrade_insecure: false,
+                    ..Default::default()
                 }),
                 ..Default::default()
             },

@@ -121,6 +121,7 @@ async fn http_proxy() -> anyhow::Result<()> {
                         },
                     ],
                     upgrade_insecure: false,
+                    ..Default::default()
                 }),
                 ..Default::default()
             },
@@ -264,6 +265,7 @@ async fn http_proxy_upgrade_insecure() -> anyhow::Result<()> {
                         }],
                     }],
                     upgrade_insecure: true,
+                    ..Default::default()
                 }),
                 ..Default::default()
             },
@@ -333,6 +335,7 @@ async fn http_proxy_dns_error() -> anyhow::Result<()> {
                         }],
                     }],
                     upgrade_insecure: false,
+                    ..Default::default()
                 }),
                 ..Default::default()
             },

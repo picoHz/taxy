@@ -1,9 +1,22 @@
 use super::filter::{FilterResult, RequestFilter};
+use hyper::header::{HeaderName, HeaderValue, HeaderMap};
 use hyper::Request;
 use taxy_api::{
     id::ShortId,
     proxy::{ProxyEntry, ProxyKind, Server},
 };
+
+fn generate_header_map(headers: &Vec<(String, String)>) -> HeaderMap {
+    let mut map = HeaderMap::new();
+    for (k, v) in headers {
+        if let Ok(key) = HeaderName::from_lowercase(k.to_lowercase().as_bytes()) {
+            if let Ok(value) = HeaderValue::from_str(v) {
+                map.insert(key, value);
+            }
+        }
+    }
+    map
+}
 
 #[derive(Default, Debug)]
 pub struct Router {
@@ -31,6 +44,7 @@ impl Router {
                     https_port,
                     quic_port,
                     upgrade_insecure: http.upgrade_insecure,
+                    custom_headers: generate_header_map(http.custom_headers.as_ref()),
                 });
             }
         }
@@ -59,6 +73,7 @@ pub struct FilteredRoute {
     pub https_port: Option<u16>,
     pub quic_port: Option<u16>,
     pub upgrade_insecure: bool,
+    pub custom_headers: HeaderMap,
 }
 
 #[derive(Debug)]

@@ -178,6 +178,7 @@ fn forwarded_proto_directive(proto: &str) -> String {
 pub struct ResponseRewriter {
     https_port: Option<u16>,
     quic_port: Option<u16>,
+    custom_headers: HeaderMap,
 }
 
 impl ResponseRewriter {
@@ -208,6 +209,11 @@ impl ResponseRewriter {
                     res.headers_mut()
                         .insert(ALT_SVC, HeaderValue::from_str(&alt_svc).unwrap());
                 }
+                if !self.custom_headers.is_empty() {
+                    for (header, value) in self.custom_headers.iter() {
+                        res.headers_mut().append(header, value.clone());
+                    }
+                }
                 Ok(res.map(|body| BoxBody::new(body)))
             }
             Err(err) => {
@@ -231,6 +237,11 @@ pub struct ResponseRewriterBuilder {
 }
 
 impl ResponseRewriterBuilder {
+
+    pub fn add_custom_headers(mut self, headers: HeaderMap) -> Self {
+        self.inner.custom_headers = headers;
+        self
+    }
     pub fn https_port(mut self, port: Option<u16>) -> Self {
         self.inner.https_port = port;
         self
