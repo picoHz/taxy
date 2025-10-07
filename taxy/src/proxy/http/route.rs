@@ -44,7 +44,7 @@ impl Router {
                     https_port,
                     quic_port,
                     upgrade_insecure: http.upgrade_insecure,
-                    custom_headers: generate_header_map(http.custom_headers.as_ref()),
+                    custom_res_headers: generate_header_map(http.custom_res_headers.as_ref()),
                 });
             }
         }
@@ -73,7 +73,7 @@ pub struct FilteredRoute {
     pub https_port: Option<u16>,
     pub quic_port: Option<u16>,
     pub upgrade_insecure: bool,
-    pub custom_headers: HeaderMap,
+    pub custom_res_headers: HeaderMap,
 }
 
 #[derive(Debug)]

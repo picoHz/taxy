@@ -63,10 +63,10 @@ pub fn http_proxy_config(props: &Props) -> Html {
         routes.set(vec![("/".into(), Vec::new())]);
     }
 
-    let custom_headers = use_state(|| {
+    let custom_res_headers = use_state(|| {
         props
             .proxy
-            .custom_headers
+            .custom_res_headers
             .iter()
             .map(|(k, v)| (k.clone(), v.clone()))
             .collect::<Vec<_>>()
@@ -74,7 +74,7 @@ pub fn http_proxy_config(props: &Props) -> Html {
 
     let prev_entry =
         use_state::<Result<HttpProxy, HashMap<String, String>>, _>(|| Err(Default::default()));
-    let entry = get_proxy(&vhosts, &routes, &custom_headers, *upgrade_insecure);
+    let entry = get_proxy(&vhosts, &routes, &custom_res_headers, *upgrade_insecure);
 
     if entry != *prev_entry {
         prev_entry.set(entry.clone());
@@ -157,7 +157,7 @@ pub fn http_proxy_config(props: &Props) -> Html {
 fn get_proxy(
     vhosts: &str,
     routes: &[(String, Vec<String>)],
-    custom_headers: &[(String, String)],
+    custom_res_headers: &[(String, String)],
     upgrade_insecure: bool,
 ) -> Result<HttpProxy, HashMap<String, String>> {
     let mut errors = HashMap::new();
@@ -203,7 +203,7 @@ fn get_proxy(
         Ok(HttpProxy {
             vhosts: hosts,
             routes: parsed_routes,
-            custom_headers: custom_headers
+            custom_res_headers: custom_res_headers
                 .iter()
                 .map(|(k, v)| (k.clone(), v.clone()))
                 .collect(),

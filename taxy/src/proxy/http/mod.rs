@@ -456,7 +456,7 @@ async fn start(
             response_rewriter = response_rewriter
                 .https_port(route.https_port)
                 .quic_port(route.quic_port)
-                .add_custom_headers(route.custom_headers.clone());
+                .add_custom_res_headers(route.custom_res_headers.clone());
             if forwarded_proto == "http" && route.upgrade_insecure {
                 if let Some(port) = route.https_port {
                     if let Some(uri) = header_host
