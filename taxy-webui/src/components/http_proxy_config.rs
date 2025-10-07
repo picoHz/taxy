@@ -93,6 +93,67 @@ pub fn http_proxy_config(props: &Props) -> Html {
             <input type="text" autocapitalize="off" value={vhosts.to_string()} onchange={vhosts_onchange} class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="example.com" />
             <p class="mt-2 text-sm text-neutral-500">{"You can use commas to list multiple names and regex patterns, e.g, example.com, *.test.example.com, ^([a-z]+\\.)+example\\.com$ ."}</p>
 
+            <label class="block mt-4 mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Custom Response Headers"}</label>
+
+            { custom_res_headers.iter().enumerate().map(|(i, (k, v))| {
+                let custom_res_headers_len = custom_res_headers.len();
+
+                let custom_res_headers_cloned = custom_res_headers.clone();
+                let add_onclick = Callback::from(move |_| {
+                    let mut custom_res_headers = (*custom_res_headers_cloned).clone();
+                    custom_res_headers.insert(i + 1, (String::new(), String::new()));
+                    custom_res_headers_cloned.set(custom_res_headers);
+                });
+
+                let custom_res_headers_cloned = custom_res_headers.clone();
+                let remove_onclick = Callback::from(move |_| {
+                    if custom_res_headers_len > 1 {
+                        let mut custom_res_headers = (*custom_res_headers_cloned).clone();
+                        custom_res_headers.remove(i);
+                        custom_res_headers_cloned.set(custom_res_headers);
+                    }
+                });
+
+                let custom_res_headers_cloned = custom_res_headers.clone();
+                let k_onchange = Callback::from(move |event: Event| {
+                        let mut custom_res_headers = (*custom_res_headers_cloned).clone();
+                        let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
+                        custom_res_headers[i].0 = target.value();
+                        custom_res_headers_cloned.set(custom_res_headers);
+                    });
+
+                let custom_res_headers_cloned = custom_res_headers.clone();
+                let v_onchange = Callback::from(move |event: Event| {
+                        let mut custom_res_headers = (*custom_res_headers_cloned).clone();
+                        let target: HtmlInputElement = event.target().unwrap_throw().dyn_into().unwrap_throw();
+                        custom_res_headers[i].1 = target.value();
+                        custom_res_headers_cloned.set(custom_res_headers);
+                    }
+                );
+
+                html!{
+                    <div class="mt-2 bg-white dark:text-neutral-200 dark:bg-neutral-800 shadow-sm p-5 border border-neutral-300 dark:border-neutral-700 rounded-md">
+                        <label class="block mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Key"}</label>
+                        <input type="text" autocapitalize="off" value={k.to_string()} onchange={k_onchange} class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Access-Control-Allow-Origin" />
+                        
+                        <label class="block mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Value"}</label>
+                        <input type="text" autocapitalize="off" value={v.to_string()} onchange={v_onchange} class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="*" />
+
+                        <div class="flex justify-end rounded-md mt-4 sm:ml-auto px-4 lg:px-0" role="group">
+                            <button type="button" onclick={add_onclick} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 dark:text-neutral-200 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-l-lg hover:bg-neutral-100 hover:dark:bg-neutral-900 focus:z-10 focus:ring-4 focus:ring-neutral-200 dark:focus:ring-neutral-600">
+                                <img src="/assets/icons/add.svg" class="w-4 h-4" />
+                            </button>
+                            <button type="button" onclick={remove_onclick} disabled={custom_res_headers_len <= 1} class="inline-flex items-center px-4 py-2 text-sm font-medium text-neutral-500 dark:text-neutral-200 bg-white dark:bg-neutral-800 border border-l-0 border-neutral-300 dark:border-neutral-700 rounded-r-lg hover:bg-neutral-100 hover:dark:bg-neutral-900 focus:z-10 focus:ring-4 focus:ring-neutral-200 dark:focus:ring-neutral-600">
+                                <img src="/assets/icons/remove.svg" class="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                }
+            
+            }).collect::<Html>()
+            }
+
+
             <label class="block mt-4 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Routes"}</label>
 
             { routes.iter().enumerate().map(|(i, (path, servers))| {
