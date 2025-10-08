@@ -47,6 +47,7 @@ async fn ws_proxy() -> anyhow::Result<()> {
                         }],
                     }],
                     upgrade_insecure: false,
+                    ..Default::default()
                 }),
                 ..Default::default()
             },

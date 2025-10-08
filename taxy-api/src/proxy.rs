@@ -58,6 +58,8 @@ pub struct HttpProxy {
     pub routes: Vec<Route>,
     #[serde(default = "upgrade_insecure_default", skip_serializing_if = "is_true")]
     pub upgrade_insecure: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub custom_res_headers: Vec<(String, String)>,
 }
 
 fn upgrade_insecure_default() -> bool {
