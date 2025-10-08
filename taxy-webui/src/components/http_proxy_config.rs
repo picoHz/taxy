@@ -81,6 +81,10 @@ pub fn http_proxy_config(props: &Props) -> Html {
         props.onchanged.emit(entry);
     }
 
+    if custom_res_headers.is_empty() {
+        custom_res_headers.set(vec![(String::new(), String::new())]);
+    }
+
     html! {
         <>
             <label class="relative inline-flex items-center cursor-pointer my-6">
@@ -97,7 +101,6 @@ pub fn http_proxy_config(props: &Props) -> Html {
 
             { custom_res_headers.iter().enumerate().map(|(i, (k, v))| {
                 let custom_res_headers_len = custom_res_headers.len();
-
                 let custom_res_headers_cloned = custom_res_headers.clone();
                 let add_onclick = Callback::from(move |_| {
                     let mut custom_res_headers = (*custom_res_headers_cloned).clone();
@@ -111,6 +114,8 @@ pub fn http_proxy_config(props: &Props) -> Html {
                         let mut custom_res_headers = (*custom_res_headers_cloned).clone();
                         custom_res_headers.remove(i);
                         custom_res_headers_cloned.set(custom_res_headers);
+                    } else {
+                        custom_res_headers_cloned.set(vec![(String::new(), String::new())]);
                     }
                 });
 
@@ -135,7 +140,7 @@ pub fn http_proxy_config(props: &Props) -> Html {
                     <div class="mt-2 bg-white dark:text-neutral-200 dark:bg-neutral-800 shadow-sm p-5 border border-neutral-300 dark:border-neutral-700 rounded-md">
                         <label class="block mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Key"}</label>
                         <input type="text" autocapitalize="off" value={k.to_string()} onchange={k_onchange} class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Access-Control-Allow-Origin" />
-                        
+
                         <label class="block mb-2 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Value"}</label>
                         <input type="text" autocapitalize="off" value={v.to_string()} onchange={v_onchange} class="bg-neutral-50 dark:text-neutral-200 dark:bg-neutral-800 dark:border-neutral-600 border border-neutral-300 text-neutral-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="*" />
 
@@ -149,9 +154,8 @@ pub fn http_proxy_config(props: &Props) -> Html {
                         </div>
                     </div>
                 }
-            
-            }).collect::<Html>()
-            }
+
+            }).collect::<Html>() }
 
 
             <label class="block mt-4 text-sm font-medium text-neutral-900 dark:text-neutral-200">{"Routes"}</label>
