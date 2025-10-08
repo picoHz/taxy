@@ -210,6 +210,15 @@ impl ResponseRewriter {
                         .insert(ALT_SVC, HeaderValue::from_str(&alt_svc).unwrap());
                 }
                 if !self.custom_res_headers.is_empty() {
+                    if self.custom_res_headers.len() == 1 {
+                        if let Some((header, value)) = self.custom_res_headers.iter().next() {
+                            if header.as_str().trim().is_empty()
+                                || value.to_str().unwrap_or("").trim().is_empty()
+                            {
+                                return Ok(res.map(|body| BoxBody::new(body)));
+                            }
+                        }
+                    }
                     for (header, value) in self.custom_res_headers.iter() {
                         res.headers_mut().append(header, value.clone());
                     }
@@ -237,7 +246,6 @@ pub struct ResponseRewriterBuilder {
 }
 
 impl ResponseRewriterBuilder {
-
     pub fn add_custom_res_headers(mut self, headers: HeaderMap) -> Self {
         self.inner.custom_res_headers = headers;
         self
