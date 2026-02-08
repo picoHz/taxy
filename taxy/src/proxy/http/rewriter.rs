@@ -125,7 +125,8 @@ impl RequestRewriter {
 
         if let Some(host) = &header_host {
             if let Ok(host) = HeaderValue::from_str(host) {
-                headers.insert("x-forwarded-host", host);
+                headers.insert("x-forwarded-host", host.clone());
+                headers.insert("host", host);
             }
         }
     }
@@ -332,10 +333,12 @@ mod test {
     #[test]
     fn test_header_rewriter_post_process() {
         let mut headers = HeaderMap::new();
+        headers.append("host", "taxy.dev".parse().unwrap());
         let rewriter = RequestRewriter::builder()
             .set_via("taxy".parse().unwrap())
             .build();
         rewriter.post_process(&mut headers);
         assert_eq!(headers.get("via").unwrap(), "taxy");
+        assert_eq!(headers.get("host").unwrap(), "taxy.dev");
     }
 }
